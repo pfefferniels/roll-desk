@@ -49,7 +49,7 @@ export class AlignedPerformance {
         gapExt?: number,
         score?: Score,
         rawPerformance?: RawPerformance) {
-        this.gapOpen = gapOpen || -1
+        this.gapOpen = gapOpen || -3
         this.gapExt = gapExt || -1
         this.score = score
         this.rawPerformance = rawPerformance

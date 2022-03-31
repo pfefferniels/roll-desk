@@ -10,16 +10,20 @@ type Point = {
 }
 
 const findLeastSquare = (powFunction: (meanTempo: number) => (x: number) => number, dataPoints: Point[]) => {
-    let optimal = 9999999;
+    let optimal = 9999999
+    let optimalAttempt = -1
     for (let attempt = 0.1; attempt < 1.0; attempt += 0.1) {
         let totalDiffs = 0;
         for (let i=0; i<dataPoints.length; i++) {
             const diff = Math.abs(powFunction(attempt)(dataPoints[i].x) - dataPoints[i].y)
             totalDiffs += diff
         }
-        if (totalDiffs < optimal) optimal = totalDiffs
+        if (totalDiffs < optimal) {
+            optimal = totalDiffs
+            optimalAttempt = attempt
+        }
     }
-    return optimal
+    return optimalAttempt
 }
 
 enum AgogicShape {
@@ -99,14 +103,21 @@ export class Interpolation {
                 }
 
                 let notes = this.alignedPerformance.score!.notesInRange(frameBegin, frameEnd)
+                console.log('notes=', notes)
 
-                //notes = notes.filter(note => (note.qstamp % curvatureReference) === 0).reduce<Note[]>(function (a, b) {
-                //    if (a.findIndex(a => a.qstamp === b.qstamp) < 0) a.push(b);
-                //    return a;
-                //}, []);
-
-                const internalBpms = asBPM(
-                    notes.map((note: Note) => this.alignedPerformance.performedNoteAtId(note.id)?.onsetTime || -1))
+                // this doesn't work – we need to find an equally spaced internal division
+                let internalNotes: MidiNote[] = []
+                for (let i=frameBegin; i<frameEnd; i+=0.25) {
+                    const notesAtTime = this.alignedPerformance.performedNotesAtQstamp(frameBegin + i)
+                    if (notesAtTime && notesAtTime[0]) {
+                        internalNotes.push(notesAtTime[0])
+                    }
+                }
+                const internalDiff = internalNotes.slice(1).map((note: MidiNote, index: number, arr: MidiNote[]) => {
+                    return note.onsetTime - arr[i-1].onsetTime
+                })
+                const internalBpms = asBPM(internalDiff)
+                console.log('internal bpms', internalBpms)
                 
                 // depending on the amount of internal points 
                 // use different algorithm
@@ -114,6 +125,8 @@ export class Interpolation {
                     x: notes[i].qstamp, 
                     y: bpm || 0
                 })).filter((point: Point) => point.y !== 0)
+
+                console.log('points:', points)
 
                 const powFunction = (meanTempoAt: number) => {
                     const bpm = internalBpms[0]
@@ -130,7 +143,7 @@ export class Interpolation {
                     'bpm': Math.round(bpms[i]),
                     'transition.to': Math.round(bpms[i+1]),
                     'meanTempoAt': meanTempoAt,
-                    'beatLength': 0.25 * tempoReference
+                    'beatLength': (frameEnd-frameBegin)*720
                 }
                 const tempoElement: Tempo = {
                     "@": tempoAttributes

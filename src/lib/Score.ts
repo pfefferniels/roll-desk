@@ -66,8 +66,11 @@ export class Score {
 
     public notesInRange(start: number, end: number): Note[] {
         const lowerIndex = this.notes.findIndex((note: Note) => note.qstamp >= start)
-        const upperIndex = this.notes.findIndex((note: Note) => note.qstamp <= end)
+        if (lowerIndex === -1) return []
+
+        const upperIndex = this.notes.length - this.notes.reverse().findIndex((note: Note) => note.qstamp <= end)
         if (lowerIndex > upperIndex) return []
+
         return this.notes.slice(lowerIndex, upperIndex)
     }
 
