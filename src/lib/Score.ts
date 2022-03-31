@@ -10,13 +10,17 @@ export type Note = {
 }
 
 export class Score {
+    private scoreDOM: Document
     notes: Note[]
     timemap: any[]  // TODO define type. 
 
     // score encoding can be anything that Verovio can parse
-    constructor(scoreEncoding?: string) {
-        console.log('new score object created using Verovio version', vrvToolkit.getVersion(), scoreEncoding)
-        vrvToolkit.loadData(scoreEncoding || '')
+    constructor(scoreEncoding: string) {
+        console.log('new score object created using Verovio version', vrvToolkit.getVersion())
+
+        // TODO make sure that all relevant elements do have a xml:id
+        this.scoreDOM = new DOMParser().parseFromString(scoreEncoding, 'text/xml')
+        vrvToolkit.loadData(scoreEncoding)
         this.timemap = vrvToolkit.renderToTimemap()
         this.notes = Score.parseFromTimemap(this.timemap)
     }
@@ -41,7 +45,6 @@ export class Score {
                 index += 1
             }
         }
-        console.log('notes array:', result)
         return result
     }
 
@@ -72,8 +75,25 @@ export class Score {
         return this.notes
     }
 
+    /**
+     * This method return the qstamps of the first note in each measure. 
+     * In particular useful when different time signatures appear in one piece.
+     * @returns the qstamps of all downbeats
+     */
     public allDownbeats(): number[] {
-        return []
+        const qstamps: number[] = []
+        const measures = this.scoreDOM.querySelectorAll("measure")
+        for (const measure of measures) {
+            const note = measure.querySelector("note") // what about rests?
+            if (note) {
+                const id = note.getAttribute("xml:id")
+                const corresp = this.allNotes().find((note: Note) => {
+                    return note.id === id
+                })
+                if (corresp) qstamps.push(corresp?.qstamp)
+            }
+        }
+        return qstamps
     }
 
     public notesAtTime(qstamp: number): Note[] {

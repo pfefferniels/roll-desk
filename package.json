@@ -14,6 +14,7 @@
     "@types/node": "^16.11.17",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
+    "js2xmlparser": "^4.0.2",
     "midi-json-parser": "^8.0.52",
     "midi-parser-js": "^4.0.4",
     "midifile-ts": "^1.4.0",

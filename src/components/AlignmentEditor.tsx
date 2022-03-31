@@ -1,19 +1,7 @@
-import { RawPerformance } from "../lib/Performance"
-import { AlignedPerformance } from "../lib/AlignedPerformance"
 import { useContext, useEffect, useRef, useState } from "react"
 import GlobalContext from "./GlobalContext"
 import { Box, Slider, Typography } from "@mui/material"
 import { AlignmentPair } from "sequence-align/src/types"
-import { Note } from "../lib/Score"
-
-var CHROMATIC = [ 'C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B' ]
-
-function fromMidi (midi: number) {
-  const name = CHROMATIC[midi % 12]
-  if (!name) return '-'
-  const oct = Math.floor(midi / 12) - 1
-  return name + oct
-}
 
 export default function AlignmentEditor() {
   const scoreRef = useRef(null)
@@ -39,6 +27,7 @@ export default function AlignmentEditor() {
     }
 
     document.querySelector("svg")?.querySelectorAll("[fill]").forEach((value: Element) => value.removeAttribute("fill"))
+    
     alignedPerformance.getAllPairs().map((pair: AlignmentPair<string>) => {
       console.log('pair found')
       const ref: HTMLElement = scoreRef.current as unknown as HTMLElement || null

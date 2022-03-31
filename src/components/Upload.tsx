@@ -67,7 +67,8 @@ export default function Upload({open, onClose, setScore, setPerformance}: Upload
 
   const uploadMIDI = (midiSource: HTMLInputElement) => {
     parseMidiInput(midiSource, (midi: MidiFile | null) => {
-        setPerformance(new RawPerformance(midi))
+      if (!midi) return
+      setPerformance(new RawPerformance(midi))
     })
   }
 

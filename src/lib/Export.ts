@@ -34,32 +34,29 @@ type Trend = {
     shape: AgogicShape
 }
 
-type TempoMap = {
-    tempo: Tempo[]
-}
+type TempoMap = Tempo[]
 
 type Tempo = {
-    _attributes: any
+    "@": any
 }
 
-class MpmGenerator {
-    alignedPerformance!: AlignedPerformance
+export class Interpolation {
+    alignedPerformance: AlignedPerformance
     preferArpeggio: boolean = false
 
-    Export(alignedPerformance: AlignedPerformance, preferArpeggio: boolean) {
+    constructor(alignedPerformance: AlignedPerformance, preferArpeggio: boolean) {
         this.alignedPerformance = alignedPerformance
         this.preferArpeggio = preferArpeggio
     }
 
     // calculates global tempo map
-    exportTempoMap(tempoReference = 4, curvatureReference = 0.25) {
-        if (!this.alignedPerformance.ready()) return {}
+    exportTempoMap(tempoReference = 4, curvatureReference = 0.25): TempoMap {
+        if (!this.alignedPerformance.ready()) return []
 
-        const tempoMap: TempoMap = {
-            tempo: []
-        }
+        const tempoMap: TempoMap = []
 
-        const onsets = this.alignedPerformance.score!.allDownbeats().map((downbeatQstamp: number): number => {
+        const allDownbeats = this.alignedPerformance.score!.allDownbeats() 
+        const onsets = allDownbeats.map((downbeatQstamp: number): number => {
             // always take the first onset as reference 
             // TODO should be controllable with a parameter.
             const firstMidiNote = this.alignedPerformance.performedNotesAtQstamp(downbeatQstamp)[0]
@@ -76,18 +73,30 @@ class MpmGenerator {
 
         for (let i=0; i<bpms.length-1; i++) {
             const currentTrend = bpms[i+1] > bpms[i] ? AgogicShape.Acc : AgogicShape.Rit
+            console.log('currentTrend', currentTrend)
             if (currentTrend === trend.shape) {
                 // prolong the existing trend
+                console.log('prolonging an existing trend')
                 trend.end = onsets[i+1]
             } else {
+                trend.end = onsets[i]
                 // ein Trend endet –> Kalkulation in Gang setzen, d.h.
 
                 // (1) alle Werte zwischen trend.begin und trend.end
                 //     auf Kurve auftragen
+                console.log('a frame has finished, now doing stuff')
                 const frameBegin = this.alignedPerformance.qstampOfOnset(trend.begin)
                 const frameEnd = this.alignedPerformance.qstampOfOnset(trend.end)
 
-                if (!frameBegin || !frameEnd) continue
+                console.log('there is a trend from', trend.begin, 'to', trend.end)
+
+                if (!frameBegin || !frameEnd) {
+                    // we failed. set a new trend anyways and try to proceed
+                    trend.begin = onsets[i]
+                    trend.end = onsets[i+1] 
+                    trend.shape = currentTrend
+                    continue
+                }
 
                 let notes = this.alignedPerformance.score!.notesInRange(frameBegin, frameEnd)
 
@@ -123,10 +132,10 @@ class MpmGenerator {
                     'meanTempoAt': meanTempoAt,
                     'beatLength': 0.25 * tempoReference
                 }
-                const tempoElement: any = {
-                    _attributes: tempoAttributes
+                const tempoElement: Tempo = {
+                    "@": tempoAttributes
                 }
-                tempoMap.tempo.push(tempoElement)
+                tempoMap.push(tempoElement)
 
                 // (4) neuen Trend setzen
                 trend.begin = onsets[i]
@@ -152,39 +161,37 @@ class MpmGenerator {
     exportMPM(performanceName: string, tempoReference: number, curvatureReference: number) {
         return {
             mpm: {
-                _attributes: {
+                "@": {
                     xmlns: "http://www.cemfi.de/mpm/ns/1.0"
                 },
                 performance: {
-                    _attributes: {
+                    "@": {
                         name: performanceName,
                         pulsesPerQuarter: 720
                     },
                     global: {
                         dated: {
-                            tempoMap: this.exportTempoMap(tempoReference, curvatureReference),
+                            tempoMap: {
+                                tempo: this.exportTempoMap(tempoReference, curvatureReference),
+                            },
                             rubatoMap: {
-                                rubato: 0
+                                rubato: []
                             }
                         }
                     },
                     part: [{
-                        _attributes: {
+                        "@": {
                             name: "Right hand",
                             number: "1",
                             "midi.channel": "0",
                             "midi.port": "0"
                         },
                         dated: {
-                            dynamicsMap: {
-                                dynamics: 0
-                            },
-                            asynchronyMap: {
-                                asynchrony: 0
-                            }
+                            dynamicsMap: [],
+                            asynchronyMap: []
                         }
                     }, {
-                        _attributes: {
+                        "@": {
                             name: "Left hand",
                             number: "2",
                             "midi.channel": "1",

@@ -70,7 +70,7 @@ export class AlignedPerformance {
     }
 
     public setScore(score: Score) {
-        this.score = score || new Score()
+        this.score = score
         this.performAlignment()
     }
 
@@ -167,14 +167,20 @@ export class AlignedPerformance {
     }
 
     public qstampOfOnset(onset: number): number | undefined {
-    /*  const midiIndex = this.rawPerformance.asNotes().findIndex(note => note.onsetTime === onset)
-        //if (!midiIndices.length) return -1
-        if (midiIndex === -1) return -1
+        if (!this.ready()) return 
 
-        const scoreIndex = this.alignment.scoreIndexOfMidiIndex(midiIndex)
-        const qstamp = this.score.noteAt(scoreIndex)?.qstamp
-        return qstamp*/
-        return 0
+        const midiIndex = this.rawPerformance!.asNotes().findIndex(note => note.onsetTime === onset)
+        if (midiIndex === -1) return
+
+        const matchingPair = this.getAllPairs().find((pair: AlignmentPair<string>) => {
+            return pair[0] === midiIndex.toString()
+        })
+        if (!matchingPair) return
+
+        const note = this.score!.at(matchingPair[1])
+        if (!note) return 
+
+        return note.qstamp
     }
 
     // Helper functions
