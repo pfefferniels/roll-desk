@@ -38,11 +38,31 @@ type Trend = {
     shape: AgogicShape
 }
 
-type TempoMap = Tempo[]
-
 type Tempo = {
-    "@": any
+    'date': number,
+    'bpm': number,
+    'transition.to':number,
+    'meanTempoAt': number
+    'beatLength': number
 }
+
+type TempoElement = {
+    "@": Tempo
+}
+
+type TempoMap = TempoElement[]
+
+type Dynamics = {
+    date: number,
+    volume: number | string,
+    'transition.to'?: number
+}
+
+type DynamicsElement = {
+    '@': Dynamics
+}
+
+type DynamicsMap = DynamicsElement[]
 
 export class Interpolation {
     alignedPerformance: AlignedPerformance
@@ -103,7 +123,6 @@ export class Interpolation {
                 }
 
                 let notes = this.alignedPerformance.score!.notesInRange(frameBegin, frameEnd)
-                console.log('notes=', notes)
 
                 // this doesn't work – we need to find an equally spaced internal division
                 let internalNotes: MidiNote[] = []
@@ -117,7 +136,6 @@ export class Interpolation {
                     return note.onsetTime - arr[i-1].onsetTime
                 })
                 const internalBpms = asBPM(internalDiff)
-                console.log('internal bpms', internalBpms)
                 
                 // depending on the amount of internal points 
                 // use different algorithm
@@ -138,14 +156,14 @@ export class Interpolation {
                 const meanTempoAt = findLeastSquare(powFunction, points)
 
                 // (3) Ergebnis in die MPM einfügen
-                const tempoAttributes: any = {
+                const tempoAttributes: Tempo = {
                     'date': this.alignedPerformance.score!.qstampToTstamp(frameBegin),
                     'bpm': Math.round(bpms[i]),
                     'transition.to': Math.round(bpms[i+1]),
                     'meanTempoAt': meanTempoAt,
                     'beatLength': (frameEnd-frameBegin)*720
                 }
-                const tempoElement: Tempo = {
+                const tempoElement: TempoElement = {
                     "@": tempoAttributes
                 }
                 tempoMap.push(tempoElement)
@@ -160,15 +178,48 @@ export class Interpolation {
         return tempoMap
     }
 
-    exportDynamicsMap(partNumber: number) {
+    exportDynamicsMap(partNumber: number): DynamicsMap {
+        if (!this.alignedPerformance.ready()) return []
 
+        type TimedVelocity = {
+            qstamp: number,
+            velocity: number | undefined
+        }
+
+        console.log('all notes', this.alignedPerformance.score?.allNotes())
+
+        const performedVelocities = this.alignedPerformance.score?.allNotes()
+            .filter((note: Note) => note.part === partNumber)
+            .map((note: Note): TimedVelocity => {
+                return {
+                    qstamp: note.qstamp,
+                    velocity: this.alignedPerformance.performedNoteAtId(note.id)?.velocity
+                }
+            })
+        console.log('performed notes', performedVelocities)
+        if (!performedVelocities) return []
+
+        // find trends
+        const dynamics = performedVelocities.reduce((acc, curr, index, arr) => {
+            if (!curr.velocity) return acc
+
+            acc.push({
+                '@': {
+                    date: 720 * curr.qstamp,
+                    volume: curr.velocity
+                }
+            })
+            return acc
+        }, new Array<DynamicsElement>())
+
+        return dynamics
     }
 
     exportRubatoMap(partNumber: number) {
 
     }
     exportAsynchronyMap(partNumber: number) {
-
+        // get all places with more than one note per qstamp
     }
 
     exportMPM(performanceName: string, tempoReference: number, curvatureReference: number) {
@@ -200,7 +251,7 @@ export class Interpolation {
                             "midi.port": "0"
                         },
                         dated: {
-                            dynamicsMap: [],
+                            dynamicsMap: this.exportDynamicsMap(1),
                             asynchronyMap: []
                         }
                     }, {
@@ -212,7 +263,7 @@ export class Interpolation {
                         },
                         dated: {
                             dynamicsMap: {
-                                dynamics: 0
+                                dynamics: this.exportDynamicsMap(2)
                             }
                         }
                     }]

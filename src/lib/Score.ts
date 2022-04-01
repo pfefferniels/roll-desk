@@ -18,15 +18,16 @@ export class Score {
     constructor(scoreEncoding: string) {
         console.log('new score object created using Verovio version', vrvToolkit.getVersion())
 
-        // TODO make sure that all relevant elements do have a xml:id
-        this.scoreDOM = new DOMParser().parseFromString(scoreEncoding, 'text/xml')
         vrvToolkit.loadData(scoreEncoding)
+        // using getMEI() here since it adds `xml:id` to all elements
+        this.scoreDOM = new DOMParser().parseFromString(vrvToolkit.getMEI(), 'text/xml')
         this.timemap = vrvToolkit.renderToTimemap()
-        this.notes = Score.parseFromTimemap(this.timemap)
+        this.notes = this.getNotesFromTimemap()
     }
 
     // transform timemap to notes array
-    private static parseFromTimemap(timemap: any[]): Note[] {
+    private getNotesFromTimemap(): Note[] {
+        const timemap = this.timemap
         let result: Note[] = []
         let index = 0
         for (const event of timemap) {
@@ -34,13 +35,15 @@ export class Score {
             for (const on of event.on) {
                 const midiValues = vrvToolkit.getMIDIValuesForElement(on)
                 const offTime = timemap.find((event: any) => event.off && event.off.includes(on)).qstamp || 0
+                const staff = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('staff') || null
+                if (!staff) continue
                 result.push({
                     index: index, 
                     id: on,
                     qstamp: event.qstamp, 
                     pitch: midiValues.pitch,
                     duration: offTime - event.qstamp,
-                    part: 0      // TODO
+                    part: Number(staff.getAttribute('n'))
                 })
                 index += 1
             }
