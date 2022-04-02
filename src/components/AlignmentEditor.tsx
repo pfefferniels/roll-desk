@@ -82,7 +82,7 @@ export default function AlignmentEditor() {
           </Paper>
         )}
 
-        <div id="scoreDisplay" ref={scoreRef}/>
+        <div className="scoreDisplay" ref={scoreRef}/>
       </div>
   )
 }

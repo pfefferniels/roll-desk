@@ -103,11 +103,11 @@ export class Score {
     }
 
     public notesAtTime(qstamp: number): Note[] {
-        return this.notes.filter((note: Note) => note.qstamp === qstamp)
+        return this.allNotes().filter((note: Note) => note.qstamp === qstamp)
     }
 
     public at(id: string): Note | undefined {
         //return this.notes.find(note => note.index === index)!
-        return this.notes.find((value: Note) => value.id === id)
+        return this.allNotes().find((value: Note) => value.id === id)
     }
 }
