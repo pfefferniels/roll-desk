@@ -67,7 +67,7 @@ function App() {
 
         <SpeedDial  
           ariaLabel="modify workspace"  
-          sx={{ position: 'absolute', bottom: 16, right: 16 }}
+          sx={{ position: 'fixed', bottom: 16, right: 16 }}
           icon={<SpeedDialIcon />}
         >
           {actions.map((action) => (

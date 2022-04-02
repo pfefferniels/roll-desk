@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import GlobalContext from "./GlobalContext"
-import { Box, Slider, Typography } from "@mui/material"
+import { Box, Button, Paper, Slider, Typography } from "@mui/material"
 import { AlignmentPair } from "sequence-align/src/types"
 
 export default function AlignmentEditor() {
@@ -55,7 +55,7 @@ export default function AlignmentEditor() {
   return (
       <div>
         {alignedPerformance.ready() && (
-          <Box sx={{ width: 300 }}>
+          <Paper style={{position: 'fixed', padding: '0.5rem'}}>
             <Typography gutterBottom>Penalty for opening a new gap</Typography>
             <Slider
               getAriaLabel={() => 'gap open score'}
@@ -77,7 +77,9 @@ export default function AlignmentEditor() {
               max={0}
               marks={true}
             />
-          </Box>
+
+            <Button variant='outlined'>Export MEI</Button>
+          </Paper>
         )}
 
         <div id="scoreDisplay" ref={scoreRef}/>

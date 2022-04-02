@@ -46,23 +46,11 @@ type Tempo = {
     'beatLength': number
 }
 
-type TempoElement = {
-    "@": Tempo
-}
-
-type TempoMap = TempoElement[]
-
 type Dynamics = {
     date: number,
     volume: number | string,
     'transition.to'?: number
 }
-
-type DynamicsElement = {
-    '@': Dynamics
-}
-
-type DynamicsMap = DynamicsElement[]
 
 export class Interpolation {
     alignedPerformance: AlignedPerformance
@@ -74,10 +62,10 @@ export class Interpolation {
     }
 
     // calculates global tempo map
-    exportTempoMap(tempoReference = 4, curvatureReference = 0.25): TempoMap {
+    exportTempoMap(tempoReference = 4, curvatureReference = 0.25): Tempo[] {
         if (!this.alignedPerformance.ready()) return []
 
-        const tempoMap: TempoMap = []
+        const tempoMap: Tempo[] = []
 
         const allDownbeats = this.alignedPerformance.score!.allDownbeats() 
         const onsets = allDownbeats.map((downbeatQstamp: number): number => {
@@ -163,10 +151,7 @@ export class Interpolation {
                     'meanTempoAt': meanTempoAt,
                     'beatLength': (frameEnd-frameBegin)*720
                 }
-                const tempoElement: TempoElement = {
-                    "@": tempoAttributes
-                }
-                tempoMap.push(tempoElement)
+                tempoMap.push(tempoAttributes)
 
                 // (4) neuen Trend setzen
                 trend.begin = onsets[i]
@@ -178,7 +163,7 @@ export class Interpolation {
         return tempoMap
     }
 
-    exportDynamicsMap(partNumber: number): DynamicsMap {
+    exportDynamicsMap(partNumber: number): Dynamics[] {
         if (!this.alignedPerformance.ready()) return []
 
         type TimedVelocity = {
@@ -186,31 +171,44 @@ export class Interpolation {
             velocity: number | undefined
         }
 
-        console.log('all notes', this.alignedPerformance.score?.allNotes())
+        const performedVelocities =
+            this.alignedPerformance.score?.allNotes()
+                .filter((note: Note) => note.part === partNumber)
+                .map((note: Note): TimedVelocity => {
+                    return {
+                        qstamp: note.qstamp,
+                        velocity: this.alignedPerformance.performedNoteAtId(note.id)?.velocity
+                    }
+                })
 
-        const performedVelocities = this.alignedPerformance.score?.allNotes()
-            .filter((note: Note) => note.part === partNumber)
-            .map((note: Note): TimedVelocity => {
-                return {
-                    qstamp: note.qstamp,
-                    velocity: this.alignedPerformance.performedNoteAtId(note.id)?.velocity
-                }
-            })
-        console.log('performed notes', performedVelocities)
         if (!performedVelocities) return []
 
         // find trends
         const dynamics = performedVelocities.reduce((acc, curr, index, arr) => {
             if (!curr.velocity) return acc
 
+            // avoid doublettes
+            if (acc[acc.length-1] && curr.velocity === acc[acc.length-1].volume) return acc
+
+            // find trends
+            const first = acc[acc.length-2]
+            const second = acc[acc.length-1]
+            if (first && second) {
+                if ((first.volume < second.volume && second.volume < curr.velocity) || // crescendo trend
+                    (first.volume > second.volume && second.volume > curr.velocity)) { // or decrescendo trend
+                    // remove middle element (last in acc array)
+                    // and insert a transitionTo in the one before
+                    acc.pop()
+                    first["transition.to"] = curr.velocity
+                }
+            }
+
             acc.push({
-                '@': {
                     date: 720 * curr.qstamp,
                     volume: curr.velocity
-                }
-            })
+                })
             return acc
-        }, new Array<DynamicsElement>())
+        }, new Array<Dynamics>())
 
         return dynamics
     }
@@ -224,7 +222,6 @@ export class Interpolation {
 
     exportMPM(performanceName: string, tempoReference: number, curvatureReference: number) {
         return {
-            mpm: {
                 "@": {
                     xmlns: "http://www.cemfi.de/mpm/ns/1.0"
                 },
@@ -236,7 +233,9 @@ export class Interpolation {
                     global: {
                         dated: {
                             tempoMap: {
-                                tempo: this.exportTempoMap(tempoReference, curvatureReference),
+                                tempo: this.exportTempoMap(tempoReference, curvatureReference).map((tempo: Tempo) => {
+                                    return { '@': tempo }
+                                }),
                             },
                             rubatoMap: {
                                 rubato: []
@@ -251,7 +250,9 @@ export class Interpolation {
                             "midi.port": "0"
                         },
                         dated: {
-                            dynamicsMap: this.exportDynamicsMap(1),
+                            dynamicsMap: this.exportDynamicsMap(1).map((dynamics: Dynamics) => {
+                                return { '@': dynamics }
+                            }),
                             asynchronyMap: []
                         }
                     }, {
@@ -263,11 +264,12 @@ export class Interpolation {
                         },
                         dated: {
                             dynamicsMap: {
-                                dynamics: this.exportDynamicsMap(2)
+                            dynamicsMap: this.exportDynamicsMap(2).map((dynamics: Dynamics) => {
+                                return { '@': dynamics }
+                            }),
                             }
                         }
                     }]
-                }
             }
         }
     }
