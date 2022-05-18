@@ -28,7 +28,6 @@ export class RawPerformance {
         const realTimePerBeat = 60/BPM
         const ticksPerBeat = this.midi.header.ticksPerBeat
         const tickTime = realTimePerBeat / ticksPerBeat
-        console.log('tickTime=', tickTime)
 
         return this.midi.tracks[0].filter((event: AnyEvent) => {
             return (event as NoteOnEvent).noteNumber !== undefined &&

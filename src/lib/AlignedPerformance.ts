@@ -26,22 +26,52 @@ export class AlignedPerformance {
     gapOpen: number 
     gapExt: number
 
-    private generateSeqNodesFromScore(): NoteNode[] {
+    private generateSeqNodesFromScore(): SeqNode<string>[] {
         const notes = this.score?.allNotes()
+        if (!notes) return []
+
+        type Range = [number, number]
+        function convertRange(value: number, r1: Range, r2: Range) { 
+            return ( value - r1[ 0 ] ) * ( r2[ 1 ] - r2[ 0 ] ) / ( r1[ 1 ] - r1[ 0 ] ) + r2[ 0 ];
+        }
+        const performedNotes = this.rawPerformance?.asNotes()
+        if (!performedNotes) {
+            console.log('need to know how to scale')
+            return []
+        }
+
+        const firstQstamp = notes[0].qstamp
+        const lastQstamp = notes[notes.length-1].qstamp 
+        const scoreRange: Range = [firstQstamp, lastQstamp]
+
+        const firstOnset = performedNotes[0].onsetTime
+        const lastOnset = performedNotes[performedNotes.length-1].onsetTime
+        const performanceRange: Range = [firstOnset, lastOnset]
+
+        return notes.map(n => new SeqNode(n.id, [n.pitch, convertRange(n.qstamp, scoreRange, performanceRange)]))
+        
+        /*const notes = this.score?.allNotes()
         if (!notes) return []
 
         return notes.map((value: Note, index: number, arr: Note[]) => {
             return new NoteNode(value.id, value.pitch)
-        })
+        })*/
     }
 
-    private generateSeqNodesFromPerformance(): NoteNode[] {
+    private generateSeqNodesFromPerformance(): SeqNode<string>[] {
         const midiNotes = this.rawPerformance?.asNotes()
         if (!midiNotes) return []
 
         return midiNotes.map((value: MidiNote, index: number, arr: MidiNote[]) => {
-            return new NoteNode(index.toString(), value.pitch)
+            return new SeqNode(index.toString(), [value.pitch, value.onsetTime])
         })
+
+        /*const midiNotes = this.rawPerformance?.asNotes()
+        if (!midiNotes) return []
+
+        return midiNotes.map((value: MidiNote, index: number, arr: MidiNote[]) => {
+            return new NoteNode(index.toString(), value.pitch)
+        })*/
     }
 
     constructor(
@@ -59,13 +89,17 @@ export class AlignedPerformance {
     }
 
     private performAlignment() {
+        const compareSeqNodes = (a: SeqNode<string>, b: SeqNode<string>): number => {
+            return a.featureVector[0] - b.featureVector[0]
+        }
         if (this.score && this.rawPerformance) {
             // align pitches of score and performance
-            this.aligner.align(this.generateSeqNodesFromPerformance(), this.generateSeqNodesFromScore(), {
+            const performanceNodes = this.generateSeqNodesFromPerformance().sort(compareSeqNodes)
+            const scoreNodes = this.generateSeqNodesFromScore().sort(compareSeqNodes)
+            this.aligner.align(performanceNodes, scoreNodes, {
                 gapOpen: this.gapOpen, gapExt: this.gapExt
             })
             this.allPairs = this.aligner.retrieveAlignments().paths[0]
-            this.identifyAndCorrectErrorRegions()
         }
     }
 
@@ -89,45 +123,6 @@ export class AlignedPerformance {
 
     public getAllPairs(): AlignmentPair<string>[] {
         return this.allPairs
-    }
-
-    private identifyAndCorrectErrorRegions() {
-        const getPitchPairFor = (index: number): [number, number] => {
-            return [this.rawPerformance?.at(Number(this.allPairs[index][0]))?.pitch || -1,
-                    this.score?.at(this.allPairs[index][1])?.pitch || -1]
-        }
-
-        let start = 0;
-        for (let i=1; i<this.allPairs.length-1; i++) {
-            let prev = getPitchPairFor(i-1)
-            let curr = getPitchPairFor(i)
-            let next = getPitchPairFor(i+1)
-
-            // start
-            if (prev[0] === prev[1] && curr[0] !== curr[1] && next[0] !== next[1]) {
-                start = i
-            }
-            // end
-            else if (prev[0] !== prev[1] && curr[0] !== curr[1] && next[0] === next[1]) {
-                // try to find better matches
-                let slice = this.allPairs.slice(start, i+1) // slice excludes the last element
-                // slice[0] und [1] sortieren nach pitches
-                // identisch? dann neu zuordnen
-
-                for (let j=start; j<i; j++) {
-                    for (let k=0; k<slice.length; k++) {
-                        if (getPitchPairFor(j)[0] === getPitchPairFor(j+k)[1] &&
-                            getPitchPairFor(j)[1] === getPitchPairFor(j+k)[0]) {
-                            console.log(this.allPairs[j], '-', this.allPairs[j+k])
-                            // swap
-                            let tmp = this.allPairs[j][1]
-                            this.allPairs[j][1] = this.allPairs[j+k][1]
-                            this.allPairs[j+k][1] = tmp
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public noteAtId(id: string) {

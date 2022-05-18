@@ -5,22 +5,22 @@ import { AlignmentPair } from "sequence-align/src/types"
 
 export default function AlignmentEditor() {
   const scoreRef = useRef(null)
-  const [gapOpen, setGapOpen] = useState<number>(-5)
-  const [gapExt, setGapExt] = useState<number>(-1)
-  const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
+  const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
 
   const changeGapOpen = (event: Event, newValue: number | number[]) => {
-    setGapOpen(newValue as number)
     alignedPerformance.setGapOpen(newValue as number)
+    triggerUpdate()
   }
 
   const changeGapExt = (event: Event, newValue: number | number[]) => {
-    setGapExt(newValue as number)
-    alignedPerformance.setGapOpen(newValue as number)
+    alignedPerformance.setGapExt(newValue as number)
+    triggerUpdate()
   }
 
   useEffect(() => {
     if (!alignmentReady) return
+
+    console.log('update triggered')
 
     if (scoreRef.current) {
       (scoreRef.current as HTMLElement).innerHTML = alignedPerformance.score!.asSVG()
@@ -28,15 +28,18 @@ export default function AlignmentEditor() {
 
     document.querySelector("svg")?.querySelectorAll("[fill]").forEach((value: Element) => value.removeAttribute("fill"))
     
-    alignedPerformance.getAllPairs().map((pair: AlignmentPair<string>) => {
-      console.log('pair found')
+    alignedPerformance.getAllPairs().map((pair: AlignmentPair<string>, index, arr) => {
       const ref: HTMLElement = scoreRef.current as unknown as HTMLElement || null
       if (ref) {
-          if (pair[1] === '-') return // display insertion mark
+          if (pair[1] === '-') { // insertion
+            //el?.setAttribute('fill', 'blue')
+            return
+          }
+
           const el = ref.querySelector('#' + pair[1])
           if (!el) return
-  
-          if (pair[0] === '-') { // deleted
+
+          if (pair[0] === '-') { // deletion
             el.setAttribute('fill', 'red')
           }
           else {

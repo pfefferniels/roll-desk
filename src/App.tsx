@@ -34,10 +34,12 @@ function App() {
   const [activeTab, setActiveTab] = useState('alignment-editor')
 
   const [alignedPerformance, setAlignedPerformance] = useState(new AlignedPerformance())
-  const [alignmentReady, setAlignmentReady] = useState(false)
+  const [alignmentReady, setAlignmentReady] = useState<number>(0)
 
   const closeUploadDialog = () => setUploadDialogOpen(false)
   const openUploadDialog = () => setUploadDialogOpen(true)
+
+  const triggerUpdate = () => setAlignmentReady(alignmentReady+1)
 
   const actions = [
     { icon: <SaveIcon />, name: 'Save' },
@@ -48,7 +50,8 @@ function App() {
     <div className="App">
       <GlobalContext.Provider value={{
         alignedPerformance, 
-        alignmentReady
+        alignmentReady,
+        triggerUpdate
       }}>
         <Tabs value={activeTab} onChange={(e, nv) => setActiveTab(nv)} aria-label="main tabs">
           <Tab value='alignment-editor' label="Alignment Editor" />
@@ -85,11 +88,11 @@ function App() {
           onClose={closeUploadDialog}
           setScore={(newScore) => {
             alignedPerformance.setScore(newScore)
-            setAlignmentReady(alignedPerformance.ready())
+            triggerUpdate()
           }}
           setPerformance={(newPerformance) => {
             alignedPerformance.setPerformance(newPerformance)
-            setAlignmentReady(alignedPerformance.ready())
+            triggerUpdate()
           }} />
       </GlobalContext.Provider>
     </div>

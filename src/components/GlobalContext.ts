@@ -5,7 +5,8 @@ import { Score } from "../lib/Score";
 
 const GlobalContext = React.createContext({
     alignedPerformance: new AlignedPerformance(),
-    alignmentReady: false
+    alignmentReady: 0,
+    triggerUpdate: () => {}
 })
 
 export default GlobalContext

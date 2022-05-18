@@ -72,8 +72,9 @@ export class Interpolation {
             // always take the first onset as reference 
             // TODO should be controllable with a parameter.
             const firstMidiNote = this.alignedPerformance.performedNotesAtQstamp(downbeatQstamp)[0]
+            if (!firstMidiNote) return 0
             // TODO: what to do, if there's no note but e.g. a rest? estimate it?
-            return firstMidiNote.onsetTime || 0
+            return firstMidiNote.onsetTime
         })
         const bpms = asBPM(onsets)
 
