@@ -1,6 +1,7 @@
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent, SetTempoEvent } from 'midifile-ts';
 
 export type MidiNote = {
+    id: number,
     onsetTime: number,
     pitch: number,
     velocity: number
@@ -16,8 +17,21 @@ export class RawPerformance {
         this.midi = performance
     }
 
+    /**
+     * Returns the first and the last onset time of this performance.
+     * @returns pair of numbers with lower onset and upper onset
+     */
+    public range(): [number, number] {
+        const performedNotes = this.asNotes()
+        const firstOnset = performedNotes[0].onsetTime
+        const lastOnset = performedNotes[performedNotes.length-1].onsetTime
+        return [firstOnset, lastOnset]
+    }
+
     public asNotes(): MidiNote[] {
         if (!this.midi) return []
+
+        //console.log('collecting from', this.midi)
 
         // find time per tick
         const microsecondsPerBeat: number =
@@ -29,11 +43,15 @@ export class RawPerformance {
         const ticksPerBeat = this.midi.header.ticksPerBeat
         const tickTime = realTimePerBeat / ticksPerBeat
 
-        return this.midi.tracks[0].filter((event: AnyEvent) => {
+        const mergedTracks = [...this.midi.tracks].flat()
+        //console.log('mergedTracks=', mergedTracks)
+
+        return mergedTracks.filter((event: AnyEvent) => {
             return (event as NoteOnEvent).noteNumber !== undefined &&
                    !((event as NoteOffEvent).subtype === "noteOff")
         }).reduce((acc, event, currIndex) => {
             const midiNote: MidiNote = {
+                id: currIndex,
                 onsetTime: (acc[currIndex-1]?.onsetTime || 0) + tickTime * event.deltaTime,
                 pitch: (event as NoteOnEvent).noteNumber || 0,
                 velocity: (event as NoteOnEvent).velocity || 0
@@ -43,10 +61,8 @@ export class RawPerformance {
         }, new Array<MidiNote>())
     }
 
-    public at(index: number): MidiNote | null {
-        const note = this.asNotes()[index]
-        if (!note) console.log("Element at index", index, "does not exist")
-        return note || null
+    public at(id: number): MidiNote | undefined {
+        return this.asNotes().find(note => note.id === id)
     }
 }
 

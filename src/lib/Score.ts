@@ -18,6 +18,10 @@ export class Score {
     constructor(scoreEncoding: string) {
         console.log('new score object created using Verovio version', vrvToolkit.getVersion())
 
+        vrvToolkit.setOptions({
+            adjustPageHeight: true,
+            pageHeight: 60000
+        })
         vrvToolkit.loadData(scoreEncoding)
         // using getMEI() here since it adds `xml:id` to all elements
         this.scoreDOM = new DOMParser().parseFromString(vrvToolkit.getMEI(), 'text/xml')
@@ -53,7 +57,8 @@ export class Score {
 
     public asSVG(): string {
         vrvToolkit.setOptions({
-            adjustPageHeight: true
+            adjustPageHeight: true,
+            pageHeight: 60000
         })
         return vrvToolkit.renderToSVG(1)
     }

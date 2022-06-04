@@ -49,6 +49,7 @@ export default function AlignmentEditor() {
             }
             else {
               el.setAttribute('fill', 'green')
+              el.setAttribute('data-alignment', pair[0])
             }
           }
       }

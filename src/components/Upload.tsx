@@ -100,7 +100,7 @@ export default function Upload({open, onClose, setScore, setPerformance}: Upload
                       type='file'
                       id='mei-input'
                       className='mei-file'
-                      accept='.mei,.xml'
+                      accept='.mei,.xml,.krn'
                       onChange={(e) => {
                         uploadMEI(e.target as HTMLInputElement)
                         handleNext()
