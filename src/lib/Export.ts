@@ -122,6 +122,10 @@ export class Interpolation {
                     }
                 }
                 const internalDiff = internalNotes.slice(1).map((note: MidiNote, index: number, arr: MidiNote[]) => {
+                    if (!arr[i-1]) {
+                        console.log('something went wrong')
+                        return 0
+                    }
                     return note.onsetTime - arr[i-1].onsetTime
                 })
                 const internalBpms = asBPM(internalDiff)
