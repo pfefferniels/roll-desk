@@ -2,8 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react"
 import { Interpolation } from "../lib/Export"
 import GlobalContext from "./GlobalContext"
 import { parse } from "js2xmlparser"
-import { Button, Checkbox, Paper, TextField, Typography } from "@mui/material"
-import { Note } from "../lib/Score"
+import { Button, Paper, TextField, Typography } from "@mui/material"
 
 // TODO this should be a graphical editor ...
 export default function InterpolationEditor() {
@@ -68,7 +67,12 @@ const Dated = (props: {dated: any}) => {
             <h5>dynamics</h5>
             {dated.dynamicsMap && dated.dynamicsMap.dynamics && dated.dynamicsMap.dynamics.map((dynamics: any) => {
                 return (
-                    <div>@{dynamics['@'].date} {dynamics['@'].volume}</div>
+                    <div>
+                        @{dynamics['@'].date}: {dynamics['@'].volume}
+                        {dynamics['@']['transition.to'] && (
+                            <span> → {dynamics['@']['transition.to']}</span>
+                        )}
+                    </div>
                 )
             })}
 
