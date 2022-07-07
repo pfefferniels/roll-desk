@@ -2,7 +2,7 @@ import { MidiNote } from "./Performance"
 import { AlignedPerformance } from "./AlignedPerformance"
 import { Note, Score } from "./Score"
 
-const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => 60/d)
+const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60/d).toFixed(3))
 
 type Point = {
     x: number,
@@ -41,9 +41,9 @@ type Trend = {
 type Tempo = {
     'date': number,
     'bpm': number,
-    'transition.to':number,
-    'meanTempoAt': number
-    'beatLength': number
+    'beatLength': number,
+    'transition.to'?: number,
+    'meanTempoAt'?: number
 }
 
 type Dynamics = {
@@ -65,9 +65,14 @@ export class Interpolation {
     exportTempoMap(tempoReference = 4, curvatureReference = 0.25): Tempo[] {
         if (!this.alignedPerformance.ready()) return []
 
-        const tempoMap: Tempo[] = []
+        const determineAgogicShape = (diff: number) => {
+            if (diff < 0) return AgogicShape.Rit
+            else if (diff > 0) return AgogicShape.Acc
+            else return AgogicShape.Neutral
+        }
 
-        const allDownbeats = this.alignedPerformance.score!.allDownbeats() 
+        const allDownbeats = this.alignedPerformance.score!.allDownbeats()
+        const beatLength = Score.qstampToTstamp(allDownbeats[1] - allDownbeats[0])
         const onsets = allDownbeats.map((downbeatQstamp: number): number => {
             // always take the first onset as reference 
             // TODO should be controllable with a parameter.
@@ -77,6 +82,17 @@ export class Interpolation {
             return firstMidiNote.onsetTime
         })
         const bpms = asBPM(onsets)
+        console.log('bpms=', bpms)
+
+        if (bpms.every(v => v === bpms[0])) {
+            return [{
+                date: 0,
+                bpm: bpms[0],
+                beatLength: beatLength
+            }]
+        }
+
+        const tempoMap: Tempo[] = []
 
         const trend: Trend = {
             begin: onsets[0],
@@ -85,29 +101,32 @@ export class Interpolation {
         }
 
         for (let i=0; i<bpms.length-1; i++) {
-            const currentTrend = bpms[i+1] > bpms[i] ? AgogicShape.Acc : AgogicShape.Rit
-            console.log('currentTrend', currentTrend)
-            if (currentTrend === trend.shape) {
+            const currentShape = determineAgogicShape(bpms[i+1] - bpms[i])
+            console.log('currentShape', currentShape)
+
+            if (currentShape === trend.shape) {
                 // prolong the existing trend
                 console.log('prolonging an existing trend')
                 trend.end = onsets[i+1]
             } else {
-                trend.end = onsets[i]
+                trend.end = onsets[i+1]
+                
+                const frameBegin = this.alignedPerformance.qstampOfOnset(trend.begin)
+                const frameEnd = this.alignedPerformance.qstampOfOnset(trend.end)
+
                 // ein Trend endet –> Kalkulation in Gang setzen, d.h.
 
                 // (1) alle Werte zwischen trend.begin und trend.end
                 //     auf Kurve auftragen
-                console.log('a frame has finished, now doing stuff')
-                const frameBegin = this.alignedPerformance.qstampOfOnset(trend.begin)
-                const frameEnd = this.alignedPerformance.qstampOfOnset(trend.end)
 
                 console.log('there is a trend from', trend.begin, 'to', trend.end)
 
-                if (!frameBegin || !frameEnd) {
+                if (frameBegin === -1 || frameEnd === -1) {
+                    console.log('qstamp of frameBegin or frameEnd could not be determined.')
                     // we failed. set a new trend anyways and try to proceed
                     trend.begin = onsets[i]
                     trend.end = onsets[i+1] 
-                    trend.shape = currentTrend
+                    trend.shape = currentShape
                     continue
                 }
 
@@ -150,18 +169,18 @@ export class Interpolation {
 
                 // (3) Ergebnis in die MPM einfügen
                 const tempoAttributes: Tempo = {
-                    'date': this.alignedPerformance.score!.qstampToTstamp(frameBegin),
+                    'date': Score.qstampToTstamp(frameBegin),
                     'bpm': Math.round(bpms[i]),
                     'transition.to': Math.round(bpms[i+1]),
                     'meanTempoAt': meanTempoAt,
-                    'beatLength': (frameEnd-frameBegin)*720
+                    'beatLength': beatLength
                 }
                 tempoMap.push(tempoAttributes)
 
                 // (4) neuen Trend setzen
-                trend.begin = onsets[i]
-                trend.end = onsets[i+1] 
-                trend.shape = currentTrend
+                trend.begin = onsets[i+1]
+                trend.end = 0
+                trend.shape = AgogicShape.Neutral
             }
         }
 

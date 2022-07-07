@@ -67,7 +67,7 @@ export class Score {
         return this.scoreDOM.querySelectorAll('staffDef').length
     }
 
-    public qstampToTstamp(qstamp: number): number {
+    public static qstampToTstamp(qstamp: number): number {
         return qstamp * 720
     }
 

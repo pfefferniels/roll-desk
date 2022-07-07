@@ -1,4 +1,3 @@
-//import { NeedlemanWunsch, Pair } from "./NeedlemanWunsch"
 import { MidiNote, RawPerformance } from "./Performance"
 import { Note, Score } from "./Score"
 import { SeqNode, Aligner, AlignmentPair, AlignType } from "sequence-align"
@@ -143,19 +142,19 @@ export class AlignedPerformance {
         return !!this.score && !!this.rawPerformance
     }
 
-    public qstampOfOnset(onset: number): number | undefined {
-        if (!this.ready()) return 
+    public qstampOfOnset(onset: number): number {
+        if (!this.ready()) return -1
 
-        const midiIndex = this.rawPerformance!.asNotes().findIndex(note => note.onsetTime === onset)
-        if (midiIndex === -1) return
+        const noteAtOnset = this.rawPerformance!.asNotes().find(note => note.onsetTime === onset)
+        if (!noteAtOnset) return -1
 
         const matchingPair = this.getAllPairs().find((pair: AlignmentPair<string>) => {
-            return pair[0] === midiIndex.toString()
+            return pair[0] === noteAtOnset.id.toString()
         })
-        if (!matchingPair) return
+        if (!matchingPair) return -1
 
         const note = this.score!.at(matchingPair[1])
-        if (!note) return 
+        if (!note) return -1
 
         return note.qstamp
     }
