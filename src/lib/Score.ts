@@ -63,6 +63,10 @@ export class Score {
         return vrvToolkit.renderToSVG(1)
     }
 
+    public countParts(): number {
+        return this.scoreDOM.querySelectorAll('staffDef').length
+    }
+
     public qstampToTstamp(qstamp: number): number {
         return qstamp * 720
     }

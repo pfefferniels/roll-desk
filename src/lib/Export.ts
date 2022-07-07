@@ -226,6 +226,9 @@ export class Interpolation {
     }
 
     exportMPM(performanceName: string, tempoReference: number, curvatureReference: number) {
+        if (!this.alignedPerformance.score) return
+        const nParts = this.alignedPerformance.score.countParts()
+
         return {
                 "@": {
                     xmlns: "http://www.cemfi.de/mpm/ns/1.0"
@@ -247,34 +250,22 @@ export class Interpolation {
                             }
                         }
                     },
-                    part: [{
-                        "@": {
-                            name: "Right hand",
-                            number: "1",
-                            "midi.channel": "0",
-                            "midi.port": "0"
-                        },
-                        dated: {
-                            dynamicsMap: this.exportDynamicsMap(1).map((dynamics: Dynamics) => {
-                                return { '@': dynamics }
-                            }),
-                            asynchronyMap: []
-                        }
-                    }, {
-                        "@": {
-                            name: "Left hand",
-                            number: "2",
-                            "midi.channel": "1",
-                            "midi.port": "0"
-                        },
-                        dated: {
-                            dynamicsMap: {
-                            dynamicsMap: this.exportDynamicsMap(2).map((dynamics: Dynamics) => {
-                                return { '@': dynamics }
-                            }),
+                    part: Array.from(Array(nParts).keys()).map(i => {
+                        return {
+                            "@": {
+                                name: `part${i}`,
+                                number: `${i+1}`,
+                                "midi.channel": `${i}`,
+                                "midi.port": "0"
+                            },
+                            dated: {
+                                dynamicsMap: this.exportDynamicsMap(i+1).map((dynamics: Dynamics) => {
+                                    return { '@': dynamics }
+                                }),
+                                asynchronyMap: []
                             }
                         }
-                    }]
+                    })
             }
         }
     }
