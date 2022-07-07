@@ -4,7 +4,8 @@ export type MidiNote = {
     id: number,
     onsetTime: number,
     pitch: number,
-    velocity: number
+    velocity: number,
+    duration: number
 }
 
 /**
@@ -31,7 +32,8 @@ export class RawPerformance {
     public asNotes(): MidiNote[] {
         if (!this.midi) return []
 
-        //console.log('collecting from', this.midi)
+        const isNoteOn = (event: AnyEvent) => (event as NoteOnEvent).subtype === "noteOn"
+        const isNoteOff = (event: AnyEvent) => (event as NoteOffEvent).subtype === "noteOff"
 
         // find time per tick
         const microsecondsPerBeat: number =
@@ -43,22 +45,36 @@ export class RawPerformance {
         const ticksPerBeat = this.midi.header.ticksPerBeat
         const tickTime = realTimePerBeat / ticksPerBeat
 
-        const mergedTracks = [...this.midi.tracks].flat()
-        //console.log('mergedTracks=', mergedTracks)
+        let result: MidiNote[] = []
+        let currentTime = 0
+        this.midi.tracks.forEach((events: AnyEvent[]) => {
+            events.slice(1).forEach((event: AnyEvent, index: number, array: AnyEvent[]) => {
+                if (isNoteOn(event)) {
+                    const noteOnEvent = event as NoteOnEvent
+                    currentTime += noteOnEvent.deltaTime
 
-        return mergedTracks.filter((event: AnyEvent) => {
-            return (event as NoteOnEvent).noteNumber !== undefined &&
-                   !((event as NoteOffEvent).subtype === "noteOff")
-        }).reduce((acc, event, currIndex) => {
-            const midiNote: MidiNote = {
-                id: currIndex,
-                onsetTime: (acc[currIndex-1]?.onsetTime || 0) + tickTime * event.deltaTime,
-                pitch: (event as NoteOnEvent).noteNumber || 0,
-                velocity: (event as NoteOnEvent).velocity || 0
-            }
-            acc.push(midiNote)
-            return acc
-        }, new Array<MidiNote>())
+                    result.push({
+                        id: index,
+                        onsetTime: tickTime * currentTime,
+                        pitch: noteOnEvent.noteNumber || 0,
+                        velocity: noteOnEvent.velocity || 0,
+                        duration: 0
+                    })
+                }
+                else if (isNoteOff(event)) {
+                    const noteOffEvent = event as NoteOffEvent
+                    currentTime += noteOffEvent.deltaTime
+                    const correspNote = result.slice().reverse().find(note => note.pitch === noteOffEvent.noteNumber)
+                    if (!correspNote) {
+                        console.log('no corresponding noteOn event found for noteOff', noteOffEvent)
+                        return
+                    }
+                    correspNote.duration = (tickTime * currentTime) - correspNote.onsetTime
+                }
+            })
+        })
+
+        return result
     }
 
     public at(id: number): MidiNote | undefined {
