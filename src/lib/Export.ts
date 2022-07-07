@@ -259,9 +259,11 @@ export class Interpolation {
                                 "midi.port": "0"
                             },
                             dated: {
-                                dynamicsMap: this.exportDynamicsMap(i+1).map((dynamics: Dynamics) => {
-                                    return { '@': dynamics }
-                                }),
+                                dynamicsMap: {
+                                    dynamics: this.exportDynamicsMap(i+1).map((dynamics: Dynamics) => {
+                                                return { '@': dynamics }
+                                              }),
+                                    },
                                 asynchronyMap: []
                             }
                         }

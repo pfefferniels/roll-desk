@@ -10,49 +10,20 @@ export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
     const [name, setName] = useState<string>('')
     const [interpolation, setInterpolation] = useState<Interpolation>(new Interpolation(alignedPerformance, false))
-    const scoreRef = useRef(null)
+    const [mpm, setMPM] = useState<any>(null)
 
     useEffect(() => {
         if (!alignmentReady || !alignedPerformance.ready()) return 
 
-        if (scoreRef.current) {
-          (scoreRef.current as HTMLElement).innerHTML = alignedPerformance.score!.asSVG()
-        }
-        setInterpolation(new Interpolation(alignedPerformance, false))
+        const interpolation = new Interpolation(alignedPerformance, false)
+        setInterpolation(interpolation)
+        setMPM(interpolation.exportMPM('test', 0, 0))
     }, [alignmentReady])
-
-    useEffect(() => {
-        if (!alignedPerformance.ready()) return
-
-        const score = document.querySelector("#interpolationScore")
-        if (!score) return
-
-        const tempos = interpolation.exportTempoMap(720, 20)
-        for (const tempo of tempos) {
-            const date = tempo.date / 720
-            const correspondingNoteIds = alignedPerformance.score!.notesAtTime(date).map((note: Note) => note.id)
-            if (!correspondingNoteIds.length) continue
-
-            const el = score.querySelector(`#${correspondingNoteIds[0]}`) as SVGGraphicsElement
-            if (!el) {
-                console.log('no corresponding SVG element found')
-                continue
-            }
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-            text.textContent = tempo.bpm.toString() + (tempo["transition.to"] && '→')
-            text.setAttribute('class', 'tempo-instruction')
-            text.setAttribute('fill', 'red')
-            text.setAttribute('x', el.getBBox().x.toString())
-            text.setAttribute('y', el.getBBox().y.toString())
-            text.setAttribute('font-size', '20rem')
-            if (el.parentNode) el.parentNode.appendChild(text)
-        }
-    }, [interpolation])
 
     return (
         <div>
             {alignedPerformance.ready() && (
-                <Paper style={{position: 'fixed', padding: '0.5rem'}}>
+                <Paper style={{position: 'fixed', padding: '0.5rem', bottom: '1rem'}}>
                     <TextField variant='standard'
                                label='Name of performance'
                                onChange={(e) => {
@@ -70,7 +41,43 @@ export default function InterpolationEditor() {
                 </Paper>
             )}
 
-            <div className="scoreDisplay" id="interpolationScore" ref={scoreRef}/>
+            {mpm && (
+                <div className="mpm">
+                    <h4>global</h4>
+                    <Dated dated={mpm.performance.global.dated} />
+
+                    {mpm.performance.part.map((part: any) => {
+                        return (
+                            <>
+                              <h4>{part['@'].name}</h4>
+                              <Dated dated={part.dated} />
+                            </>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+    )
+}
+
+const Dated = (props: {dated: any}) => {
+    const { dated } = props
+
+    return (
+        <div>
+            <h5>dynamics</h5>
+            {dated.dynamicsMap && dated.dynamicsMap.dynamics && dated.dynamicsMap.dynamics.map((dynamics: any) => {
+                return (
+                    <div>@{dynamics['@'].date} {dynamics['@'].volume}</div>
+                )
+            })}
+
+            <h5>tempo</h5>
+            {dated.tempoMap && dated.tempoMap.tempo && dated.tempoMap.tempo.map((tempo: any) => {
+                return (
+                    <div>@{tempo['@'].date} {tempo['@'].bpm}</div>
+                )
+            })}
         </div>
     )
 }
