@@ -35,6 +35,7 @@ enum AgogicShape {
 type Trend = {
     begin: number,
     end: number, 
+    bpm: number,
     shape: AgogicShape
 }
 
@@ -82,26 +83,32 @@ export class Interpolation {
         return false
     }
 
-    // calculates global tempo map
-    exportTempoMap(tempoReference = 4, curvatureReference = 0.25): Tempo[] {
-        if (!this.alignedPerformance.ready()) return []
+    /**
+     * calculates global tempo map based on whole measures.
+     * @todo evaluate possible use of Douglas-Peucker algorithm
+     * @returns 
+     */
+    exportTempoMap(beatLength = 1): Tempo[] {
+        if (!this.alignedPerformance.ready() || !this.alignedPerformance.score) return []
 
         const determineAgogicShape = (diff: number) => {
-            if (diff < 0) return AgogicShape.Rit
-            else if (diff > 0) return AgogicShape.Acc
-            else return AgogicShape.Neutral
+            if (diff < 0)       return AgogicShape.Rit
+            else if (diff > 0)  return AgogicShape.Acc
+            else                return AgogicShape.Neutral
         }
 
-        const allDownbeats = this.alignedPerformance.score!.allDownbeats()
-        const beatLength = (allDownbeats[1] - allDownbeats[0]) / 4
-        const onsets = allDownbeats.map((downbeatQstamp: number): number => {
-            // always take the first onset as reference 
-            // TODO should be controllable with a parameter.
-            const firstMidiNote = this.alignedPerformance.performedNotesAtQstamp(downbeatQstamp)[0]
-            if (!firstMidiNote) return 0
-            // TODO: what to do, if there's no note but e.g. a rest? estimate it?
-            return firstMidiNote.onsetTime
-        })
+        if (!this.alignedPerformance.score) return []
+
+        // TODO use time signature
+        const onsetNotes = []
+        for (let i=0; i<this.alignedPerformance.score?.getMaxQstamp(); i += beatLength) {
+            // TODO arpeggio?
+            const performedNotes = this.alignedPerformance.performedNotesAtQstamp(i)
+            if (performedNotes && performedNotes[0]) onsetNotes.push(performedNotes[0])
+            else console.log('?', i) // TODO rest?
+        }
+        //const smoothedOnsetNotes = this.douglasPeucker(onsetNotes, 10)
+        const onsets = onsetNotes.map(note => note.onsetTime)
         const bpms = asBPM(onsets)
 
         // constant tempo throughout in the range of the 
@@ -119,29 +126,31 @@ export class Interpolation {
         const trend: Trend = {
             begin: onsets[0],
             end: 0,
+            bpm: bpms[0],
             shape: AgogicShape.Neutral
         }
 
         for (let i=0; i<bpms.length-1; i++) {
             const currentShape = determineAgogicShape(bpms[i+1] - bpms[i])
+            console.log(bpms[i], '-', bpms[i+1], '-> currentShape=', currentShape)
 
             if (currentShape === trend.shape) {
                 // prolong the existing trend
                 console.log('prolonging an existing trend')
-                trend.end = onsets[i+1]
+                trend.end = onsets[i+2]
             } else {
-                // ein Trend endet –> Kalkulation in Gang setzen, d.h.
-
-                trend.end = onsets[i+1]
-                
+                // a trend has finished:
+                // create a new <tempo> element and insert it into <tempoMap>
                 const frameBegin = this.alignedPerformance.qstampOfOnset(trend.begin)
                 const frameEnd = this.alignedPerformance.qstampOfOnset(trend.end)
+
+                console.log('trend from', frameBegin, 'to', frameEnd, '(', trend.bpm, '-', bpms[i], ')')
 
                 if (frameBegin === -1 || frameEnd === -1) {
                     console.log('qstamp of frameBegin or frameEnd could not be determined.')
                     // we failed. set a new trend anyways and try to proceed
                     trend.begin = onsets[i]
-                    trend.end = onsets[i+1] 
+                    trend.end = onsets[i+2]
                     trend.shape = currentShape
                     continue
                 }
@@ -149,42 +158,37 @@ export class Interpolation {
                 // insert result into MPM
                 const tempoAttributes: Tempo = {
                     'date': Score.qstampToTstamp(frameBegin),
-                    'bpm': +bpms[i].toFixed(1),
-                    'beatLength': beatLength
+                    'bpm': +trend.bpm.toFixed(1),
+                    'beatLength': beatLength / 4
                 }
                 
-                // Take values in between trend.begin and trend.end into consideration
+                // Take values in between frameBegin and frameEnd into consideration
+                let notes = this.alignedPerformance.score.notesInRange(frameBegin, frameEnd)
 
-                let notes = this.alignedPerformance.score!.notesInRange(frameBegin, frameEnd)
-
-                // TODO: internal devision is now based on quarter notes (incrementing by 1). Instead,
-                // it should be depending on the current time signature.
                 let internalNotes: MidiNote[] = []
-                for (let i=frameBegin; i<frameEnd; i++) {
-                    const notesAtTime = this.alignedPerformance.performedNotesAtQstamp(frameBegin + i)
+                for (let j=frameBegin; j<frameEnd; j+=beatLength) {
+                    const notesAtTime = this.alignedPerformance.performedNotesAtQstamp(j)
+                    // TODO: arpeggio?
                     if (notesAtTime && notesAtTime[0]) {
                         internalNotes.push(notesAtTime[0])
                     }
                 }
                 const internalBpms = asBPM(internalNotes.map(note => note.onsetTime))
-                console.log('internalBpms:', internalBpms)
 
                 // if there is some internal tempo development going on
                 // transition.to and meanTempoAt need to be calculated.
                 if (!internalBpms.every(bpm => bpm === internalBpms[0])) {
-                    tempoAttributes['transition.to'] = +bpms[i+1].toFixed(1)
+                    tempoAttributes['transition.to'] = +bpms[i].toFixed(1)
                     // depending on the amount of internal points 
                     // use different algorithm
-                    const points = internalBpms.map((bpm, i): Point => ({
-                        x: notes[i].qstamp, 
+                    const points = internalBpms.map((bpm, j): Point => ({
+                        x: notes[j].qstamp, 
                         y: bpm || 0
                     })).filter((point: Point) => point.y !== 0)
 
-                    console.log('points:', points)
-
                     const powFunction = (meanTempoAt: number) => {
                         const bpm = internalBpms[0]
-                        const transitionTo = internalBpms.at(-1)
+                        const transitionTo = bpms[i]
                         if (!transitionTo) throw new Error("transitionTo cannot be calculated")
                         return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
                     }
@@ -192,24 +196,23 @@ export class Interpolation {
                     tempoAttributes.meanTempoAt = findLeastSquare(powFunction, points)
                 }
 
-
                 tempoMap.push(tempoAttributes)
 
-                // (4) neuen Trend setzen
+                // prepare a new trend
                 trend.begin = onsets[i+1]
+                trend.bpm = bpms[i+1]
                 trend.end = 0
-                trend.shape = AgogicShape.Neutral
+                trend.shape = currentShape
             }
         }
 
         // insert the last bpm value without any further
         // ado (transition.to etc. do not make any sense).
         tempoMap.push({
-            date: this.alignedPerformance.tstampOfOnset(onsets[bpms.length-1]),
+            date: this.alignedPerformance.tstampOfOnset(onsets[bpms.length-2]),
             bpm: bpms[bpms.length-1],
-            beatLength: beatLength
+            beatLength: beatLength / 4
         })
-
 
         return tempoMap
     }
@@ -287,7 +290,7 @@ export class Interpolation {
                     global: {
                         dated: {
                             'tempoMap': {
-                                tempo: this.exportTempoMap(tempoReference, curvatureReference).map((tempo: Tempo) => {
+                                tempo: this.exportTempoMap().map((tempo: Tempo) => {
                                     return { '@': tempo }
                                 }),
                             },
