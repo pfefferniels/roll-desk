@@ -72,7 +72,7 @@ export class Interpolation {
         }
 
         const allDownbeats = this.alignedPerformance.score!.allDownbeats()
-        const beatLength = Score.qstampToTstamp(allDownbeats[1] - allDownbeats[0])
+        const beatLength = (allDownbeats[1] - allDownbeats[0]) / 4
         const onsets = allDownbeats.map((downbeatQstamp: number): number => {
             // always take the first onset as reference 
             // TODO should be controllable with a parameter.
@@ -82,8 +82,9 @@ export class Interpolation {
             return firstMidiNote.onsetTime
         })
         const bpms = asBPM(onsets)
-        console.log('bpms=', bpms)
 
+        // TODO constant tempo throughout in the range of the 
+        // expected imprecision?
         if (bpms.every(v => v === bpms[0])) {
             return [{
                 date: 0,
@@ -167,11 +168,11 @@ export class Interpolation {
 
                 const meanTempoAt = findLeastSquare(powFunction, points)
 
-                // (3) Ergebnis in die MPM einfügen
+                // (3) insert result into MPM
                 const tempoAttributes: Tempo = {
                     'date': Score.qstampToTstamp(frameBegin),
-                    'bpm': Math.round(bpms[i]),
-                    'transition.to': Math.round(bpms[i+1]),
+                    'bpm': +bpms[i].toFixed(1),
+                    'transition.to': +bpms[i+1].toFixed(1),
                     'meanTempoAt': meanTempoAt,
                     'beatLength': beatLength
                 }
@@ -183,6 +184,15 @@ export class Interpolation {
                 trend.shape = AgogicShape.Neutral
             }
         }
+
+        // insert the last bpm value without any further
+        // ado (transition.to etc. do not make any sense).
+        tempoMap.push({
+            date: this.alignedPerformance.tstampOfOnset(onsets[bpms.length-1]),
+            bpm: bpms[bpms.length-1],
+            beatLength: beatLength
+        })
+
 
         return tempoMap
     }

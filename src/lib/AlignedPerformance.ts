@@ -159,16 +159,7 @@ export class AlignedPerformance {
         return note.qstamp
     }
 
-    // Helper functions
-    /*private midiIndexForScoreIndex(scoreIndex: number) {
-        const correspRows = this.alignments.filter(a => a.scoreIndex === scoreIndex)
-        if (!correspRows.length) return -1
-        return correspRows[0]['MIDI_INDEX']
-    }*/
-
-    private midiIndicesByQstamp(qstamp: number) {
-        //const notes = this.score.notesAtTime(qstamp)
-        //const midiIndices = notes.map(note => this.alignment.midiIndexOfScoreIndex(note.index))
-        //return midiIndices
+    public tstampOfOnset(onset: number): number {
+        return Score.qstampToTstamp(this.qstampOfOnset(onset))
     }
 }
