@@ -47,10 +47,10 @@ export default function InterpolationEditor() {
 
                     {mpm.performance.part.map((part: any) => {
                         return (
-                            <>
+                            <div key={`part_${part['@'].name}`}>
                               <h4>{part['@'].name}</h4>
                               <Dated dated={part.dated} />
-                            </>
+                            </div>
                         )
                     })}
                 </div>
@@ -67,7 +67,7 @@ const Dated = (props: {dated: any}) => {
             <h5>dynamics</h5>
             {dated.dynamicsMap && dated.dynamicsMap.dynamics && dated.dynamicsMap.dynamics.map((dynamics: any) => {
                 return (
-                    <div>
+                    <div key={`dynamics_${dynamics['@'].date}`}>
                         @{dynamics['@'].date}: {dynamics['@'].volume}
                         {dynamics['@']['transition.to'] && (
                             <span> → {dynamics['@']['transition.to']}</span>
@@ -79,7 +79,7 @@ const Dated = (props: {dated: any}) => {
             <h5>tempo</h5>
             {dated.tempoMap && dated.tempoMap.tempo && dated.tempoMap.tempo.map((tempo: any) => {
                 return (
-                    <div>@{tempo['@'].date} {tempo['@'].bpm}</div>
+                    <div key={`tempo_${tempo['@'].date}`}>@{tempo['@'].date} {tempo['@'].bpm}</div>
                 )
             })}
         </div>

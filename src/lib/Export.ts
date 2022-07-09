@@ -55,10 +55,31 @@ type Dynamics = {
 export class Interpolation {
     alignedPerformance: AlignedPerformance
     preferArpeggio: boolean = false
+    timingImprecision: number = 0
 
     constructor(alignedPerformance: AlignedPerformance, preferArpeggio: boolean) {
         this.alignedPerformance = alignedPerformance
         this.preferArpeggio = preferArpeggio
+
+        // Welte-Mignon piano rolls e.g. have an avarage imprecision range of 10ms.
+        this.timingImprecision = 10
+    }
+
+    exportImprecisionMapTiming(): any {
+        return {
+            // Welte-Mignon piano rolls have an avarage imprecision range of 10ms.
+                'distribution.uniform': {
+                    '@': {
+                        'date': 0.0,
+                        'limit.lower': -0.5 * this.timingImprecision,
+                        'limit.upper': 0.5 * this.timingImprecision
+                    }
+            }
+        }
+    }
+
+    private isInTimingImprecisionRangeOf(num: number, ref: number): boolean {
+        return false
     }
 
     // calculates global tempo map
@@ -83,9 +104,9 @@ export class Interpolation {
         })
         const bpms = asBPM(onsets)
 
-        // TODO constant tempo throughout in the range of the 
-        // expected imprecision?
-        if (bpms.every(v => v === bpms[0])) {
+        // constant tempo throughout in the range of the 
+        // expected imprecision? (TODO: this needs to be calculated accumulatively!)
+        if (bpms.every(v => this.isInTimingImprecisionRangeOf(v, bpms[0]))) {
             return [{
                 date: 0,
                 bpm: bpms[0],
@@ -103,24 +124,18 @@ export class Interpolation {
 
         for (let i=0; i<bpms.length-1; i++) {
             const currentShape = determineAgogicShape(bpms[i+1] - bpms[i])
-            console.log('currentShape', currentShape)
 
             if (currentShape === trend.shape) {
                 // prolong the existing trend
                 console.log('prolonging an existing trend')
                 trend.end = onsets[i+1]
             } else {
+                // ein Trend endet –> Kalkulation in Gang setzen, d.h.
+
                 trend.end = onsets[i+1]
                 
                 const frameBegin = this.alignedPerformance.qstampOfOnset(trend.begin)
                 const frameEnd = this.alignedPerformance.qstampOfOnset(trend.end)
-
-                // ein Trend endet –> Kalkulation in Gang setzen, d.h.
-
-                // (1) alle Werte zwischen trend.begin und trend.end
-                //     auf Kurve auftragen
-
-                console.log('there is a trend from', trend.begin, 'to', trend.end)
 
                 if (frameBegin === -1 || frameEnd === -1) {
                     console.log('qstamp of frameBegin or frameEnd could not be determined.')
@@ -131,51 +146,53 @@ export class Interpolation {
                     continue
                 }
 
+                // insert result into MPM
+                const tempoAttributes: Tempo = {
+                    'date': Score.qstampToTstamp(frameBegin),
+                    'bpm': +bpms[i].toFixed(1),
+                    'beatLength': beatLength
+                }
+                
+                // Take values in between trend.begin and trend.end into consideration
+
                 let notes = this.alignedPerformance.score!.notesInRange(frameBegin, frameEnd)
 
-                // this doesn't work – we need to find an equally spaced internal division
+                // TODO: internal devision is now based on quarter notes (incrementing by 1). Instead,
+                // it should be depending on the current time signature.
                 let internalNotes: MidiNote[] = []
-                for (let i=frameBegin; i<frameEnd; i+=0.25) {
+                for (let i=frameBegin; i<frameEnd; i++) {
                     const notesAtTime = this.alignedPerformance.performedNotesAtQstamp(frameBegin + i)
                     if (notesAtTime && notesAtTime[0]) {
                         internalNotes.push(notesAtTime[0])
                     }
                 }
-                const internalDiff = internalNotes.slice(1).map((note: MidiNote, index: number, arr: MidiNote[]) => {
-                    if (!arr[i-1]) {
-                        console.log('something went wrong')
-                        return 0
+                const internalBpms = asBPM(internalNotes.map(note => note.onsetTime))
+                console.log('internalBpms:', internalBpms)
+
+                // if there is some internal tempo development going on
+                // transition.to and meanTempoAt need to be calculated.
+                if (!internalBpms.every(bpm => bpm === internalBpms[0])) {
+                    tempoAttributes['transition.to'] = +bpms[i+1].toFixed(1)
+                    // depending on the amount of internal points 
+                    // use different algorithm
+                    const points = internalBpms.map((bpm, i): Point => ({
+                        x: notes[i].qstamp, 
+                        y: bpm || 0
+                    })).filter((point: Point) => point.y !== 0)
+
+                    console.log('points:', points)
+
+                    const powFunction = (meanTempoAt: number) => {
+                        const bpm = internalBpms[0]
+                        const transitionTo = internalBpms.at(-1)
+                        if (!transitionTo) throw new Error("transitionTo cannot be calculated")
+                        return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
                     }
-                    return note.onsetTime - arr[i-1].onsetTime
-                })
-                const internalBpms = asBPM(internalDiff)
-                
-                // depending on the amount of internal points 
-                // use different algorithm
-                const points = internalBpms.map((bpm, i): Point => ({
-                    x: notes[i].qstamp, 
-                    y: bpm || 0
-                })).filter((point: Point) => point.y !== 0)
 
-                console.log('points:', points)
-
-                const powFunction = (meanTempoAt: number) => {
-                    const bpm = internalBpms[0]
-                    const transitionTo = internalBpms.at(-1)
-                    if (!transitionTo) throw new Error("transitionTo cannot be calculated")
-                    return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
+                    tempoAttributes.meanTempoAt = findLeastSquare(powFunction, points)
                 }
 
-                const meanTempoAt = findLeastSquare(powFunction, points)
 
-                // (3) insert result into MPM
-                const tempoAttributes: Tempo = {
-                    'date': Score.qstampToTstamp(frameBegin),
-                    'bpm': +bpms[i].toFixed(1),
-                    'transition.to': +bpms[i+1].toFixed(1),
-                    'meanTempoAt': meanTempoAt,
-                    'beatLength': beatLength
-                }
                 tempoMap.push(tempoAttributes)
 
                 // (4) neuen Trend setzen
@@ -269,14 +286,15 @@ export class Interpolation {
                     },
                     global: {
                         dated: {
-                            tempoMap: {
+                            'tempoMap': {
                                 tempo: this.exportTempoMap(tempoReference, curvatureReference).map((tempo: Tempo) => {
                                     return { '@': tempo }
                                 }),
                             },
-                            rubatoMap: {
+                            'rubatoMap': {
                                 rubato: []
-                            }
+                            },
+                            'imprecisionMap.timing': this.exportImprecisionMapTiming()
                         }
                     },
                     part: Array.from(Array(nParts).keys()).map(i => {
