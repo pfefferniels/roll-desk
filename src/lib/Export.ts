@@ -84,8 +84,112 @@ export class Interpolation {
     }
 
     /**
-     * calculates global tempo map based on whole measures.
-     * @todo evaluate possible use of Douglas-Peucker algorithm
+     * Exports tempo map based on the Douglas-Peucker algorithm.
+     * 
+     * @param beatLength The length of a beat. Should be derived from time signature.
+     * @returns array of <tempo> elements
+     */
+    public exportTempoMap_dp(beatLength = 1): Tempo[] {
+        if (!this.alignedPerformance.score) return []
+        let tempoMap: Tempo[] = []
+    
+        const generatepPowFunction = (frameBegin: number, frameEnd: number, bpm: number, transitionTo: number, meanTempoAt: number) => {
+            return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
+        }
+    
+        type InterpolationPoint = {
+            qstamp: number, 
+            bpm: number
+        }
+        
+        function douglasPeucker(points: InterpolationPoint[], epsilon: number) {
+            const start = points[0]
+            const end = points[points.length-1]
+            const meanTempo = (start.bpm + end.bpm)/2
+
+            console.log('douglasPeucker [', start.qstamp, '-', end.qstamp, '], [', start.bpm, '-', end.bpm, ']')
+            console.log('searching in points', points, 'for bpm closest to meanTempo', meanTempo)
+    
+            // search for bpm value closest to meanTempo
+            let optimal = Number.MAX_SAFE_INTEGER
+            let meanTempoAtQstamp = 0;
+            for (let i=1; i<points.length-1; i++) {
+                const distance = Math.abs(points[i].bpm - meanTempo)
+                if (distance < optimal) {
+                    optimal = distance
+                    meanTempoAtQstamp = points[i].qstamp;
+                }
+            }
+            console.log('optimal distance=', optimal, 'meanTempoAtQstamp=', meanTempoAtQstamp)
+            const fullDistance = end.qstamp - start.qstamp
+
+            if (fullDistance > beatLength) {
+                const meanTempoAt = (meanTempoAtQstamp - start.qstamp) / fullDistance 
+                console.log('meanTempoAt=', meanTempoAt)
+            
+                // create a new tempo curve
+                const powFunction = generatepPowFunction(start.qstamp, end.qstamp, start.bpm, end.bpm, meanTempoAt)
+            
+                // find point of maximum distance from this curve
+                let dmax = 0
+                let index = 0
+                for (let i=1; i<points.length-1; i++) {
+                    const d = Math.abs(points[i].bpm - powFunction(points[i].qstamp))
+                    console.log('d=', points[i].bpm, '-', powFunction(points[i].qstamp))
+                    if (d > dmax) {
+                        index = i 
+                        dmax = d
+                    }
+                }
+            
+                if (dmax > epsilon) {
+                    douglasPeucker(points.slice(0, index+1), epsilon)
+                    douglasPeucker(points.slice(index), epsilon)
+                }
+                else {
+                    tempoMap.push({
+                        'date': Score.qstampToTstamp(start.qstamp),
+                        'bpm': start.bpm,
+                        'transition.to': end.bpm,
+                        'beatLength': beatLength / 4,
+                        'meanTempoAt': +meanTempoAt.toFixed(2)
+                    })
+                }
+            }
+            else {
+                tempoMap.push({
+                    'date': Score.qstampToTstamp(start.qstamp),
+                    'bpm': start.bpm,
+                    'beatLength': beatLength / 4
+                })
+            }
+        }
+
+        let onsets: number[] = []
+        let qstamps: number[] = []
+        for (let i=0; i<this.alignedPerformance.score.getMaxQstamp(); i += beatLength) {
+            qstamps.push(i)
+            // TODO arpeggio?
+            const performedNotes = this.alignedPerformance.performedNotesAtQstamp(i)
+            if (performedNotes && performedNotes[0]) onsets.push(performedNotes[0].onsetTime)
+            else console.log('?', i) // TODO rest?
+        }
+        const bpms = asBPM(onsets)
+
+        const points: InterpolationPoint[] = bpms.map((bpm, i) => ({
+            qstamp: qstamps[i], 
+            bpm: bpm
+        }))
+
+        douglasPeucker(points, 10)
+        
+        return tempoMap
+    }
+
+    /**
+     * export tempo map based on a naive approach of prolonged trends.
+     * 
+     * @param beatLength ideally deduced from time signature.
      * @returns 
      */
     exportTempoMap(beatLength = 1): Tempo[] {
@@ -107,7 +211,6 @@ export class Interpolation {
             if (performedNotes && performedNotes[0]) onsetNotes.push(performedNotes[0])
             else console.log('?', i) // TODO rest?
         }
-        //const smoothedOnsetNotes = this.douglasPeucker(onsetNotes, 10)
         const onsets = onsetNotes.map(note => note.onsetTime)
         const bpms = asBPM(onsets)
 
@@ -290,7 +393,7 @@ export class Interpolation {
                     global: {
                         dated: {
                             'tempoMap': {
-                                tempo: this.exportTempoMap().map((tempo: Tempo) => {
+                                tempo: this.exportTempoMap_dp().map((tempo: Tempo) => {
                                     return { '@': tempo }
                                 }),
                             },
