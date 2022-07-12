@@ -7,7 +7,8 @@ import { Button, Paper, TextField, Typography } from "@mui/material"
 // TODO this should be a graphical editor ...
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
-    const [name, setName] = useState<string>('')
+    const [name, setName] = useState<string>('test')
+    const [beatLength, setBeatLength] = useState<number>(1)
     const [interpolation, setInterpolation] = useState<Interpolation>(new Interpolation(alignedPerformance, false))
     const [mpm, setMPM] = useState<any>(null)
 
@@ -16,22 +17,31 @@ export default function InterpolationEditor() {
 
         const interpolation = new Interpolation(alignedPerformance, false)
         setInterpolation(interpolation)
-        setMPM(interpolation.exportMPM('test', 0, 0))
-    }, [alignmentReady])
+        setMPM(interpolation.exportMPM(name, beatLength, 0))
+    }, [alignmentReady, name, beatLength])
 
     return (
         <div>
             {alignedPerformance.ready() && (
-                <Paper style={{position: 'fixed', padding: '0.5rem', bottom: '1rem'}}>
+                <Paper style={{position: 'fixed', padding: '0.5rem', top: '1rem', right: '1rem'}}>
                     <TextField variant='standard'
+                               value={name}
                                label='Name of performance'
                                onChange={(e) => {
                                    setName(e.target.value)
                                }}/>
                     <Typography gutterBottom>Settings</Typography>
+                    <TextField variant='standard'
+                               value={beatLength}
+                               label="Beat length"
+                               type="number"
+                               onChange={(e) => {
+                                   console.log('e.target.value=', e.target.value)
+                                   setBeatLength(+e.target.value)
+                               }} />
                     <Button variant='outlined' onClick={() => {
                             const element = document.createElement("a")
-                            const file = new Blob([parse('mpm', interpolation.exportMPM(name, 0, 0))], {type: 'text/xml'});
+                            const file = new Blob([parse('mpm', interpolation.exportMPM(name, beatLength, 0))], {type: 'text/xml'});
                             element.href = URL.createObjectURL(file)
                             element.download = `${name.trim()}.mpm`
                             element.click()
@@ -42,6 +52,7 @@ export default function InterpolationEditor() {
 
             {mpm && (
                 <div className="mpm">
+                    <p>settings: {beatLength}</p>
                     <h4>global</h4>
                     <Dated dated={mpm.performance.global.dated} />
 

@@ -92,7 +92,7 @@ export class Interpolation {
     public exportTempoMap_dp(beatLength = 1): Tempo[] {
         if (!this.alignedPerformance.score) return []
         let tempoMap: Tempo[] = []
-    
+
         const generatepPowFunction = (frameBegin: number, frameEnd: number, bpm: number, transitionTo: number, meanTempoAt: number) => {
             return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
         }
@@ -103,6 +103,11 @@ export class Interpolation {
         }
         
         function douglasPeucker(points: InterpolationPoint[], epsilon: number) {
+            if (!points.length) {
+                console.log('not enough notes present')
+                return
+            }
+
             const start = points[0]
             const end = points[points.length-1]
             const meanTempo = (start.bpm + end.bpm)/2
@@ -393,7 +398,7 @@ export class Interpolation {
                     global: {
                         dated: {
                             'tempoMap': {
-                                tempo: this.exportTempoMap_dp().map((tempo: Tempo) => {
+                                tempo: this.exportTempoMap_dp(tempoReference).map((tempo: Tempo) => {
                                     return { '@': tempo }
                                 }),
                             },
