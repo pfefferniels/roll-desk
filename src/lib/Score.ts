@@ -41,6 +41,10 @@ export class Score {
                 const offTime = timemap.find((event: any) => event.off && event.off.includes(on)).qstamp || 0
                 const staff = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('staff') || null
                 if (!staff) continue
+                // ignore the note if its tied
+                if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
+                    continue
+                }
                 result.push({
                     index: index, 
                     id: on,
