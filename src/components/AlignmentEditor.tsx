@@ -3,6 +3,11 @@ import GlobalContext from "./GlobalContext"
 import { Box, Button, Paper, Slider, Typography } from "@mui/material"
 import { AlignmentPair } from "sequence-align/src/types"
 
+function midiPitchToNoteName(midiPitch: number): string {
+  const notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
+  return `${notes[midiPitch % 12]}${Math.floor(midiPitch/12)-1}`
+}
+
 export default function AlignmentEditor() {
   const scoreRef = useRef(null)
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
@@ -31,6 +36,7 @@ export default function AlignmentEditor() {
     alignedPerformance.getAllPairs().map((pair: AlignmentPair<string>, index, arr) => {
       const ref: HTMLElement = scoreRef.current as unknown as HTMLElement || null
       if (ref) {
+        console.log(pair[0], '->', pair[1])
           if (pair[1] === '-') { // insertion
             //el?.setAttribute('fill', 'blue')
             return
@@ -87,6 +93,25 @@ export default function AlignmentEditor() {
         )}
 
         <div className="scoreDisplay" ref={scoreRef}/>
+        <div className="midiDisplay" style={{display: 'block'}}>
+          { alignedPerformance.rawPerformance &&
+            alignedPerformance.rawPerformance.asNotes().map((note => (
+              <div key={`note_${note.id}`} style={{float: 'left', margin: '0.2rem', border: '1px solid black'}}>
+                <div>id: {note.id}</div>
+                <div>onset time: {note.onsetTime}</div>
+                <div>pitch: {midiPitchToNoteName(note.pitch)}</div>
+              </div>
+            )))
+          }
+        </div>
+
+        <div className='alignmentDisplay' style={{display: 'block', width: '50vw'}}>
+          {alignmentReady && 
+          alignedPerformance.getAllPairs().map((pair => (
+            <div>{pair[0]} – {pair[1]}</div>
+          )))
+          }
+        </div>
       </div>
   )
 }
