@@ -1,6 +1,39 @@
 import { MidiNote, RawPerformance } from "./Performance"
 import { Note, Score } from "./Score"
-import { SeqNode, Aligner, AlignmentPair, AlignType } from "sequence-align"
+import { SeqNode, Aligner, AlignmentPair, AlignType, GenericSeqNode } from "sequence-align"
+
+/**
+ * Note in a sequence
+ * 
+ * @member label id of the note
+ * @member featureVector feature vector: [pitch, onsetTime]
+ */
+ class NoteNode extends GenericSeqNode<string> {
+    featureVector: number[]
+
+    constructor(label: string, featureVector: number[], transTime=0) {
+        super(label, transTime)
+        this.featureVector = featureVector
+    }
+
+    /**
+     * compute similarity between two note vector representations
+     * @param other the other note to compare with
+     * @returns similarity score
+     */
+    computeSimilarity(other: NoteNode): number {
+        function gaussDensity(x: number, m: number, sigma: number) {
+            return (1/(Math.sqrt(2*Math.PI*sigma**2)))*Math.exp(-(((x-m)**2)/(2*sigma**2)))
+        }
+        
+        const pitchDistance = Math.abs(this.featureVector[0] - other.featureVector[0])
+        const pitchScore = 1/(pitchDistance+1)
+
+        const timeScore = gaussDensity(other.featureVector[1], this.featureVector[1], 3)
+
+        return 0.5 * (pitchScore + timeScore)
+    }
+}
 
 export class AlignedPerformance {
     score?: Score 
@@ -12,10 +45,6 @@ export class AlignedPerformance {
 
     private byPitch(a: SeqNode<string>, b: SeqNode<string>): number {
         return a.featureVector[0] - b.featureVector[0]
-    }
-
-    private byTime(a: SeqNode<string>, b:SeqNode<string>): number {
-        return a.featureVector[1] - b.featureVector[1]
     }
 
     private treeAlign(performanceNotes: MidiNote[], scoreNotes: Note[]) {
@@ -39,7 +68,7 @@ export class AlignedPerformance {
         this.allPairs.push(...allPairs)
     }
 
-    private generateSeqNodesFromScore(notes: Note[], fitIntoRange: [number, number]): SeqNode<string>[] {
+    private generateSeqNodesFromScore(notes: Note[], fitIntoRange: [number, number]): NoteNode[] {
         if (notes.length === 0) return []
 
         type Range = [number, number]
@@ -51,14 +80,14 @@ export class AlignedPerformance {
         const lastQstamp = notes[notes.length-1].qstamp 
         const scoreRange: Range = [firstQstamp, lastQstamp]
 
-        return notes.map(n => new SeqNode(n.id, [n.pitch, 2 * convertRange(n.qstamp, scoreRange, fitIntoRange)]))
+        return notes.map(n => new NoteNode(n.id, [n.pitch, convertRange(n.qstamp, scoreRange, fitIntoRange)]))
     }
 
-    private generateSeqNodesFromPerformance(midiNotes: MidiNote[]): SeqNode<string>[] {
+    private generateSeqNodesFromPerformance(midiNotes: MidiNote[]): NoteNode[] {
         if (midiNotes.length === 0) return []
 
         return midiNotes.map((value: MidiNote) => {
-            return new SeqNode(value.id.toString(), [value.pitch, 2 * value.onsetTime])
+            return new NoteNode(value.id.toString(), [value.pitch, value.onsetTime])
         })
     }
 
@@ -102,7 +131,6 @@ export class AlignedPerformance {
     }
 
     public getAllPairs(): AlignmentPair<string>[] {
-        console.log('allPairs:', this.allPairs)
         return this.allPairs
     }
 
