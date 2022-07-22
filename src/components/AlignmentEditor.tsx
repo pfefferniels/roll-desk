@@ -108,7 +108,22 @@ export default function AlignmentEditor() {
             marks={true}
           />
 
-          <Button variant='outlined'>Export MEI</Button>
+          <Button variant='outlined'
+            onClick={() => {
+              console.log(alignedPerformance.rawPerformance?.serializeToRDF())
+            }}>Export MIDI as RDF</Button>
+          <br />
+
+          <Button variant='outlined'
+            onClick={() => {
+              console.log(alignedPerformance.score?.serializeToRDF())
+            }}>Export Score as RDF</Button>
+          <br />
+
+          <Button variant='outlined'
+            onClick={() => {
+              console.log(alignedPerformance.serializeToRDF())
+            }}>Export Alignments as RDF</Button>
         </Paper>
       )}
 
