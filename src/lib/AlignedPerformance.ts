@@ -7,6 +7,23 @@ function convertRange(value: number, r1: Range, r2: Range) {
     return (value-r1[0]) * (r2[1]-r2[0] ) / (r1[1]-r1[0]) + r2[0];
 }
 
+export enum Motivation {
+    ExactMatch,
+    Addition, 
+    Ornamentation,
+    OctaveAlteration,
+    OctaveDoubling,
+    Error,
+    Omission,
+    Uncertain
+}
+
+export type SemanticAlignmentPair = {
+    scoreNote?: Note,
+    midiNote?: MidiNote,
+    motivation: Motivation
+}
+
 /**
  * Note in a sequence
  * 
@@ -47,7 +64,8 @@ export class AlignedPerformance {
     score?: Score 
     rawPerformance?: RawPerformance
     aligner: Aligner<string>
-    allPairs: AlignmentPair<string>[]
+    rawPairs: AlignmentPair<string>[]
+    semanticPairs: SemanticAlignmentPair[]
     gapOpen: number 
     gapExt: number
 
@@ -55,14 +73,47 @@ export class AlignedPerformance {
         return (a.featureVector[0] - b.featureVector[0]) || (b.featureVector[1] - a.featureVector[1])
     }
 
-    private treeAlign(performanceNotes: MidiNote[], scoreNotes: Note[]) {
-        if (!this.rawPerformance) return 
-        if (!this.score) return
+    private generateSeqNodesFromScore(notes: Note[], fitIntoRange: [number, number]): NoteNode[] {
+        if (notes.length === 0) return []
 
-        if (performanceNotes.length === 0 || scoreNotes.length === 0) {
-            console.log('nothing to do')
-            return
-        }
+        const firstQstamp = notes[0].qstamp
+        const lastQstamp = notes[notes.length-1].qstamp 
+        const scoreRange: Range = [firstQstamp, lastQstamp]
+
+        return notes.map(n => new NoteNode(n.id, [n.pitch, convertRange(n.qstamp, scoreRange, fitIntoRange)]))
+    }
+
+    private generateSeqNodesFromPerformance(midiNotes: MidiNote[]): NoteNode[] {
+        if (midiNotes.length === 0) return []
+
+        return midiNotes.map((value: MidiNote) => {
+            return new NoteNode(value.id.toString(), [value.pitch, value.onsetTime])
+        })
+    }
+
+    constructor(
+        gapOpen?: number,
+        gapExt?: number,
+        score?: Score,
+        rawPerformance?: RawPerformance) {
+        this.gapOpen = gapOpen || -1
+        this.gapExt = gapExt || -1
+        this.score = score
+        this.rawPerformance = rawPerformance
+        this.aligner = new Aligner<string>(AlignType.Global) // really global
+        this.rawPairs = []
+        this.semanticPairs = []
+
+        this.performAlignment()
+    }
+
+    private performAlignment() {
+        if (!this.score || !this.rawPerformance) return
+
+        const performanceNotes = this.rawPerformance.asNotes()
+        const scoreNotes = this.score.allNotes()
+        
+        if (performanceNotes.length === 0 || scoreNotes.length === 0) return
 
         // experimental: generate lookup function
         // this might be useful for a more precise time alignment later on.
@@ -107,46 +158,32 @@ export class AlignedPerformance {
 
         this.aligner.align(perfNodes, scoreNodes, { gapOpen: -1, gapExt: -1})
         const allPairs = this.aligner.retrieveAlignments().paths[0]
-        this.allPairs.push(...allPairs)
-    }
+        this.rawPairs.push(...allPairs)
 
-    private generateSeqNodesFromScore(notes: Note[], fitIntoRange: [number, number]): NoteNode[] {
-        if (notes.length === 0) return []
+        this.semanticPairs = allPairs.map((pair): SemanticAlignmentPair => {
+            const scoreId = pair[1]
+            const midiId = pair[0]
 
-        const firstQstamp = notes[0].qstamp
-        const lastQstamp = notes[notes.length-1].qstamp 
-        const scoreRange: Range = [firstQstamp, lastQstamp]
-
-        return notes.map(n => new NoteNode(n.id, [n.pitch, convertRange(n.qstamp, scoreRange, fitIntoRange)]))
-    }
-
-    private generateSeqNodesFromPerformance(midiNotes: MidiNote[]): NoteNode[] {
-        if (midiNotes.length === 0) return []
-
-        return midiNotes.map((value: MidiNote) => {
-            return new NoteNode(value.id.toString(), [value.pitch, value.onsetTime])
+            if (scoreId === '-') {
+                return {
+                    midiNote: this.rawPerformance?.at(+midiId),
+                    motivation: Motivation.Addition,
+                }
+            }
+            else if (midiId === '-') {
+                return {
+                    scoreNote: this.score?.at(scoreId),
+                    motivation: Motivation.Omission,
+                }
+            }
+            else {
+                return {
+                    scoreNote: this.score?.at(scoreId),
+                    midiNote: this.rawPerformance?.at(+midiId),
+                    motivation: Motivation.ExactMatch
+                }
+            }
         })
-    }
-
-    constructor(
-        gapOpen?: number,
-        gapExt?: number,
-        score?: Score,
-        rawPerformance?: RawPerformance) {
-        this.gapOpen = gapOpen || -1
-        this.gapExt = gapExt || -1
-        this.score = score
-        this.rawPerformance = rawPerformance
-        this.aligner = new Aligner<string>(AlignType.Global) // really global
-        this.allPairs = []
-        this.performAlignment()
-    }
-
-    private performAlignment() {
-        if (this.score && this.rawPerformance) {
-            // align pitches of score and performance
-            this.treeAlign(this.rawPerformance.asNotes(), this.score.allNotes())
-        }
     }
 
     public setScore(score: Score) {
@@ -168,11 +205,15 @@ export class AlignedPerformance {
     }
 
     public getAllPairs(): AlignmentPair<string>[] {
-        return this.allPairs
+        return this.rawPairs
     }
 
     public setPairs(pairs: AlignmentPair<string>[]) {
-        this.allPairs = pairs
+        this.rawPairs = pairs
+    }
+
+    public getSemanticPairs(): SemanticAlignmentPair[] {
+        return this.semanticPairs
     }
     
     /**
@@ -195,7 +236,7 @@ export class AlignedPerformance {
     }
 
     public performedNoteAtId(id: string, part?: number): MidiNote | null {
-        const pair = this.allPairs.find((value: AlignmentPair<string>) => {
+        const pair = this.rawPairs.find((value: AlignmentPair<string>) => {
             return value[1] === id
         })
         if (pair) return this.rawPerformance?.at(Number(pair[0])) || null
@@ -209,7 +250,7 @@ export class AlignedPerformance {
         const midiNotes: MidiNote[] = []
         for (const note of notes) {
             // find this note id in the aligned pairs
-            const pair = this.allPairs.find((pair: AlignmentPair<string>) => pair[1] === note.id)
+            const pair = this.rawPairs.find((pair: AlignmentPair<string>) => pair[1] === note.id)
             if (pair && pair[0] !== '-') {
                 const midiNote = this.rawPerformance?.at(Number(pair[0]))
                 if (midiNote) midiNotes.push(midiNote)
