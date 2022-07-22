@@ -1,6 +1,6 @@
-import { useContext, useEffect, useRef, useState } from "react"
+import { FC, useContext, useEffect, useRef, useState } from "react"
 import GlobalContext from "./GlobalContext"
-import { Box, Button, Paper, Slider, Typography } from "@mui/material"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Slider, TextField, Typography } from "@mui/material"
 import { AlignmentPair } from "sequence-align/src/types"
 
 function midiPitchToNoteName(midiPitch: number): string {
@@ -8,12 +8,35 @@ function midiPitchToNoteName(midiPitch: number): string {
   return `${notes[midiPitch % 12]}${Math.floor(midiPitch / 12) - 1}`
 }
 
+interface EditAlignmentPairProps {
+  pair?: AlignmentPair<string>,
+  dialogOpen: boolean,
+  setDialogOpen: (open: boolean) => void
+}
+
+const EditAlignmentPair: FC<EditAlignmentPairProps> = ({ pair, dialogOpen, setDialogOpen }): JSX.Element => {
+  return (
+    <Dialog open={dialogOpen}>
+      <DialogTitle>Edit Alignment Pair</DialogTitle>
+      <DialogContent>
+        MIDI: {pair && pair[0]}
+        Score: {pair && pair[1]}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setDialogOpen(false)}>Save</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
 export default function AlignmentEditor() {
-  const horizontalStretch = 40
-  const verticalStretch = 2
+  const horizontalStretch = 60
+  const verticalStretch = 3
   const areaHeight = 127 * verticalStretch + 50
   const scoreRef = useRef(null)
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [currentAlignmentPair, setCurrentAlignmentPair] = useState<AlignmentPair<string>>()
 
   const changeGapOpen = (event: Event, newValue: number | number[]) => {
     alignedPerformance.setGapOpen(newValue as number)
@@ -64,7 +87,7 @@ export default function AlignmentEditor() {
   return (
     <div>
       {alignedPerformance.ready() && (
-        <Paper style={{ position: 'fixed', padding: '0.5rem', bottom: 0 }}>
+        <Paper style={{ position: 'fixed', padding: '0.5rem', right: 0 }}>
           <Typography gutterBottom>Penalty for opening a new gap</Typography>
           <Slider
             getAriaLabel={() => 'gap open score'}
@@ -92,11 +115,22 @@ export default function AlignmentEditor() {
       )}
 
       {alignedPerformance.ready() && (
-        <svg width={2000} height={areaHeight + 200} ref={scoreRef}>
+        <svg width={2000} height={areaHeight + 300} ref={scoreRef}>
           <g className="scoreDisplay">
             {alignedPerformance.score &&
               alignedPerformance.score.allNotes().map(note => (
-                <rect key={`note_${note.id}`} className='scoreNote' id={`scoreNote_${note.id}`} x={note.qstamp * horizontalStretch} y={note.pitch * verticalStretch} width={note.duration * horizontalStretch} height={5}>
+                <rect key={`note_${note.id}`}
+                      className='scoreNote'
+                      id={`scoreNote_${note.id}`}
+                      x={note.qstamp * horizontalStretch}
+                      y={(127-note.pitch) * verticalStretch}
+                      width={note.duration * horizontalStretch}
+                      height={7}
+                      onClick={() => {
+                        const pairs = alignedPerformance.getAllPairs()
+                        setCurrentAlignmentPair(pairs.find(pair => pair[1] === note.id))
+                        setEditDialogOpen(true)
+                      }}>
                   <desc>pitch: {midiPitchToNoteName(note.pitch)}</desc>
                 </rect>
               ))
@@ -106,7 +140,18 @@ export default function AlignmentEditor() {
           <g className="midiDisplay">
             {alignedPerformance.rawPerformance &&
               alignedPerformance.rawPerformance.asNotes().map((note => (
-                <rect key={`note_${note.id}`} className='midiNote' id={`midiNote_${note.id}`} x={note.onsetTime*horizontalStretch} y={note.pitch * verticalStretch + areaHeight} width={note.duration*horizontalStretch} height={5}>
+                <rect key={`note_${note.id}`}
+                      className='midiNote'
+                      id={`midiNote_${note.id}`}
+                      x={note.onsetTime*horizontalStretch}
+                      y={(127-note.pitch) * verticalStretch + areaHeight}
+                      width={note.duration*horizontalStretch}
+                      height={7}
+                      onClick={() => {
+                        const pairs = alignedPerformance.getAllPairs()
+                        setCurrentAlignmentPair(pairs.find(pair => pair[0] === note.id.toString()))
+                        setEditDialogOpen(true)
+                      }}>
                   <desc>pitch: {midiPitchToNoteName(note.pitch)}</desc>
                 </rect>
               )))
@@ -117,6 +162,10 @@ export default function AlignmentEditor() {
           </g>
         </svg>
       )}
+
+      <EditAlignmentPair pair={currentAlignmentPair}
+                         dialogOpen={editDialogOpen} 
+                         setDialogOpen={setEditDialogOpen} />
     </div>
   )
 }

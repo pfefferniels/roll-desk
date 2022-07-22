@@ -46,9 +46,9 @@ export class Score {
                     continue
                 }
                 result.push({
-                    index: index, 
+                    index: index,
                     id: on,
-                    qstamp: event.qstamp, 
+                    qstamp: event.qstamp,
                     pitch: midiValues.pitch,
                     duration: offTime - event.qstamp,
                     part: Number(staff.getAttribute('n'))
@@ -123,4 +123,15 @@ export class Score {
         //return this.notes.find(note => note.index === index)!
         return this.allNotes().find((value: Note) => value.id === id)
     }
+
+    /**
+     * This function generates RDF triples from the score
+     * as RDFized MEI.
+     * 
+     * @returns string of RDF triples in Turtle format.
+     */
+    public serializeToRDF(): string {
+        return ''
+    }
+
 }

@@ -80,5 +80,16 @@ export class RawPerformance {
     public at(id: number): MidiNote | undefined {
         return this.asNotes().find(note => note.id === id)
     }
+
+    /**
+     * This function generates RDF triples using the 
+     * MIDI-LD vocabulary.
+     * 
+     * @returns string of RDF triples in Turtle format.
+     */
+    public serializeToRDF(): string {
+       return ''
+    }
+    
 }
 

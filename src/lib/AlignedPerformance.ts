@@ -2,6 +2,11 @@ import { MidiNote, RawPerformance } from "./Performance"
 import { Note, Score } from "./Score"
 import { SeqNode, Aligner, AlignmentPair, AlignType, GenericSeqNode } from "sequence-align"
 
+type Range = [number, number]
+function convertRange(value: number, r1: Range, r2: Range) { 
+    return (value-r1[0]) * (r2[1]-r2[0] ) / (r1[1]-r1[0]) + r2[0];
+}
+
 /**
  * Note in a sequence
  * 
@@ -21,17 +26,20 @@ import { SeqNode, Aligner, AlignmentPair, AlignType, GenericSeqNode } from "sequ
      * @param other the other note to compare with
      * @returns similarity score
      */
-    computeSimilarity(other: NoteNode): number {
+     computeSimilarity(other: NoteNode): number {
         function gaussDensity(x: number, m: number, sigma: number) {
             return (1/(Math.sqrt(2*Math.PI*sigma**2)))*Math.exp(-(((x-m)**2)/(2*sigma**2)))
         }
-        
+
         const pitchDistance = Math.abs(this.featureVector[0] - other.featureVector[0])
         const pitchScore = 1/(pitchDistance+1)
 
-        const timeScore = gaussDensity(other.featureVector[1], this.featureVector[1], 3)
+        const timeScore = convertRange(
+            gaussDensity(other.featureVector[1], this.featureVector[1], 3),
+            [0, 1],
+            [-1, 1])
 
-        return 0.5 * (pitchScore + timeScore)
+        return timeScore
     }
 }
 
@@ -43,8 +51,8 @@ export class AlignedPerformance {
     gapOpen: number 
     gapExt: number
 
-    private byPitch(a: SeqNode<string>, b: SeqNode<string>): number {
-        return a.featureVector[0] - b.featureVector[0]
+    private byPitch(a: NoteNode, b: NoteNode): number {
+        return (a.featureVector[0] - b.featureVector[0]) || (b.featureVector[1] - a.featureVector[1])
     }
 
     private treeAlign(performanceNotes: MidiNote[], scoreNotes: Note[]) {
@@ -54,6 +62,40 @@ export class AlignedPerformance {
         if (performanceNotes.length === 0 || scoreNotes.length === 0) {
             console.log('nothing to do')
             return
+        }
+
+        // experimental: generate lookup function
+        // this might be useful for a more precise time alignment later on.
+        {
+            const perfNodes = this.generateSeqNodesFromPerformance(performanceNotes)
+            const scoreNodes = this.
+            generateSeqNodesFromScore(
+                scoreNotes,
+                [performanceNotes[0].onsetTime, performanceNotes[performanceNotes.length-1].onsetTime]) 
+
+            let avg1: SeqNode<string>[] = []
+            const windowSize = 5
+            for (let i=0; i<perfNodes.length-windowSize; i++) {
+                let avg = 0;
+                for (let j=0; j<windowSize; j++) {
+                    avg += perfNodes[i+windowSize].featureVector[0]
+                }
+                avg = Math.pow(windowSize, 1/avg)
+                avg1.push(new SeqNode<string>(perfNodes[i].featureVector[1].toString(), [avg]))
+            }
+
+            let avg2: SeqNode<string>[] = []
+            for (let i=0; i<scoreNodes.length-windowSize; i++) {
+                let avg = 0;
+                for (let j=0; j<windowSize; j++) {
+                    avg += scoreNodes[i+windowSize].featureVector[0]
+                }
+                avg = Math.pow(windowSize, 1/avg)
+                avg2.push(new SeqNode<string>(scoreNodes[i].featureVector[1].toString(), [avg]))
+            }
+
+            this.aligner.align(avg1, avg2, { gapOpen: -0.5, gapExt: -1})
+            const allPairs = this.aligner.retrieveAlignments().paths[0]
         }
 
         const perfNodes = this.generateSeqNodesFromPerformance(performanceNotes).sort(this.byPitch)
@@ -70,11 +112,6 @@ export class AlignedPerformance {
 
     private generateSeqNodesFromScore(notes: Note[], fitIntoRange: [number, number]): NoteNode[] {
         if (notes.length === 0) return []
-
-        type Range = [number, number]
-        function convertRange(value: number, r1: Range, r2: Range) { 
-            return ( value - r1[ 0 ] ) * ( r2[ 1 ] - r2[ 0 ] ) / ( r1[ 1 ] - r1[ 0 ] ) + r2[ 0 ];
-        }
 
         const firstQstamp = notes[0].qstamp
         const lastQstamp = notes[notes.length-1].qstamp 
@@ -132,6 +169,21 @@ export class AlignedPerformance {
 
     public getAllPairs(): AlignmentPair<string>[] {
         return this.allPairs
+    }
+
+    public setPairs(pairs: AlignmentPair<string>[]) {
+        this.allPairs = pairs
+    }
+    
+    /**
+     * This function generates RDF triples out of the Alignment
+     * data. It includes the MIDI as MIDI-LD, the score as 
+     * RDFized MEI and the alignments.
+     * 
+     * @returns string of RDF triples in Turtle format.
+     */
+    public serializeToRDF(): string {
+        return ''
     }
 
     public noteAtId(id: string) {
