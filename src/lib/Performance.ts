@@ -25,7 +25,7 @@ export class RawPerformance {
     public range(): [number, number] {
         const performedNotes = this.asNotes()
         const firstOnset = performedNotes[0].onsetTime
-        const lastOnset = performedNotes[performedNotes.length-1].onsetTime
+        const lastOnset = performedNotes[performedNotes.length - 1].onsetTime
         return [firstOnset, lastOnset]
     }
 
@@ -41,7 +41,7 @@ export class RawPerformance {
         if (!microsecondsPerBeat) return []
 
         const BPM = 60000000 / microsecondsPerBeat
-        const realTimePerBeat = 60/BPM
+        const realTimePerBeat = 60 / BPM
         const ticksPerBeat = this.midi.header.ticksPerBeat
         const tickTime = realTimePerBeat / ticksPerBeat
 
@@ -85,11 +85,41 @@ export class RawPerformance {
      * This function generates RDF triples using the 
      * MIDI-LD vocabulary.
      * 
-     * @returns string of RDF triples in Turtle format.
+     * @returns string of RDF triples in JSON-LD format.
      */
     public serializeToRDF(): string {
-       return ''
+        if (!this.midi) return ''
+
+        const result = {
+            "@context": {
+                // define namespaces here
+                "mid": "http://example.org/midi#",
+                "xsd": "http://www.w3.org/2001/XMLSchema#",
+                "ex:contains": {
+                    "@type": "@id"
+                }
+            },
+            "@graph": [
+                {
+                    "@id": "http://example.org/midi/a-performance",
+                    "@type": "mid:Piece",
+                    "mid:hasTrack": this.midi.tracks.map((track, i) => `http://example.org/midi/a-performance/track_${i}`)
+                },
+                ...this.midi.tracks.map((track, i) => ({
+                    "@id": `http://example.org/midi/a-performance/track_${i}`,
+                    "@type": "mid:Track",
+                    "mid:hasEvent": [track.map((event, j) => `http://example.org/midi/a-performance/track_${i}/event_${j}`)]
+                })),
+                {
+                    "@id": "http://example.org/midi/a-performance/event_001",
+                    "@type": "mid:Event",
+                    "dc11:description": "A description about this event"
+                }
+            ]
+        }
+
+        return JSON.stringify(result)
     }
-    
+
 }
 
