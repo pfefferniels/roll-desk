@@ -95,14 +95,11 @@ export class RawPerformance {
                 // define namespaces here
                 "mid": "http://example.org/midi#",
                 "xsd": "http://www.w3.org/2001/XMLSchema#",
-                "ex:contains": {
-                    "@type": "@id"
-                }
             },
             "@graph": [
                 {
                     "@id": "http://example.org/midi/a-performance",
-                    "@type": "mid:Piece",
+                    "@type": "mid:Pattern",
                     "mid:hasTrack": this.midi.tracks.map((track, i) => `http://example.org/midi/a-performance/track_${i}`)
                 },
                 ...this.midi.tracks.map((track, i) => ({
@@ -110,11 +107,17 @@ export class RawPerformance {
                     "@type": "mid:Track",
                     "mid:hasEvent": [track.map((event, j) => `http://example.org/midi/a-performance/track_${i}/event_${j}`)]
                 })),
-                {
-                    "@id": "http://example.org/midi/a-performance/event_001",
-                    "@type": "mid:Event",
-                    "dc11:description": "A description about this event"
-                }
+
+                ...this.midi.tracks.map((track, i) => {
+                    // TODO: determine event type and add properties accordingly
+
+                    return track.map((event, j) => {
+                        return {
+                            "@id": `http://example.org/midi/a-performance/track_${i}/event_${j}`,
+                            "@type": `mid:${event?.type}`
+                        }
+                    })
+                }).flat()
             ]
         }
 
