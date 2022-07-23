@@ -3,13 +3,13 @@ import { Note, Score } from "./Score"
 import { SeqNode, Aligner, AlignmentPair, AlignType, GenericSeqNode } from "sequence-align"
 
 type Range = [number, number]
-function convertRange(value: number, r1: Range, r2: Range) { 
-    return (value-r1[0]) * (r2[1]-r2[0] ) / (r1[1]-r1[0]) + r2[0];
+function convertRange(value: number, r1: Range, r2: Range) {
+    return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
 }
 
 export enum Motivation {
     ExactMatch,
-    Addition, 
+    Addition,
     Ornamentation,
     OctaveAlteration,
     OctaveDoubling,
@@ -30,10 +30,10 @@ export type SemanticAlignmentPair = {
  * @member label id of the note
  * @member featureVector feature vector: [pitch, onsetTime]
  */
- class NoteNode extends GenericSeqNode<string> {
+class NoteNode extends GenericSeqNode<string> {
     featureVector: number[]
 
-    constructor(label: string, featureVector: number[], transTime=0) {
+    constructor(label: string, featureVector: number[], transTime = 0) {
         super(label, transTime)
         this.featureVector = featureVector
     }
@@ -43,13 +43,13 @@ export type SemanticAlignmentPair = {
      * @param other the other note to compare with
      * @returns similarity score
      */
-     computeSimilarity(other: NoteNode): number {
+    computeSimilarity(other: NoteNode): number {
         function gaussDensity(x: number, m: number, sigma: number) {
-            return (1/(Math.sqrt(2*Math.PI*sigma**2)))*Math.exp(-(((x-m)**2)/(2*sigma**2)))
+            return (1 / (Math.sqrt(2 * Math.PI * sigma ** 2))) * Math.exp(-(((x - m) ** 2) / (2 * sigma ** 2)))
         }
 
         const pitchDistance = Math.abs(this.featureVector[0] - other.featureVector[0])
-        const pitchScore = 1/(pitchDistance+1)
+        const pitchScore = 1 / (pitchDistance + 1)
 
         const timeScore = convertRange(
             gaussDensity(other.featureVector[1], this.featureVector[1], 3),
@@ -61,12 +61,12 @@ export type SemanticAlignmentPair = {
 }
 
 export class AlignedPerformance {
-    score?: Score 
+    score?: Score
     rawPerformance?: RawPerformance
     aligner: Aligner<string>
     rawPairs: AlignmentPair<string>[]
     semanticPairs: SemanticAlignmentPair[]
-    gapOpen: number 
+    gapOpen: number
     gapExt: number
 
     private byPitch(a: NoteNode, b: NoteNode): number {
@@ -77,7 +77,7 @@ export class AlignedPerformance {
         if (notes.length === 0) return []
 
         const firstQstamp = notes[0].qstamp
-        const lastQstamp = notes[notes.length-1].qstamp 
+        const lastQstamp = notes[notes.length - 1].qstamp
         const scoreRange: Range = [firstQstamp, lastQstamp]
 
         return notes.map(n => new NoteNode(n.id, [n.pitch, convertRange(n.qstamp, scoreRange, fitIntoRange)]))
@@ -112,7 +112,7 @@ export class AlignedPerformance {
 
         const performanceNotes = this.rawPerformance.asNotes()
         const scoreNotes = this.score.allNotes()
-        
+
         if (performanceNotes.length === 0 || scoreNotes.length === 0) return
 
         // experimental: generate lookup function
@@ -120,32 +120,32 @@ export class AlignedPerformance {
         {
             const perfNodes = this.generateSeqNodesFromPerformance(performanceNotes)
             const scoreNodes = this.
-            generateSeqNodesFromScore(
-                scoreNotes,
-                [performanceNotes[0].onsetTime, performanceNotes[performanceNotes.length-1].onsetTime]) 
+                generateSeqNodesFromScore(
+                    scoreNotes,
+                    [performanceNotes[0].onsetTime, performanceNotes[performanceNotes.length - 1].onsetTime])
 
             let avg1: SeqNode<string>[] = []
             const windowSize = 5
-            for (let i=0; i<perfNodes.length-windowSize; i++) {
+            for (let i = 0; i < perfNodes.length - windowSize; i++) {
                 let avg = 0;
-                for (let j=0; j<windowSize; j++) {
-                    avg += perfNodes[i+windowSize].featureVector[0]
+                for (let j = 0; j < windowSize; j++) {
+                    avg += perfNodes[i + windowSize].featureVector[0]
                 }
-                avg = Math.pow(windowSize, 1/avg)
+                avg = Math.pow(windowSize, 1 / avg)
                 avg1.push(new SeqNode<string>(perfNodes[i].featureVector[1].toString(), [avg]))
             }
 
             let avg2: SeqNode<string>[] = []
-            for (let i=0; i<scoreNodes.length-windowSize; i++) {
+            for (let i = 0; i < scoreNodes.length - windowSize; i++) {
                 let avg = 0;
-                for (let j=0; j<windowSize; j++) {
-                    avg += scoreNodes[i+windowSize].featureVector[0]
+                for (let j = 0; j < windowSize; j++) {
+                    avg += scoreNodes[i + windowSize].featureVector[0]
                 }
-                avg = Math.pow(windowSize, 1/avg)
+                avg = Math.pow(windowSize, 1 / avg)
                 avg2.push(new SeqNode<string>(scoreNodes[i].featureVector[1].toString(), [avg]))
             }
 
-            this.aligner.align(avg1, avg2, { gapOpen: -0.5, gapExt: -1})
+            this.aligner.align(avg1, avg2, { gapOpen: -0.5, gapExt: -1 })
             const allPairs = this.aligner.retrieveAlignments().paths[0]
         }
 
@@ -153,10 +153,10 @@ export class AlignedPerformance {
         const scoreNodes = this.
             generateSeqNodesFromScore(
                 scoreNotes,
-                [performanceNotes[0].onsetTime, performanceNotes[performanceNotes.length-1].onsetTime]) // scale to range
+                [performanceNotes[0].onsetTime, performanceNotes[performanceNotes.length - 1].onsetTime]) // scale to range
             .sort(this.byPitch)
 
-        this.aligner.align(perfNodes, scoreNodes, { gapOpen: -1, gapExt: -1})
+        this.aligner.align(perfNodes, scoreNodes, { gapOpen: -1, gapExt: -1 })
         const allPairs = this.aligner.retrieveAlignments().paths[0]
         this.rawPairs.push(...allPairs)
 
@@ -192,7 +192,7 @@ export class AlignedPerformance {
     }
 
     public setPerformance(performance: RawPerformance) {
-        this.rawPerformance = performance 
+        this.rawPerformance = performance
         this.performAlignment()
     }
 
@@ -215,16 +215,48 @@ export class AlignedPerformance {
     public getSemanticPairs(): SemanticAlignmentPair[] {
         return this.semanticPairs
     }
-    
+
     /**
      * This function generates RDF triples out of the Alignment
-     * data. It includes the MIDI as MIDI-LD, the score as 
-     * RDFized MEI and the alignments.
+     * data. 
      * 
-     * @returns string of RDF triples in Turtle format.
+     * @todo should it also include the exports of Score and RawPerformance?
+     * @returns string of RDF triples in JSON-LD format.
      */
     public serializeToRDF(): string {
-        return ''
+        if (!this.semanticPairs.length) return ''
+
+        const result = {
+            "@context": {
+                // define namespaces here
+                "linked-alignment": "http://example.org/linked-alignment#",
+                "xsd": "http://www.w3.org/2001/XMLSchema#",
+            },
+            "@graph": [
+                {
+                    "@id": "http://example.org/my-alignment",
+                    "@type": "linked-alignment:Alignment",
+                    "mid:hasAlignmentPair": this.semanticPairs.map((pair, i) => `http//example.org/my-alignment/pair_${i}`)
+                },
+                ...this.semanticPairs.map((pair, i) => {
+                    const result: any = {
+                        "@id": `http://example.org/my-alignment/pair_${i}`,
+                        "@type": "linked-alignment:AlignmentPair",
+                        "linked-alignment:hasMotivation": `http://example.org/alignment-motivation#${pair.motivation}`
+                    }
+                    if (pair.scoreNote) {
+                        result["linked-alignment:hasScoreNote"] = `http://example.org/my-alignment/score.mei#${pair.scoreNote.id}`
+                    }
+                    if (pair.midiNote) {
+                        result["linked-alignment:hasMIDINote"] = `http://example.org/midi/a-performance/track_0/event_${pair.midiNote.id}`
+                    }
+
+                    return result
+                }),
+            ]
+        }
+
+        return JSON.stringify(result)
     }
 
     public noteAtId(id: string) {
