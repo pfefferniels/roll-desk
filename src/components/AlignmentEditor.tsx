@@ -1,6 +1,6 @@
 import { FC, useContext, useEffect, useRef, useState } from "react"
 import GlobalContext from "./GlobalContext"
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Slider, TextField, Typography } from "@mui/material"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Select, Slider, TextField, Typography } from "@mui/material"
 import { AlignmentPair } from "sequence-align/src/types"
 import { Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
 import { MidiNote } from "../lib/Performance"
@@ -23,11 +23,19 @@ const EditMotivation: FC<EditMotivationProps> = ({ pair, changeMotivation, dialo
     <Dialog open={dialogOpen}>
       <DialogTitle>Edit Alignment Motivation</DialogTitle>
       <DialogContent>
-        <div>current motivation: {pair?.motivation}</div>
+        <Select value={pair?.motivation}
+          onChange={(e) => {
+            changeMotivation(pair!, e.target.value as Motivation)
+          }}>
+            <MenuItem value={Motivation.ExactMatch}>Exact Match</MenuItem>
+            <MenuItem value={Motivation.Error}>Error</MenuItem>
+            <MenuItem value={Motivation.OctaveAlteration}>Octave Alteration</MenuItem>
+            <MenuItem value={Motivation.OctaveDoubling}>Octave Doubling</MenuItem>
+            <MenuItem value={Motivation.Uncertain}>Uncertain</MenuItem>
+        </Select>
       </DialogContent>
       <DialogActions>
         <Button onClick={() => {
-          changeMotivation(pair!, Motivation.OctaveAlteration)
           setDialogOpen(false)
         }}>Save</Button>
       </DialogActions>
@@ -44,6 +52,7 @@ export default function AlignmentEditor() {
   const [currentAlignmentPair, setCurrentAlignmentPair] = useState<SemanticAlignmentPair>()
   const [activeScoreNote, setActiveScoreNote] = useState<Note>()
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
+  const [actor, setActor] = useState('')
 
   const changeGapOpen = (event: Event, newValue: number | number[]) => {
     alignedPerformance.setGapOpen(newValue as number)
@@ -108,6 +117,11 @@ export default function AlignmentEditor() {
             marks={true}
           />
 
+          <TextField value={actor} onChange={(e) => {
+            setActor(e.target.value)
+          }} />
+          <br />
+
           <Button variant='outlined'
             onClick={() => {
               console.log(alignedPerformance.rawPerformance?.serializeToRDF())
@@ -122,7 +136,7 @@ export default function AlignmentEditor() {
 
           <Button variant='outlined'
             onClick={() => {
-              console.log(alignedPerformance.serializeToRDF())
+              console.log(alignedPerformance.serializeToRDF(actor))
             }}>Export Alignments as RDF</Button>
         </Paper>
       )}
@@ -133,6 +147,7 @@ export default function AlignmentEditor() {
             const scoreNotePosition = pair.scoreNote ?
               [pair.scoreNote.qstamp * horizontalStretch,
               (127 - pair.scoreNote.pitch) * verticalStretch] : [,]
+            
             const midiNotePosition = pair.midiNote ?
               [pair.midiNote.onsetTime * horizontalStretch,
               (127 - pair.midiNote.pitch) * verticalStretch + areaHeight] : [,]
@@ -197,7 +212,7 @@ export default function AlignmentEditor() {
                     }} />
                 )}
 
-                {(pair.midiNote && pair.scoreNote) && (
+                {pair.midiNote && pair.scoreNote && (
                   <line x1={scoreNotePosition[0]}
                     y1={scoreNotePosition[1]}
                     x2={midiNotePosition[0]}

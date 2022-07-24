@@ -8,14 +8,14 @@ function convertRange(value: number, r1: Range, r2: Range) {
 }
 
 export enum Motivation {
-    ExactMatch,
-    Addition,
-    Ornamentation,
-    OctaveAlteration,
-    OctaveDoubling,
-    Error,
-    Omission,
-    Uncertain
+    ExactMatch = "ExactMatch",
+    Addition = "Additon",
+    Ornamentation = "Ornamentation",
+    OctaveAlteration = "OctaveAlteration",
+    OctaveDoubling = "OctaveDoubling",
+    Error = "Error",
+    Omission = "Omission",
+    Uncertain = "Uncertain"
 }
 
 export type SemanticAlignmentPair = {
@@ -223,32 +223,38 @@ export class AlignedPerformance {
      * @todo should it also include the exports of Score and RawPerformance?
      * @returns string of RDF triples in JSON-LD format.
      */
-    public serializeToRDF(): string {
+    public serializeToRDF(carriedOutBy: string = ''): string {
         if (!this.semanticPairs.length) return ''
 
         const result = {
             "@context": {
                 // define namespaces here
-                "linked-alignment": "http://example.org/linked-alignment#",
+                "la": "http://example.org/linked_alignment#",
+                "crm": "http://www.cidoc-crm.org/cidoc-crm/",
                 "xsd": "http://www.w3.org/2001/XMLSchema#",
             },
             "@graph": [
                 {
                     "@id": "http://example.org/my-alignment",
-                    "@type": "linked-alignment:Alignment",
-                    "mid:hasAlignmentPair": this.semanticPairs.map((pair, i) => `http//example.org/my-alignment/pair_${i}`)
+                    "@type": "la:Alignment",
+                    "crm:P14_carried_out_by": {
+                        "@id": `http://example_org/${carriedOutBy}`,
+                        "@type": "E39_Actor"
+                    },
+                    "dcterms:created": new Date(Date.now()).toISOString(),
+                    "la:hasAlignmentPair": this.semanticPairs.map((pair, i) => `http//example.org/my-alignment/pair_${i}`)
                 },
                 ...this.semanticPairs.map((pair, i) => {
                     const result: any = {
                         "@id": `http://example.org/my-alignment/pair_${i}`,
-                        "@type": "linked-alignment:AlignmentPair",
-                        "linked-alignment:hasMotivation": `http://example.org/alignment-motivation#${pair.motivation}`
+                        "@type": "la:AlignmentPair",
+                        "la:hasMotivation": `http://example.org/alignment-motivation#${pair.motivation}`
                     }
                     if (pair.scoreNote) {
-                        result["linked-alignment:hasScoreNote"] = `http://example.org/my-alignment/score.mei#${pair.scoreNote.id}`
+                        result["la:hasScoreNote"] = `http://example.org/my-alignment/score.mei#${pair.scoreNote.id}`
                     }
                     if (pair.midiNote) {
-                        result["linked-alignment:hasMIDINote"] = `http://example.org/midi/a-performance/track_0/event_${pair.midiNote.id}`
+                        result["la:hasMIDINote"] = `http://example.org/midi/a-performance/track_0/event_${pair.midiNote.id}`
                     }
 
                     return result
@@ -256,7 +262,7 @@ export class AlignedPerformance {
             ]
         }
 
-        return JSON.stringify(result)
+        return JSON.stringify(result, null, 4)
     }
 
     public noteAtId(id: string) {
