@@ -142,7 +142,7 @@ export class Interpolation {
                     const d = Math.abs(points[i].bpm - powFunction(points[i].qstamp))
                     console.log('d=', points[i].bpm, '-', powFunction(points[i].qstamp))
                     if (d > dmax) {
-                        index = i 
+                        index = i
                         dmax = d
                     }
                 }
@@ -172,12 +172,18 @@ export class Interpolation {
 
         let onsets: number[] = []
         let qstamps: number[] = []
-        for (let i=0; i<this.alignedPerformance.score.getMaxQstamp(); i += beatLength) {
-            qstamps.push(i)
+        for (let qstamp=0; qstamp<this.alignedPerformance.score.getMaxQstamp(); qstamp += beatLength) {
             // TODO arpeggio?
-            const performedNotes = this.alignedPerformance.performedNotesAtQstamp(i)
-            if (performedNotes && performedNotes[0]) onsets.push(performedNotes[0].onsetTime)
-            else console.log('?', i) // TODO rest?
+            const performedNotes = this.alignedPerformance.performedNotesAtQstamp(qstamp)
+            if (performedNotes && performedNotes[0]) {
+                onsets.push(performedNotes[0].onsetTime)
+                qstamps.push(qstamp)
+            }
+            else {
+                // TODO: if a qstamp has no notes, this probably 
+                // indicates rests, possibly filling up to an upbeat.
+                console.log('empty qstamp', qstamp)
+            }
         }
         const bpms = asBPM(onsets)
 
@@ -186,7 +192,7 @@ export class Interpolation {
             bpm: bpm
         }))
 
-        douglasPeucker(points, 10)
+        douglasPeucker(points, 4)
         
         return tempoMap
     }
