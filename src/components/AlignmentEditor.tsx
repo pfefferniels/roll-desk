@@ -5,11 +5,6 @@ import { Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
 import { MidiNote } from "../lib/Performance"
 import { Note } from "../lib/Score"
 
-function midiPitchToNoteName(midiPitch: number): string {
-  const notes = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-  return `${notes[midiPitch % 12]}${Math.floor(midiPitch / 12) - 1}`
-}
-
 interface EditMotivationProps {
   pair?: SemanticAlignmentPair,
   changeMotivation: (pair: SemanticAlignmentPair, target: Motivation) => void,
@@ -43,8 +38,36 @@ const EditMotivation: FC<EditMotivationProps> = ({ pair, changeMotivation, dialo
   )
 }
 
+interface StaffLineProps {
+  verticalStretch: number,
+  verticalOffset: number
+}
+
+/**
+ * Draws staff lines using the standard F and G clef.
+ */
+const StaffLines: FC<StaffLineProps> = ({ verticalStretch, verticalOffset }): JSX.Element => {
+  return (
+    <g>
+      {[43, 47, 50, 53, 57, // staff lines for left hand
+        64, 67, 71, 74, 77] // for right hand
+        .map(pitch => ((127 - pitch) * verticalStretch + verticalOffset))
+        .map(yPosition => (
+          <line
+            x1={0}
+            y1={yPosition}
+            x2={2000}
+            y2={yPosition}
+            stroke='black'
+            strokeWidth={0.4} />
+        ))}
+    </g>
+
+  )
+}
+
 export default function AlignmentEditor() {
-  const horizontalStretch = 60
+  const [horizontalStretch, setHorizontalStretch] = useState(60)
   const verticalStretch = 2.9
   const areaHeight = 127 * verticalStretch
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
@@ -82,7 +105,18 @@ export default function AlignmentEditor() {
   }
 
   return (
-    <div>
+    <div
+      tabIndex={0}
+      onKeyDown={(e) => {
+        console.log(e)
+        if (e.key === 'ArrowDown') {
+          setHorizontalStretch(horizontalStretch - 10)
+        }
+        else if (e.key == 'ArrowUp') {
+          setHorizontalStretch(horizontalStretch + 10)
+        }
+      }}
+    >
       {alignedPerformance.ready() && (
         <Paper style={{ position: 'fixed', padding: '0.5rem', right: 0 }}>
           <Box
@@ -139,7 +173,9 @@ export default function AlignmentEditor() {
       )}
 
       {alignedPerformance.ready() && (
-        <svg width={2000} height={areaHeight + 300}>
+        <svg
+          width={2000}
+          height={areaHeight + 300}>
           {alignedPerformance.getSemanticPairs().map((pair) => {
             const scoreNotePosition = pair.scoreNote ?
               [pair.scoreNote.qstamp * horizontalStretch,
@@ -151,6 +187,9 @@ export default function AlignmentEditor() {
 
             return (
               <g>
+                <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
+                <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
+
                 {pair.scoreNote && (
                   <rect key={`note_${pair.scoreNote.id}`}
                     className={`scoreNote ${pair.motivation === Motivation.Omission && 'missingNote'} ${activeScoreNote === pair.scoreNote && 'active'}`}
