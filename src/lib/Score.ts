@@ -1,3 +1,4 @@
+import { HMM, HMMEvent, pitchToSitch, sitchToPitch } from "alignmenttool"
 import { vrvToolkit } from "../components/Verovio"
 
 export type Note = {
@@ -92,6 +93,42 @@ export class Score {
 
     public allNotes(): Note[] {
         return this.notes
+    }
+
+    public asHMM(): HMM {
+        const timemap = this.timemap
+        let result: HMMEvent[] = []
+
+        for (const event of timemap) {
+            if (!event.on) continue
+
+            const notesAtTime = []
+            for (const on of event.on) {
+                const midiValues = vrvToolkit.getMIDIValuesForElement(on)
+
+                // prepare the voice parameter
+                const staff = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('staff') || null
+                const layer = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('layer') || null
+                if (!staff || !layer) continue
+                const voice = (Number(staff.getAttribute('n'))-1) + Number(layer.getAttribute('n'))
+
+                // ignore the note if its tied
+                if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
+                    continue
+                }
+                notesAtTime.push({
+                    meiID: on, 
+                    voice: voice,
+                    sitch: pitchToSitch(midiValues.pitch)
+                })
+            }
+
+            result.push(new HMMEvent(event.qstamp, event.qstamp+0.5, [notesAtTime]))
+        }
+        const hmm = new HMM()
+        hmm.events = result 
+
+        return hmm
     }
 
     /**

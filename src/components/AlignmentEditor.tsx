@@ -1,7 +1,6 @@
 import { FC, useContext, useEffect, useRef, useState } from "react"
 import GlobalContext from "./GlobalContext"
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Select, Slider, TextField, Typography } from "@mui/material"
-import { AlignmentPair } from "sequence-align/src/types"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Select, TextField } from "@mui/material"
 import { Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
 import { MidiNote } from "../lib/Performance"
 import { Note } from "../lib/Score"
@@ -27,11 +26,12 @@ const EditMotivation: FC<EditMotivationProps> = ({ pair, changeMotivation, dialo
           onChange={(e) => {
             changeMotivation(pair!, e.target.value as Motivation)
           }}>
-            <MenuItem value={Motivation.ExactMatch}>Exact Match</MenuItem>
-            <MenuItem value={Motivation.Error}>Error</MenuItem>
-            <MenuItem value={Motivation.OctaveAlteration}>Octave Alteration</MenuItem>
-            <MenuItem value={Motivation.OctaveDoubling}>Octave Doubling</MenuItem>
-            <MenuItem value={Motivation.Uncertain}>Uncertain</MenuItem>
+          <MenuItem value={Motivation.ExactMatch}>Exact Match</MenuItem>
+          <MenuItem value={Motivation.Error}>Error</MenuItem>
+          <MenuItem value={Motivation.Ornamentation}>Ornamentation</MenuItem>
+          <MenuItem value={Motivation.Alteration}>Alteration</MenuItem>
+          <MenuItem value={Motivation.OctaveAddition}>Octave Addition</MenuItem>
+          <MenuItem value={Motivation.Uncertain}>Uncertain</MenuItem>
         </Select>
       </DialogContent>
       <DialogActions>
@@ -45,7 +45,7 @@ const EditMotivation: FC<EditMotivationProps> = ({ pair, changeMotivation, dialo
 
 export default function AlignmentEditor() {
   const horizontalStretch = 60
-  const verticalStretch = 2.5
+  const verticalStretch = 2.9
   const areaHeight = 127 * verticalStretch
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -54,22 +54,12 @@ export default function AlignmentEditor() {
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
   const [actor, setActor] = useState('')
 
-  const changeGapOpen = (event: Event, newValue: number | number[]) => {
-    alignedPerformance.setGapOpen(newValue as number)
-    triggerUpdate()
-  }
-
-  const changeGapExt = (event: Event, newValue: number | number[]) => {
-    alignedPerformance.setGapExt(newValue as number)
-    triggerUpdate()
-  }
-
   const removeAlignment = (pair: SemanticAlignmentPair) => {
     // remove the current alignment
     const index = alignedPerformance.semanticPairs.indexOf(pair)
     alignedPerformance.semanticPairs.splice(index, 1)
 
-    // insert two gap alignments
+    // re-insert the two wrongly matched notes as orphanes
     alignedPerformance.semanticPairs.push({
       scoreNote: pair.scoreNote,
       motivation: Motivation.Omission
@@ -95,49 +85,56 @@ export default function AlignmentEditor() {
     <div>
       {alignedPerformance.ready() && (
         <Paper style={{ position: 'fixed', padding: '0.5rem', right: 0 }}>
-          <Typography gutterBottom>Penalty for opening a new gap</Typography>
-          <Slider
-            getAriaLabel={() => 'gap open score'}
-            value={alignedPerformance.gapOpen}
-            onChange={changeGapOpen}
-            valueLabelDisplay="auto"
-            min={-15}
-            max={0}
-            marks={true}
-          />
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              flexDirection: 'column',
+            }}
+          >
+            <TextField
+              sx={{ m: 1 }}
+              variant='standard'
+              label='alignment carried out by'
+              value={actor}
+              onChange={(e) => {
+                setActor(e.target.value)
+              }} />
+            <Button
+              sx={{ m: 1 }}
+              variant='outlined'
+              onClick={() => {
+                const element = document.createElement('a')
+                const file = new Blob([alignedPerformance.rawPerformance?.serializeToRDF() || ''], { type: 'application/ld+json' });
+                element.href = URL.createObjectURL(file)
+                element.download = `midi.jsonld`
+                element.click()
+              }}>Export MIDI as RDF</Button>
+            <br />
 
-          <Typography gutterBottom>penalty for extending an existing gap</Typography>
-          <Slider
-            getAriaLabel={() => 'gap ext score'}
-            value={alignedPerformance.gapExt}
-            onChange={changeGapExt}
-            valueLabelDisplay="auto"
-            min={-15}
-            max={0}
-            marks={true}
-          />
+            <Button
+              sx={{ m: 1 }}
+              variant='outlined'
+              onClick={() => {
+                const element = document.createElement('a')
+                const file = new Blob([alignedPerformance.score?.serializeToRDF() || ''], { type: 'application/ld+json' });
+                element.href = URL.createObjectURL(file)
+                element.download = `score.jsonld`
+                element.click()
+              }}>Export Score as RDF</Button>
+            <br />
 
-          <TextField value={actor} onChange={(e) => {
-            setActor(e.target.value)
-          }} />
-          <br />
-
-          <Button variant='outlined'
-            onClick={() => {
-              console.log(alignedPerformance.rawPerformance?.serializeToRDF())
-            }}>Export MIDI as RDF</Button>
-          <br />
-
-          <Button variant='outlined'
-            onClick={() => {
-              console.log(alignedPerformance.score?.serializeToRDF())
-            }}>Export Score as RDF</Button>
-          <br />
-
-          <Button variant='outlined'
-            onClick={() => {
-              console.log(alignedPerformance.serializeToRDF(actor))
-            }}>Export Alignments as RDF</Button>
+            <Button
+              sx={{ m: 1 }}
+              variant='outlined'
+              onClick={() => {
+                const element = document.createElement('a')
+                const file = new Blob([alignedPerformance.serializeToRDF(actor) || ''], { type: 'application/ld+json' });
+                element.href = URL.createObjectURL(file)
+                element.download = `alignment.jsonld`
+                element.click()
+              }}>Export Alignments as RDF</Button>
+          </Box>
         </Paper>
       )}
 
@@ -147,7 +144,7 @@ export default function AlignmentEditor() {
             const scoreNotePosition = pair.scoreNote ?
               [pair.scoreNote.qstamp * horizontalStretch,
               (127 - pair.scoreNote.pitch) * verticalStretch] : [,]
-            
+
             const midiNotePosition = pair.midiNote ?
               [pair.midiNote.onsetTime * horizontalStretch,
               (127 - pair.midiNote.pitch) * verticalStretch + areaHeight] : [,]
@@ -156,18 +153,17 @@ export default function AlignmentEditor() {
               <g>
                 {pair.scoreNote && (
                   <rect key={`note_${pair.scoreNote.id}`}
-                    className='scoreNote'
+                    className={`scoreNote ${pair.motivation === Motivation.Omission && 'missingNote'} ${activeScoreNote === pair.scoreNote && 'active'}`}
                     id={`scoreNote_${pair.scoreNote.id}`}
                     x={scoreNotePosition[0]}
                     y={scoreNotePosition[1]}
                     width={pair.scoreNote.duration * horizontalStretch}
-                    height={7}
+                    height={5}
                     onClick={(e) => {
                       setActiveScoreNote(pair.scoreNote)
                       if (activeMIDINote) {
-                        // remove the unaligned MIDI note from the alignments array
-                        const index = alignedPerformance.semanticPairs.findIndex(other => other.midiNote === pair.midiNote)
-                        alignedPerformance.semanticPairs.splice(index, 1)
+                        // remove a posssibly existing alignment
+                        removeAlignment(pair)
 
                         // find the unaligned score note and attach the new MIDI note to it 
                         // as an exact match
@@ -176,6 +172,12 @@ export default function AlignmentEditor() {
                           pairToModify.midiNote = activeMIDINote
                           pairToModify.motivation = Motivation.ExactMatch
                         }
+
+                        // remove the orphan MIDI note
+                        const index = alignedPerformance.semanticPairs.findIndex(other => (other.midiNote === pair.midiNote && other.motivation === Motivation.Addition))
+                        console.log('index=', index)
+                        alignedPerformance.semanticPairs.splice(index, 1)
+
                         triggerUpdate()
                         setActiveMIDINote(undefined)
                         setActiveScoreNote(undefined)
@@ -185,18 +187,17 @@ export default function AlignmentEditor() {
 
                 {pair.midiNote && (
                   <rect key={`note_${pair.midiNote.id}`}
-                    className='midiNote'
+                    className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
                     id={`midiNote_${pair.midiNote.id}`}
                     x={midiNotePosition[0]}
                     y={midiNotePosition[1]}
                     width={pair.midiNote.duration * horizontalStretch}
-                    height={7}
+                    height={5}
                     onClick={(e) => {
                       setActiveMIDINote(pair.midiNote)
                       if (activeScoreNote) {
-                        // remove the unaligned score note from the alignments array
-                        const index = alignedPerformance.semanticPairs.findIndex(other => other.scoreNote === pair.scoreNote)
-                        alignedPerformance.semanticPairs.splice(index, 1)
+                        // remove a posssibly existing alignment
+                        removeAlignment(pair)
 
                         // find the unaligned MIDI note and attach the new score note to it 
                         // as an exact match
@@ -205,6 +206,11 @@ export default function AlignmentEditor() {
                           pairToModify.scoreNote = activeScoreNote
                           pairToModify.motivation = Motivation.ExactMatch
                         }
+
+                        // remove the orphan score note
+                        const index = alignedPerformance.semanticPairs.findIndex(other => (other.scoreNote === pair.scoreNote && other.motivation === Motivation.Omission))
+                        alignedPerformance.semanticPairs.splice(index, 1)
+
                         triggerUpdate()
                         setActiveMIDINote(undefined)
                         setActiveScoreNote(undefined)
@@ -218,8 +224,8 @@ export default function AlignmentEditor() {
                     x2={midiNotePosition[0]}
                     y2={midiNotePosition[1]}
                     stroke={pair.motivation === Motivation.ExactMatch ? 'black' : 'blue'}
-                    strokeWidth={2}
-                    strokeOpacity={0.8}
+                    strokeWidth={3}
+                    strokeOpacity={0.3}
                     onClick={(e) => {
                       if (e.altKey) removeAlignment(pair)
                       else {

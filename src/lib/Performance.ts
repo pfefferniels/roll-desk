@@ -1,3 +1,4 @@
+import { PianoRoll, pitchToSitch } from 'alignmenttool';
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent, SetTempoEvent } from 'midifile-ts';
 
 export type MidiNote = {
@@ -75,6 +76,26 @@ export class RawPerformance {
         })
 
         return result
+    }
+
+    public asPianoRoll(): PianoRoll {
+        const pr = new PianoRoll()
+        pr.events = this.asNotes().map(note => {
+            return {
+                ontime: note.onsetTime,
+                offtime: note.onsetTime + note.duration,
+                id: note.id.toString(),
+                pitch: note.pitch,
+                sitch: pitchToSitch(note.pitch),
+                onvel: 80,
+                offvel: 80,
+                channel: 1,
+                endtime: note.onsetTime + note.duration,
+                label: note.id.toString()
+            }
+        })
+        
+        return pr
     }
 
     public at(id: number): MidiNote | undefined {
