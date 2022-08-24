@@ -120,6 +120,29 @@ export class AlignedPerformance {
         }
     }
 
+    public align(midiNote: MidiNote, scoreNote: Note) {
+        // remove orphanes
+        const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote === midiNote && pair.motivation === Motivation.Addition)
+        this.semanticPairs.splice(orphanMidiNoteIndex, 1)
+
+        const orphanScoreNoteIndex = this.semanticPairs.findIndex(pair => pair.scoreNote === scoreNote && pair.motivation === Motivation.Omission)
+        this.semanticPairs.splice(orphanScoreNoteIndex, 1)
+
+        // insert new pair and try to determine its possible motivation
+        let motivation = Motivation.Uncertain
+        if (scoreNote.pitch === midiNote.pitch) {
+            motivation = Motivation.ExactMatch
+        }
+        else {
+            motivation = Motivation.Alteration
+        }
+
+        this.semanticPairs.push({
+            scoreNote,
+            midiNote,
+            motivation
+        })
+    }
 
     /**
      * This function generates RDF triples out of the Alignment

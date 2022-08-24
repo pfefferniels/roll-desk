@@ -224,23 +224,9 @@ export default function AlignmentEditor() {
                     onClick={(e) => {
                       setActiveScoreNote(pair.scoreNote)
                       if (activeMIDINote) {
-                        // remove a posssibly existing alignment
-                        alignedPerformance.removeAlignment(pair)
+                        alignedPerformance.align(activeMIDINote, activeScoreNote!)
                         triggerUpdate()
 
-                        // find the unaligned score note and attach the new MIDI note to it 
-                        // as an exact match
-                        const pairToModify = alignedPerformance.semanticPairs.find(other => other.scoreNote === pair.scoreNote)
-                        if (pairToModify) {
-                          pairToModify.midiNote = activeMIDINote
-                          pairToModify.motivation = Motivation.ExactMatch
-                        }
-
-                        // remove the orphan MIDI note
-                        const index = alignedPerformance.semanticPairs.findIndex(other => (other.midiNote === pair.midiNote && other.motivation === Motivation.Addition))
-                        alignedPerformance.semanticPairs.splice(index, 1)
-
-                        triggerUpdate()
                         setActiveMIDINote(undefined)
                         setActiveScoreNote(undefined)
                       }
@@ -258,22 +244,7 @@ export default function AlignmentEditor() {
                     onClick={(e) => {
                       setActiveMIDINote(pair.midiNote)
                       if (activeScoreNote) {
-                        // remove a posssibly existing alignment
-                        alignedPerformance.removeAlignment(pair)
-                        triggerUpdate()
-
-                        // find the unaligned MIDI note and attach the new score note to it 
-                        // as an exact match
-                        const pairToModify = alignedPerformance.semanticPairs.find(other => other.midiNote === pair.midiNote)
-                        if (pairToModify) {
-                          pairToModify.scoreNote = activeScoreNote
-                          pairToModify.motivation = Motivation.ExactMatch
-                        }
-
-                        // remove the orphan score note
-                        const index = alignedPerformance.semanticPairs.findIndex(other => (other.scoreNote === pair.scoreNote && other.motivation === Motivation.Omission))
-                        alignedPerformance.semanticPairs.splice(index, 1)
-
+                        alignedPerformance.align(pair.midiNote!, activeScoreNote)
                         triggerUpdate()
                         setActiveMIDINote(undefined)
                         setActiveScoreNote(undefined)
