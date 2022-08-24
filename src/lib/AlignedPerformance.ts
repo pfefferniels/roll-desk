@@ -80,6 +80,48 @@ export class AlignedPerformance {
     }
 
     /**
+     * removes a specific alignment and inserts two orphanes
+     * instead (omission/addition)
+     * @param pair 
+     */
+    public removeAlignment(pair: SemanticAlignmentPair) {
+        // remove the current alignment
+        const index = this.semanticPairs.indexOf(pair)
+        this.semanticPairs.splice(index, 1)
+
+        // re-insert the two wrongly matched notes as orphanes
+        this.semanticPairs.push({
+            scoreNote: pair.scoreNote,
+            motivation: Motivation.Omission
+        })
+
+        this.semanticPairs.push({
+            midiNote: pair.midiNote,
+            motivation: Motivation.Addition
+        })
+    }
+
+    /**
+     * removes all alignments and inserts orphanes instead.
+     */
+    public removeAllAlignments() {
+        this.semanticPairs.forEach(pair => this.removeAlignment(pair))
+    }
+
+    /**
+     * Updates the motivation of a specific alignment
+     * @param pair 
+     * @param target 
+     */
+    updateMotivation(pair: SemanticAlignmentPair, target: Motivation) {
+        const index = this.semanticPairs.indexOf(pair)
+        if (index >= 0) {
+            this.semanticPairs[index].motivation = target
+        }
+    }
+
+
+    /**
      * This function generates RDF triples out of the Alignment
      * data. 
      * 
