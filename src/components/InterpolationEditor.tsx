@@ -75,6 +75,17 @@ const Dated = (props: {dated: any}) => {
 
     return (
         <div>
+            <h5>ornamentation</h5>
+            {dated.ornamentationMap && dated.ornamentationMap.ornament && dated.ornamentationMap.ornament.map((ornament: any) => {
+                return (
+                    <div key={`ornament_${ornament['@'].date}`}>
+                        @{ornament['@'].date} – 
+                        from {ornament['@']['frame.milliseconds.start'].toFixed(2)} to {ornament['@']['frame.milliseconds.end'].toFixed(2)}
+                        <span> ({ornament['@']['note.order']})</span>
+                    </div>
+                )
+            })}
+
             <h5>dynamics</h5>
             {dated.dynamicsMap && dated.dynamicsMap.dynamics && dated.dynamicsMap.dynamics.map((dynamics: any) => {
                 return (

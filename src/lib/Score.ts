@@ -1,4 +1,4 @@
-import { HMM, HMMEvent, pitchToSitch, sitchToPitch } from "alignmenttool"
+import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { vrvToolkit } from "../components/Verovio"
 
 export type Note = {

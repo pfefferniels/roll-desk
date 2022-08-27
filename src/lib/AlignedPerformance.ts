@@ -19,6 +19,10 @@ export type SemanticAlignmentPair = {
     motivation: Motivation
 }
 
+/**
+ * Stores a performance aligned to a score and 
+ * information about the alignment.
+ */
 export class AlignedPerformance {
     score?: Score
     rawPerformance?: RawPerformance
@@ -120,6 +124,13 @@ export class AlignedPerformance {
         }
     }
 
+    /**
+     * aligns a MIDI and a score note and tries to determine
+     * its motivation as possible.
+     * 
+     * @param midiNote 
+     * @param scoreNote 
+     */
     public align(midiNote: MidiNote, scoreNote: Note) {
         // remove orphanes
         const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote === midiNote && pair.motivation === Motivation.Addition)
@@ -145,7 +156,7 @@ export class AlignedPerformance {
     }
 
     /**
-     * This function generates RDF triples out of the Alignment
+     * This function generates RDF triples from the Alignment
      * data. 
      * 
      * @todo should it also include the exports of Score and RawPerformance?
@@ -198,8 +209,8 @@ export class AlignedPerformance {
     }
 
     /**
-     * Returns the performed note at a given MEI ID.
-     * @param id 
+     * Returns the performed note for a given score note
+     * @param id MEI id of the given score note
      * @param part 
      * @returns 
      */
@@ -216,18 +227,5 @@ export class AlignedPerformance {
     public ready(): boolean {
         return !!this.score && !!this.rawPerformance
     }
-
-    /**
-     * Returns the score time (qstamp) of a given performance time (onset)
-     * 
-     * @param onset 
-     * @returns -1 if the given onset cannot be found
-     */
-    public qstampOfOnset(onset: number): number {
-        return this.semanticPairs.find(pair => pair.midiNote?.onsetTime === onset)?.scoreNote?.qstamp || -1
-    }
-
-    public tstampOfOnset(onset: number): number {
-        return Score.qstampToTstamp(this.qstampOfOnset(onset))
-    }
 }
+

@@ -1,43 +1,9 @@
 import { MidiNote } from "./Performance"
 import { AlignedPerformance } from "./AlignedPerformance"
 import { Note, Score } from "./Score"
+import { MSM } from "./Msm"
 
-const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60/d).toFixed(3))
-
-type Point = {
-    x: number,
-    y: number
-}
-
-const findLeastSquare = (powFunction: (meanTempo: number) => (x: number) => number, dataPoints: Point[]) => {
-    let optimal = 9999999
-    let optimalAttempt = -1
-    for (let attempt = 0.1; attempt < 1.0; attempt += 0.1) {
-        let totalDiffs = 0;
-        for (let i=0; i<dataPoints.length; i++) {
-            const diff = Math.abs(powFunction(attempt)(dataPoints[i].x) - dataPoints[i].y)
-            totalDiffs += diff
-        }
-        if (totalDiffs < optimal) {
-            optimal = totalDiffs
-            optimalAttempt = attempt
-        }
-    }
-    return optimalAttempt
-}
-
-enum AgogicShape {
-    Acc, 
-    Rit,
-    Neutral
-}
-
-type Trend = {
-    begin: number,
-    end: number, 
-    bpm: number,
-    shape: AgogicShape
-}
+const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
 
 type Tempo = {
     'date': number,
@@ -53,14 +19,76 @@ type Dynamics = {
     'transition.to'?: number
 }
 
+type Ornament = {
+    date: number,
+    'name.ref': string,
+    'note.order': string,
+    'frame.milliseconds.start': number, 
+    'frame.milliseconds.end': number,
+    'scale': number
+}
+
+/**
+ * Performs the interpolation of an aligned performance
+ * into MPM.
+ */
 export class Interpolation {
     alignedPerformance: AlignedPerformance
-    preferArpeggio: boolean = false
     timingImprecision: number = 0
+
+    /**
+     * working copy of the MSM on which multiple 
+     * operations are performed in the process of 
+     * the alignment.
+     */
+    currentMSM: MSM
+
+    /**
+     * working copy of MPM which during the process of 
+     * interpolation is gradually filled with MPM elements.
+     */
+    currentMPM: any
 
     constructor(alignedPerformance: AlignedPerformance, preferArpeggio: boolean) {
         this.alignedPerformance = alignedPerformance
-        this.preferArpeggio = preferArpeggio
+        this.currentMSM = new MSM(alignedPerformance)
+
+        const nParts = alignedPerformance.score?.countParts() || 0
+        this.currentMPM = {
+            "@": {
+                xmlns: "http://www.cemfi.de/mpm/ns/1.0"
+            },
+            performance: {
+                "@": {
+                    name: '',
+                    pulsesPerQuarter: 720
+                },
+                global: {
+                    dated: {
+                        'tempoMap': {},
+                        'ornamentationMap': {},
+                        'imprecisionMap.timing': {}
+                    }
+                },
+                part: Array.from(Array(nParts).keys()).map(i => {
+                    return {
+                        "@": {
+                            name: `part${i}`,
+                            number: `${i + 1}`,
+                            "midi.channel": `${i}`,
+                            "midi.port": "0"
+                        },
+                        dated: {
+                            dynamicsMap: {},
+                            asynchronyMap: {},
+                            ornamentationMap: {},
+                            articulationMap: {}
+                        }
+                    }
+                })
+            }
+        }
+
 
         // Welte-Mignon piano rolls e.g. have an avarage imprecision range of 10ms.
         this.timingImprecision = 10
@@ -69,39 +97,78 @@ export class Interpolation {
     exportImprecisionMapTiming(): any {
         return {
             // Welte-Mignon piano rolls have an avarage imprecision range of 10ms.
-                'distribution.uniform': {
-                    '@': {
-                        'date': 0.0,
-                        'limit.lower': -0.5 * this.timingImprecision,
-                        'limit.upper': 0.5 * this.timingImprecision
-                    }
+            'distribution.uniform': {
+                '@': {
+                    'date': 0.0,
+                    'limit.lower': -0.5 * this.timingImprecision,
+                    'limit.upper': 0.5 * this.timingImprecision
+                }
             }
         }
     }
 
-    private isInTimingImprecisionRangeOf(num: number, ref: number): boolean {
-        return false
+    private perform_prepareGlobalOrnamentation() {
+        const isSorted = (arr: number[]) => {
+            let direction = -(arr[0] - arr[1]);
+            for (let [i, val] of arr.entries()) {
+                direction = !direction ? -(arr[i - 1] - arr[i]) : direction;
+                if (i === arr.length - 1)
+                    return !direction ? 0 : direction / Math.abs(direction);
+                else if ((val - arr[i + 1]) * direction > 0) return 0;
+            }
+        }
+
+        const ornaments: Ornament[] = []
+
+        const chords = this.currentMSM.asChords()
+        for (const [date, arpeggioNotes] of Object.entries(chords)) {
+            // TODO: can an arpeggio consist of only two notes?
+            if (arpeggioNotes.length >= 2) {
+                const sortedByOnset = arpeggioNotes.sort((a, b) => a['midi.onset'] - b['midi.onset'])
+
+                const arpeggioDirection = isSorted(sortedByOnset.map(note => note["midi.pitch"]))
+                let noteOrder = ''
+                if (arpeggioDirection === 1) noteOrder = 'ascending pitch'
+                else if (arpeggioDirection === -1) noteOrder = 'descending pitch'
+                else noteOrder = sortedByOnset.map(note => `#${note["xml:id"]}`).join(' ')
+                
+                const duration = sortedByOnset[sortedByOnset.length-1]["midi.onset"] - sortedByOnset[0]["midi.onset"] 
+
+                ornaments.push({
+                    'date': +date,
+                    'name.ref': 'neutralArpeggio',
+                    'note.order': noteOrder,
+                    'frame.milliseconds.start': (-duration/2) * 1000, 
+                    'frame.milliseconds.end': (duration/2) * 1000,
+                    scale: 0.0
+                })
+
+                const onsetSum = arpeggioNotes.map(note => note['midi.onset']).reduce((a, b) => a + b, 0)
+                const avarageOnset = (onsetSum / arpeggioNotes.length) || 0
+
+                arpeggioNotes.forEach(note => {
+                    note['midi.onset'] = avarageOnset
+                })
+            }
+        }
+
+        this.currentMPM.performance.global.dated.ornamentationMap.ornament = ornaments.map(o => ({'@': o}))
     }
 
-    /**
-     * Exports tempo map based on the Douglas-Peucker algorithm.
-     * 
-     * @param beatLength The length of a beat. Should be derived from time signature.
-     * @returns array of <tempo> elements
-     */
-    public exportTempoMap_dp(beatLength = 1): Tempo[] {
-        if (!this.alignedPerformance.score) return []
-        let tempoMap: Tempo[] = []
+    private perform_interpolateTempo() {
+        const beatLength = 720
+
+        let tempos: Tempo[] = []
 
         const generatepPowFunction = (frameBegin: number, frameEnd: number, bpm: number, transitionTo: number, meanTempoAt: number) => {
-            return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
+            return (x: number) => Math.pow((x - frameBegin) / (frameEnd - frameBegin), Math.log(0.5) / Math.log(meanTempoAt)) * (transitionTo - bpm) + bpm;
         }
-    
+
         type InterpolationPoint = {
-            qstamp: number, 
+            tstamp: number,
             bpm: number
         }
-        
+
         function douglasPeucker(points: InterpolationPoint[], epsilon: number) {
             if (!points.length) {
                 console.log('not enough notes present')
@@ -109,231 +176,102 @@ export class Interpolation {
             }
 
             const start = points[0]
-            const end = points[points.length-1]
-            const meanTempo = (start.bpm + end.bpm)/2
+            const end = points[points.length - 1]
+            const meanTempo = (start.bpm + end.bpm) / 2
 
-            console.log('douglasPeucker [', start.qstamp, '-', end.qstamp, '], [', start.bpm, '-', end.bpm, ']')
-            console.log('searching in points', points, 'for bpm closest to meanTempo', meanTempo)
-    
+            console.log('douglasPeucker [', start.tstamp, '-', end.tstamp, '], [', start.bpm, '-', end.bpm, ']')
+
             // search for bpm value closest to meanTempo
             let optimal = Number.MAX_SAFE_INTEGER
             let meanTempoAtQstamp = 0;
-            for (let i=1; i<points.length-1; i++) {
+            for (let i = 1; i < points.length - 1; i++) {
                 const distance = Math.abs(points[i].bpm - meanTempo)
                 if (distance < optimal) {
                     optimal = distance
-                    meanTempoAtQstamp = points[i].qstamp;
+                    meanTempoAtQstamp = points[i].tstamp;
                 }
             }
-            console.log('optimal distance=', optimal, 'meanTempoAtQstamp=', meanTempoAtQstamp)
-            const fullDistance = end.qstamp - start.qstamp
+            const fullDistance = end.tstamp - start.tstamp
 
             if (fullDistance > beatLength) {
-                const meanTempoAt = (meanTempoAtQstamp - start.qstamp) / fullDistance 
-                console.log('meanTempoAt=', meanTempoAt)
-            
+                const meanTempoAt = (meanTempoAtQstamp - start.tstamp) / fullDistance
+
                 // create a new tempo curve
-                const powFunction = generatepPowFunction(start.qstamp, end.qstamp, start.bpm, end.bpm, meanTempoAt)
-            
+                const powFunction = generatepPowFunction(start.tstamp, end.tstamp, start.bpm, end.bpm, meanTempoAt)
+
                 // find point of maximum distance from this curve
                 let dmax = 0
                 let index = 0
-                for (let i=1; i<points.length-1; i++) {
-                    const d = Math.abs(points[i].bpm - powFunction(points[i].qstamp))
-                    console.log('d=', points[i].bpm, '-', powFunction(points[i].qstamp))
+                for (let i = 1; i < points.length - 1; i++) {
+                    const d = Math.abs(points[i].bpm - powFunction(points[i].tstamp))
                     if (d > dmax) {
                         index = i
                         dmax = d
                     }
                 }
-            
+
                 if (dmax > epsilon) {
-                    douglasPeucker(points.slice(0, index+1), epsilon)
+                    douglasPeucker(points.slice(0, index + 1), epsilon)
                     douglasPeucker(points.slice(index), epsilon)
                 }
                 else {
-                    tempoMap.push({
-                        'date': Score.qstampToTstamp(start.qstamp),
+                    tempos.push({
+                        'date': start.tstamp,
                         'bpm': start.bpm,
                         'transition.to': end.bpm,
                         'beatLength': beatLength / 4,
                         'meanTempoAt': +meanTempoAt.toFixed(2)
                     })
+
+                    // TODO if there is still a significant gap to epsilon
+                    // try to compensate with a rubato
                 }
             }
             else {
-                tempoMap.push({
-                    'date': Score.qstampToTstamp(start.qstamp),
+                tempos.push({
+                    'date': start.tstamp,
                     'bpm': start.bpm,
                     'beatLength': beatLength / 4
                 })
+
+                // TODO map agogic structures below beat length 
+                // with rubatoMap
             }
         }
 
         let onsets: number[] = []
-        let qstamps: number[] = []
-        for (let qstamp=0; qstamp<this.alignedPerformance.score.getMaxQstamp(); qstamp += beatLength) {
-            // TODO arpeggio?
-            const performedNotes = this.alignedPerformance.performedNotesAtQstamp(qstamp)
+        let tstamps: number[] = []
+        for (let tstamp = 0; tstamp < Score.qstampToTstamp(this.alignedPerformance.score!.getMaxQstamp()); tstamp += beatLength) {
+            const performedNotes = this.currentMSM.notesAtDate(tstamp)
+            console.log('performedNotes=', performedNotes)
+
             if (performedNotes && performedNotes[0]) {
-                onsets.push(performedNotes[0].onsetTime)
-                qstamps.push(qstamp)
+                onsets.push(performedNotes[0]["midi.onset"])
+                tstamps.push(tstamp)
             }
             else {
                 // TODO: if a qstamp has no notes, this probably 
                 // indicates rests, possibly filling up to an upbeat.
-                console.log('empty qstamp', qstamp)
+                console.log('empty tstamp', tstamp)
             }
         }
         const bpms = asBPM(onsets)
 
         const points: InterpolationPoint[] = bpms.map((bpm, i) => ({
-            qstamp: qstamps[i], 
+            tstamp: tstamps[i],
             bpm: bpm
         }))
 
         douglasPeucker(points, 4)
-        
-        return tempoMap
+
+        this.currentMPM.performance.global.dated.tempoMap.tempo = tempos.map(t => ({ '@': t }))
     }
 
-    /**
-     * export tempo map based on a naive approach of prolonged trends.
-     * 
-     * @param beatLength ideally deduced from time signature.
-     * @returns 
-     */
-    exportTempoMap(beatLength = 1): Tempo[] {
-        if (!this.alignedPerformance.ready() || !this.alignedPerformance.score) return []
+    private perform_finalizeGlobalOrnamentation() {
 
-        const determineAgogicShape = (diff: number) => {
-            if (diff < 0)       return AgogicShape.Rit
-            else if (diff > 0)  return AgogicShape.Acc
-            else                return AgogicShape.Neutral
-        }
-
-        if (!this.alignedPerformance.score) return []
-
-        // TODO use time signature
-        const onsetNotes = []
-        for (let i=0; i<this.alignedPerformance.score?.getMaxQstamp(); i += beatLength) {
-            // TODO arpeggio?
-            const performedNotes = this.alignedPerformance.performedNotesAtQstamp(i)
-            if (performedNotes && performedNotes[0]) onsetNotes.push(performedNotes[0])
-            else console.log('?', i) // TODO rest?
-        }
-        const onsets = onsetNotes.map(note => note.onsetTime)
-        const bpms = asBPM(onsets)
-
-        // constant tempo throughout in the range of the 
-        // expected imprecision? (TODO: this needs to be calculated accumulatively!)
-        if (bpms.every(v => this.isInTimingImprecisionRangeOf(v, bpms[0]))) {
-            return [{
-                date: 0,
-                bpm: bpms[0],
-                beatLength: beatLength
-            }]
-        }
-
-        const tempoMap: Tempo[] = []
-
-        const trend: Trend = {
-            begin: onsets[0],
-            end: 0,
-            bpm: bpms[0],
-            shape: AgogicShape.Neutral
-        }
-
-        for (let i=0; i<bpms.length-1; i++) {
-            const currentShape = determineAgogicShape(bpms[i+1] - bpms[i])
-            console.log(bpms[i], '-', bpms[i+1], '-> currentShape=', currentShape)
-
-            if (currentShape === trend.shape) {
-                // prolong the existing trend
-                console.log('prolonging an existing trend')
-                trend.end = onsets[i+2]
-            } else {
-                // a trend has finished:
-                // create a new <tempo> element and insert it into <tempoMap>
-                const frameBegin = this.alignedPerformance.qstampOfOnset(trend.begin)
-                const frameEnd = this.alignedPerformance.qstampOfOnset(trend.end)
-
-                console.log('trend from', frameBegin, 'to', frameEnd, '(', trend.bpm, '-', bpms[i], ')')
-
-                if (frameBegin === -1 || frameEnd === -1) {
-                    console.log('qstamp of frameBegin or frameEnd could not be determined.')
-                    // we failed. set a new trend anyways and try to proceed
-                    trend.begin = onsets[i]
-                    trend.end = onsets[i+2]
-                    trend.shape = currentShape
-                    continue
-                }
-
-                // insert result into MPM
-                const tempoAttributes: Tempo = {
-                    'date': Score.qstampToTstamp(frameBegin),
-                    'bpm': +trend.bpm.toFixed(1),
-                    'beatLength': beatLength / 4
-                }
-                
-                // Take values in between frameBegin and frameEnd into consideration
-                let notes = this.alignedPerformance.score.notesInRange(frameBegin, frameEnd)
-
-                let internalNotes: MidiNote[] = []
-                for (let j=frameBegin; j<frameEnd; j+=beatLength) {
-                    const notesAtTime = this.alignedPerformance.performedNotesAtQstamp(j)
-                    // TODO: arpeggio?
-                    if (notesAtTime && notesAtTime[0]) {
-                        internalNotes.push(notesAtTime[0])
-                    }
-                }
-                const internalBpms = asBPM(internalNotes.map(note => note.onsetTime))
-
-                // if there is some internal tempo development going on
-                // transition.to and meanTempoAt need to be calculated.
-                if (!internalBpms.every(bpm => bpm === internalBpms[0])) {
-                    tempoAttributes['transition.to'] = +bpms[i].toFixed(1)
-                    // depending on the amount of internal points 
-                    // use different algorithm
-                    const points = internalBpms.map((bpm, j): Point => ({
-                        x: notes[j].qstamp, 
-                        y: bpm || 0
-                    })).filter((point: Point) => point.y !== 0)
-
-                    const powFunction = (meanTempoAt: number) => {
-                        const bpm = internalBpms[0]
-                        const transitionTo = bpms[i]
-                        if (!transitionTo) throw new Error("transitionTo cannot be calculated")
-                        return (x: number) => Math.pow((x-frameBegin)/(frameEnd-frameBegin), Math.log(0.5)/Math.log(meanTempoAt)) * (transitionTo-bpm) + bpm;
-                    }
-
-                    tempoAttributes.meanTempoAt = findLeastSquare(powFunction, points)
-                }
-
-                tempoMap.push(tempoAttributes)
-
-                // prepare a new trend
-                trend.begin = onsets[i+1]
-                trend.bpm = bpms[i+1]
-                trend.end = 0
-                trend.shape = currentShape
-            }
-        }
-
-        // insert the last bpm value without any further
-        // ado (transition.to etc. do not make any sense).
-        tempoMap.push({
-            date: this.alignedPerformance.tstampOfOnset(onsets[bpms.length-2]),
-            bpm: bpms[bpms.length-1],
-            beatLength: beatLength / 4
-        })
-
-        return tempoMap
     }
 
-    exportDynamicsMap(partNumber: number): Dynamics[] {
-        if (!this.alignedPerformance.ready()) return []
-
+    private perform_interpolateDynamics(part = 0) {
         type TimedVelocity = {
             qstamp: number,
             velocity: number | undefined
@@ -341,7 +279,7 @@ export class Interpolation {
 
         const performedVelocities =
             this.alignedPerformance.score?.allNotes()
-                .filter((note: Note) => note.part === partNumber)
+                .filter((note: Note) => note.part === part)
                 .map((note: Note): TimedVelocity => {
                     return {
                         qstamp: note.qstamp,
@@ -356,11 +294,11 @@ export class Interpolation {
             if (!curr.velocity) return acc
 
             // avoid doublettes
-            if (acc[acc.length-1] && curr.velocity === acc[acc.length-1].volume) return acc
+            if (acc[acc.length - 1] && curr.velocity === acc[acc.length - 1].volume) return acc
 
             // find trends
-            const first = acc[acc.length-2]
-            const second = acc[acc.length-1]
+            const first = acc[acc.length - 2]
+            const second = acc[acc.length - 1]
             if (first && second) {
                 if ((first.volume < second.volume && second.volume < curr.velocity) || // crescendo trend
                     (first.volume > second.volume && second.volume > curr.velocity)) { // or decrescendo trend
@@ -372,67 +310,28 @@ export class Interpolation {
             }
 
             acc.push({
-                    date: 720 * curr.qstamp,
-                    volume: curr.velocity
-                })
+                date: 720 * curr.qstamp,
+                volume: curr.velocity
+            })
             return acc
         }, new Array<Dynamics>())
 
-        return dynamics
-    }
-
-    exportRubatoMap(partNumber: number) {
-
-    }
-    exportAsynchronyMap(partNumber: number) {
-        // get all places with more than one note per qstamp
+        this.currentMPM.performance.part[part].dated.dynamicsMap.dynamics = dynamics.map(d => ({ '@': d }))
     }
 
     exportMPM(performanceName: string, tempoReference: number, curvatureReference: number) {
         if (!this.alignedPerformance.score) return
-        const nParts = this.alignedPerformance.score.countParts()
 
-        return {
-                "@": {
-                    xmlns: "http://www.cemfi.de/mpm/ns/1.0"
-                },
-                performance: {
-                    "@": {
-                        name: performanceName,
-                        pulsesPerQuarter: 720
-                    },
-                    global: {
-                        dated: {
-                            'tempoMap': {
-                                tempo: this.exportTempoMap_dp(tempoReference).map((tempo: Tempo) => {
-                                    return { '@': tempo }
-                                }),
-                            },
-                            'rubatoMap': {
-                                rubato: []
-                            },
-                            'imprecisionMap.timing': this.exportImprecisionMapTiming()
-                        }
-                    },
-                    part: Array.from(Array(nParts).keys()).map(i => {
-                        return {
-                            "@": {
-                                name: `part${i}`,
-                                number: `${i+1}`,
-                                "midi.channel": `${i}`,
-                                "midi.port": "0"
-                            },
-                            dated: {
-                                dynamicsMap: {
-                                    dynamics: this.exportDynamicsMap(i+1).map((dynamics: Dynamics) => {
-                                                return { '@': dynamics }
-                                              }),
-                                    },
-                                asynchronyMap: []
-                            }
-                        }
-                    })
-            }
+        this.perform_prepareGlobalOrnamentation()
+        this.perform_interpolateTempo()
+        this.perform_finalizeGlobalOrnamentation()
+
+        const nParts = this.alignedPerformance.score?.countParts() || 0
+        for (let i = 0; i < nParts; i++) {
+            this.perform_interpolateDynamics(i)
         }
+
+        this.currentMPM.performance["@"].name = performanceName
+        return this.currentMPM
     }
 }

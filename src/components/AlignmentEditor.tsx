@@ -1,4 +1,4 @@
-import { FC, useContext, useEffect, useRef, useState } from "react"
+import { FC, useContext, useState } from "react"
 import GlobalContext from "./GlobalContext"
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Select, TextField } from "@mui/material"
 import { AlignedPerformance, Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
@@ -121,7 +121,7 @@ interface StaffLineProps {
 }
 
 /**
- * Draws staff lines using the standard F and G clef.
+ * Draws SVG staff lines using the standard F and G clef.
  */
 const StaffLines: FC<StaffLineProps> = ({ verticalStretch, verticalOffset }): JSX.Element => {
   return (
@@ -167,7 +167,7 @@ export default function AlignmentEditor() {
         if (e.key === 'ArrowDown') {
           setHorizontalStretch(horizontalStretch - 10)
         }
-        else if (e.key == 'ArrowUp') {
+        else if (e.key === 'ArrowUp') {
           setHorizontalStretch(horizontalStretch + 10)
         }
       }}
@@ -290,3 +290,4 @@ export default function AlignmentEditor() {
     </div>
   )
 }
+
