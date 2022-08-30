@@ -2,14 +2,22 @@ import { Score } from "./Score";
 import { AlignedPerformance } from "./AlignedPerformance";
 
 export type AlignedNote = {
+    // score part
     readonly 'xml:id': string,
     readonly 'part': number,
     readonly 'date': number,
-    readonly 'midi.pitch': number,
     readonly 'duration': number
     // TODO: pitchname, accidentals, octave
+
+    // performance part
+    readonly 'midi.pitch': number,
     'midi.onset': number,
-    'midi.duration': number,
+    readonly 'midi.duration': number,
+    readonly 'midi.velocity': number,
+
+    // temporary attributes used in the process of interpolation
+    'bpm'?: number, 
+    'bpm.beatLength'?: number
 }
 
 export type Chords = {
@@ -87,6 +95,7 @@ export class MSM {
                     'midi.pitch': pair.midiNote!.pitch,
                     'midi.onset': pair.midiNote!.onsetTime,
                     'midi.duration': pair.midiNote!.duration,
+                    'midi.velocity': pair.midiNote!.velocity,
                     // TODO: pitchname, accidentals, octave
                     duration: pair.scoreNote!.duration
                 }

@@ -1,4 +1,4 @@
-import { MSM } from "./Msm";
+import { MSM } from "../Msm";
 
 /**
  * The Transformer interface declares a method for building the chain of transformations.

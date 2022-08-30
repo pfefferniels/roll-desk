@@ -1,4 +1,4 @@
-import { MSM } from "./Msm";
+import { MSM } from "../Msm";
 import { AbstractTransformer } from "./Transformer";
 
 const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
@@ -79,9 +79,11 @@ export class InterpolateTempoMap extends AbstractTransformer {
                         'beatLength': beatLength / 4,
                         'meanTempoAt': +meanTempoAt.toFixed(2)
                     })
-    
-                    // TODO if there is still a significant gap to epsilon
-                    // try to compensate with a rubato
+
+                    msm.allNotes.forEach(n => {
+                        n['bpm'] = powFunction(n.date)
+                        n['bpm.beatLength'] = beatLength
+                    })
                 }
             }
             else {
@@ -90,9 +92,10 @@ export class InterpolateTempoMap extends AbstractTransformer {
                     'bpm': start.bpm,
                     'beatLength': beatLength / 4
                 })
-    
-                // TODO map agogic structures below beat length 
-                // with rubatoMap
+                msm.allNotes.forEach(n => {
+                    n['bpm'] = start.bpm
+                    n['bpm.beatLength'] = beatLength
+                })
             }
         }
     

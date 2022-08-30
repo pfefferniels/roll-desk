@@ -1,4 +1,4 @@
-import { MSM } from "./Msm"
+import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
 
 export type Ornament = {
