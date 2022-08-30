@@ -112,4 +112,8 @@ export class MSM {
             return prev
         }, {})
     }
+
+    public lastDate() {
+        return Math.max(...this.allNotes.map(note => note.date))
+    }
 }

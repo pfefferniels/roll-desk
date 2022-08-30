@@ -80,7 +80,7 @@ const Dated = (props: {dated: any}) => {
                 return (
                     <div key={`ornament_${ornament['@'].date}`}>
                         @{ornament['@'].date} – 
-                        from {ornament['@']['frame.milliseconds.start'].toFixed(2)} to {ornament['@']['frame.milliseconds.end'].toFixed(2)}
+                        from {ornament['@']['frame.start'].toFixed(2)}, duration {ornament['@']['frameLength'].toFixed(2)}
                         <span> ({ornament['@']['note.order']})</span>
                     </div>
                 )
