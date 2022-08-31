@@ -16,3 +16,18 @@
 .active {
   stroke-width: 2;
 }
+
+.connectionLine {
+  stroke-width: 4;
+  stroke-opacity: 0.2;
+}
+
+.connectionLine:hover {
+  stroke: #ff2c2c;
+  stroke-opacity: 1;
+}
+
+.scoreNote:hover {
+  fill: #ff2c2c;
+  opacity: 0.8;
+}

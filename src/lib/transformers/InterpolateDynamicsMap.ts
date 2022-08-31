@@ -1,11 +1,6 @@
+import { Dynamics, MPM } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
-
-type Dynamics = {
-    date: number,
-    volume: number | string,
-    'transition.to'?: number
-}
 
 export class InterpolateDynamicsMap extends AbstractTransformer {
     part: number 
@@ -15,10 +10,10 @@ export class InterpolateDynamicsMap extends AbstractTransformer {
         this.part = part
     }
 
-    public transform(msm: MSM, mpm: any): string {
+    public transform(msm: MSM, mpm: MPM): string {
         type TimedVelocity = {
             date: number,
-            velocity: number | undefined
+            volume: number | undefined
         }
 
         const performedVelocities =
@@ -27,7 +22,7 @@ export class InterpolateDynamicsMap extends AbstractTransformer {
                 .map((n): TimedVelocity => {
                     return {
                         date: n.date,
-                        velocity: n['midi.velocity']
+                        volume: n['midi.velocity']
                     }
                 })
 
@@ -35,32 +30,42 @@ export class InterpolateDynamicsMap extends AbstractTransformer {
 
         // find trends
         const dynamics = performedVelocities.reduce((acc, curr) => {
-            if (!curr.velocity) return acc
+            if (!curr.volume) return acc
 
             // avoid doublettes
-            if (acc[acc.length - 1] && curr.velocity === acc[acc.length - 1].volume) return acc
+            if (acc[acc.length - 1] && curr.volume === acc[acc.length - 1].volume) return acc
+
+            // different dynamics inside a chord?
+            if (acc[acc.length - 1] && curr.date === acc[acc.length - 1].date) {
+                // TODO insert a <dynamicsGradient> to an 
+                // existing ornamentation at this date.
+                // This might be a case of a temporal spread
+                // inserted by Welte-Mignon in order to allow 
+                // dynamic gradating.
+            }
 
             // find trends
             const first = acc[acc.length - 2]
             const second = acc[acc.length - 1]
             if (first && second) {
-                if ((first.volume < second.volume && second.volume < curr.velocity) || // crescendo trend
-                    (first.volume > second.volume && second.volume > curr.velocity)) { // or decrescendo trend
+                if ((first.volume < second.volume && second.volume < curr.volume) || // crescendo trend
+                    (first.volume > second.volume && second.volume > curr.volume)) { // or decrescendo trend
                     // remove middle element (last in acc array)
                     // and insert a transitionTo in the one before
                     acc.pop()
-                    first["transition.to"] = curr.velocity
+                    first["transition.to"] = curr.volume
                 }
             }
 
             acc.push({
+                type: 'dynamics',
                 date: curr.date,
-                volume: curr.velocity
+                volume: curr.volume
             })
             return acc
         }, new Array<Dynamics>())
 
-        mpm.performance.part[this.part].dated.dynamicsMap.dynamics = dynamics.map(d => ({ '@': d }))
+        mpm.insertInstructions(dynamics, this.part)
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)

@@ -253,13 +253,13 @@ export default function AlignmentEditor() {
                 )}
 
                 {pair.midiNote && pair.scoreNote && (
-                  <line x1={scoreNotePosition[0]}
+                  <line
+                    className='connectionLine'
+                    x1={scoreNotePosition[0]}
                     y1={scoreNotePosition[1]}
                     x2={midiNotePosition[0]}
                     y2={midiNotePosition[1]}
                     stroke={pair.motivation === Motivation.ExactMatch ? 'black' : 'blue'}
-                    strokeWidth={3}
-                    strokeOpacity={0.3}
                     onClick={(e) => {
                       if (e.altKey) {
                         alignedPerformance.removeAlignment(pair)

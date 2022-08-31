@@ -1,21 +1,10 @@
+import { MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
 
-export type Ornament = {
-    date: number,
-    'name.ref': string,
-    'note.order': string,
-    'frameLength': number, 
-    'frame.start': number,
-    'scale': number
-}
-
 export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
-    public transform(msm: MSM, mpm: any): string {
-        //if (fail) {
-        //    return `message`
-        //}
-
+    public transform(msm: MSM, mpm: MPM): string {
+        console.log('mpm=', mpm)
         const isSorted = (arr: number[]) => {
             let direction = -(arr[0] - arr[1])
             for (let [i, val] of arr.entries()) {
@@ -45,6 +34,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
                 // TODO there should be an option which tells whether to prefer
                 // physical or symbolic time ...
                 ornaments.push({
+                    type: 'ornament',
                     'date': +date,
                     'name.ref': 'neutralArpeggio',
                     'note.order': noteOrder,
@@ -62,7 +52,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
             }
         }
 
-        mpm.performance.global.dated.ornamentationMap.ornament = ornaments.map(o => ({'@': o}))
+        mpm.insertInstructions(ornaments, 'global')
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)

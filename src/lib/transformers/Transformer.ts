@@ -1,4 +1,5 @@
 import { MSM } from "../Msm";
+import { MPM } from "../Mpm";
 
 /**
  * The Transformer interface declares a method for building the chain of transformations.
@@ -7,7 +8,7 @@ import { MSM } from "../Msm";
 export interface Transformer {
     setNext(transformer: Transformer): Transformer;
 
-    transform(msm: MSM, mpm: any): string;
+    transform(msm: MSM, mpm: MPM): string;
 }
 
 /**
@@ -19,13 +20,10 @@ export abstract class AbstractTransformer implements Transformer
 
     public setNext(transformer: Transformer): Transformer {
         this.nextTransformer = transformer;
-        // Returning a handler from here will let us link handlers in a
-        // convenient way like this:
-        // monkey.setNext(squirrel).setNext(dog);
         return transformer;
     }
 
-    public transform(msm: MSM, mpm: any): string {
+    public transform(msm: MSM, mpm: MPM): string {
         if (this.nextTransformer) {
             return this.nextTransformer.transform(msm, mpm)
         }

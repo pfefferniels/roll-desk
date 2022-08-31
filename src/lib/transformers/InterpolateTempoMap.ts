@@ -1,18 +1,11 @@
+import { MPM, Tempo } from "../Mpm";
 import { MSM } from "../Msm";
 import { AbstractTransformer } from "./Transformer";
 
 const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
 
-type Tempo = {
-    'date': number,
-    'bpm': number,
-    'beatLength': number,
-    'transition.to'?: number,
-    'meanTempoAt'?: number
-}
-
 export class InterpolateTempoMap extends AbstractTransformer {
-    transform(msm: MSM, mpm: any): string {
+    transform(msm: MSM, mpm: MPM): string {
         const beatLength = 720
 
         let tempos: Tempo[] = []
@@ -73,6 +66,7 @@ export class InterpolateTempoMap extends AbstractTransformer {
                 }
                 else {
                     tempos.push({
+                        type: 'tempo',
                         'date': start.tstamp,
                         'bpm': start.bpm,
                         'transition.to': end.bpm,
@@ -88,6 +82,7 @@ export class InterpolateTempoMap extends AbstractTransformer {
             }
             else {
                 tempos.push({
+                    type: 'tempo',
                     'date': start.tstamp,
                     'bpm': start.bpm,
                     'beatLength': beatLength / 4
@@ -103,7 +98,6 @@ export class InterpolateTempoMap extends AbstractTransformer {
         let tstamps: number[] = []
         for (let date = 0; date < msm.lastDate(); date += beatLength) {
             const performedNotes = msm.notesAtDate(date)
-            console.log('performedNotes=', performedNotes)
     
             if (performedNotes && performedNotes[0]) {
                 onsets.push(performedNotes[0]["midi.onset"])
@@ -123,8 +117,8 @@ export class InterpolateTempoMap extends AbstractTransformer {
         }))
     
         douglasPeucker(points, 4)
-    
-        mpm.performance.global.dated.tempoMap.tempo = tempos.map(t => ({ '@': t }))
+
+        mpm.insertInstructions(tempos, 'global')
     
         return super.transform(msm, mpm)
     }

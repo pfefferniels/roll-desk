@@ -1,3 +1,4 @@
+import { MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
 
@@ -6,8 +7,8 @@ const physicalToSymbolic = (physicalDate: number, bpm: number, beatLength: numbe
 }
 
 export class InterpolateSymbolicOrnamentation extends AbstractTransformer {
-    public transform(msm: MSM, mpm: any): string {
-        const ornaments = mpm.performance.global.dated.ornamentationMap.ornament.map((o: any) => o['@'])
+    public transform(msm: MSM, mpm: MPM): string {
+        const ornaments = mpm.getInstructions<Ornament>('global')
 
         ornaments.forEach((o: any) => {
             const correspondingMsmNote = msm.notesAtDate(o.date)[0]
@@ -16,7 +17,9 @@ export class InterpolateSymbolicOrnamentation extends AbstractTransformer {
             o['frameLength'] = physicalToSymbolic(o['frameLength'], correspondingMsmNote.bpm || 60, correspondingMsmNote['bpm.beatLength'] || 720)
         })
 
-        mpm.performance.global.dated.ornamentationMap.ornament = ornaments.map((o: any) => ({'@': o}))
+        // replace the existing physical instructions with symbolic ones
+        mpm.removeInstructions<Ornament>('global')
+        mpm.insertInstructions(ornaments, 'global')
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)
