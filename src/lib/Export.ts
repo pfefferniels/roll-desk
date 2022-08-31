@@ -8,6 +8,7 @@ import {
     InterpolateTempoMap,
     InterpolateTimingImprecision
 } from "./transformers"
+import { ExtractStyleDefinitions } from "./transformers/ExtractStyleDefinitions"
 
 /**
  * Performs the interpolation of an aligned performance
@@ -51,15 +52,21 @@ export class Interpolation {
         const interpolateDynamicsLeftHand = new InterpolateDynamicsMap(1)
         const interpolateDynamicsRightHand = new InterpolateDynamicsMap(0)
         const interpolateTimingImprecision = new InterpolateTimingImprecision()
+        const interpolateStylesGlobal = new ExtractStyleDefinitions('global')
+        const interpolateStylesLeftHand = new ExtractStyleDefinitions(1)
+        const interpolateStylesRightHand = new ExtractStyleDefinitions(0)
 
-        interpolatePhysicalOrnamentation.
-            setNext(interpolateTempoMap).
-            setNext(interpolateSymbolicOrnamentation).
-            setNext(interpolateDynamicsLeftHand).
-            setNext(interpolateDynamicsRightHand).
-            setNext(interpolateTimingImprecision)
+        interpolatePhysicalOrnamentation
+            .setNext(interpolateTempoMap)
+            .setNext(interpolateSymbolicOrnamentation)
+            .setNext(interpolateDynamicsLeftHand)
+            .setNext(interpolateDynamicsRightHand)
+            .setNext(interpolateStylesGlobal)
+            .setNext(interpolateStylesLeftHand)
+            .setNext(interpolateStylesRightHand)
+            .setNext(interpolateTimingImprecision)
 
-        // start the transformation chain
+            // start the transformation chain
         interpolatePhysicalOrnamentation.transform(msm, mpm)
 
         return mpm

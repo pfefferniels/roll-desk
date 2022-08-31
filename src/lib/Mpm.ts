@@ -7,6 +7,17 @@ import { parse } from "js2xmlparser"
  */
 export type Part = number | 'global'
 
+type Definition<T extends string> = {
+    readonly type: T
+}
+
+export interface OrnamentDef extends Definition<'ornament'> {
+    'frameLength'?: number
+    'frame.start'?: number
+    'transition.from'?: number
+    'transition.to'?: number
+}
+
 type DatedInstruction<T extends string> = {
     readonly type: T
 }
@@ -38,8 +49,8 @@ export interface Ornament extends DatedInstruction<'ornament'> {
     date: number
     'name.ref': string
     'note.order': string
-    'frameLength': number
-    'frame.start': number
+    'frameLength'?: number
+    'frame.start'?: number
     'transition.from'?: number
     'transition.to'?: number
     'scale': number
@@ -50,11 +61,18 @@ type AnyInstruction =
     | Ornament
     | Dynamics
 
+type AnyDefinition =
+    | OrnamentDef
+
 type InstructionType =
     | 'tempo'
     | 'ornament'
     | 'dynamics'
 
+/**
+ * Represents an MPM encoding and exposes some methods for
+ * easily working with it.
+ */
 export class MPM {
     rawMPM: any
 
@@ -69,6 +87,9 @@ export class MPM {
                     pulsesPerQuarter: 720
                 },
                 global: {
+                    header: {
+                        ornamentationStyles: {}
+                    },
                     dated: {
                         'tempoMap': {},
                         'ornamentationMap': {},
@@ -82,6 +103,9 @@ export class MPM {
                             number: `${i + 1}`,
                             "midi.channel": `${i}`,
                             "midi.port": "0"
+                        },
+                        header: {
+                            ornamentationStyles: {}
                         },
                         dated: {
                             dynamicsMap: {},
@@ -112,6 +136,54 @@ export class MPM {
         }
     }
 
+    insertDefinition(definition: AnyDefinition, part: Part): string {
+        const type = definition.type
+        const correspondingStylesName = {
+            'ornament': 'ornamentationStyles'
+        }[type]
+        const styles = this.getStyles(correspondingStylesName, part)
+        if (!styles) return ''
+
+        if (!styles.styleDef) {
+            styles.styleDef = {
+                '@': {
+                    'name': 'performance_style'
+                },
+            }
+        }
+
+        function uuid() {
+            return 'xxxxx'.replace(/[x]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        const name = `def_${uuid()}`
+
+        if (type === 'ornament') {
+            if (!styles.styleDef.ornamentDef) {
+                styles.styleDef.ornamentDef = []
+            }
+
+            const ornamentDef = styles.styleDef.ornamentDef
+            ornamentDef.push({
+                '@': {
+                    name
+                },
+                'temporalSpread': {
+                    '@': {
+                        'frame.start': definition['frame.start'],
+                        'frameLength': definition['frameLength'],
+                        'time.unit': 'ticks' 
+                    }
+                }
+            })
+        }
+
+        return name;
+    }
+
     /**
      * Based on the given instructions type, this method will
      * insert them into their corresponding map, e.g. <dynamics>
@@ -121,7 +193,7 @@ export class MPM {
      * @param instruction 
      * @param part a part number or 'global'
      */
-    insertInstructions<T>(instructions: AnyInstruction[], part: Part) {
+    insertInstructions(instructions: AnyInstruction[], part: Part) {
         if (!instructions.length) return
 
         const instructionType = instructions[0].type
@@ -172,6 +244,7 @@ export class MPM {
             return []
         }
 
+        if (!map[instructionType]) return []
         return map[instructionType].map((i: any) => i['@'])
     }
 
@@ -189,9 +262,20 @@ export class MPM {
             map = this.rawMPM.performance.global.dated[mapName]
         }
         else if (typeof part === 'number') {
-            map = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part+1)).dated[mapName]
+            map = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated[mapName]
         }
         return map
+    }
+
+    getStyles(stylesName: string, part: Part): any {
+        let styles
+        if (part === 'global') {
+            styles = this.rawMPM.performance.global.header[stylesName]
+        }
+        else if (typeof part === 'number') {
+            styles = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).header[stylesName]
+        }
+        return styles
     }
 
     private correspondingMapNameFor(instructionType: InstructionType) {

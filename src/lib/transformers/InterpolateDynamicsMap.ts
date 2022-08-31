@@ -17,8 +17,8 @@ export class InterpolateDynamicsMap extends AbstractTransformer {
         }
 
         const performedVelocities =
-            msm.allNotes.
-                filter(n => n.part-1 === this.part)
+            msm.allNotes
+                .filter(n => n.part-1 === this.part)
                 .map((n): TimedVelocity => {
                     return {
                         date: n.date,

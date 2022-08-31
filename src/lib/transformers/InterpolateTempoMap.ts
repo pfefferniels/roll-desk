@@ -73,7 +73,7 @@ export class InterpolateTempoMap extends AbstractTransformer {
                         'date': start.tstamp,
                         'bpm': start.bpm,
                         'transition.to': end.bpm,
-                        'beatLength': beatLength / 4,
+                        'beatLength': beatLength / 720 / 4,
                         'meanTempoAt': +meanTempoAt.toFixed(2)
                     })
 
@@ -88,7 +88,7 @@ export class InterpolateTempoMap extends AbstractTransformer {
                     type: 'tempo',
                     'date': start.tstamp,
                     'bpm': start.bpm,
-                    'beatLength': beatLength / 4
+                    'beatLength': beatLength / 720 / 4
                 })
                 msm.allNotes.forEach(n => {
                     n['bpm'] = start.bpm
