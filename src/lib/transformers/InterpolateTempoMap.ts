@@ -97,7 +97,7 @@ export class InterpolateTempoMap extends AbstractTransformer {
         let onsets: number[] = []
         let tstamps: number[] = []
         for (let date = 0; date < msm.lastDate(); date += beatLength) {
-            const performedNotes = msm.notesAtDate(date)
+            const performedNotes = msm.notesAtDate(date, 'global')
     
             if (performedNotes && performedNotes[0]) {
                 onsets.push(performedNotes[0]["midi.onset"])

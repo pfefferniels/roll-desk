@@ -2,9 +2,10 @@ import { parse } from "js2xmlparser"
 
 /**
  * A part can be specified as either a given
- * part number or global
+ * part number or global. This definition is 
+ * used in both, MSM and MPM.
  */
-type Part = number | 'global'
+export type Part = number | 'global'
 
 type DatedInstruction<T extends string> = {
     readonly type: T

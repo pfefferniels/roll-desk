@@ -1,31 +1,72 @@
 import { Score } from "./Score";
 import { AlignedPerformance } from "./AlignedPerformance";
+import { Part } from "./Mpm";
 
-export type AlignedNote = {
-    // score part
+/**
+ * Temporary attributes used and manipulated in the process of interpolation.
+ */
+type TemporaryAttributes = {
+    readonly 'midi.pitch': number,
+    'midi.onset': number,
+    'midi.duration': number,
+    'midi.velocity': number,
+    'bpm'?: number,
+    'bpm.beatLength'?: number
+}
+
+/**
+ * Represents a score note as part of an MSM encoding. 
+ * During the process of MPM generation several temporary 
+ * attributes will be attached to it.
+ */
+export type MsmNote = {
     readonly 'xml:id': string,
     readonly 'part': number,
     readonly 'date': number,
     readonly 'duration': number
-    // TODO: pitchname, accidentals, octave
+    readonly pitchname: string
+    readonly accidentals: number
+    readonly octave: number
+} & TemporaryAttributes
 
-    // performance part
-    readonly 'midi.pitch': number,
-    'midi.onset': number,
-    readonly 'midi.duration': number,
-    readonly 'midi.velocity': number,
-
-    // temporary attributes used in the process of interpolation
-    'bpm'?: number, 
-    'bpm.beatLength'?: number
-}
-
+/**
+ * Used to represent a homophonized version of the score.
+ */
 export type Chords = {
-    [tstamp: number]: AlignedNote[]
+    [tstamp: number]: MsmNote[]
 }
 
+/**
+ * This class represents an MSM encoding.
+ */
 export class MSM {
-    allNotes: AlignedNote[]
+    allNotes: MsmNote[]
+
+    /**
+     * Constructs an MSM representation from a done
+     * score-to-performance alignment. 
+     * 
+     * @param alignedPerformance 
+     */
+    constructor(alignedPerformance: AlignedPerformance) {
+        this.allNotes = alignedPerformance.getSemanticPairs()
+            .filter(pair => pair.midiNote && pair.scoreNote)
+            .map(pair => {
+                return {
+                    part: pair.scoreNote!.part,
+                    'xml:id': pair.scoreNote!.id,
+                    'date': Score.qstampToTstamp(pair.scoreNote!.qstamp),
+                    'pitchname': pair.scoreNote!.pname!,
+                    'octave': pair.scoreNote!.octave!,
+                    'accidentals': pair.scoreNote!.accid!,
+                    'midi.pitch': pair.midiNote!.pitch,
+                    'midi.onset': pair.midiNote!.onsetTime,
+                    'midi.duration': pair.midiNote!.duration,
+                    'midi.velocity': pair.midiNote!.velocity,
+                    duration: pair.scoreNote!.duration
+                }
+            })
+    }
 
     public serialize() {
         return {
@@ -84,32 +125,25 @@ export class MSM {
         }
     }
 
-    constructor(alignedPerformance: AlignedPerformance) {
-        this.allNotes = alignedPerformance.getSemanticPairs().
-            filter(pair => pair.midiNote && pair.scoreNote).
-            map(pair => {
-                return {
-                    part: pair.scoreNote!.part,
-                    'xml:id': pair.scoreNote!.id,
-                    'date': Score.qstampToTstamp(pair.scoreNote!.qstamp),
-                    'midi.pitch': pair.midiNote!.pitch,
-                    'midi.onset': pair.midiNote!.onsetTime,
-                    'midi.duration': pair.midiNote!.duration,
-                    'midi.velocity': pair.midiNote!.velocity,
-                    // TODO: pitchname, accidentals, octave
-                    duration: pair.scoreNote!.duration
-                }
-            })
-
-    }
-
-    public notesAtDate(tstamp: number, part?: number): AlignedNote[] {
+    /**
+     * Returns all notes present at a given score date in a given
+     * part.
+     * @param tstamp score date
+     * @param part if "global", all parts will be considered
+     * @returns array of MSM notes
+     */
+    public notesAtDate(tstamp: number, part: Part): MsmNote[] {
         return this.allNotes.filter(note => {
-            return part ? (note.date === tstamp && note.part === part)
-                : (note.date === tstamp)
+            return (typeof part === 'number') ?
+                (note.date === tstamp && note.part === part) // a specific part
+                : (note.date === tstamp) // consider all parts
         })
     }
 
+    /**
+     * Generates a homophonized version of the MSM score.
+     * @returns 
+     */
     public asChords(): Chords {
         return this.allNotes.reduce((prev: any, curr) => {
             if (prev[curr.date]) {
@@ -122,7 +156,11 @@ export class MSM {
         }, {})
     }
 
-    public lastDate() {
+    /**
+     * Returns the last date, at which a note is present.
+     * @returns score date in ticks
+     */
+    public lastDate(): number {
         return Math.max(...this.allNotes.map(note => note.date))
     }
 }

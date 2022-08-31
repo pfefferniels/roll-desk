@@ -3,7 +3,7 @@ import GlobalContext from "./GlobalContext"
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Select, TextField } from "@mui/material"
 import { AlignedPerformance, Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
 import { MidiNote } from "../lib/Performance"
-import { Note } from "../lib/Score"
+import { basePitchOfNote, ScoreNote } from "../lib/Score"
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ClearIcon from '@mui/icons-material/Clear';
 
@@ -151,7 +151,7 @@ export default function AlignmentEditor() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [currentAlignmentPair, setCurrentAlignmentPair] = useState<SemanticAlignmentPair>()
-  const [activeScoreNote, setActiveScoreNote] = useState<Note>()
+  const [activeScoreNote, setActiveScoreNote] = useState<ScoreNote>()
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
 
   const changeMotivation = (pair: SemanticAlignmentPair, target: Motivation) => {
@@ -202,7 +202,7 @@ export default function AlignmentEditor() {
           {alignedPerformance.getSemanticPairs().map((pair) => {
             const scoreNotePosition = pair.scoreNote ?
               [pair.scoreNote.qstamp * horizontalStretch,
-              (127 - pair.scoreNote.pitch) * verticalStretch] : [,]
+              (127 - basePitchOfNote(pair.scoreNote.pname || 'c', pair.scoreNote.octave || 0.0)) * verticalStretch] : [,]
 
             const midiNotePosition = pair.midiNote ?
               [pair.midiNote.onsetTime * horizontalStretch,
@@ -210,47 +210,51 @@ export default function AlignmentEditor() {
 
             return (
               <g>
-                <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
-                <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
+                <g className='scoreArea'>
+                  <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
+                  {pair.scoreNote && (
+                    <rect key={`note_${pair.scoreNote.id}`}
+                      className={`scoreNote ${pair.motivation === Motivation.Omission && 'missingNote'} ${activeScoreNote === pair.scoreNote && 'active'}`}
+                      id={`scoreNote_${pair.scoreNote.id}`}
+                      x={scoreNotePosition[0]}
+                      y={scoreNotePosition[1]}
+                      width={pair.scoreNote.duration * horizontalStretch}
+                      height={5}
+                      onClick={(e) => {
+                        setActiveScoreNote(pair.scoreNote)
+                        if (activeMIDINote) {
+                          alignedPerformance.align(activeMIDINote, activeScoreNote!)
+                          triggerUpdate()
 
-                {pair.scoreNote && (
-                  <rect key={`note_${pair.scoreNote.id}`}
-                    className={`scoreNote ${pair.motivation === Motivation.Omission && 'missingNote'} ${activeScoreNote === pair.scoreNote && 'active'}`}
-                    id={`scoreNote_${pair.scoreNote.id}`}
-                    x={scoreNotePosition[0]}
-                    y={scoreNotePosition[1]}
-                    width={pair.scoreNote.duration * horizontalStretch}
-                    height={5}
-                    onClick={(e) => {
-                      setActiveScoreNote(pair.scoreNote)
-                      if (activeMIDINote) {
-                        alignedPerformance.align(activeMIDINote, activeScoreNote!)
-                        triggerUpdate()
+                          setActiveMIDINote(undefined)
+                          setActiveScoreNote(undefined)
+                        }
+                      }} />
+                  )}
+                </g>
 
-                        setActiveMIDINote(undefined)
-                        setActiveScoreNote(undefined)
-                      }
-                    }} />
-                )}
+                <g className='midiArea'>
+                  <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
 
-                {pair.midiNote && (
-                  <rect key={`note_${pair.midiNote.id}`}
-                    className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
-                    id={`midiNote_${pair.midiNote.id}`}
-                    x={midiNotePosition[0]}
-                    y={midiNotePosition[1]}
-                    width={pair.midiNote.duration * horizontalStretch}
-                    height={5}
-                    onClick={(e) => {
-                      setActiveMIDINote(pair.midiNote)
-                      if (activeScoreNote) {
-                        alignedPerformance.align(pair.midiNote!, activeScoreNote)
-                        triggerUpdate()
-                        setActiveMIDINote(undefined)
-                        setActiveScoreNote(undefined)
-                      }
-                    }} />
-                )}
+                  {pair.midiNote && (
+                    <rect key={`note_${pair.midiNote.id}`}
+                      className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
+                      id={`midiNote_${pair.midiNote.id}`}
+                      x={midiNotePosition[0]}
+                      y={midiNotePosition[1]}
+                      width={pair.midiNote.duration * horizontalStretch}
+                      height={5}
+                      onClick={(e) => {
+                        setActiveMIDINote(pair.midiNote)
+                        if (activeScoreNote) {
+                          alignedPerformance.align(pair.midiNote!, activeScoreNote)
+                          triggerUpdate()
+                          setActiveMIDINote(undefined)
+                          setActiveScoreNote(undefined)
+                        }
+                      }} />
+                  )}
+                </g>
 
                 {pair.midiNote && pair.scoreNote && (
                   <line

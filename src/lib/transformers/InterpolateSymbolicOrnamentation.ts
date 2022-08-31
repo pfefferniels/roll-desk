@@ -11,10 +11,14 @@ export class InterpolateSymbolicOrnamentation extends AbstractTransformer {
         const ornaments = mpm.getInstructions<Ornament>('global')
 
         ornaments.forEach((o: any) => {
-            const correspondingMsmNote = msm.notesAtDate(o.date)[0]
+            const correspondingMsmNote = msm.notesAtDate(o.date, 'global')[0]
 
-            o['frame.start'] = physicalToSymbolic(o['frame.start'], correspondingMsmNote.bpm || 60, correspondingMsmNote['bpm.beatLength'] || 720)
-            o['frameLength'] = physicalToSymbolic(o['frameLength'], correspondingMsmNote.bpm || 60, correspondingMsmNote['bpm.beatLength'] || 720)
+            o['frame.start'] = physicalToSymbolic(o['frame.start'],
+                correspondingMsmNote.bpm || 60,
+                correspondingMsmNote['bpm.beatLength'] || 720)
+            o['frameLength'] = physicalToSymbolic(o['frameLength'],
+                correspondingMsmNote.bpm || 60,
+                correspondingMsmNote['bpm.beatLength'] || 720)
         })
 
         // replace the existing physical instructions with symbolic ones

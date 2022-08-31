@@ -1,18 +1,39 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { vrvToolkit } from "../components/Verovio"
 
-export type Note = {
+export type ScoreNote = {
     index: number,
     id: string,
     qstamp: number,
-    pitch: number,
+    pnum: number,
     duration: number,
     part: number
+
+    // the following parameters are optional:
+    // they are useful for visualizing and 
+    // further processing an alignment, but not
+    // strictly necessary
+    pname?: string,
+    accid?: number,
+    octave?: number
+}
+
+export function basePitchOfNote(pname: string, oct: number): number {
+    const diatonic = new Map<string, number>([
+        ['c', 60],
+        ['d', 62],
+        ['e', 64],
+        ['f', 65],
+        ['g', 67],
+        ['a', 69],
+        ['b', 71]
+    ]).get(pname.toLowerCase())
+    return (diatonic || 0) + (oct - 4) * 12
 }
 
 export class Score {
     private scoreDOM: Document
-    notes: Note[]
+    notes: ScoreNote[]
     timemap: any[]  // TODO define type. 
 
     // score encoding can be anything that Verovio can parse
@@ -31,16 +52,17 @@ export class Score {
     }
 
     // transform timemap to notes array
-    private getNotesFromTimemap(): Note[] {
+    private getNotesFromTimemap(): ScoreNote[] {
         const timemap = this.timemap
-        let result: Note[] = []
+        let result: ScoreNote[] = []
         let index = 0
         for (const event of timemap) {
             if (!event.on) continue
             for (const on of event.on) {
                 const midiValues = vrvToolkit.getMIDIValuesForElement(on)
                 const offTime = timemap.find((event: any) => event.off && event.off.includes(on)).qstamp || 0
-                const staff = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('staff') || null
+                const noteEl = this.scoreDOM.querySelector(`[*|id='${on}']`)
+                const staff = noteEl?.closest('staff') || null
                 if (!staff) continue
                 // ignore the note if its tied
                 if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
@@ -50,13 +72,22 @@ export class Score {
                     index: index,
                     id: on,
                     qstamp: event.qstamp,
-                    pitch: midiValues.pitch,
+                    octave: Number(noteEl?.getAttribute('oct') || 0),
+                    pname: noteEl?.getAttribute('pname') || '',
+                    accid: Array.from(noteEl?.getAttribute('accid.ges') || noteEl?.getAttribute('accid') || '').reduce((acc, curr) => {
+                        if (curr === 'f') return acc-1
+                        else if (curr === 's') return acc+1
+                        return acc
+                    }, 0),
+                    pnum: midiValues.pitch,
                     duration: offTime - event.qstamp,
                     part: Number(staff.getAttribute('n'))
                 })
                 index += 1
             }
         }
+
+        console.log('notes=', result)
         return result
     }
 
@@ -81,17 +112,17 @@ export class Score {
         return this.timemap.at(-1).qstamp;
     }
 
-    public notesInRange(start: number, end: number): Note[] {
-        const lowerIndex = this.notes.findIndex((note: Note) => note.qstamp >= start)
+    public notesInRange(start: number, end: number): ScoreNote[] {
+        const lowerIndex = this.notes.findIndex((note: ScoreNote) => note.qstamp >= start)
         if (lowerIndex === -1) return []
 
-        const upperIndex = this.notes.length - this.notes.slice().reverse().findIndex((note: Note) => note.qstamp <= end)
+        const upperIndex = this.notes.length - this.notes.slice().reverse().findIndex((note: ScoreNote) => note.qstamp <= end)
         if (lowerIndex > upperIndex) return []
 
         return this.notes.slice(lowerIndex, upperIndex)
     }
 
-    public allNotes(): Note[] {
+    public allNotes(): ScoreNote[] {
         return this.notes
     }
 
@@ -143,7 +174,7 @@ export class Score {
             const note = measure.querySelector("note") // what about rests?
             if (note) {
                 const id = note.getAttribute("xml:id")
-                const corresp = this.allNotes().find((note: Note) => {
+                const corresp = this.allNotes().find((note: ScoreNote) => {
                     return note.id === id
                 })
                 if (corresp) qstamps.push(corresp?.qstamp)
@@ -152,13 +183,13 @@ export class Score {
         return qstamps
     }
 
-    public notesAtTime(qstamp: number): Note[] {
-        return this.allNotes().filter((note: Note) => note.qstamp === qstamp)
+    public notesAtTime(qstamp: number): ScoreNote[] {
+        return this.allNotes().filter((note: ScoreNote) => note.qstamp === qstamp)
     }
 
-    public at(id: string): Note | undefined {
+    public at(id: string): ScoreNote | undefined {
         //return this.notes.find(note => note.index === index)!
-        return this.allNotes().find((value: Note) => value.id === id)
+        return this.allNotes().find((value: ScoreNote) => value.id === id)
     }
 
     /**

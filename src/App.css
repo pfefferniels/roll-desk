@@ -31,3 +31,7 @@
   fill: #ff2c2c;
   opacity: 0.8;
 }
+
+.scoreArea, .midiArea {
+  cursor: move;
+}

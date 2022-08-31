@@ -1,5 +1,5 @@
 import { MidiNote, RawPerformance } from "./Performance"
-import { Note, Score } from "./Score"
+import { ScoreNote, Score } from "./Score"
 import { ScoreFollower, detectErrors } from "alignmenttool/dist/index"
 
 export enum Motivation {
@@ -14,7 +14,7 @@ export enum Motivation {
 }
 
 export type SemanticAlignmentPair = {
-    scoreNote?: Note,
+    scoreNote?: ScoreNote,
     midiNote?: MidiNote,
     motivation: Motivation
 }
@@ -131,7 +131,7 @@ export class AlignedPerformance {
      * @param midiNote 
      * @param scoreNote 
      */
-    public align(midiNote: MidiNote, scoreNote: Note) {
+    public align(midiNote: MidiNote, scoreNote: ScoreNote) {
         // remove orphanes
         const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote === midiNote && pair.motivation === Motivation.Addition)
         this.semanticPairs.splice(orphanMidiNoteIndex, 1)
@@ -141,7 +141,7 @@ export class AlignedPerformance {
 
         // insert new pair and try to determine its possible motivation
         let motivation = Motivation.Uncertain
-        if (scoreNote.pitch === midiNote.pitch) {
+        if (scoreNote.pnum === midiNote.pitch) {
             motivation = Motivation.ExactMatch
         }
         else {
@@ -219,9 +219,9 @@ export class AlignedPerformance {
     }
 
     public performedNotesAtQstamp(qstamp: number, part?: number): MidiNote[] {
-        return this.semanticPairs.
-            filter(alignmentPair => alignmentPair.scoreNote?.qstamp === qstamp && alignmentPair.midiNote).
-            map(alignmentPair => alignmentPair.midiNote!)
+        return this.semanticPairs
+            .filter(alignmentPair => alignmentPair.scoreNote?.qstamp === qstamp && alignmentPair.midiNote)
+            .map(alignmentPair => alignmentPair.midiNote!)
     }
 
     public ready(): boolean {
