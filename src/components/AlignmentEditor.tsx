@@ -145,6 +145,7 @@ const StaffLines: FC<StaffLineProps> = ({ verticalStretch, verticalOffset }): JS
 
 export default function AlignmentEditor() {
   const [horizontalStretch, setHorizontalStretch] = useState(60)
+  const [horizontalShift, setHorizontalShift] = useState(20)
   const verticalStretch = 2.9
   const areaHeight = 127 * verticalStretch
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
@@ -169,6 +170,12 @@ export default function AlignmentEditor() {
         }
         else if (e.key === 'ArrowUp') {
           setHorizontalStretch(horizontalStretch + 10)
+        }
+        else if (e.key === 'ArrowLeft') {
+          setHorizontalShift(horizontalShift - 10)
+        }
+        else if (e.key === 'ArrowRight') {
+          setHorizontalShift(horizontalShift + 10)
         }
       }}
     >
@@ -199,19 +206,21 @@ export default function AlignmentEditor() {
         <svg
           width={2000}
           height={areaHeight + 300}>
+          <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
+          <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
+
           {alignedPerformance.getSemanticPairs().map((pair) => {
             const scoreNotePosition = pair.scoreNote ?
               [pair.scoreNote.qstamp * horizontalStretch,
               (127 - basePitchOfNote(pair.scoreNote.pname || 'c', pair.scoreNote.octave || 0.0)) * verticalStretch] : [,]
 
             const midiNotePosition = pair.midiNote ?
-              [pair.midiNote.onsetTime * horizontalStretch,
+              [pair.midiNote.onsetTime * horizontalStretch + horizontalShift,
               (127 - pair.midiNote.pitch) * verticalStretch + areaHeight] : [,]
 
             return (
               <g>
                 <g className='scoreArea'>
-                  <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
                   {pair.scoreNote && (
                     <rect key={`note_${pair.scoreNote.id}`}
                       className={`scoreNote ${pair.motivation === Motivation.Omission && 'missingNote'} ${activeScoreNote === pair.scoreNote && 'active'}`}
@@ -234,8 +243,6 @@ export default function AlignmentEditor() {
                 </g>
 
                 <g className='midiArea'>
-                  <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
-
                   {pair.midiNote && (
                     <rect key={`note_${pair.midiNote.id}`}
                       className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}

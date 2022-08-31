@@ -1,11 +1,11 @@
-import { Dynamics, MPM } from "../Mpm"
+import { Dynamics, MPM, Part } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
 
 export class InterpolateDynamicsMap extends AbstractTransformer {
-    part: number 
+    part: Part 
 
-    constructor(part: number) {
+    constructor(part: Part) {
         super()
         this.part = part
     }
@@ -18,7 +18,7 @@ export class InterpolateDynamicsMap extends AbstractTransformer {
 
         const performedVelocities =
             msm.allNotes.
-                filter(n => n.part === this.part)
+                filter(n => n.part-1 === this.part)
                 .map((n): TimedVelocity => {
                     return {
                         date: n.date,

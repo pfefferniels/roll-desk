@@ -2,6 +2,12 @@ import { MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
 
+/**
+ * Interpolates arpeggiated chords as ornaments, inserts them as physical
+ * values into the MPM and substracts accordingly from the MIDI onset, so
+ * that after the transformation all notes of the chord will have the same
+ * onset.
+ */
 export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
     public transform(msm: MSM, mpm: MPM): string {
         console.log('mpm=', mpm)

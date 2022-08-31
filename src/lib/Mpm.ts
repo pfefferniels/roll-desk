@@ -38,17 +38,22 @@ export interface Ornament extends DatedInstruction<'ornament'> {
     date: number
     'name.ref': string
     'note.order': string
-    'frameLength': number 
+    'frameLength': number
     'frame.start': number
     'transition.from'?: number
     'transition.to'?: number
     'scale': number
 }
 
-type AnyInstruction = 
-    | Tempo 
-    | Ornament 
+type AnyInstruction =
+    | Tempo
+    | Ornament
     | Dynamics
+
+type InstructionType =
+    | 'tempo'
+    | 'ornament'
+    | 'dynamics'
 
 export class MPM {
     rawMPM: any
@@ -120,21 +125,29 @@ export class MPM {
         if (!instructions.length) return
 
         const instructionType = instructions[0].type
-        const correspondingMapName = {
-            dynamics: 'dynamicsMap',
-            ornament: 'ornamentationMap',
-            tempo: 'tempoMap'
-        }[instructionType]
-
+        const correspondingMapName = this.correspondingMapNameFor(instructionType)
         if (!correspondingMapName) return
 
-        let map
-        if (part === 'global') {
-            map = this.rawMPM.performance.global.dated[correspondingMapName]
+        const map = this.getMap(correspondingMapName, part)
+        if (!map) {
+            console.log('cannot find part', part, 'in the MPM')
+            return
         }
-        else if (typeof part === 'number') {
-            map = this.rawMPM.performance.part.find((p: any) => p['@'].number === part+1)
+
+        if (Array.isArray(map[instructionType])) {
+            map[instructionType] = [...map[instructionType], ...instructions.map(i => ({ '@': i }))]
         }
+        else {
+            map[instructionType] = instructions.map(i => ({ '@': i }))
+        }
+    }
+
+    /**
+     * Will remove the contents of a given map type.
+     */
+    removeInstructions(instructionType: InstructionType, part: Part) {
+        const correspondingMapName = this.correspondingMapNameFor(instructionType)
+        const map = this.getMap(correspondingMapName, part)
 
         if (!map) {
             console.log('cannot find part', part, 'in the MPM')
@@ -142,17 +155,8 @@ export class MPM {
         }
 
         if (Array.isArray(map[instructionType])) {
-            map[instructionType] = [...map[instructionType], ...instructions.map(i => ({'@': i}))]
+            map[instructionType] = []
         }
-        else {
-            map[instructionType] = instructions.map(i => ({'@': i}))
-        }
-    }
-
-    /**
-     * Will remove the contents of a given map type.
-     */
-    removeInstructions<T extends DatedInstruction<string>>(part: Part) {
     }
 
     /**
@@ -160,8 +164,15 @@ export class MPM {
      * @param part 
      * @returns 
      */
-    getInstructions<T extends DatedInstruction<string>>(part: Part): T[] {
-        return []
+    getInstructions<T>(instructionType: InstructionType, part: Part): T[] {
+        const correspondingMapName = this.correspondingMapNameFor(instructionType)
+        const map = this.getMap(correspondingMapName, part)
+        if (!map) {
+            console.log('map', correspondingMapName, 'not found in MPM')
+            return []
+        }
+
+        return map[instructionType].map((i: any) => i['@'])
     }
 
     setPerformanceName(performanceName: string) {
@@ -170,5 +181,24 @@ export class MPM {
 
     serialize() {
         return parse('mpm', this.rawMPM)
+    }
+
+    getMap(mapName: string, part: Part): any {
+        let map
+        if (part === 'global') {
+            map = this.rawMPM.performance.global.dated[mapName]
+        }
+        else if (typeof part === 'number') {
+            map = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part+1)).dated[mapName]
+        }
+        return map
+    }
+
+    private correspondingMapNameFor(instructionType: InstructionType) {
+        return {
+            dynamics: 'dynamicsMap',
+            ornament: 'ornamentationMap',
+            tempo: 'tempoMap'
+        }[instructionType]
     }
 }

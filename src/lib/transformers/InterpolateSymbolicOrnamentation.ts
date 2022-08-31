@@ -6,23 +6,27 @@ const physicalToSymbolic = (physicalDate: number, bpm: number, beatLength: numbe
     return (physicalDate / 1000) * bpm * beatLength / 60
 }
 
+/**
+ * This transformer turns the existing physical ornamentation values into
+ * symbolic ones using the existing BPM for every note.
+ */
 export class InterpolateSymbolicOrnamentation extends AbstractTransformer {
     public transform(msm: MSM, mpm: MPM): string {
-        const ornaments = mpm.getInstructions<Ornament>('global')
+        const ornaments = mpm.getInstructions<Ornament>('ornament', 'global')
 
         ornaments.forEach((o: any) => {
             const correspondingMsmNote = msm.notesAtDate(o.date, 'global')[0]
 
             o['frame.start'] = physicalToSymbolic(o['frame.start'],
                 correspondingMsmNote.bpm || 60,
-                correspondingMsmNote['bpm.beatLength'] || 720)
+                correspondingMsmNote['bpm.beatLength'] || 720).toFixed(2)
             o['frameLength'] = physicalToSymbolic(o['frameLength'],
                 correspondingMsmNote.bpm || 60,
-                correspondingMsmNote['bpm.beatLength'] || 720)
+                correspondingMsmNote['bpm.beatLength'] || 720).toFixed(2)
         })
 
         // replace the existing physical instructions with symbolic ones
-        mpm.removeInstructions<Ornament>('global')
+        mpm.removeInstructions('ornament', 'global')
         mpm.insertInstructions(ornaments, 'global')
 
         // hand it over to the next transformer

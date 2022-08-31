@@ -4,6 +4,9 @@ import { AbstractTransformer } from "./Transformer";
 
 const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
 
+/**
+ * Interpolates the global tempo and inserts it into the MPM
+ */
 export class InterpolateTempoMap extends AbstractTransformer {
     transform(msm: MSM, mpm: MPM): string {
         const beatLength = 720

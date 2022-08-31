@@ -53,9 +53,9 @@ export default function InterpolationEditor() {
                     <p>settings: {beatLength}</p>
                     <h4>global</h4>
 
-                    <div>
+                    <pre>
                         {mpm.serialize()}
-                    </div>
+                    </pre>
                 </div>
             )}
         </div>

@@ -2,15 +2,28 @@ import { MPM } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer } from "./Transformer"
 
+/**
+ * Interpolates the remaining difference between score and performance 
+ * and creates an <imprecision.timing> map. It may take into account 
+ * a pre-existent imprecision range, in case of Welte-Mignon piano rolls
+ * e.g. around 10ms. This value will be subtracted from the timing 
+ * imprecision.
+ */
 export class InterpolateTimingImprecision extends AbstractTransformer {
+    predefinedImprecision?: number
+
+    constructor(predefinedImprecision?: number) {
+        super()
+        this.predefinedImprecision = predefinedImprecision
+    }
+
     public transform(msm: MSM, mpm: MPM): string {
-        // Welte-Mignon piano rolls have an avarage imprecision range of 10ms.
         const timingImprecision = {
             'distribution.uniform': {
                 '@': {
                     'date': 0.0,
-                    'limit.lower': -10,
-                    'limit.upper': 10
+                    'limit.lower': -10 + (this.predefinedImprecision || 0) / 2,
+                    'limit.upper':  10 - (this.predefinedImprecision || 0) / 2
                 }
             }
         }
