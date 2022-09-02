@@ -1,7 +1,7 @@
-import { AddOutlined, ClearOutlined, EditOutlined, PlusOneOutlined } from "@mui/icons-material"
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Slider, Stack, IconButton, List, ListItem, ListItemText } from "@mui/material"
-import { Box } from "@mui/system"
+import { AddOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, TextField } from "@mui/material"
 import { FC, useState } from "react"
+import { InterpolatePhysicalOrnamentationOptions } from "../lib/transformers"
 import { AbstractTransformer, TransformationOptions } from "../lib/transformers/Transformer"
 
 interface EditPipelineProps {
@@ -10,8 +10,33 @@ interface EditPipelineProps {
     dialogOpen: boolean,
 }
 
+interface SetOptionsProp<T extends TransformationOptions> {
+    setOptions: (options: T) => void
+}
+
+const PhysicalOrnamentationOptions: FC<SetOptionsProp<InterpolatePhysicalOrnamentationOptions>> = ({ setOptions }) => {
+    const [minimumArpeggioSize, setMinimumArpeggioSize] = useState(2)
+
+    return (
+        <div>
+            <TextField
+                label='Minimum arpeggio size'
+                size='small'
+                value={minimumArpeggioSize}
+                onChange={(e) => {
+                    setMinimumArpeggioSize(+e.target.value)
+                    setOptions({
+                        minimumArpeggioSize
+                    })
+                }}
+                type='number' />
+        </div>
+    )
+}
+
 export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onReady }): JSX.Element => {
     const [_, setTransformations] = useState(pipeline)
+    const [displayOptions, setDisplayOptions] = useState('')
 
     return (
         <Dialog open={dialogOpen}>
@@ -23,9 +48,19 @@ export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onRe
                             <ListItem
                                 secondaryAction={
                                     <>
-                                        <IconButton>
-                                            <EditOutlined />
-                                        </IconButton>
+                                        {displayOptions === transformer.name() ?
+                                            <IconButton onClick={() => {
+                                                setDisplayOptions('')
+                                            }}>
+                                                <CheckOutlined />
+                                            </IconButton> :
+                                            <IconButton onClick={() => {
+                                                setDisplayOptions(transformer.name())
+                                            }}>
+                                                <EditOutlined />
+                                            </IconButton>
+                                        }
+
                                         <IconButton onClick={() => {
                                             setTransformations(pipeline.splice(i, 1))
                                         }}>
@@ -33,7 +68,17 @@ export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onRe
                                         </IconButton>
                                     </>
                                 }>
-                                <ListItemText>{transformer.name()}</ListItemText>
+                                <ListItemText
+                                    primary={transformer.name()}
+                                    secondary={
+                                        displayOptions === transformer.name() && (
+                                            {
+                                                'InterpolatePhysicalOrnamentation': 
+                                                    <PhysicalOrnamentationOptions setOptions={options => {
+                                                        transformer.setOptions(options)
+                                                    }} />
+                                            }[transformer.name()] || <div>not yet implemented</div>)
+                                    } />
                             </ListItem>
                         )
                     })}
@@ -41,10 +86,10 @@ export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onRe
                 <IconButton>
                     <AddOutlined />
                 </IconButton>
-            </DialogContent>
+            </DialogContent >
             <DialogActions>
                 <Button onClick={onReady}>Save</Button>
             </DialogActions>
-        </Dialog>
+        </Dialog >
     )
 }
