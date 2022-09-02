@@ -16,9 +16,30 @@ import { ExtractStyleDefinitions } from "./transformers/ExtractStyleDefinitions"
  */
 export class Interpolation {
     alignedPerformance: AlignedPerformance
+    performanceName: string
+    author: string 
+    comment: string
+
 
     constructor(alignedPerformance: AlignedPerformance) {
         this.alignedPerformance = alignedPerformance
+        this.performanceName = 'unnamed performance'
+        this.author = 'unknown'
+        this.comment = `generated using the MPM interpolation tool from the
+                         "Measuring Early Records" project`
+
+    }
+
+    setPerformanceName(performanceName: string) {
+        this.performanceName = performanceName
+    }
+
+    setAuthor(author: string) {
+        this.author = author
+    }
+
+    setComment(comment: string) {
+        this.comment = comment
     }
 
     setPreferArpeggio(preferArpeggio: boolean) {
@@ -40,6 +61,14 @@ export class Interpolation {
         // interpolation is gradually filled with MPM elements.
         const mpm = new MPM(this.alignedPerformance.score.countParts())
         mpm.setPerformanceName(performanceName)
+        mpm.setMetadata({
+            authors: [this.author],
+            comments: [this.comment],
+            relatedResources: [{
+                uri: `${performanceName}.msm`,
+                type: 'msm'
+            }]
+        })
 
         // working copy of the MSM on which multiple 
         // operations are performed in the process of 

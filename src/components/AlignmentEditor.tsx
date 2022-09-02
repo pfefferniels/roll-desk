@@ -1,119 +1,13 @@
 import { FC, useContext, useState } from "react"
 import GlobalContext from "./GlobalContext"
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Select, TextField } from "@mui/material"
-import { AlignedPerformance, Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
+import { Box, IconButton, Paper } from "@mui/material"
+import { Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
 import { MidiNote } from "../lib/Performance"
 import { basePitchOfNote, ScoreNote } from "../lib/Score"
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ClearIcon from '@mui/icons-material/Clear';
-
-interface EditMotivationProps {
-  pair?: SemanticAlignmentPair,
-  changeMotivation: (pair: SemanticAlignmentPair, target: Motivation) => void,
-  dialogOpen: boolean,
-  setDialogOpen: (open: boolean) => void
-}
-
-const EditMotivation: FC<EditMotivationProps> = ({ pair, changeMotivation, dialogOpen, setDialogOpen }): JSX.Element => {
-  return (
-    <Dialog open={dialogOpen}>
-      <DialogTitle>Edit Alignment Motivation</DialogTitle>
-      <DialogContent>
-        <Select value={pair?.motivation}
-          onChange={(e) => {
-            changeMotivation(pair!, e.target.value as Motivation)
-          }}>
-          <MenuItem value={Motivation.ExactMatch}>Exact Match</MenuItem>
-          <MenuItem value={Motivation.Error}>Error</MenuItem>
-          <MenuItem value={Motivation.Ornamentation}>Ornamentation</MenuItem>
-          <MenuItem value={Motivation.Alteration}>Alteration</MenuItem>
-          <MenuItem value={Motivation.OctaveAddition}>Octave Addition</MenuItem>
-          <MenuItem value={Motivation.Uncertain}>Uncertain</MenuItem>
-        </Select>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => {
-          setDialogOpen(false)
-        }}>Save</Button>
-      </DialogActions>
-    </Dialog>
-  )
-}
-
-interface ExportDialogProps {
-  alignedPerformance: AlignedPerformance,
-  dialogOpen: boolean,
-  setDialogOpen: (open: boolean) => void
-}
-
-const ExportDialog: FC<ExportDialogProps> = ({ alignedPerformance, dialogOpen, setDialogOpen }): JSX.Element => {
-  const [actor, setActor] = useState('')
-
-  return (
-    <Dialog open={dialogOpen}>
-      <DialogTitle>Export</DialogTitle>
-      <DialogContent>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            flexDirection: 'column',
-          }}
-        >
-          <TextField
-            sx={{ m: 1 }}
-            variant='standard'
-            label='alignment carried out by'
-            value={actor}
-            onChange={(e) => {
-              setActor(e.target.value)
-            }} />
-          <Button
-            sx={{ m: 1 }}
-            variant='outlined'
-            onClick={() => {
-              const element = document.createElement('a')
-              const file = new Blob([alignedPerformance.rawPerformance?.serializeToRDF() || ''], { type: 'application/ld+json' });
-              element.href = URL.createObjectURL(file)
-              element.download = `midi.jsonld`
-              element.click()
-            }}>Export MIDI as RDF</Button>
-          <br />
-
-          <Button
-            sx={{ m: 1 }}
-            variant='outlined'
-            onClick={() => {
-              const element = document.createElement('a')
-              const file = new Blob([alignedPerformance.score?.serializeToRDF() || ''], { type: 'application/ld+json' });
-              element.href = URL.createObjectURL(file)
-              element.download = `score.jsonld`
-              element.click()
-            }}>Export Score as RDF</Button>
-          <br />
-
-          <Button
-            sx={{ m: 1 }}
-            variant='outlined'
-            onClick={() => {
-              const element = document.createElement('a')
-              const file = new Blob([alignedPerformance.serializeToRDF(actor) || ''], { type: 'application/ld+json' });
-              element.href = URL.createObjectURL(file)
-              element.download = `alignment.jsonld`
-              element.click()
-            }}>Export Alignments as RDF</Button>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => {
-          setDialogOpen(false)
-        }}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-}
+import { EditMotivation } from "./EditMotivation"
+import { ExportAlignmentDialog } from "./ExportAlignmentDialog"
 
 interface StaffLineProps {
   verticalStretch: number,
@@ -294,7 +188,7 @@ export default function AlignmentEditor() {
         dialogOpen={editDialogOpen}
         setDialogOpen={setEditDialogOpen} />
 
-      <ExportDialog alignedPerformance={alignedPerformance}
+      <ExportAlignmentDialog alignedPerformance={alignedPerformance}
         dialogOpen={exportDialogOpen}
         setDialogOpen={setExportDialogOpen} />
 

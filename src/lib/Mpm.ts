@@ -18,6 +18,9 @@ export interface OrnamentDef extends Definition<'ornament'> {
     'transition.to'?: number
 }
 
+type AnyDefinition =
+    | OrnamentDef
+
 type DatedInstruction<T extends string> = {
     readonly type: T
 }
@@ -61,13 +64,21 @@ type AnyInstruction =
     | Ornament
     | Dynamics
 
-type AnyDefinition =
-    | OrnamentDef
-
 type InstructionType =
     | 'tempo'
     | 'ornament'
     | 'dynamics'
+
+type RelatedResource = {
+    uri: string, 
+    type: string
+}
+
+type Metadata = {
+    authors: string[],
+    comments: string[],
+    relatedResources: RelatedResource[]
+}
 
 /**
  * Represents an MPM encoding and exposes some methods for
@@ -81,6 +92,7 @@ export class MPM {
             "@": {
                 xmlns: "http://www.cemfi.de/mpm/ns/1.0"
             },
+            metadata: {},
             performance: {
                 "@": {
                     name: '',
@@ -104,13 +116,9 @@ export class MPM {
                             "midi.channel": `${i}`,
                             "midi.port": "0"
                         },
-                        header: {
-                            ornamentationStyles: {}
-                        },
                         dated: {
                             dynamicsMap: {},
                             asynchronyMap: {},
-                            ornamentationMap: {},
                             articulationMap: {}
                         }
                     }
@@ -136,6 +144,14 @@ export class MPM {
         }
     }
 
+    /**
+     * Inserts a definion into its corresponding styles environment
+     * in the header of the given part.
+     * 
+     * @param definition 
+     * @param part 
+     * @returns name of definition
+     */
     insertDefinition(definition: AnyDefinition, part: Part): string {
         const type = definition.type
         const correspondingStylesName = {
@@ -144,11 +160,23 @@ export class MPM {
         const styles = this.getStyles(correspondingStylesName, part)
         if (!styles) return ''
 
+        // insert a style def if it doesn't exist yet
         if (!styles.styleDef) {
             styles.styleDef = {
                 '@': {
                     'name': 'performance_style'
                 },
+            }
+        }
+
+        // insert a style switch in the map if it doesn't exist yet
+        const correspondingMap = this.getMap(this.correspondingMapNameFor(type), part)
+        if (!correspondingMap.style) {
+            correspondingMap.style = {
+                '@': {
+                    'date': '0.0',
+                    'name.ref': 'performance_style'
+                }
             }
         }
 
@@ -158,7 +186,7 @@ export class MPM {
                 return v.toString(16);
             });
         }
-        
+
         const name = `def_${uuid()}`
 
         if (type === 'ornament') {
@@ -175,7 +203,7 @@ export class MPM {
                     '@': {
                         'frame.start': definition['frame.start'],
                         'frameLength': definition['frameLength'],
-                        'time.unit': 'ticks' 
+                        'time.unit': 'ticks'
                     }
                 }
             })
@@ -252,10 +280,34 @@ export class MPM {
         this.rawMPM.performance["@"].name = performanceName
     }
 
+    setMetadata(metadata: Metadata) {
+        this.rawMPM.metadata = {
+            'author': metadata.authors.map((author, i) => {
+                return {
+                    '@': {
+                        number: i
+                    },
+                    '#': author
+                }
+            }),
+            'comments': metadata.comments,
+            'relatedResources': ''
+        }
+    }
+
     serialize() {
         return parse('mpm', this.rawMPM)
     }
 
+    /**
+     * Get a map of a certain part. Given e.g. 
+     * the map name 'ornamentationMap' and the part 'global',
+     * it returns the <ornamentationMap> inside the <global> environment.
+     * 
+     * @param mapName 
+     * @param part 
+     * @returns 
+     */
     getMap(mapName: string, part: Part): any {
         let map
         if (part === 'global') {
@@ -267,6 +319,16 @@ export class MPM {
         return map
     }
 
+    /**
+     * Get a style of a certain part. Given e.g. the
+     * style name 'ornamentationStyles' and the part 'global'
+     * it returns the <ornamentationStyles> inside the <header> of the 
+     * <global> environemnt. 
+     * 
+     * @param stylesName 
+     * @param part 
+     * @returns 
+     */
     getStyles(stylesName: string, part: Part): any {
         let styles
         if (part === 'global') {
