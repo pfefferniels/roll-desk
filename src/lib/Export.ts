@@ -8,7 +8,9 @@ import {
     InterpolateTempoMap,
     InterpolateTimingImprecision
 } from "./transformers"
+import { InterpolateTempoMapOptions } from "./transformers"
 import { ExtractStyleDefinitions } from "./transformers/ExtractStyleDefinitions"
+import { AbstractTransformer, TransformationOptions } from "./transformers/Transformer"
 
 /**
  * Performs the interpolation of an aligned performance
@@ -20,6 +22,7 @@ export class Interpolation {
     author: string 
     comment: string
 
+    pipeline: AbstractTransformer<TransformationOptions>[]
 
     constructor(alignedPerformance: AlignedPerformance) {
         this.alignedPerformance = alignedPerformance
@@ -27,7 +30,19 @@ export class Interpolation {
         this.author = 'unknown'
         this.comment = `generated using the MPM interpolation tool from the
                          "Measuring Early Records" project`
-
+        
+        // the default order of transformations
+        this.pipeline = [
+            new InterpolatePhysicalOrnamentation(),
+            new InterpolateTempoMap(),
+            new InterpolateSymbolicOrnamentation(),
+            new InterpolateDynamicsMap(1),
+            new InterpolateDynamicsMap(0),
+            new InterpolateTimingImprecision(),
+            new ExtractStyleDefinitions('global'),
+            new ExtractStyleDefinitions(1),
+            new ExtractStyleDefinitions(0)
+        ]
     }
 
     setPerformanceName(performanceName: string) {
@@ -42,16 +57,8 @@ export class Interpolation {
         this.comment = comment
     }
 
-    setPreferArpeggio(preferArpeggio: boolean) {
-
-    }
-
-    setTempoReference(tempoRef: number) {
-
-    }
-
-    setAimedPrecision() {
-        
+    setPipeline(pipeline: AbstractTransformer<TransformationOptions>[]) {
+        this.pipeline = pipeline
     }
 
     exportMPM(performanceName: string): MPM | undefined {
@@ -75,29 +82,21 @@ export class Interpolation {
         // the alignment.
         const msm = new MSM(this.alignedPerformance)
 
-        const interpolatePhysicalOrnamentation = new InterpolatePhysicalOrnamentation()
-        const interpolateTempoMap = new InterpolateTempoMap()
-        const interpolateSymbolicOrnamentation = new InterpolateSymbolicOrnamentation()
-        const interpolateDynamicsLeftHand = new InterpolateDynamicsMap(1)
-        const interpolateDynamicsRightHand = new InterpolateDynamicsMap(0)
-        const interpolateTimingImprecision = new InterpolateTimingImprecision()
-        const interpolateStylesGlobal = new ExtractStyleDefinitions('global')
-        const interpolateStylesLeftHand = new ExtractStyleDefinitions(1)
-        const interpolateStylesRightHand = new ExtractStyleDefinitions(0)
+        // construct the pipeline from the given order in this.pipeline
+        if (this.pipeline.length > 0) {
+            this.pipeline.reduce((acc, curr) => acc.setNext(curr), this.pipeline[0])
+            const chainedTransformation = this.pipeline[0]
+    
+            // kick-off the transformation chain
+            if (!chainedTransformation) {
+                console.log('something went wrong')
+                return
+            }
 
-        interpolatePhysicalOrnamentation
-            .setNext(interpolateTempoMap)
-            .setNext(interpolateSymbolicOrnamentation)
-            .setNext(interpolateDynamicsLeftHand)
-            .setNext(interpolateDynamicsRightHand)
-            .setNext(interpolateStylesGlobal)
-            .setNext(interpolateStylesLeftHand)
-            .setNext(interpolateStylesRightHand)
-            .setNext(interpolateTimingImprecision)
-
-            // start the transformation chain
-        interpolatePhysicalOrnamentation.transform(msm, mpm)
+            chainedTransformation.transform(msm, mpm)
+        }
 
         return mpm
     }
 }
+

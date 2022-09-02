@@ -1,13 +1,23 @@
 import { MPM, Tempo } from "../Mpm";
 import { MSM } from "../Msm";
-import { AbstractTransformer } from "./Transformer";
+import { AbstractTransformer, TransformationOptions } from "./Transformer";
 
 const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
 
 /**
+ * 
+ */
+export interface InterpolateTempoMapOptions extends TransformationOptions {
+    beatLength: 'bar' | 'halfbar' | 'denominator'
+    epsilon: number
+}
+
+/**
  * Interpolates the global tempo and inserts it into the MPM
  */
-export class InterpolateTempoMap extends AbstractTransformer {
+export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMapOptions> {
+    public name() { return 'InterpolateTempoMap' }
+
     transform(msm: MSM, mpm: MPM): string {
         const beatLength = 720
 

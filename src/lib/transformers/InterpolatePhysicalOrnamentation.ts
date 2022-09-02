@@ -1,6 +1,13 @@
 import { MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
-import { AbstractTransformer } from "./Transformer"
+import { AbstractTransformer, TransformationOptions } from "./Transformer"
+
+export interface InterpolatePhysicalOrnamentationOptions extends TransformationOptions {
+    /**
+     * the minimum number of notes an arpeggio is expected to have (inclusive)
+     */
+    minimumArpeggioSize: number
+}
 
 /**
  * Interpolates arpeggiated chords as ornaments, inserts them as physical
@@ -8,9 +15,10 @@ import { AbstractTransformer } from "./Transformer"
  * that after the transformation all notes of the chord will have the same
  * onset.
  */
-export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
+export class InterpolatePhysicalOrnamentation extends AbstractTransformer<InterpolatePhysicalOrnamentationOptions> {
+    public name() { return 'InterpolatePhysicalOrnamentation' }
+
     public transform(msm: MSM, mpm: MPM): string {
-        console.log('mpm=', mpm)
         const isSorted = (arr: number[]) => {
             let direction = -(arr[0] - arr[1])
             for (let [i, val] of arr.entries()) {
@@ -25,8 +33,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
 
         const chords = msm.asChords()
         for (const [date, arpeggioNotes] of Object.entries(chords)) {
-            // TODO: can an arpeggio consist of only two notes?
-            if (arpeggioNotes.length >= 2) {
+            if (arpeggioNotes.length >= (this.options?.minimumArpeggioSize || 2)) {
                 const sortedByOnset = arpeggioNotes.sort((a, b) => a['midi.onset'] - b['midi.onset'])
 
                 const arpeggioDirection = isSorted(sortedByOnset.map(note => note["midi.pitch"]))
@@ -37,8 +44,6 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer {
                 
                 const duration = sortedByOnset[sortedByOnset.length-1]["midi.onset"] - sortedByOnset[0]["midi.onset"] 
 
-                // TODO there should be an option which tells whether to prefer
-                // physical or symbolic time ...
                 ornaments.push({
                     type: 'ornament',
                     'date': +date,

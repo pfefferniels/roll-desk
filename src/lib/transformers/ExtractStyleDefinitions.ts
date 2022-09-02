@@ -1,20 +1,24 @@
 import { MPM, Ornament, Part } from "../Mpm"
 import { MSM } from "../Msm"
-import { AbstractTransformer } from "./Transformer"
+import { AbstractTransformer, TransformationOptions } from "./Transformer"
+
+export interface ExtractStyleDefinitionsOptions extends TransformationOptions {
+    tolerance: number
+}
 
 /**
  * This transformer tries to combine multiple instructions
  * into fewer definitions, taking a given tolerance into account.
  */
-export class ExtractStyleDefinitions extends AbstractTransformer {
-    tolerance: number
+export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDefinitionsOptions> {
     part: Part
 
-    constructor(part: Part, tolerance = 0.0) {
+    constructor(part: Part) {
         super()
         this.part = part
-        this.tolerance = tolerance
     }
+
+    public name() { return 'ExtractStyleDefinitions' }
 
     public transform(msm: MSM, mpm: MPM): string {
         mpm.getInstructions<Ornament>('ornament', this.part).forEach(ornament => {

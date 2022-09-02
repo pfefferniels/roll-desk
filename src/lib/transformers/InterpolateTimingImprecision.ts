@@ -1,6 +1,10 @@
 import { MPM } from "../Mpm"
 import { MSM } from "../Msm"
-import { AbstractTransformer } from "./Transformer"
+import { AbstractTransformer, TransformationOptions } from "./Transformer"
+
+export interface InterpolateTimingImprecisionOptions extends TransformationOptions {
+    predefinedImprecision: number
+}
 
 /**
  * Interpolates the remaining difference between score and performance 
@@ -9,12 +13,11 @@ import { AbstractTransformer } from "./Transformer"
  * e.g. around 10ms. This value will be subtracted from the timing 
  * imprecision.
  */
-export class InterpolateTimingImprecision extends AbstractTransformer {
-    predefinedImprecision?: number
+export class InterpolateTimingImprecision extends AbstractTransformer<InterpolateTimingImprecisionOptions> {
+    public name() { return 'InterpolateTimingImprecision' }
 
-    constructor(predefinedImprecision?: number) {
+    constructor() {
         super()
-        this.predefinedImprecision = predefinedImprecision
     }
 
     public transform(msm: MSM, mpm: MPM): string {
@@ -22,8 +25,8 @@ export class InterpolateTimingImprecision extends AbstractTransformer {
             'distribution.uniform': {
                 '@': {
                     'date': 0.0,
-                    'limit.lower': -10 + (this.predefinedImprecision || 0) / 2,
-                    'limit.upper':  10 - (this.predefinedImprecision || 0) / 2
+                    'limit.lower': -10 + (this.options?.predefinedImprecision || 0) / 2,
+                    'limit.upper':  10 - (this.options?.predefinedImprecision || 0) / 2
                 }
             }
         }

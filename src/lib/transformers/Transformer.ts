@@ -2,21 +2,28 @@ import { MSM } from "../Msm";
 import { MPM } from "../Mpm";
 
 /**
+ * 
+ */
+export interface TransformationOptions {
+}
+
+/**
  * The Transformer interface declares a method for building the chain of transformations.
  * It also declares a method for executing a transformation.
  */
 export interface Transformer {
-    setNext(transformer: Transformer): Transformer;
-
-    transform(msm: MSM, mpm: MPM): string;
+    setNext(transformer: Transformer): Transformer
+    transform(msm: MSM, mpm: MPM): string
+    setOptions(options: TransformationOptions): void
+    name(): string
 }
 
 /**
  * The default chaining behavior.
  */
-export abstract class AbstractTransformer implements Transformer
-{
-    private nextTransformer?: Transformer
+export abstract class AbstractTransformer<OptionsType extends TransformationOptions> implements Transformer {
+    public nextTransformer?: Transformer
+    public options?: OptionsType
 
     public setNext(transformer: Transformer): Transformer {
         this.nextTransformer = transformer;
@@ -30,4 +37,10 @@ export abstract class AbstractTransformer implements Transformer
 
         return 'done'
     }
+
+    public setOptions(options: OptionsType) {
+        this.options = options
+    }
+
+    abstract name(): string
 }

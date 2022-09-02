@@ -16,8 +16,8 @@ export default function InterpolationEditor() {
 
     const [performanceName, setPerformanceName] = useState('unknown performance')
     const [author, setAuthor] = useState('unknown')
-    const [comment, setComment] = useState(`generated using the MPM interpolation tool from the
-        "Measuring Early Records" project`)
+    const [comment, setComment] = useState(`generated using the MPM interpolation tool from the` + 
+        `"Measuring Early Records" project`)
 
     const [editPipelineOpen, setEditPipelineOpen] = useState(false)
     const [editMetadataOpen, setEditMetadataOpen] = useState(false)
@@ -84,10 +84,18 @@ export default function InterpolationEditor() {
                 </div>
             )}
 
-            <EditPipeline dialogOpen={editPipelineOpen} setDialogOpen={setEditPipelineOpen} />
-            <EditMetadata author={author} setAuthor={setAuthor}
-                comment={comment} setComment={setComment}
-                performanceName={performanceName} setPerformanceName={setPerformanceName}
+            <EditPipeline
+                pipeline={interpolation?.pipeline}
+                dialogOpen={editPipelineOpen}
+                setDialogOpen={setEditPipelineOpen} />
+
+            <EditMetadata 
+                author={author}
+                setAuthor={setAuthor}
+                comment={comment}
+                setComment={setComment}
+                performanceName={performanceName}
+                setPerformanceName={setPerformanceName}
                 onReady={() => {
                     updateMPM()
                     setEditMetadataOpen(false)

@@ -1,16 +1,22 @@
 import { MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
-import { AbstractTransformer } from "./Transformer"
+import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 const physicalToSymbolic = (physicalDate: number, bpm: number, beatLength: number) => {
     return (physicalDate / 1000) * bpm * beatLength / 60
+}
+
+export interface InterpolateSymbolicOrnamentationOptions extends TransformationOptions {
+
 }
 
 /**
  * This transformer turns the existing physical ornamentation values into
  * symbolic ones using the existing BPM for every note.
  */
-export class InterpolateSymbolicOrnamentation extends AbstractTransformer {
+export class InterpolateSymbolicOrnamentation extends AbstractTransformer<InterpolateSymbolicOrnamentationOptions> {
+    public name() { return 'InterpolateSymbolicOrnamentation' }
+
     public transform(msm: MSM, mpm: MPM): string {
         const ornaments = mpm.getInstructions<Ornament>('ornament', 'global')
 

@@ -1,14 +1,20 @@
 import { Dynamics, MPM, Part } from "../Mpm"
 import { MSM } from "../Msm"
-import { AbstractTransformer } from "./Transformer"
+import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
-export class InterpolateDynamicsMap extends AbstractTransformer {
+export interface InterpolateDynamicsMapOptions extends TransformationOptions {
+    
+}
+
+export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynamicsMapOptions> {
     part: Part 
 
     constructor(part: Part) {
         super()
         this.part = part
     }
+
+    public name() { return 'InterpolateDynamicsMap' }
 
     public transform(msm: MSM, mpm: MPM): string {
         type TimedVelocity = {
