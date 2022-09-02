@@ -7,20 +7,44 @@ import { MPM } from "../lib/Mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { EditPipeline } from "./EditPipeline"
+import { EditMetadata } from "./EditMetadata"
 
 // TODO this should be a graphical editor ...
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
-    const [name, setName] = useState<string>('test')
-    const [beatLength, setBeatLength] = useState<number>(1)
+
+    const [performanceName, setPerformanceName] = useState('unknown performance')
+    const [author, setAuthor] = useState('unknown')
+    const [comment, setComment] = useState(`generated using the MPM interpolation tool from the
+        "Measuring Early Records" project`)
+
+    const [editPipelineOpen, setEditPipelineOpen] = useState(false)
+    const [editMetadataOpen, setEditMetadataOpen] = useState(false)
+
     const [mpm, setMPM] = useState<MPM>()
+    const [interpolation, setInterpolation] = useState<Interpolation>()
 
     useEffect(() => {
         if (!alignmentReady || !alignedPerformance.ready()) return
 
-        const interpolation = new Interpolation(alignedPerformance)
-        setMPM(interpolation.exportMPM(name))
-    }, [alignmentReady, name, beatLength])
+        setInterpolation(new Interpolation(alignedPerformance))
+    }, [alignmentReady])
+
+    const updateMPM = () => {
+        if (!interpolation) return
+        setMPM(interpolation.exportMPM(performanceName))
+    }
+
+    useEffect(updateMPM, [interpolation])
+
+    useEffect(() => {
+        if (!interpolation) return
+
+        interpolation.setAuthor(author)
+        interpolation.setComment(comment)
+        interpolation.setPerformanceName(performanceName)
+    }, [performanceName, author, comment])
 
     return (
         <div>
@@ -33,17 +57,17 @@ export default function InterpolationEditor() {
                             flexDirection: 'column',
                         }}
                     >
-                        <IconButton onClick={() => { }}>
+                        <IconButton onClick={() => setEditMetadataOpen(true)}>
                             <EditAttributesIcon />
                         </IconButton>
-                        <IconButton onClick={() => { }}>
+                        <IconButton onClick={() => setEditPipelineOpen(true)}>
                             <LayersIcon />
                         </IconButton>
                         <IconButton onClick={() => {
-                            const element = document.createElement("a")
+                            const element = document.createElement('a')
                             const file = new Blob([mpm?.serialize() || ''], { type: 'text/xml' });
                             element.href = URL.createObjectURL(file)
-                            element.download = `${name.trim()}.mpm`
+                            element.download = `${performanceName.trim()}.mpm`
                             element.click()
                         }}>
                             <FileDownloadIcon />
@@ -53,15 +77,22 @@ export default function InterpolationEditor() {
             )}
 
             {mpm && (
-                <div className="mpm">
-                    <p>settings: {beatLength}</p>
-                    <h4>global</h4>
-
+                <div className='mpm'>
                     <pre>
                         {mpm.serialize()}
                     </pre>
                 </div>
             )}
+
+            <EditPipeline dialogOpen={editPipelineOpen} setDialogOpen={setEditPipelineOpen} />
+            <EditMetadata author={author} setAuthor={setAuthor}
+                comment={comment} setComment={setComment}
+                performanceName={performanceName} setPerformanceName={setPerformanceName}
+                onReady={() => {
+                    updateMPM()
+                    setEditMetadataOpen(false)
+                }}
+                dialogOpen={editMetadataOpen} />
         </div>
     )
 }
