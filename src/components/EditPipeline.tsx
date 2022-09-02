@@ -1,33 +1,49 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material"
-import { FC } from "react"
+import { AddOutlined, ClearOutlined, EditOutlined, PlusOneOutlined } from "@mui/icons-material"
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Slider, Stack, IconButton, List, ListItem, ListItemText } from "@mui/material"
+import { Box } from "@mui/system"
+import { FC, useState } from "react"
 import { AbstractTransformer, TransformationOptions } from "../lib/transformers/Transformer"
 
 interface EditPipelineProps {
     pipeline?: AbstractTransformer<TransformationOptions>[]
+    onReady: () => void,
     dialogOpen: boolean,
-    setDialogOpen: (open: boolean) => void
 }
 
-export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, setDialogOpen }): JSX.Element => {
+export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onReady }): JSX.Element => {
+    const [_, setTransformations] = useState(pipeline)
+
     return (
         <Dialog open={dialogOpen}>
             <DialogTitle>Edit Interpolation Pipeline</DialogTitle>
             <DialogContent>
-                <div>
-                    {pipeline?.map(transformer => {
+                <List sx={{ height: 400, width: 500, m: 2 }}>
+                    {pipeline?.map((transformer, i) => {
                         return (
-                            <div>
-                                <span>{transformer.name()}</span>
-                                <Button>Edit Options</Button>
-                            </div>
+                            <ListItem
+                                secondaryAction={
+                                    <>
+                                        <IconButton>
+                                            <EditOutlined />
+                                        </IconButton>
+                                        <IconButton onClick={() => {
+                                            setTransformations(pipeline.splice(i, 1))
+                                        }}>
+                                            <ClearOutlined />
+                                        </IconButton>
+                                    </>
+                                }>
+                                <ListItemText>{transformer.name()}</ListItemText>
+                            </ListItem>
                         )
                     })}
-                </div>
+                </List>
+                <IconButton>
+                    <AddOutlined />
+                </IconButton>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => {
-                    setDialogOpen(false)
-                }}>Save</Button>
+                <Button onClick={onReady}>Save</Button>
             </DialogActions>
         </Dialog>
     )

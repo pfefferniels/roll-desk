@@ -86,8 +86,11 @@ export default function InterpolationEditor() {
 
             <EditPipeline
                 pipeline={interpolation?.pipeline}
-                dialogOpen={editPipelineOpen}
-                setDialogOpen={setEditPipelineOpen} />
+                onReady={() => {
+                    updateMPM()
+                    setEditPipelineOpen(false)
+                }}
+                dialogOpen={editPipelineOpen} />
 
             <EditMetadata 
                 author={author}
