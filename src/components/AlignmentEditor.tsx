@@ -1,4 +1,4 @@
-import { FC, useContext, useState } from "react"
+import { useContext, useState } from "react"
 import GlobalContext from "./GlobalContext"
 import { Box, IconButton, Paper } from "@mui/material"
 import { Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
@@ -8,34 +8,8 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ClearIcon from '@mui/icons-material/Clear';
 import { EditMotivation } from "./EditMotivation"
 import { ExportAlignmentDialog } from "./ExportAlignmentDialog"
-
-interface StaffLineProps {
-  verticalStretch: number,
-  verticalOffset: number
-}
-
-/**
- * Draws SVG staff lines using the standard F and G clef.
- */
-const StaffLines: FC<StaffLineProps> = ({ verticalStretch, verticalOffset }): JSX.Element => {
-  return (
-    <g>
-      {[43, 47, 50, 53, 57, // staff lines for left hand
-        64, 67, 71, 74, 77] // for right hand
-        .map(pitch => ((127 - pitch) * verticalStretch + verticalOffset))
-        .map(yPosition => (
-          <line
-            x1={0}
-            y1={yPosition}
-            x2={2000}
-            y2={yPosition}
-            stroke='black'
-            strokeWidth={0.4} />
-        ))}
-    </g>
-
-  )
-}
+import { NoteHead } from "./score/NoteHead"
+import { StaffLines } from "./score/StaffLine"
 
 export default function AlignmentEditor() {
   const [horizontalStretch, setHorizontalStretch] = useState(60)
@@ -110,20 +84,22 @@ export default function AlignmentEditor() {
 
             const midiNotePosition = pair.midiNote ?
               [pair.midiNote.onsetTime * horizontalStretch + horizontalShift,
-              (127 - pair.midiNote.pitch) * verticalStretch + areaHeight] : [,]
+              (127 - pair.midiNote.pitch) * verticalStretch] : [,]
 
             return (
               <g>
                 <g className='scoreArea'>
                   {pair.scoreNote && (
-                    <rect key={`note_${pair.scoreNote.id}`}
-                      className={`scoreNote ${pair.motivation === Motivation.Omission && 'missingNote'} ${activeScoreNote === pair.scoreNote && 'active'}`}
-                      id={`scoreNote_${pair.scoreNote.id}`}
-                      x={scoreNotePosition[0]}
-                      y={scoreNotePosition[1]}
-                      width={pair.scoreNote.duration * horizontalStretch}
-                      height={5}
-                      onClick={(e) => {
+                    <NoteHead
+                      key={`note_${pair.scoreNote.id}`}
+                      id={pair.scoreNote.id}
+                      accidentals={pair.scoreNote.accid || 0.0}
+                      missingNote={pair.motivation === Motivation.Omission}
+                      active={activeScoreNote === pair.scoreNote}
+                      x={scoreNotePosition[0] || 0}
+                      y={scoreNotePosition[1] || 0}
+                      staffSize={7}
+                      onClick={() => {
                         setActiveScoreNote(pair.scoreNote)
                         if (activeMIDINote) {
                           alignedPerformance.align(activeMIDINote, activeScoreNote!)
@@ -136,11 +112,12 @@ export default function AlignmentEditor() {
                   )}
                 </g>
 
-                <g className='midiArea'>
+                <g className='midiArea' transform={`translate(0, ${areaHeight})`}>
                   {pair.midiNote && (
-                    <rect key={`note_${pair.midiNote.id}`}
-                      className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
+                    <rect
+                      key={`note_${pair.midiNote.id}`}
                       id={`midiNote_${pair.midiNote.id}`}
+                      className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
                       x={midiNotePosition[0]}
                       y={midiNotePosition[1]}
                       width={pair.midiNote.duration * horizontalStretch}
@@ -163,7 +140,7 @@ export default function AlignmentEditor() {
                     x1={scoreNotePosition[0]}
                     y1={scoreNotePosition[1]}
                     x2={midiNotePosition[0]}
-                    y2={midiNotePosition[1]}
+                    y2={(midiNotePosition[1] || 0) + areaHeight}
                     stroke={pair.motivation === Motivation.ExactMatch ? 'black' : 'blue'}
                     onClick={(e) => {
                       if (e.altKey) {

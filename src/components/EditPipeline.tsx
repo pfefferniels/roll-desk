@@ -1,5 +1,5 @@
 import { AddOutlined, ArrowDownwardOutlined, CheckOutlined, ClearOutlined, EditOutlined, TransformOutlined } from "@mui/icons-material"
-import { Avatar, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, TextField, ListItemAvatar, Select, MenuItem } from "@mui/material"
+import { Avatar, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, TextField, ListItemAvatar, Select, MenuItem, Stack } from "@mui/material"
 import { FC, useState } from "react"
 import { beatLengthBasis, BeatLengthBasis, InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions } from "../lib/transformers"
 import { AbstractTransformer, TransformationOptions } from "../lib/transformers/Transformer"
@@ -54,7 +54,7 @@ const TempoOptions: FC<OptionsProp<InterpolateTempoMapOptions>> = ({ options, se
                     setEpsilon(+e.target.value)
                     setOptions({ beatLength, epsilon })
                 }}
-                type='number'/>
+                type='number' />
         </div>
     )
 }
@@ -73,59 +73,64 @@ export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onRe
         <Dialog open={dialogOpen}>
             <DialogTitle>Edit Interpolation Pipeline</DialogTitle>
             <DialogContent>
-                <List sx={{ height: 400, width: 500, m: 2 }}>
-                    {pipeline?.map((transformer, i) => {
-                        return (
-                            <ListItem
-                                secondaryAction={
-                                    <>
-                                        {displayOptions === transformer.name() ?
-                                            <IconButton onClick={() => {
-                                                setDisplayOptions('')
-                                            }}>
-                                                <CheckOutlined />
-                                            </IconButton> :
-                                            <IconButton onClick={() => {
-                                                setDisplayOptions(transformer.name())
-                                            }}>
-                                                <EditOutlined />
-                                            </IconButton>
-                                        }
+                <Stack>
+                    <List sx={{ minWidth: '1000', m: 2}}>
+                        {pipeline?.map((transformer, i) => {
+                            return (
+                                <ListItem
+                                    secondaryAction={
+                                        <>
+                                            {displayOptions === transformer.name() ?
+                                                <IconButton onClick={() => {
+                                                    setDisplayOptions('')
+                                                }}>
+                                                    <CheckOutlined />
+                                                </IconButton> :
+                                                <IconButton onClick={() => {
+                                                    setDisplayOptions(transformer.name())
+                                                }}>
+                                                    <EditOutlined />
+                                                </IconButton>
+                                            }
 
-                                        <IconButton onClick={() => {
-                                            setTransformations(pipeline.splice(i, 1))
-                                        }}>
-                                            <ClearOutlined />
-                                        </IconButton>
-                                    </>
-                                }>
-                                <ListItemAvatar>
-                                    <Avatar>
-                                        <ArrowDownwardOutlined/>
-                                    </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={transformer.name()}
-                                    secondary={
-                                        displayOptions === transformer.name() && (
-                                            {
-                                                'InterpolatePhysicalOrnamentation': 
-                                                    <PhysicalOrnamentationOptions
-                                                        options={transformer.options as InterpolatePhysicalOrnamentationOptions}
-                                                        setOptions={options => transformer.setOptions(options)} />,
-                                                'InterpolateTempoMap':
-                                                    <TempoOptions
-                                                        options={transformer.options as InterpolateTempoMapOptions}
-                                                        setOptions={options => transformer.setOptions(options)} />
-                                            }[transformer.name()] || <div>no options for this transformer</div>)
-                                    } />
-                            </ListItem>
-                        )
-                    })}
-                </List>
-                <IconButton>
-                    <AddOutlined />
-                </IconButton>
+                                            <IconButton onClick={() => {
+                                                setTransformations(pipeline.splice(i, 1))
+                                            }}>
+                                                <ClearOutlined />
+                                            </IconButton>
+                                        </>
+                                    }>
+                                    <ListItemAvatar>
+                                        <Avatar>
+                                            <ArrowDownwardOutlined />
+                                        </Avatar>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                        primary={transformer.name()}
+                                        secondary={
+                                            displayOptions === transformer.name() && (
+                                                {
+                                                    'InterpolatePhysicalOrnamentation':
+                                                        <PhysicalOrnamentationOptions
+                                                            options={transformer.options as InterpolatePhysicalOrnamentationOptions}
+                                                            setOptions={options => transformer.setOptions(options)} />,
+                                                    'InterpolateTempoMap':
+                                                        <TempoOptions
+                                                            options={transformer.options as InterpolateTempoMapOptions}
+                                                            setOptions={options => transformer.setOptions(options)} />
+                                                }[transformer.name()] || <div>no options for this transformer</div>)
+                                        } />
+                                </ListItem>
+                            )
+                        })}
+                    </List>
+                    <IconButton>
+                        <AddOutlined />
+                    </IconButton>
+                    <Button>
+                        Reset
+                    </Button>
+                </Stack>
             </DialogContent >
             <DialogActions>
                 <Button onClick={onReady}>Save</Button>
