@@ -32,7 +32,7 @@ export default function AlignmentEditor() {
     <div
       tabIndex={0}
       onKeyDown={(e) => {
-        console.log(e)
+        e.preventDefault()
         if (e.key === 'ArrowDown') {
           setHorizontalStretch(horizontalStretch - 10)
         }
@@ -73,7 +73,8 @@ export default function AlignmentEditor() {
       {alignedPerformance.ready() && (
         <svg
           width={2000}
-          height={areaHeight + 300}>
+          height={areaHeight + 300}
+          style={{margin: '1rem'}}>
           <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
           <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
 

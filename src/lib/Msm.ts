@@ -1,6 +1,7 @@
 import { Score } from "./Score";
 import { AlignedPerformance } from "./AlignedPerformance";
 import { Part } from "./Mpm";
+import { parse } from "js2xmlparser";
 
 /**
  * Temporary attributes used and manipulated in the process of interpolation.
@@ -73,64 +74,75 @@ export class MSM {
                 }
             })
 
+        console.log('all notes=', this.allNotes)
         this.timeSignature = alignedPerformance.score?.timeSignature()
     }
 
     public serialize() {
-        return {
-            'msm': {
-                '@': {
-                    title: 'aligned performance',
-                    pulsesPerQuarter: 720,
-                },
-                'global': {
-                    'header': {},
-                    'dated': {
-                        'timeSignatureMap': {
-                            'timeSignature': {
-                                '@': {
-                                    'date': 0.0,
-                                    'numerator': this.timeSignature?.numerator || 4,
-                                    'denominator': this.timeSignature?.denominator || 4,
-                                }
+        const msm = {
+            '@': {
+                title: 'aligned performance',
+                pulsesPerQuarter: 720,
+            },
+            'global': {
+                'header': {},
+                'dated': {
+                    'timeSignatureMap': {
+                        'timeSignature': {
+                            '@': {
+                                'date': 0.0,
+                                'numerator': this.timeSignature?.numerator || 4,
+                                'denominator': this.timeSignature?.denominator || 4,
                             }
-                        },
-                        'sectionMap': {
-                            // TODO: derive from FormalAlterations
-                            'section': {
-                                '@': {
-                                    date: 0.0,
-                                    'date.end': this.allNotes[this.allNotes.length - 1].date
-                                }
-                            }
-                        },
-                    }
-                },
-                'part': Array.from(Array(2).keys()).map(part => {
-                    return {
-                        '@': {
-                            name: `part${part}`,
-                            number: `${part + 1}`,
-                            'midi.port.channel': part,
-                            'midi.port': 0
-                        },
-                        header: {},
-                        dated: {
-                            'keySignatureMap': {
-                                'keySignature': {
-                                    '@': {
-                                        date: 0
-                                    }
-                                }
-                            }
-                        },
-                        score: {
-                            'note': this.allNotes.filter(note => note.part === part)
                         }
+                    },
+                    'sectionMap': {
+                        // TODO: derive from FormalAlterations
+                        'section': {
+                            '@': {
+                                date: 0.0,
+                                'date.end': this.allNotes[this.allNotes.length - 1].date
+                            }
+                        }
+                    },
+                }
+            },
+            'part': Array.from(Array(2).keys()).map(part => {
+                return {
+                    '@': {
+                        name: `part${part}`,
+                        number: `${part + 1}`,
+                        'midi.port.channel': part,
+                        'midi.port': 0
+                    },
+                    header: {},
+                    dated: {
+                        'keySignatureMap': {
+                            'keySignature': {
+                                '@': {
+                                    date: 0
+                                }
+                            }
+                        }
+                    },
+                    score: {
+                        'note': this.allNotes
+                            .filter(note => note.part === part + 1)
+                            .map(note => ({'@': {
+                                'xml:id': note['xml:id'],
+                                'date': note['date'],
+                                'pitchname': note['pitchname'],
+                                'octave': note['octave'],
+                                'accidentals': note['accidentals'],
+                                'midi.pitch': note['midi.pitch'],
+                                duration: note['duration']
+                            }}))
                     }
-                })
-            }
+                }
+            })
         }
+
+        return parse('msm', msm)
     }
 
     /**
