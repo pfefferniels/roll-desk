@@ -1,5 +1,6 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { vrvToolkit } from "../components/Verovio"
+import { TimeSignature } from "./Msm"
 
 export type ScoreNote = {
     index: number,
@@ -202,4 +203,17 @@ export class Score {
         return ''
     }
 
+    /**
+     * Returns the time signature. If none can be found, it 
+     * assumes a common C time.
+     * 
+     * @returns TimeSignature
+     */
+    public timeSignature(): TimeSignature {
+        const meterSig = this.scoreDOM.querySelector('meterSig')
+        return {
+            numerator: Number(meterSig?.getAttribute('count')) || 4,
+            denominator: Number(meterSig?.getAttribute('unit')) || 4
+        }
+    }
 }

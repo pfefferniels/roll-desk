@@ -5,10 +5,14 @@ import { AbstractTransformer, TransformationOptions } from "./Transformer";
 const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
 
 /**
- * 
+ * Calculation of tempo can be done on the basis of whole bar, 
+ * half bar and the denominator values.
  */
+export const beatLengthBasis = ['bar', 'halfbar', 'denominator'] as const
+export type BeatLengthBasis = typeof beatLengthBasis[number]
+
 export interface InterpolateTempoMapOptions extends TransformationOptions {
-    beatLength: 'bar' | 'halfbar' | 'denominator'
+    beatLength: BeatLengthBasis
     epsilon: number
 }
 
@@ -16,10 +20,32 @@ export interface InterpolateTempoMapOptions extends TransformationOptions {
  * Interpolates the global tempo and inserts it into the MPM
  */
 export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMapOptions> {
+    constructor() {
+        super()
+
+        // set the default options
+        this.setOptions({
+            beatLength: 'denominator',
+            epsilon: 4
+        })
+    }
     public name() { return 'InterpolateTempoMap' }
 
     transform(msm: MSM, mpm: MPM): string {
-        const beatLength = 720
+        let beatLength = 720
+        if (msm.timeSignature && this.options) {
+            switch (this.options.beatLength) {
+                case 'denominator':
+                    beatLength = (4 / msm.timeSignature.denominator) * 720
+                    break;
+                case 'bar':
+                    beatLength = (4 / msm.timeSignature.denominator) * msm.timeSignature.numerator * 720
+                    break;
+                case 'halfbar':
+                    beatLength = (4 / msm.timeSignature.denominator) * 0.5 * msm.timeSignature.numerator * 720
+                    break;
+            }
+        }
 
         let tempos: Tempo[] = []
     
@@ -129,7 +155,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             bpm: bpm
         }))
     
-        douglasPeucker(points, 4)
+        douglasPeucker(points, this.options?.epsilon || 4)
 
         mpm.insertInstructions(tempos, 'global')
     

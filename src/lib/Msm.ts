@@ -36,11 +36,17 @@ export type Chords = {
     [tstamp: number]: MsmNote[]
 }
 
+export type TimeSignature = {
+    numerator: number
+    denominator: number
+}
+
 /**
  * This class represents an MSM encoding.
  */
 export class MSM {
     allNotes: MsmNote[]
+    timeSignature?: TimeSignature
 
     /**
      * Constructs an MSM representation from a done
@@ -66,6 +72,8 @@ export class MSM {
                     duration: pair.scoreNote!.duration
                 }
             })
+
+        this.timeSignature = alignedPerformance.score?.timeSignature()
     }
 
     public serialize() {
@@ -82,8 +90,8 @@ export class MSM {
                             'timeSignature': {
                                 '@': {
                                     'date': 0.0,
-                                    'numerator': 3,
-                                    'denominator': 4,
+                                    'numerator': this.timeSignature?.numerator || 4,
+                                    'denominator': this.timeSignature?.denominator || 4,
                                 }
                             }
                         },

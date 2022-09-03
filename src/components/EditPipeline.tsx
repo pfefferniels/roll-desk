@@ -1,21 +1,16 @@
-import { AddOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, TextField } from "@mui/material"
+import { AddOutlined, ArrowDownwardOutlined, CheckOutlined, ClearOutlined, EditOutlined, TransformOutlined } from "@mui/icons-material"
+import { Avatar, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, TextField, ListItemAvatar, Select, MenuItem } from "@mui/material"
 import { FC, useState } from "react"
-import { InterpolatePhysicalOrnamentationOptions } from "../lib/transformers"
+import { beatLengthBasis, BeatLengthBasis, InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions } from "../lib/transformers"
 import { AbstractTransformer, TransformationOptions } from "../lib/transformers/Transformer"
 
-interface EditPipelineProps {
-    pipeline?: AbstractTransformer<TransformationOptions>[]
-    onReady: () => void,
-    dialogOpen: boolean,
-}
-
-interface SetOptionsProp<T extends TransformationOptions> {
+interface OptionsProp<T extends TransformationOptions> {
+    options?: T
     setOptions: (options: T) => void
 }
 
-const PhysicalOrnamentationOptions: FC<SetOptionsProp<InterpolatePhysicalOrnamentationOptions>> = ({ setOptions }) => {
-    const [minimumArpeggioSize, setMinimumArpeggioSize] = useState(2)
+const PhysicalOrnamentationOptions: FC<OptionsProp<InterpolatePhysicalOrnamentationOptions>> = ({ options, setOptions }) => {
+    const [minimumArpeggioSize, setMinimumArpeggioSize] = useState(options?.minimumArpeggioSize || 2)
 
     return (
         <div>
@@ -32,6 +27,42 @@ const PhysicalOrnamentationOptions: FC<SetOptionsProp<InterpolatePhysicalOrnamen
                 type='number' />
         </div>
     )
+}
+
+const TempoOptions: FC<OptionsProp<InterpolateTempoMapOptions>> = ({ options, setOptions }) => {
+    const [beatLength, setBeatLength] = useState<BeatLengthBasis>(options?.beatLength || 'denominator')
+    const [epsilon, setEpsilon] = useState(options?.epsilon || 4)
+
+    return (
+        <div>
+            <Select
+                value={beatLength}
+                onChange={e => {
+                    setBeatLength(e.target.value as BeatLengthBasis)
+                    setOptions({ beatLength, epsilon })
+                }}>
+                {beatLengthBasis.map(basis => {
+                    return (
+                        <MenuItem value={basis}>{basis}</MenuItem>
+                    )
+                })}
+            </Select>
+            <TextField
+                label='Epsilon'
+                value={epsilon}
+                onChange={e => {
+                    setEpsilon(+e.target.value)
+                    setOptions({ beatLength, epsilon })
+                }}
+                type='number'/>
+        </div>
+    )
+}
+
+interface EditPipelineProps {
+    pipeline?: AbstractTransformer<TransformationOptions>[]
+    onReady: () => void,
+    dialogOpen: boolean,
 }
 
 export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onReady }): JSX.Element => {
@@ -68,16 +99,25 @@ export const EditPipeline: FC<EditPipelineProps> = ({ pipeline, dialogOpen, onRe
                                         </IconButton>
                                     </>
                                 }>
+                                <ListItemAvatar>
+                                    <Avatar>
+                                        <ArrowDownwardOutlined/>
+                                    </Avatar>
+                                </ListItemAvatar>
                                 <ListItemText
                                     primary={transformer.name()}
                                     secondary={
                                         displayOptions === transformer.name() && (
                                             {
                                                 'InterpolatePhysicalOrnamentation': 
-                                                    <PhysicalOrnamentationOptions setOptions={options => {
-                                                        transformer.setOptions(options)
-                                                    }} />
-                                            }[transformer.name()] || <div>not yet implemented</div>)
+                                                    <PhysicalOrnamentationOptions
+                                                        options={transformer.options as InterpolatePhysicalOrnamentationOptions}
+                                                        setOptions={options => transformer.setOptions(options)} />,
+                                                'InterpolateTempoMap':
+                                                    <TempoOptions
+                                                        options={transformer.options as InterpolateTempoMapOptions}
+                                                        setOptions={options => transformer.setOptions(options)} />
+                                            }[transformer.name()] || <div>no options for this transformer</div>)
                                     } />
                             </ListItem>
                         )
