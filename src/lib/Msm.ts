@@ -59,8 +59,15 @@ export class MSM {
         this.allNotes = alignedPerformance.getSemanticPairs()
             .filter(pair => pair.midiNote && pair.scoreNote)
             .map(pair => {
+                let duration = Score.qstampToTstamp(pair.scoreNote!.duration)
+
+                // in case of a duration of 0 we are probably dealing with a grace note
+                if (duration === 0) {
+                    duration = 180
+                }
+                
                 return {
-                    part: pair.scoreNote!.part,
+                    'part': pair.scoreNote!.part,
                     'xml:id': pair.scoreNote!.id,
                     'date': Score.qstampToTstamp(pair.scoreNote!.qstamp),
                     'pitchname': pair.scoreNote!.pname!,
@@ -70,11 +77,11 @@ export class MSM {
                     'midi.onset': pair.midiNote!.onsetTime,
                     'midi.duration': pair.midiNote!.duration,
                     'midi.velocity': pair.midiNote!.velocity,
-                    duration: pair.scoreNote!.duration
+                    'duration': Score.qstampToTstamp(pair.scoreNote!.duration)
                 }
             })
 
-        console.log('all notes=', this.allNotes)
+        console.log('all notes=', this.allNotes.filter(n => n.duration === 0).map(n => n['xml:id']))
         this.timeSignature = alignedPerformance.score?.timeSignature()
     }
 
@@ -112,7 +119,7 @@ export class MSM {
                     '@': {
                         name: `part${part}`,
                         number: `${part + 1}`,
-                        'midi.port.channel': part,
+                        'midi.channel': part,
                         'midi.port': 0
                     },
                     header: {},
@@ -123,20 +130,22 @@ export class MSM {
                                     date: 0
                                 }
                             }
+                        },
+                        score: {
+                            'note': this.allNotes
+                                .filter(note => note.part === part + 1)
+                                .map(note => ({
+                                    '@': {
+                                        'xml:id': note['xml:id'],
+                                        'date': note['date'],
+                                        'pitchname': note['pitchname'],
+                                        'octave': note['octave'],
+                                        'accidentals': note['accidentals'],
+                                        'midi.pitch': note['midi.pitch'],
+                                        'duration': note['duration']
+                                    }
+                                }))
                         }
-                    },
-                    score: {
-                        'note': this.allNotes
-                            .filter(note => note.part === part + 1)
-                            .map(note => ({'@': {
-                                'xml:id': note['xml:id'],
-                                'date': note['date'],
-                                'pitchname': note['pitchname'],
-                                'octave': note['octave'],
-                                'accidentals': note['accidentals'],
-                                'midi.pitch': note['midi.pitch'],
-                                duration: note['duration']
-                            }}))
                     }
                 }
             })
