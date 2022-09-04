@@ -3,7 +3,7 @@ import GlobalContext from "./GlobalContext"
 import { Box, IconButton, Paper } from "@mui/material"
 import { Motivation, SemanticAlignmentPair } from "../lib/AlignedPerformance"
 import { MidiNote } from "../lib/Performance"
-import { basePitchOfNote, ScoreNote } from "../lib/Score"
+import { basePitchOfNote, Score, ScoreNote } from "../lib/Score"
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ClearIcon from '@mui/icons-material/Clear';
 import { EditMotivation } from "./EditMotivation"
@@ -27,6 +27,23 @@ export default function AlignmentEditor() {
     alignedPerformance.updateMotivation(pair, target)
     triggerUpdate()
   }
+
+  // calculate coordinates of score notes
+  const scoreNotePositions: Map<ScoreNote, [number, number]> = new Map(
+    alignedPerformance.getSemanticPairs()
+      .filter(pair => pair.scoreNote !== undefined)
+      .map(pair => [pair.scoreNote!,
+      [pair.scoreNote!.qstamp * horizontalStretch,
+      (127 - basePitchOfNote(pair.scoreNote!.pname || 'c', pair.scoreNote!.octave || 0.0)) * verticalStretch]]
+      ))
+
+  // calculate coordinate of MIDI notes
+  const midiNotePositions: Map<MidiNote, [number, number]> = new Map(
+    alignedPerformance.getSemanticPairs()
+      .filter(pair => pair.midiNote !== undefined)
+      .map(pair => [pair.midiNote!, [pair.midiNote!.onsetTime * horizontalStretch + horizontalShift,
+      (127 - pair.midiNote!.pitch) * verticalStretch]])
+  )
 
   return (
     <div
@@ -74,68 +91,82 @@ export default function AlignmentEditor() {
         <svg
           width={2000}
           height={areaHeight + 300}
-          style={{margin: '1rem'}}>
-          <StaffLines verticalOffset={0} verticalStretch={verticalStretch} />
-          <StaffLines verticalOffset={areaHeight} verticalStretch={verticalStretch} />
+          style={{ margin: '1rem' }}>
 
-          {alignedPerformance.getSemanticPairs().map((pair) => {
-            const scoreNotePosition = pair.scoreNote ?
-              [pair.scoreNote.qstamp * horizontalStretch,
-              (127 - basePitchOfNote(pair.scoreNote.pname || 'c', pair.scoreNote.octave || 0.0)) * verticalStretch] : [,]
 
-            const midiNotePosition = pair.midiNote ?
-              [pair.midiNote.onsetTime * horizontalStretch + horizontalShift,
-              (127 - pair.midiNote.pitch) * verticalStretch] : [,]
+          <g className='scoreArea'>
+            <StaffLines staffSize={verticalStretch} width={2000} />
 
-            return (
-              <g>
-                <g className='scoreArea'>
-                  {pair.scoreNote && (
-                    <NoteHead
-                      key={`note_${pair.scoreNote.id}`}
-                      id={pair.scoreNote.id}
-                      accidentals={pair.scoreNote.accid || 0.0}
-                      missingNote={pair.motivation === Motivation.Omission}
-                      active={activeScoreNote === pair.scoreNote}
-                      x={scoreNotePosition[0] || 0}
-                      y={scoreNotePosition[1] || 0}
-                      staffSize={7}
-                      onClick={() => {
-                        setActiveScoreNote(pair.scoreNote)
-                        if (activeMIDINote) {
-                          alignedPerformance.align(activeMIDINote, activeScoreNote!)
-                          triggerUpdate()
+            {alignedPerformance.getSemanticPairs().map((pair) => {
+              if (pair.scoreNote) {
+                const position = scoreNotePositions.get(pair.scoreNote)
+                if (!position) return null
 
-                          setActiveMIDINote(undefined)
-                          setActiveScoreNote(undefined)
-                        }
-                      }} />
-                  )}
-                </g>
+                return (
+                  <NoteHead
+                    key={`note_${pair.scoreNote.id}`}
+                    id={pair.scoreNote.id}
+                    accidentals={pair.scoreNote.accid || 0.0}
+                    missingNote={pair.motivation === Motivation.Omission}
+                    active={activeScoreNote === pair.scoreNote}
+                    x={position[0] || 0}
+                    y={position[1] || 0}
+                    staffSize={7}
+                    onClick={() => {
+                      setActiveScoreNote(pair.scoreNote)
+                      if (activeMIDINote) {
+                        alignedPerformance.align(activeMIDINote, activeScoreNote!)
+                        triggerUpdate()
 
-                <g className='midiArea' transform={`translate(0, ${areaHeight})`}>
-                  {pair.midiNote && (
-                    <rect
-                      key={`note_${pair.midiNote.id}`}
-                      id={`midiNote_${pair.midiNote.id}`}
-                      className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
-                      x={midiNotePosition[0]}
-                      y={midiNotePosition[1]}
-                      width={pair.midiNote.duration * horizontalStretch}
-                      height={5}
-                      onClick={(e) => {
-                        setActiveMIDINote(pair.midiNote)
-                        if (activeScoreNote) {
-                          alignedPerformance.align(pair.midiNote!, activeScoreNote)
-                          triggerUpdate()
-                          setActiveMIDINote(undefined)
-                          setActiveScoreNote(undefined)
-                        }
-                      }} />
-                  )}
-                </g>
+                        setActiveMIDINote(undefined)
+                        setActiveScoreNote(undefined)
+                      }
+                    }} />
+                )
+              }
+            })}
+          </g>
 
-                {pair.midiNote && pair.scoreNote && (
+          <g className='midiArea' transform={`translate(0, ${areaHeight})`}>
+            <StaffLines staffSize={verticalStretch} width={2000} />
+
+            {alignedPerformance.getSemanticPairs().map((pair) => {
+              if (pair.midiNote) {
+                const position = midiNotePositions.get(pair.midiNote)
+                if (!position) return null
+
+                return (
+                  <rect
+                    key={`note_${pair.midiNote.id}`}
+                    id={`midiNote_${pair.midiNote.id}`}
+                    className={`midiNote ${pair.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === pair.midiNote) && 'active'}`}
+                    x={position[0]}
+                    y={position[1]}
+                    width={pair.midiNote.duration * horizontalStretch}
+                    height={5}
+                    onClick={(e) => {
+                      setActiveMIDINote(pair.midiNote)
+                      if (activeScoreNote) {
+                        alignedPerformance.align(pair.midiNote!, activeScoreNote)
+                        triggerUpdate()
+                        setActiveMIDINote(undefined)
+                        setActiveScoreNote(undefined)
+                      }
+                    }} />
+                )
+              }
+            })}
+          </g>
+
+          <g className='connectionLines'>
+            {alignedPerformance.getSemanticPairs().map((pair) => {
+              if (pair.midiNote && pair.scoreNote) {
+                const scoreNotePosition = scoreNotePositions.get(pair.scoreNote)
+                const midiNotePosition = midiNotePositions.get(pair.midiNote)
+
+                if (!scoreNotePosition || !midiNotePosition) return null
+
+                return (
                   <line
                     className='connectionLine'
                     x1={scoreNotePosition[0]}
@@ -152,12 +183,10 @@ export default function AlignmentEditor() {
                         setCurrentAlignmentPair(pair)
                         setEditDialogOpen(true)
                       }
-                    }} />
-                )}
-              </g>
-            )
-          })
-          }
+                    }} />)
+              }
+            })}
+          </g>
         </svg>
       )}
 
@@ -170,7 +199,7 @@ export default function AlignmentEditor() {
         dialogOpen={exportDialogOpen}
         setDialogOpen={setExportDialogOpen} />
 
-    </div>
+    </div >
   )
 }
 
