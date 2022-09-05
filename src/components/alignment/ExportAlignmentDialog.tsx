@@ -1,7 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, Box, TextField, Button, DialogActions } from "@mui/material"
 import { FC, useState } from "react"
-import { AlignedPerformance } from "../lib/AlignedPerformance"
-import { MSM } from "../lib/Msm"
+import { AlignedPerformance } from "../../lib/AlignedPerformance"
+import { MSM } from "../../lib/Msm"
 
 interface ExportDialogProps {
   alignedPerformance: AlignedPerformance,

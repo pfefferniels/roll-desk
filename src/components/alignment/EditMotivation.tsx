@@ -1,6 +1,6 @@
 import { Dialog, DialogTitle, DialogContent, Select, MenuItem, DialogActions, Button } from "@mui/material"
 import { FC } from "react"
-import { SemanticAlignmentPair, Motivation } from "../lib/AlignedPerformance"
+import { SemanticAlignmentPair, Motivation } from "../../lib/AlignedPerformance"
 
 interface EditMotivationProps {
     pair?: SemanticAlignmentPair,

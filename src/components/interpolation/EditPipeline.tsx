@@ -1,8 +1,8 @@
-import { AddOutlined, ArrowDownwardOutlined, CheckOutlined, ClearOutlined, EditOutlined, TransformOutlined } from "@mui/icons-material"
+import { AddOutlined, ArrowDownwardOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
 import { Avatar, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, TextField, ListItemAvatar, Select, MenuItem, Stack } from "@mui/material"
 import { FC, useState } from "react"
-import { beatLengthBasis, BeatLengthBasis, InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions } from "../lib/transformers"
-import { AbstractTransformer, TransformationOptions } from "../lib/transformers/Transformer"
+import { beatLengthBasis, BeatLengthBasis, InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions } from "../../lib/transformers"
+import { AbstractTransformer, TransformationOptions } from "../../lib/transformers/Transformer"
 
 interface OptionsProp<T extends TransformationOptions> {
     options?: T

@@ -1,9 +1,8 @@
-import { useContext, useEffect, useRef, useState } from "react"
-import { Interpolation } from "../lib/Export"
-import GlobalContext from "./GlobalContext"
-import { parse } from "js2xmlparser"
-import { Box, Button, IconButton, Paper, TextField, Typography } from "@mui/material"
-import { MPM } from "../lib/Mpm"
+import { useContext, useEffect, useState } from "react"
+import { Interpolation } from "../../lib/Export"
+import GlobalContext from "../GlobalContext"
+import { Box, IconButton, Paper } from "@mui/material"
+import { MPM } from "../../lib/Mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';

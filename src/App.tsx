@@ -4,8 +4,8 @@ import { SpeedDial, SpeedDialAction, SpeedDialIcon, Tab, Tabs, Typography } from
 import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
 import { Box } from '@mui/system';
-import AlignmentEditor from './components/AlignmentEditor';
-import InterpolationEditor from './components/InterpolationEditor';
+import AlignmentEditor from './components/alignment/AlignmentEditor';
+import InterpolationEditor from './components/interpolation/InterpolationEditor';
 import AnnotatedScore from './components/AnnotatedScore';
 import GlobalContext from './components/GlobalContext';
 import { Score } from './lib/Score'
