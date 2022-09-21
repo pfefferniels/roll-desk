@@ -10,22 +10,35 @@ import { System } from "../score/System"
 import { SVGElementConnector } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
 
+type Dimensions = {
+  stretch: number, // horizontal stretch
+  shift: number, // horizontal shift
+  staffSize: number 
+  areaHeight: number
+}
+
 export default function AlignmentEditor() {
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
 
-  const [horizontalStretch, setHorizontalStretch] = useState(60)
-  const [horizontalShift, setHorizontalShift] = useState(60)
+  const [scoreDimensions, setScoreDimensions] = useState<Dimensions>({
+    shift: 60,
+    stretch: 60,
+    staffSize: 7,
+    areaHeight: 280
+  })
+
+  const [midiDimensions, setMidiDimensions] = useState<Dimensions>({
+    shift: 60,
+    stretch: 60,
+    staffSize: 7,
+    areaHeight: 280
+  })
+
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [currentAlignmentPair, setCurrentAlignmentPair] = useState<SemanticAlignmentPair>()
   const [activeScoreNote, setActiveScoreNote] = useState<ScoreNote>()
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
   const [svgRef, setSvgRef] = useState<number>(0)
-
-  useEffect(() => console.log('update'), [svgRef])
-
-  const verticalStretch = 2.9
-  const staffSize = 7
-  const areaHeight = 127 * verticalStretch
 
   const changeMotivation = (pair: SemanticAlignmentPair, target: Motivation) => {
     alignedPerformance.updateMotivation(pair, target)
@@ -37,7 +50,7 @@ export default function AlignmentEditor() {
       .filter(p => p.scoreNote !== undefined && p.scoreNote.part === part)
       .map(p => {
         const scoreNote = p.scoreNote!
-        const horizontalPosition = scoreNote.qstamp * horizontalStretch + horizontalShift
+        const horizontalPosition = scoreNote.qstamp * scoreDimensions.stretch + scoreDimensions.shift
         const basePitch = basePitchOfNote(scoreNote.pname || 'c', scoreNote.octave || 0.0)
 
         if (scoreNote === activeScoreNote) {
@@ -57,7 +70,7 @@ export default function AlignmentEditor() {
                 id={`${scoreNote.id}_accidental`}
                 x={horizontalPosition - 10}
                 y={getVerticalPosition(basePitch)}
-                staffSize={staffSize} />
+                staffSize={scoreDimensions.staffSize} />
             )}
             <SmuflSymbol
               name='noteheadBlack'
@@ -67,7 +80,7 @@ export default function AlignmentEditor() {
               active={scoreNote === activeScoreNote}
               x={horizontalPosition}
               y={getVerticalPosition(basePitch)}
-              staffSize={staffSize}
+              staffSize={scoreDimensions.staffSize}
               onClick={() => {
                 console.log('setting active score note to', p.scoreNote)
                 setActiveScoreNote(p.scoreNote)
@@ -81,7 +94,7 @@ export default function AlignmentEditor() {
           </>
         )
       })
-  }, [horizontalStretch, activeScoreNote, alignedPerformance])
+  }, [scoreDimensions, activeScoreNote, alignedPerformance])
 
   const fillMidiStaff = useCallback((part: number) => {
     return (getVerticalPosition: any) => {
@@ -97,7 +110,7 @@ export default function AlignmentEditor() {
         })
         .map(p => {
           const midiNote = p.midiNote!
-          const horizontalPosition = midiNote.onsetTime * horizontalStretch + horizontalShift
+          const horizontalPosition = midiNote.onsetTime * midiDimensions.stretch + midiDimensions.shift
           // TODO: adjust accidentals to the assumed score note (if possible)
           //const basePitch = basePitchOfNote(scoreNote.pname || 'c', scoreNote.octave || 0.0)
 
@@ -108,7 +121,7 @@ export default function AlignmentEditor() {
               className={`midiNote ${p.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === p.midiNote) && 'active'}`}
               x={horizontalPosition}
               y={getVerticalPosition(midiNote.pitch)}
-              width={midiNote.duration * horizontalStretch}
+              width={midiNote.duration * midiDimensions.stretch}
               height={5}
               onClick={(e) => {
                 setActiveMIDINote(midiNote)
@@ -122,7 +135,7 @@ export default function AlignmentEditor() {
           )
         })
     }
-  }, [horizontalShift, horizontalStretch, activeScoreNote, activeMIDINote, alignedPerformance])
+  }, [midiDimensions, activeScoreNote, activeMIDINote, alignedPerformance])
 
   const area = useMemo(() => {
     return (
@@ -133,8 +146,8 @@ export default function AlignmentEditor() {
         }
       }}>
         <g className='scoreArea' transform={`translate(0, ${100})`}>
-          <System spacing={9} staffSize={staffSize}>
-            <Grid type='music-staff' clef='G' staffSize={staffSize} width={2000}>
+          <System spacing={9} staffSize={scoreDimensions.staffSize}>
+            <Grid type='music-staff' clef='G' staffSize={scoreDimensions.staffSize} width={2000}>
               {(getVerticalPosition) =>
                 <>
                   <SmuflSymbol name='gClef' x={10} y={getVerticalPosition(65)} staffSize={7} />
@@ -142,7 +155,7 @@ export default function AlignmentEditor() {
                 </>
               }
             </Grid>
-            <Grid type='music-staff' clef='F' staffSize={staffSize} width={2000}>
+            <Grid type='music-staff' clef='F' staffSize={scoreDimensions.staffSize} width={2000}>
               {(getVerticalPosition) =>
                 <>
                   <SmuflSymbol name='fClef' x={10} y={getVerticalPosition(53)} staffSize={7} />
@@ -153,19 +166,19 @@ export default function AlignmentEditor() {
           </System>
         </g>
 
-        <g className='midiArea' transform={`translate(0, ${areaHeight})`}>
-          <System spacing={7} staffSize={staffSize}>
-            <Grid type='midi' clef='G' staffSize={staffSize} width={2000}>
+        <g className='midiArea' transform={`translate(0, ${midiDimensions.areaHeight})`}>
+          <System spacing={7} staffSize={midiDimensions.staffSize}>
+            <Grid type='midi' clef='G' staffSize={midiDimensions.staffSize} width={2000}>
               {fillMidiStaff(1)}
             </Grid>
-            <Grid type='midi' clef='F' staffSize={staffSize} width={2000}>
+            <Grid type='midi' clef='F' staffSize={midiDimensions.staffSize} width={2000}>
               {fillMidiStaff(2)}
             </Grid>
           </System>
         </g>
       </g>
     )
-  }, [horizontalShift, horizontalStretch, activeScoreNote, activeMIDINote, alignedPerformance])
+  }, [scoreDimensions, midiDimensions, activeScoreNote, activeMIDINote, alignedPerformance])
 
   const connectors = useMemo(() => {
     if (!svgRef) return null
@@ -186,7 +199,7 @@ export default function AlignmentEditor() {
 
           return (
             <SVGElementConnector
-              key={`connector_${n}_${Date.now()}_${horizontalShift}`}
+              key={`connector_${n}_${Date.now()}`}
               parentElement={parentEl}
               firstElement={scoreNoteEl}
               secondElement={midiNoteEl}
@@ -210,16 +223,32 @@ export default function AlignmentEditor() {
       onKeyDown={(e) => {
         e.preventDefault()
         if (e.key === 'ArrowDown') {
-          setHorizontalStretch(horizontalStretch - 10)
+          setMidiDimensions((prev) => {
+            const newDimensions = { ...prev }
+            newDimensions.stretch -= 10
+            return newDimensions
+          })
         }
         else if (e.key === 'ArrowUp') {
-          setHorizontalStretch(horizontalStretch + 10)
+          setMidiDimensions((prev) => {
+            const newDimensions = { ...prev }
+            newDimensions.stretch += 10
+            return newDimensions
+          })
         }
         else if (e.key === 'ArrowLeft') {
-          setHorizontalShift(horizontalShift - 10)
+          setMidiDimensions((prev) => {
+            const newDimensions = { ...prev }
+            newDimensions.shift -= 10
+            return newDimensions
+          })
         }
         else if (e.key === 'ArrowRight') {
-          setHorizontalShift(horizontalShift + 10)
+          setMidiDimensions((prev) => {
+            const newDimensions = { ...prev }
+            newDimensions.shift += 10
+            return newDimensions
+          })
         }
       }}
     >
@@ -231,7 +260,7 @@ export default function AlignmentEditor() {
         <svg
           id='alignment'
           width={2000}
-          height={areaHeight + 300}
+          height={scoreDimensions.areaHeight + midiDimensions.areaHeight}
           style={{ margin: '1rem' }}>
           {area}
           {connectors}
