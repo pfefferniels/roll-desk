@@ -40,14 +40,14 @@ export default function AlignmentEditor() {
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
   const [svgRef, setSvgRef] = useState<number>(0)
 
-  const onScroll = () => {
-    const dimensions = { ...scoreDimensions }
-    dimensions.shift += window.scrollX
-    setScoreDimensions(dimensions)
-  }
-
   useEffect(() => {
-    window.addEventListener('scroll', () => onScroll)
+    const onScroll = () => {
+      const dimensions = { ...scoreDimensions }
+      dimensions.shift += window.scrollX
+      setScoreDimensions(dimensions)
+    }
+
+    window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
@@ -107,45 +107,35 @@ export default function AlignmentEditor() {
       })
   }, [scoreDimensions, activeScoreNote, alignedPerformance])
 
-  const fillMidiStaff = useCallback((part: number) => {
-    return (getVerticalPosition: any) => {
-      return alignedPerformance.getSemanticPairs()
-        .filter(p => {
-          if (p.midiNote === undefined) return false
+  const fillMidiStaff = useCallback((getVerticalPosition) => {
+    return alignedPerformance.getSemanticPairs()
+      .filter(p => p.midiNote !== undefined)
+      .map(p => {
+        const midiNote = p.midiNote!
+        const horizontalPosition = midiNote.onsetTime * midiDimensions.stretch + midiDimensions.shift
+        // TODO: adjust accidentals to the assumed score note (if possible)
+        //const basePitch = basePitchOfNote(scoreNote.pname || 'c', scoreNote.octave || 0.0)
 
-          // divide at the middle c
-          if (part === 2) {
-            return p.midiNote.pitch < 60
-          }
-          return p.midiNote.pitch >= 60
-        })
-        .map(p => {
-          const midiNote = p.midiNote!
-          const horizontalPosition = midiNote.onsetTime * midiDimensions.stretch + midiDimensions.shift
-          // TODO: adjust accidentals to the assumed score note (if possible)
-          //const basePitch = basePitchOfNote(scoreNote.pname || 'c', scoreNote.octave || 0.0)
-
-          return (
-            <rect
-              key={`note_${midiNote.id}`}
-              id={`midiNote_${midiNote.id}`}
-              className={`midiNote ${p.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === p.midiNote) && 'active'}`}
-              x={horizontalPosition}
-              y={getVerticalPosition(midiNote.pitch)}
-              width={midiNote.duration * midiDimensions.stretch}
-              height={5}
-              onClick={(e) => {
-                setActiveMIDINote(midiNote)
-                if (activeScoreNote) {
-                  alignedPerformance.align(midiNote!, activeScoreNote)
-                  setActiveMIDINote(undefined)
-                  setActiveScoreNote(undefined)
-                  triggerUpdate()
-                }
-              }} />
-          )
-        })
-    }
+        return (
+          <rect
+            key={`note_${midiNote.id}`}
+            id={`midiNote_${midiNote.id}`}
+            className={`midiNote ${p.motivation === Motivation.Addition && 'missingNote'}  ${(activeMIDINote === p.midiNote) && 'active'}`}
+            x={horizontalPosition}
+            y={getVerticalPosition(midiNote.pitch) + 400}
+            width={midiNote.duration * midiDimensions.stretch}
+            height={5}
+            onClick={(e) => {
+              setActiveMIDINote(midiNote)
+              if (activeScoreNote) {
+                alignedPerformance.align(midiNote!, activeScoreNote)
+                setActiveMIDINote(undefined)
+                setActiveScoreNote(undefined)
+                triggerUpdate()
+              }
+            }} />
+        )
+      })
   }, [midiDimensions, activeScoreNote, activeMIDINote, alignedPerformance])
 
   const area = useMemo(() => {
@@ -179,11 +169,10 @@ export default function AlignmentEditor() {
 
         <g className='midiArea' transform={`translate(0, ${midiDimensions.areaHeight})`}>
           <System spacing={7} staffSize={midiDimensions.staffSize}>
-            <Grid type='midi' clef='G' staffSize={midiDimensions.staffSize} width={2000}>
-              {fillMidiStaff(1)}
-            </Grid>
-            <Grid type='midi' clef='F' staffSize={midiDimensions.staffSize} width={2000}>
-              {fillMidiStaff(2)}
+            <Grid type='midi' staffSize={midiDimensions.staffSize} width={2000}>
+              {(getVerticalPosition) => {
+                return fillMidiStaff(getVerticalPosition)
+              }}
             </Grid>
           </System>
         </g>
