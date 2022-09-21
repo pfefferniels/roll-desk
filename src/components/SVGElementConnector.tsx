@@ -1,11 +1,11 @@
 import { FC } from "react"
 
 type SVGElementConnectorProps = {
-    parentElement: Element,
-    firstElement: SVGGraphicsElement,
-    secondElement: SVGGraphicsElement,
-    highlight: boolean,
-    onAltClick: () => void,
+    parentElement: Element
+    firstElement: Element
+    secondElement: Element
+    highlight: boolean
+    onAltClick: () => void
     onClick: () => void
 }
 

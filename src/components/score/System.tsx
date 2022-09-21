@@ -19,3 +19,4 @@ export const System: FC<SystemProps> = ({ children, staffSize, spacing }): JSX.E
     </g>
   );
 };
+

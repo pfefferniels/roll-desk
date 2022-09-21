@@ -3,7 +3,11 @@
   height: auto;
 }
 
-.scoreNote, .midiNote {
+.scoreNote {
+  fill-opacity: 0.5;
+}
+
+.midiNote {
   fill-opacity: 0.3;
   fill: gray;
   stroke: black;

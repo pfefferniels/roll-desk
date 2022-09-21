@@ -1,6 +1,7 @@
 import { MidiNote, RawPerformance } from "./Performance"
 import { ScoreNote, Score } from "./Score"
-import { ScoreFollower, detectErrors } from "alignmenttool/dist/index"
+import { ScoreFollower, ErrorDetector } from "alignmenttool/dist/index"
+import { ErrorIndex } from "alignmenttool/dist/Match"
 
 export enum Motivation {
     ExactMatch = "ExactMatch",
@@ -48,16 +49,25 @@ export class AlignedPerformance {
 
         const follower = new ScoreFollower(hmm, 1)
         const matches = follower.getMatchResult(pr)
-        detectErrors(hmm, matches)
+
+        const errorDetector = new ErrorDetector(hmm, matches)
+        errorDetector.detectErrors()
+        const regions = errorDetector.getErrorRegions(0.3)
+
+        console.log('error regions=', regions)
 
         this.semanticPairs = matches.events.map((event): SemanticAlignmentPair => {
             const scoreId = event.meiId
             const midiId = event.id
+            let motivation = Motivation.ExactMatch
+            if (event.errorIndex !== ErrorIndex.Correct) {
+                motivation = Motivation.Alteration
+            }
 
             return {
                 scoreNote: this.score?.at(scoreId || ''),
                 midiNote: this.rawPerformance?.at(+midiId),
-                motivation: Motivation.ExactMatch
+                motivation
             }
         })
 

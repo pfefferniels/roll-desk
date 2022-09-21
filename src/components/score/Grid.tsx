@@ -2,8 +2,9 @@ import React, { FC } from "react";
 
 export type Clef = 'G' | 'F'
 
-interface StaffProps {
+interface GridProps {
   children: (fn: any) => React.ReactNode
+  type: 'music-staff' | 'midi' | 'euclidean'
   clef: Clef
   staffSize: number
   width: number
@@ -12,7 +13,7 @@ interface StaffProps {
 /**
  * Draws SVG staff lines using the standard F and G clef.
  */
-export const Staff: FC<StaffProps> = ({ children, staffSize, width, clef }): JSX.Element => {
+export const Grid: FC<GridProps> = ({ children, staffSize, width, clef }): JSX.Element => {
   const getVerticalPosition = (pnum: number) => {
     const staffLocationsByClef = {
       G: 76,
@@ -39,7 +40,7 @@ export const Staff: FC<StaffProps> = ({ children, staffSize, width, clef }): JSX
     <g className='staff'>
       {[1, 2, 3, 4, 5].map(lineNumber => (
         <line
-          key={`line${Date.now()}`}
+          key={`line${Date.now()}-${lineNumber}`}
           className='staffLine'
           x1={0}
           y1={lineNumber * staffSize}
