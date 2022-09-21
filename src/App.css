@@ -23,13 +23,13 @@
 }
 
 .connectionLine {
-  stroke-width: 4;
+  stroke-width: 7;
   stroke-opacity: 0.2;
 }
 
 .connectionLine:hover {
   stroke: #ff2c2c;
-  stroke-opacity: 1;
+  stroke-opacity: 0.7;
 }
 
 .scoreNote:hover {

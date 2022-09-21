@@ -15,21 +15,31 @@ export const SVGElementConnector: FC<SVGElementConnectorProps> = ({ parentElemen
     const parentY = parentBox.y
 
     return (
-        <line
-            className='connectionLine'
-            data-original-id={firstElement.getAttribute('id')}
-            x1={firstElement.getBoundingClientRect().x - parentX}
-            y1={firstElement.getBoundingClientRect().y - parentY}
-            x2={secondElement.getBoundingClientRect().x - parentX}
-            y2={secondElement.getBoundingClientRect().y - parentY}
-            stroke={highlight ? 'blue' : 'black'}
-            onClick={(e) => {
-                if (e.altKey) {
-                    onAltClick()
-                }
-                else {
-                    onClick()
-                }
-            }} />
+        <g>
+            <line
+                className='innerConnectionLine'
+                x1={firstElement.getBoundingClientRect().x - parentX}
+                y1={firstElement.getBoundingClientRect().y - parentY}
+                x2={secondElement.getBoundingClientRect().x - parentX}
+                y2={secondElement.getBoundingClientRect().y - parentY}
+                stroke='black'
+                strokeWidth={0.7} />
+            <line
+                className='connectionLine'
+                data-original-id={firstElement.getAttribute('id')}
+                x1={firstElement.getBoundingClientRect().x - parentX}
+                y1={firstElement.getBoundingClientRect().y - parentY}
+                x2={secondElement.getBoundingClientRect().x - parentX}
+                y2={secondElement.getBoundingClientRect().y - parentY}
+                stroke={highlight ? 'blue' : 'black'}
+                onClick={(e) => {
+                    if (e.altKey) {
+                        onAltClick()
+                    }
+                    else {
+                        onClick()
+                    }
+                }} />
+        </g>
     )
 }
