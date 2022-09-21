@@ -13,7 +13,7 @@ import { AlignmentActions } from "./AlignmentActions"
 type Dimensions = {
   stretch: number, // horizontal stretch
   shift: number, // horizontal shift
-  staffSize: number 
+  staffSize: number
   areaHeight: number
 }
 
@@ -39,6 +39,17 @@ export default function AlignmentEditor() {
   const [activeScoreNote, setActiveScoreNote] = useState<ScoreNote>()
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
   const [svgRef, setSvgRef] = useState<number>(0)
+
+  const onScroll = () => {
+    const dimensions = { ...scoreDimensions }
+    dimensions.shift += window.scrollX
+    setScoreDimensions(dimensions)
+  }
+
+  useEffect(() => {
+    window.addEventListener('scroll', () => onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const changeMotivation = (pair: SemanticAlignmentPair, target: Motivation) => {
     alignedPerformance.updateMotivation(pair, target)
@@ -185,35 +196,35 @@ export default function AlignmentEditor() {
 
     return (
       <g className='connectionLines'>
-      {alignedPerformance.getSemanticPairs()
-        .filter(pair => pair.midiNote && pair.scoreNote)
-        .map((pair, n) => {
-          const parentEl = document.querySelector('#alignment')
-          const midiNoteEl = document.querySelector(`#midiNote_${pair.midiNote!.id}`)
-          const scoreNoteEl = document.querySelector(`#scoreNote_${pair.scoreNote!.id}`)
+        {alignedPerformance.getSemanticPairs()
+          .filter(pair => pair.midiNote && pair.scoreNote)
+          .map((pair, n) => {
+            const parentEl = document.querySelector('#alignment')
+            const midiNoteEl = document.querySelector(`#midiNote_${pair.midiNote!.id}`)
+            const scoreNoteEl = document.querySelector(`#scoreNote_${pair.scoreNote!.id}`)
 
-          if (!parentEl || !midiNoteEl || !scoreNoteEl) {
-            console.log('either midi note or score note could not be found')
-            return null
-          }
+            if (!parentEl || !midiNoteEl || !scoreNoteEl) {
+              console.log('either midi note or score note could not be found')
+              return null
+            }
 
-          return (
-            <SVGElementConnector
-              key={`connector_${n}_${Date.now()}`}
-              parentElement={parentEl}
-              firstElement={scoreNoteEl}
-              secondElement={midiNoteEl}
-              highlight={pair.motivation !== Motivation.ExactMatch}
-              onAltClick={() => {
-                alignedPerformance.removeAlignment(pair)
-                triggerUpdate()
-              }}
-              onClick={() => {
-                setCurrentAlignmentPair(pair)
-                setEditDialogOpen(true)
-              }} />)
-        })}
-    </g>
+            return (
+              <SVGElementConnector
+                key={`connector_${n}_${Date.now()}`}
+                parentElement={parentEl}
+                firstElement={scoreNoteEl}
+                secondElement={midiNoteEl}
+                highlight={pair.motivation !== Motivation.ExactMatch}
+                onAltClick={() => {
+                  alignedPerformance.removeAlignment(pair)
+                  triggerUpdate()
+                }}
+                onClick={() => {
+                  setCurrentAlignmentPair(pair)
+                  setEditDialogOpen(true)
+                }} />)
+          })}
+      </g>
     )
   }, [svgRef, currentAlignmentPair, alignmentReady, alignedPerformance])
 
