@@ -136,8 +136,6 @@
                      <dir xml:id="dnrthjz" place="below" staff="2" tstamp="4.000000" vgrp="40">
                         <rend xml:id="r14vqa0j" fontstyle="italic">rubato</rend>
                      </dir>
-                     <pedal xml:id="p4k6e0f" staff="2" tstamp="7.000000" dir="down" form="line" place="below" vgrp="65" />
-                     <pedal xml:id="phsif52" staff="2" tstamp="8.900000" dir="up" form="line" place="below" vgrp="200" />
                      <pedal xml:id="ptfmacp" staff="2" tstamp="9.900000" dir="up" form="line" place="below" vgrp="200" />
                      <tie xml:id="to0237t" startid="#n177iln1" endid="#nl0p1gk" />
                      <arpeg xml:id="auuoey0" plist="#c1uw8s9b" />
@@ -192,8 +190,6 @@
                      <tie xml:id="t1nanea1" startid="#nwfjoca" endid="#n1hjgoi7" />
                      <pedal xml:id="p1y05zw7" staff="2" tstamp="1.000000" dir="down" form="line" place="below" vgrp="80" />
                      <tie xml:id="t1hnj5dw" startid="#nugdwpd" endid="#n1qyi4u2" />
-                     <pedal xml:id="pmujdml" staff="2" tstamp="7.000000" dir="down" form="line" place="below" vgrp="65" />
-                     <pedal xml:id="p1i3qgd0" staff="2" tstamp="7.900000" dir="up" form="line" place="below" vgrp="200" />
                      <pedal xml:id="przejp6" staff="2" tstamp="9.900000" dir="up" form="line" place="below" vgrp="200" />
                   </measure>
                   <sb xml:id="s5asf68" />
