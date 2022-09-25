@@ -32,7 +32,11 @@ export class Interpolation {
                          "Measuring Early Records" project`
         
         // the default order of transformations
-        this.pipeline = [
+        this.pipeline = Interpolation.defaultPipeline()
+    }
+
+    public static defaultPipeline(): AbstractTransformer<TransformationOptions>[] {
+        return [
             new InterpolatePhysicalOrnamentation(),
             new InterpolateTempoMap(),
             new InterpolateSymbolicOrnamentation(),
@@ -84,8 +88,9 @@ export class Interpolation {
 
         // construct the pipeline from the given order in this.pipeline
         if (this.pipeline.length > 0) {
-            this.pipeline.reduce((acc, curr) => acc.setNext(curr), this.pipeline[0])
-            const chainedTransformation = this.pipeline[0]
+            let copy = this.pipeline.slice()
+            copy.reduce((acc, curr) => acc.setNext(curr), copy[0])
+            const chainedTransformation = copy[0]
     
             // kick-off the transformation chain
             if (!chainedTransformation) {

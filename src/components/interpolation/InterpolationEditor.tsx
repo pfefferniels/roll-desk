@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from "react"
-import { Interpolation } from "../../lib/Export"
+import { Interpolation } from "../../lib/Interpolation"
 import GlobalContext from "../GlobalContext"
 import { Box, IconButton, Paper } from "@mui/material"
-import { MPM } from "../../lib/Mpm"
+import { MPM, Ornament, Tempo } from "../../lib/Mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { EditPipeline } from "./EditPipeline"
+import { PipelineEditor } from "./pipeline-editor/PipelineEditor"
 import { EditMetadata } from "./EditMetadata"
 
 // TODO this should be a graphical editor ...
@@ -15,7 +15,7 @@ export default function InterpolationEditor() {
 
     const [performanceName, setPerformanceName] = useState('unknown performance')
     const [author, setAuthor] = useState('unknown')
-    const [comment, setComment] = useState(`generated using the MPM interpolation tool from the` + 
+    const [comment, setComment] = useState(`generated using the MPM interpolation tool from the` +
         `"Measuring Early Records" project`)
 
     const [editPipelineOpen, setEditPipelineOpen] = useState(false)
@@ -77,13 +77,33 @@ export default function InterpolationEditor() {
 
             {mpm && (
                 <div className='mpm'>
+                    <svg className='overallSvg' width={2000}>
+                        {mpm.getInstructions<Tempo>('tempo', 'global').map(tempo => {
+                            const x = tempo.date / 2
+                            return (
+                                <>
+                                  <rect x={x} y={30} stroke='black' fill='none' width={90} height={30} />
+                                  <text x={x} y={45}>{tempo.bpm}</text>
+                                </>
+                            )
+                        })}
+                        {mpm.getInstructions<Ornament>('ornament', 'global').map(ornament => {
+                            const x = ornament.date / 2
+                            return (
+                                <>
+                                  <rect x={x} y={70} stroke='black' fill='none' width={90} height={30} />
+                                  <text x={x} y={85}>{ornament["name.ref"]}</text>
+                                </>
+                            )
+                        })}
+                    </svg>
                     <pre>
                         {mpm.serialize()}
                     </pre>
                 </div>
             )}
 
-            <EditPipeline
+            <PipelineEditor
                 pipeline={interpolation?.pipeline}
                 onReady={() => {
                     updateMPM()
@@ -91,7 +111,7 @@ export default function InterpolationEditor() {
                 }}
                 dialogOpen={editPipelineOpen} />
 
-            <EditMetadata 
+            <EditMetadata
                 author={author}
                 setAuthor={setAuthor}
                 comment={comment}

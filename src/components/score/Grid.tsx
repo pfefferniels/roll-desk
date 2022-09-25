@@ -73,9 +73,7 @@ export const Grid: FC<GridProps> = ({ type, children, staffSize, width, clef }):
             x1={0}
             y1={lineNumber * staffSize}
             x2={width}
-            y2={lineNumber * staffSize}
-            stroke='gray'
-            strokeWidth={0.4} />
+            y2={lineNumber * staffSize} />
         ))}
         {children(getVerticalPosition)}
       </g>
