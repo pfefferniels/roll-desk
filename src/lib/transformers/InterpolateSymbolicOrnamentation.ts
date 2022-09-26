@@ -29,6 +29,7 @@ export class InterpolateSymbolicOrnamentation extends AbstractTransformer<Interp
             o['frameLength'] = physicalToSymbolic(o['frameLength'],
                 correspondingMsmNote.bpm || 60,
                 correspondingMsmNote['bpm.beatLength'] || 720).toFixed(2)
+            o['time.unit'] = 'ticks'
         })
 
         // replace the existing physical instructions with symbolic ones

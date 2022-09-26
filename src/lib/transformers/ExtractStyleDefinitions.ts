@@ -26,9 +26,11 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
                 // TODO: find a possibly existing definition which is in the
                 // range of tolerance. If found, merge.
                 const definitionName = mpm.insertDefinition({
-                    type: 'ornament',
-                    frameLength: ornament.frameLength,
-                    "frame.start": ornament["frame.start"]
+                    'type': 'ornament',
+                    'frameLength': ornament.frameLength,
+                    'frame.start': ornament['frame.start'],
+                    'time.unit': ornament['time.unit']
+
                 }, this.part)
                 delete ornament["frame.start"]
                 delete ornament["frameLength"]

@@ -16,6 +16,7 @@ export interface OrnamentDef extends Definition<'ornament'> {
     'frame.start'?: number
     'transition.from'?: number
     'transition.to'?: number
+    'time.unit'?: 'ticks' | 'milliseconds'
 }
 
 type AnyDefinition =
@@ -49,13 +50,14 @@ export interface Tempo extends DatedInstruction<'tempo'> {
  * Maps the <ornament> element of MPM
  */
 export interface Ornament extends DatedInstruction<'ornament'> {
-    date: number
+    'date': number
     'name.ref': string
     'note.order': string
     'frameLength'?: number
     'frame.start'?: number
     'transition.from'?: number
     'transition.to'?: number
+    'time.unit'?: 'ticks' | 'milliseconds'
     'scale': number
 }
 
@@ -203,7 +205,7 @@ export class MPM {
                     '@': {
                         'frame.start': definition['frame.start'],
                         'frameLength': definition['frameLength'],
-                        'time.unit': 'ticks'
+                        'time.unit': definition['time.unit']
                     }
                 }
             })

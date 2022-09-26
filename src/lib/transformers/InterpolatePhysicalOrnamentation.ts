@@ -45,13 +45,14 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
                 const duration = sortedByOnset[sortedByOnset.length-1]["midi.onset"] - sortedByOnset[0]["midi.onset"] 
 
                 ornaments.push({
-                    type: 'ornament',
+                    'type': 'ornament',
                     'date': +date,
                     'name.ref': 'neutralArpeggio',
                     'note.order': noteOrder,
                     'frame.start': (-duration/2) * 1000,
                     'frameLength': duration * 1000,
-                    scale: 0.0
+                    'scale': 0.0,
+                    'time.unit': 'milliseconds'
                 })
 
                 const onsetSum = arpeggioNotes.map(note => note['midi.onset']).reduce((a, b) => a + b, 0)
