@@ -1,4 +1,4 @@
-import { MPM, Tempo } from "../src/lib/Mpm"
+import { Dynamics, MPM, Ornament, Tempo } from "../src/lib/Mpm"
 import { MSM } from "../src/lib/Msm"
 import { AlignedPerformance } from "../src/lib/AlignedPerformance"
 import { Mei } from "../src/lib/Score"
@@ -20,19 +20,26 @@ const generateMSM = async (meiFile: string, midiFile: string): Promise<MSM> => {
     return new MSM(alignedPerformance)
 }
 
-describe('Interpolation', () => {
-    it('Interpolates static tempo', async () => {
+describe('InterpolateTempoMap', () => {
+    it(`Generates a tempo map with exactly one tempo tempo
+        instruction given a MIDI file with a constant tempo`, async () => {
         const msm = await generateMSM('tests/files/test010.mei', 'tests/files/test010.mid')
         const mpm = new MPM()
 
         const transformer = new InterpolateTempoMap()
         transformer.transform(msm, mpm)
 
-        console.log(mpm.getInstructions<Tempo>('tempo', 'global'))
-
+        // expect a static tempo
         const tempoInstructions = mpm.getInstructions<Tempo>('tempo', 'global')
 
-        expect(tempoInstructions).toEqual(1)
+        expect(tempoInstructions.length).toEqual(1)
         expect(tempoInstructions[0].bpm).toEqual(100)
+
+        // there shouldn't be any other instructions besides the tempo instructions
+        const ornamentInstructions = mpm.getInstructions<Ornament>('ornament', 'global')
+        expect(ornamentInstructions.length).toEqual(0)
+
+        const dynamicsInstructions = mpm.getInstructions<Dynamics>('dynamics', 1)
+        expect(dynamicsInstructions.length).toEqual(0)
     })
 })
