@@ -33,7 +33,12 @@ describe('InterpolateTempoMap', () => {
         const tempoInstructions = mpm.getInstructions<Tempo>('tempo', 'global')
 
         expect(tempoInstructions.length).toEqual(1)
-        expect(tempoInstructions[0].bpm).toEqual(100)
+        expect(tempoInstructions[0]).toEqual({
+            type: 'tempo',
+            date: 0,
+            beatLength: 0.25,
+            bpm: 100
+        })
 
         // there shouldn't be any other instructions besides the tempo instructions
         const ornamentInstructions = mpm.getInstructions<Ornament>('ornament', 'global')
