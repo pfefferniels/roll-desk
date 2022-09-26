@@ -1,8 +1,8 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import GlobalContext from "../GlobalContext"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
 import { MidiNote } from "../../lib/Performance"
-import { basePitchOfNote, ScoreNote } from "../../lib/Score"
+import { basePitchOfNote, MeiNote } from "../../lib/Score"
 import { EditMotivation } from "./EditMotivation"
 import { SmuflSymbol } from "../score/SmuflSymbol"
 import { Grid } from "../score/Grid"
@@ -36,7 +36,7 @@ export default function AlignmentEditor() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [currentAlignmentPair, setCurrentAlignmentPair] = useState<SemanticAlignmentPair>()
-  const [activeScoreNote, setActiveScoreNote] = useState<ScoreNote>()
+  const [activeScoreNote, setActiveScoreNote] = useState<MeiNote>()
   const [activeMIDINote, setActiveMIDINote] = useState<MidiNote>()
   const [svgRef, setSvgRef] = useState<number>(0)
 

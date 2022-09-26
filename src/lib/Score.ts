@@ -1,8 +1,7 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
-import { vrvToolkit } from "../components/Verovio"
 import { TimeSignature } from "./Msm"
 
-export type ScoreNote = {
+export type MeiNote = {
     index: number,
     id: string,
     qstamp: number,
@@ -32,43 +31,55 @@ export function basePitchOfNote(pname: string, oct: number): number {
     return (diatonic || 0) + (oct - 4) * 12
 }
 
-export class Score {
+export class Mei {
     private scoreDOM: Document
-    notes: ScoreNote[]
+    notes: MeiNote[]
     timemap: any[]  // TODO define type. 
+    vrvToolkit: any
 
     // score encoding can be anything that Verovio can parse
-    constructor(scoreEncoding: string) {
-        console.log('new score object created using Verovio version', vrvToolkit.getVersion())
+    constructor(scoreEncoding: string, vrvToolkit: any, domParser: DOMParser) {
+        this.vrvToolkit = vrvToolkit
 
-        vrvToolkit.setOptions({
+        console.log('new score object created using Verovio version', this.vrvToolkit.getVersion())
+
+        this.vrvToolkit.setOptions({
             adjustPageHeight: true,
             pageHeight: 60000
         })
-        vrvToolkit.loadData(scoreEncoding)
+        this.vrvToolkit.loadData(scoreEncoding)
+
         // using getMEI() here since it adds `xml:id` to all elements
-        this.scoreDOM = new DOMParser().parseFromString(vrvToolkit.getMEI(), 'text/xml')
-        this.timemap = vrvToolkit.renderToTimemap()
+        this.scoreDOM = domParser.parseFromString(this.vrvToolkit.getMEI(), 'text/xml')
+        this.timemap = this.vrvToolkit.renderToTimemap()
         this.notes = this.getNotesFromTimemap()
     }
 
     // transform timemap to notes array
-    private getNotesFromTimemap(): ScoreNote[] {
+    private getNotesFromTimemap(): MeiNote[] {
         const timemap = this.timemap
-        let result: ScoreNote[] = []
+
+        let result: MeiNote[] = []
         let index = 0
         for (const event of timemap) {
             if (!event.on) continue
             for (const on of event.on) {
-                const midiValues = vrvToolkit.getMIDIValuesForElement(on)
+                const midiValues = this.vrvToolkit.getMIDIValuesForElement(on)
                 const offTime = timemap.find((event: any) => event.off && event.off.includes(on)).qstamp || 0
-                const noteEl = this.scoreDOM.querySelector(`[*|id='${on}']`)
-                const staff = noteEl?.closest('staff') || null
+
+                // using query selector with [*|id='...'] does not work 
+                // yet with JSDOM, therefore this workaround
+                const noteEl = Array.from(this.scoreDOM.querySelectorAll('note')).find(el => el.getAttribute('xml:id') === on)
+                if (!noteEl) continue
+
+                const staff = noteEl.closest('staff')
                 if (!staff) continue
+
                 // ignore the note if its tied
                 if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
                     continue
                 }
+
                 result.push({
                     index: index,
                     id: on,
@@ -88,20 +99,26 @@ export class Score {
             }
         }
 
-        console.log('notes=', result)
         return result
     }
 
     public asSVG(): string {
-        vrvToolkit.setOptions({
+        this.vrvToolkit.setOptions({
             adjustPageHeight: true,
             pageHeight: 60000
         })
-        return vrvToolkit.renderToSVG(1)
+        return this.vrvToolkit.renderToSVG(1)
     }
 
+    /**
+     * Extracts the number of parts in the given score. 
+     * @throws Throws an error no <staffDef>s could be found
+     * @returns 
+     */
     public countParts(): number {
-        return this.scoreDOM.querySelectorAll('staffDef').length
+        const staffDef = this.scoreDOM.querySelectorAll('staffDef')
+        if (!staffDef) throw new Error('no <staffDef> found in MEI')
+        return staffDef.length
     }
 
     public static qstampToTstamp(qstamp: number): number {
@@ -113,17 +130,17 @@ export class Score {
         return this.timemap.at(-1).qstamp;
     }
 
-    public notesInRange(start: number, end: number): ScoreNote[] {
-        const lowerIndex = this.notes.findIndex((note: ScoreNote) => note.qstamp >= start)
+    public notesInRange(start: number, end: number): MeiNote[] {
+        const lowerIndex = this.notes.findIndex((note: MeiNote) => note.qstamp >= start)
         if (lowerIndex === -1) return []
 
-        const upperIndex = this.notes.length - this.notes.slice().reverse().findIndex((note: ScoreNote) => note.qstamp <= end)
+        const upperIndex = this.notes.length - this.notes.slice().reverse().findIndex((note: MeiNote) => note.qstamp <= end)
         if (lowerIndex > upperIndex) return []
 
         return this.notes.slice(lowerIndex, upperIndex)
     }
 
-    public allNotes(): ScoreNote[] {
+    public allNotes(): MeiNote[] {
         return this.notes
     }
 
@@ -136,12 +153,16 @@ export class Score {
 
             const notesAtTime = []
             for (const on of event.on) {
-                const midiValues = vrvToolkit.getMIDIValuesForElement(on)
+                const midiValues = this.vrvToolkit.getMIDIValuesForElement(on)
 
                 // prepare the voice parameter
-                const staff = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('staff') || null
-                const layer = this.scoreDOM.querySelector(`[*|id='${on}']`)?.closest('layer') || null
+                const note = Array.from(this.scoreDOM.querySelectorAll('note')).find(el => el.getAttribute('xml:id') === on)
+                if (!note) continue
+
+                const staff = note.closest('staff')
+                const layer = note.closest('layer')
                 if (!staff || !layer) continue
+
                 const voice = (Number(staff.getAttribute('n'))-1) + Number(layer.getAttribute('n'))
 
                 // ignore the note if its tied
@@ -175,7 +196,7 @@ export class Score {
             const note = measure.querySelector("note") // what about rests?
             if (note) {
                 const id = note.getAttribute("xml:id")
-                const corresp = this.allNotes().find((note: ScoreNote) => {
+                const corresp = this.allNotes().find((note: MeiNote) => {
                     return note.id === id
                 })
                 if (corresp) qstamps.push(corresp?.qstamp)
@@ -184,13 +205,18 @@ export class Score {
         return qstamps
     }
 
-    public notesAtTime(qstamp: number): ScoreNote[] {
-        return this.allNotes().filter((note: ScoreNote) => note.qstamp === qstamp)
+    public notesAtTime(qstamp: number): MeiNote[] {
+        return this.allNotes().filter((note: MeiNote) => note.qstamp === qstamp)
     }
 
-    public at(id: string): ScoreNote | undefined {
-        //return this.notes.find(note => note.index === index)!
-        return this.allNotes().find((value: ScoreNote) => value.id === id)
+    /**
+     * Returns the note with a given ID.
+     * 
+     * @param id as specified in the in the MEI with the @xml:id attribute.
+     * @returns 
+     */
+    public at(id: string): MeiNote | undefined {
+        return this.allNotes().find((value: MeiNote) => value.id === id)
     }
 
     /**

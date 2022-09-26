@@ -10,10 +10,10 @@
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^13.5.0",
-    "@types/node": "^16.11.17",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "alignmenttool": "file:../AlignmentTool",
+    "detect-node": "^2.1.0",
     "jest": "^28.1.0",
     "js2xmlparser": "^4.0.2",
     "midi-json-parser": "^8.0.52",
@@ -21,15 +21,17 @@
     "midifile-ts": "^1.4.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-scripts": "5.0.0",
+    "react-scripts": "^5.0.1",
     "sequence-align": "file:../sequence-align",
+    "ts-node": "^10.9.1",
     "typescript": "^4.5.4",
+    "verovio": "^3.11.0",
     "web-vitals": "^2.1.2"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "NODE_OPTIONS=--experimental-vm-modules react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -52,8 +54,13 @@
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.17.12",
+    "@types/detect-node": "^2.0.0",
     "@types/jest": "^27.5.2",
+    "@types/jsdom": "^20.0.0",
+    "@types/node": "^16.11.60",
+    "@types/verovio": "^3.11.0",
     "@typescript-eslint/utils": "^5.30.5",
+    "jsdom": "^20.0.0",
     "ts-jest": "^28.0.4"
   }
 }

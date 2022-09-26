@@ -8,8 +8,6 @@ import AlignmentEditor from './components/alignment/AlignmentEditor';
 import InterpolationEditor from './components/interpolation/InterpolationEditor';
 import AnnotatedScore from './components/AnnotatedScore';
 import GlobalContext from './components/GlobalContext';
-import { Score } from './lib/Score'
-import { RawPerformance } from './lib/Performance'
 import Upload from './components/Upload'
 import { AlignedPerformance } from './lib/AlignedPerformance';
 

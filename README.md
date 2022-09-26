@@ -3,6 +3,31 @@
 This project measures early Welte piano roll records and exports the results as 
 RDF triples.
 
+## Preparation
+
+For testing this package relies on JSDOM. In order to make it work properly, add this to `webpack.config.js`
+
+```
+    resolve: {
+      fallback: {
+        "stream": false,
+        "path": false,
+        "buffer": false,
+        "util": false,
+        "http": false,
+        "os": false,
+        "zlib": false,
+        "https": false,
+        "url": false,
+        "crypto": false,
+        "tls": false,
+        "fs": false,
+        "child_process": false,
+        "assert": false,
+        "net": false
+      },
+```
+
 ## Available Scripts
 
 In the project directory, you can run:

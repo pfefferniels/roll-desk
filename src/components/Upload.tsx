@@ -1,8 +1,10 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Box, Stepper, Step, StepLabel, StepContent, Paper, Typography } from "@mui/material"
+import { Button, Dialog, DialogContent, DialogTitle, Box, Stepper, Step, StepLabel, StepContent, Paper, Typography } from "@mui/material"
 import { read, MidiFile } from "midifile-ts"
-import { useRef, useState } from "react"
-import { Score } from "../lib/Score"
+import { useEffect, useRef, useState } from "react"
+import { Mei } from "../lib/Score"
 import { RawPerformance } from "../lib/Performance"
+import verovio from "verovio"
+import { loadDomParser, loadVerovio } from "../lib/globals"
 
 const parseMidiInput = (
   input: HTMLInputElement,
@@ -42,7 +44,7 @@ const steps = [
 type UploadProps = {
   open: boolean
   onClose: () => void
-  setScore: (score: Score) => void
+  setScore: (score: Mei) => void
   setPerformance: (performance: RawPerformance) => void
 }
 
@@ -50,7 +52,14 @@ export default function Upload({open, onClose, setScore, setPerformance}: Upload
   const meiInputRef = useRef(null)
   const midiInputRef = useRef(null)
 
+  const [vrvToolkit, setVrvToolkit] = useState<verovio.toolkit>()
+  const [domParser, setDomParser] = useState<DOMParser>()
   const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    loadVerovio().then(vrvToolkit => setVrvToolkit(vrvToolkit))
+    loadDomParser().then(domParser => setDomParser(domParser))
+  }, [])
 
   const uploadMEI = (meiSource: HTMLInputElement) => {
     if (!meiSource || !meiSource.files || meiSource.files.length === 0) {
@@ -60,7 +69,7 @@ export default function Upload({open, onClose, setScore, setPerformance}: Upload
     const fileReader = new FileReader();
     fileReader.onloadend = () => {
       const content = fileReader.result as string
-      setScore(new Score(content))
+      setScore(new Mei(content, vrvToolkit, domParser!))
     };
     fileReader.readAsText(file)
   }

@@ -1,4 +1,4 @@
-import { Score } from "./Score";
+import { Mei } from "./Score";
 import { AlignedPerformance } from "./AlignedPerformance";
 import { Part } from "./Mpm";
 import { parse } from "js2xmlparser";
@@ -59,7 +59,7 @@ export class MSM {
         this.allNotes = alignedPerformance.getSemanticPairs()
             .filter(pair => pair.midiNote && pair.scoreNote)
             .map(pair => {
-                let duration = Score.qstampToTstamp(pair.scoreNote!.duration)
+                let duration = Mei.qstampToTstamp(pair.scoreNote!.duration)
 
                 // in case of a duration of 0 we are probably dealing with a grace note
                 if (duration === 0) {
@@ -69,7 +69,7 @@ export class MSM {
                 return {
                     'part': pair.scoreNote!.part,
                     'xml:id': pair.scoreNote!.id,
-                    'date': Score.qstampToTstamp(pair.scoreNote!.qstamp),
+                    'date': Mei.qstampToTstamp(pair.scoreNote!.qstamp),
                     'pitchname': pair.scoreNote!.pname!,
                     'octave': pair.scoreNote!.octave!,
                     'accidentals': pair.scoreNote!.accid!,
@@ -77,7 +77,7 @@ export class MSM {
                     'midi.onset': pair.midiNote!.onsetTime,
                     'midi.duration': pair.midiNote!.duration,
                     'midi.velocity': pair.midiNote!.velocity,
-                    'duration': Score.qstampToTstamp(pair.scoreNote!.duration)
+                    'duration': Mei.qstampToTstamp(pair.scoreNote!.duration)
                 }
             })
 
