@@ -41,13 +41,11 @@ export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynam
             // avoid doublettes
             if (acc[acc.length - 1] && curr.volume === acc[acc.length - 1].volume) return acc
 
-            // different dynamics inside a chord?
+            // multiple dynamics inside a chord ...
             if (acc[acc.length - 1] && curr.date === acc[acc.length - 1].date) {
-                // TODO insert a <dynamicsGradient> to an 
-                // existing ornamentation at this date.
-                // This might be a case of a temporal spread
-                // inserted by Welte-Mignon in order to allow 
-                // dynamic gradating.
+                // ... should have been encoded by the InterpolatePhysicalOrnamentation transformer,
+                // therefore they will be ignored here.
+                return acc
             }
 
             // find trends

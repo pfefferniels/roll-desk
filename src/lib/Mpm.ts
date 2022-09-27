@@ -46,6 +46,8 @@ export interface Tempo extends DatedInstruction<'tempo'> {
     'meanTempoAt'?: number
 }
 
+export type DynamicsGradient = 'crescendo' | 'decrescendo' | 'no-gradient'
+
 /**
  * Maps the <ornament> element of MPM
  */
@@ -59,6 +61,7 @@ export interface Ornament extends DatedInstruction<'ornament'> {
     'transition.to'?: number
     'time.unit'?: 'ticks' | 'milliseconds'
     'scale': number
+    'gradient'?: 'crescendo' | 'decrescendo' | 'no-gradient'
 }
 
 type AnyInstruction =
@@ -72,7 +75,7 @@ type InstructionType =
     | 'dynamics'
 
 type RelatedResource = {
-    uri: string, 
+    uri: string,
     type: string
 }
 
@@ -197,18 +200,29 @@ export class MPM {
             }
 
             const ornamentDef = styles.styleDef.ornamentDef
-            ornamentDef.push({
+            let toPush: any = {
                 '@': {
                     name
-                },
-                'temporalSpread': {
+                }
+            }
+            if (definition["frame.start"] && definition['frameLength'] && definition['time.unit']) {
+                toPush['temporalSpread'] = {
                     '@': {
                         'frame.start': definition['frame.start'],
                         'frameLength': definition['frameLength'],
                         'time.unit': definition['time.unit']
                     }
                 }
-            })
+            }
+            if (definition['transition.from'] && definition['transition.to']) {
+                toPush['dynamicsGradient'] = {
+                    '@': {
+                        'transition.to': definition['transition.to'],
+                        'transition.from': definition['transition.from']
+                    }
+                }
+            }
+            ornamentDef.push(toPush)
         }
 
         return name;

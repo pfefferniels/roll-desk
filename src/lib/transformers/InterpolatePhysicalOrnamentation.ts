@@ -1,6 +1,16 @@
-import { MPM, Ornament } from "../Mpm"
+import { DynamicsGradient, MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
+
+const isSorted = (arr: number[]) => {
+    let direction = -(arr[0] - arr[1])
+    for (let [i, val] of arr.entries()) {
+        direction = !direction ? -(arr[i - 1] - arr[i]) : direction
+        if (i === arr.length - 1)
+            return !direction ? 0 : direction / Math.abs(direction)
+        else if ((val - arr[i + 1]) * direction > 0) return 0
+    }
+}
 
 export interface InterpolatePhysicalOrnamentationOptions extends TransformationOptions {
     /**
@@ -30,55 +40,61 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             durationThreshold: 30
         })
     }
-    
+
     public name() { return 'InterpolatePhysicalOrnamentation' }
 
     public transform(msm: MSM, mpm: MPM): string {
-        const isSorted = (arr: number[]) => {
-            let direction = -(arr[0] - arr[1])
-            for (let [i, val] of arr.entries()) {
-                direction = !direction ? -(arr[i - 1] - arr[i]) : direction
-                if (i === arr.length - 1)
-                    return !direction ? 0 : direction / Math.abs(direction)
-                else if ((val - arr[i + 1]) * direction > 0) return 0
-            }
-        }
-
         const ornaments: Ornament[] = []
 
         const chords = msm.asChords()
         for (const [date, arpeggioNotes] of Object.entries(chords)) {
-            if (arpeggioNotes.length >= (this.options?.minimumArpeggioSize || 2)) {
-                const sortedByOnset = arpeggioNotes.sort((a, b) => a['midi.onset'] - b['midi.onset'])
+            // make sure number of arpeggiated notes is greater or equal than minimum arpeggio size
+            if (arpeggioNotes.length < (this.options?.minimumArpeggioSize || 2)) continue
 
-                const arpeggioDirection = isSorted(sortedByOnset.map(note => note["midi.pitch"]))
-                let noteOrder = ''
-                if (arpeggioDirection === 1) noteOrder = 'ascending pitch'
-                else if (arpeggioDirection === -1) noteOrder = 'descending pitch'
-                else noteOrder = sortedByOnset.map(note => `#${note["xml:id"]}`).join(' ')
+            const sortedByOnset = arpeggioNotes.sort((a, b) => a['midi.onset'] - b['midi.onset'])
 
-                const duration = sortedByOnset[sortedByOnset.length - 1]["midi.onset"] - sortedByOnset[0]["midi.onset"]
+            // detecting the direction of the arpeggiated notes.
+            const arpeggioDirection = isSorted(sortedByOnset.map(note => note["midi.pitch"]))
+            let noteOrder = ''
+            if (arpeggioDirection === 1) noteOrder = 'ascending pitch'
+            else if (arpeggioDirection === -1) noteOrder = 'descending pitch'
+            else noteOrder = sortedByOnset.map(note => `#${note["xml:id"]}`).join(' ')
 
-                if (duration * 1000 <= (this.options?.durationThreshold || 0)) continue
+            // the arpeggio's duration is the time distance between first and last onset
+            const duration = sortedByOnset[sortedByOnset.length - 1]["midi.onset"] - sortedByOnset[0]["midi.onset"]
+            if (duration * 1000 <= (this.options?.durationThreshold || 0)) continue
 
-                ornaments.push({
-                    'type': 'ornament',
-                    'date': +date,
-                    'name.ref': 'neutralArpeggio',
-                    'note.order': noteOrder,
-                    'frame.start': (-duration / 2) * 1000,
-                    'frameLength': duration * 1000,
-                    'scale': 0.0,
-                    'time.unit': 'milliseconds'
-                })
+            // The dynamics gradient is the transition between first and last arpeggio note
+            // If a dynamics gradient exists, the temporal spread might be 
+            // inserted by Welte-Mignon in order to allow dynamic gradating.
+            const firstVel = arpeggioNotes[0]["midi.velocity"]
+            const lastVel = arpeggioNotes[arpeggioNotes.length-1]["midi.velocity"]
+            const dynamicDiff = lastVel - firstVel
+            let gradient: DynamicsGradient
+            if (dynamicDiff > 0) gradient = 'crescendo'
+            else if (dynamicDiff < 0) gradient = 'decrescendo'
+            else gradient = 'no-gradient'
+            const avarageVelocity = (lastVel + firstVel) / 2
 
-                const onsetSum = arpeggioNotes.map(note => note['midi.onset']).reduce((a, b) => a + b, 0)
-                const avarageOnset = (onsetSum / arpeggioNotes.length) || 0
+            ornaments.push({
+                'type': 'ornament',
+                'date': +date,
+                'name.ref': 'neutralArpeggio',
+                'note.order': noteOrder,
+                'frame.start': (-duration / 2) * 1000,
+                'frameLength': duration * 1000,
+                'scale': Math.max(lastVel, firstVel) - avarageVelocity,
+                'time.unit': 'milliseconds',
+                'gradient': gradient
+            })
 
-                arpeggioNotes.forEach(note => {
-                    note['midi.onset'] = avarageOnset
-                })
-            }
+            const onsetSum = arpeggioNotes.map(note => note['midi.onset']).reduce((a, b) => a + b, 0)
+            const avarageOnset = (onsetSum / arpeggioNotes.length) || 0
+
+            arpeggioNotes.forEach(note => {
+                note['midi.onset'] = avarageOnset
+                note['midi.velocity'] = avarageVelocity
+            })
         }
 
         mpm.insertInstructions(ornaments, 'global')

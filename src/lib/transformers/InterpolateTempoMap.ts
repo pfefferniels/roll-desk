@@ -39,6 +39,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             precision: 0
         })
     }
+
     public name() { return 'InterpolateTempoMap' }
 
     transform(msm: MSM, mpm: MPM): string {
@@ -117,7 +118,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 }
                 else {
                     tempos.push({
-                        type: 'tempo',
+                        'type': 'tempo',
                         'date': start.tstamp,
                         'bpm': start.bpm,
                         'transition.to': end.bpm,
@@ -133,7 +134,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             }
             else {
                 tempos.push({
-                    type: 'tempo',
+                    'type': 'tempo',
                     'date': start.tstamp,
                     'bpm': start.bpm,
                     'beatLength': beatLength / 720 / 4

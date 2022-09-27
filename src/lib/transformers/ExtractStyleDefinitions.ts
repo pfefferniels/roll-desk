@@ -25,11 +25,21 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
             if (ornament['frame.start'] && ornament['frameLength']) {
                 // TODO: find a possibly existing definition which is in the
                 // range of tolerance. If found, merge.
+                let transition: [number | undefined, number | undefined] = [undefined, undefined]
+                if (ornament.gradient === 'crescendo') {
+                    transition = [-1, 1]
+                }
+                else if (ornament.gradient === 'decrescendo') {
+                    transition = [1, -1]
+                }
+
                 const definitionName = mpm.insertDefinition({
                     'type': 'ornament',
                     'frameLength': ornament.frameLength,
                     'frame.start': ornament['frame.start'],
-                    'time.unit': ornament['time.unit']
+                    'time.unit': ornament['time.unit'],
+                    'transition.from': transition[0],
+                    'transition.to': transition[1]
 
                 }, this.part)
                 delete ornament["frame.start"]
