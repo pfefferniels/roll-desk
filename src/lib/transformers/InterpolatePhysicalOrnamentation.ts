@@ -7,6 +7,11 @@ export interface InterpolatePhysicalOrnamentationOptions extends TransformationO
      * the minimum number of notes an arpeggio is expected to have (inclusive)
      */
     minimumArpeggioSize: number
+
+    /**
+     * The minimum amount of time in milliseconds an ornamentation should spread over
+     */
+    durationThreshold: number
 }
 
 /**
@@ -16,6 +21,16 @@ export interface InterpolatePhysicalOrnamentationOptions extends TransformationO
  * onset.
  */
 export class InterpolatePhysicalOrnamentation extends AbstractTransformer<InterpolatePhysicalOrnamentationOptions> {
+    constructor() {
+        super()
+
+        // set the default options
+        this.setOptions({
+            minimumArpeggioSize: 2,
+            durationThreshold: 30
+        })
+    }
+    
     public name() { return 'InterpolatePhysicalOrnamentation' }
 
     public transform(msm: MSM, mpm: MPM): string {
@@ -41,15 +56,17 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
                 if (arpeggioDirection === 1) noteOrder = 'ascending pitch'
                 else if (arpeggioDirection === -1) noteOrder = 'descending pitch'
                 else noteOrder = sortedByOnset.map(note => `#${note["xml:id"]}`).join(' ')
-                
-                const duration = sortedByOnset[sortedByOnset.length-1]["midi.onset"] - sortedByOnset[0]["midi.onset"] 
+
+                const duration = sortedByOnset[sortedByOnset.length - 1]["midi.onset"] - sortedByOnset[0]["midi.onset"]
+
+                if (duration * 1000 <= (this.options?.durationThreshold || 0)) continue
 
                 ornaments.push({
                     'type': 'ornament',
                     'date': +date,
                     'name.ref': 'neutralArpeggio',
                     'note.order': noteOrder,
-                    'frame.start': (-duration/2) * 1000,
+                    'frame.start': (-duration / 2) * 1000,
                     'frameLength': duration * 1000,
                     'scale': 0.0,
                     'time.unit': 'milliseconds'

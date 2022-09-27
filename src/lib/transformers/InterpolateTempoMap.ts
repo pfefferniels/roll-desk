@@ -13,7 +13,16 @@ export type BeatLengthBasis = typeof beatLengthBasis[number]
 
 export interface InterpolateTempoMapOptions extends TransformationOptions {
     beatLength: BeatLengthBasis
+
+    /**
+     * Tolerance of the Dogulas-Peucker algorithm
+     */
     epsilon: number
+
+    /**
+     * The number of digits to appear after the decimal point of a BPM value
+     */
+    precision: number
 }
 
 /**
@@ -26,7 +35,8 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
         // set the default options
         this.setOptions({
             beatLength: 'denominator',
-            epsilon: 4
+            epsilon: 4,
+            precision: 0
         })
     }
     public name() { return 'InterpolateTempoMap' }
@@ -154,7 +164,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
         const points: InterpolationPoint[] = bpms.map((bpm, i) => ({
             tstamp: tstamps[i],
-            bpm: bpm
+            bpm: +bpm.toFixed(this.options?.precision)
         }))
 
         douglasPeucker(points, this.options?.epsilon || 4)

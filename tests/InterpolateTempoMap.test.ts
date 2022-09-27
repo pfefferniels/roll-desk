@@ -23,45 +23,21 @@ const generateMSM = async (meiFile: string, midiFile: string): Promise<MSM> => {
 describe('InterpolateTempoMap', () => {
     it(`Generates a tempo map with exactly one tempo tempo
         instruction given a MIDI file with a constant tempo`, async () => {
-        const msm = await generateMSM('tests/files/test010.mei', 'tests/files/test010.mid')
+        // Arrange
+        const msm = await generateMSM('tests/files/neutral-tempo/score.mei', 'tests/files/neutral-tempo/neutral.mid')
         const mpm = new MPM()
 
+        // Act
         const transformer = new InterpolateTempoMap()
         transformer.transform(msm, mpm)
 
-        // expect a static tempo
+        // Assert
         const tempoInstructions = mpm.getInstructions<Tempo>('tempo', 'global')
-
-        expect(tempoInstructions.length).toEqual(1)
-        expect(tempoInstructions[0]).toEqual({
+        expect(tempoInstructions).toEqual([{
             type: 'tempo',
             date: 0,
             beatLength: 0.25,
-            bpm: 100
-        })
-    })
-
-    it(`Generates a tempo map with exactly one tempo tempo
-        instruction given a beat length of whole bars and a MIDI file with a constant tempo`, async () => {
-        const msm = await generateMSM('tests/files/test010.mei', 'tests/files/test010.mid')
-        const mpm = new MPM()
-
-        const transformer = new InterpolateTempoMap()
-        transformer.setOptions({
-            beatLength: 'bar',
-            epsilon: 4
-        })
-        transformer.transform(msm, mpm)
-
-        // expect a static tempo
-        const tempoInstructions = mpm.getInstructions<Tempo>('tempo', 'global')
-
-        expect(tempoInstructions.length).toEqual(1)
-        expect(tempoInstructions[0]).toEqual({
-            type: 'tempo',
-            date: 0,
-            beatLength: 1,
-            bpm: 25
-        })
+            bpm: 32
+        }])
     })
 })

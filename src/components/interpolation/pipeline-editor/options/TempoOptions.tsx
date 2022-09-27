@@ -6,6 +6,7 @@ import { OptionsProp, optionsStyle } from "./Options";
 export const TempoOptions: FC<OptionsProp<InterpolateTempoMapOptions>> = ({ options, setOptions }) => {
     const [beatLength, setBeatLength] = useState<BeatLengthBasis>(options?.beatLength || 'denominator');
     const [epsilon, setEpsilon] = useState(options?.epsilon || 4);
+    const [precision, setPrecision] = useState(options?.precision || 0);
 
     return (
         <div>
@@ -14,7 +15,7 @@ export const TempoOptions: FC<OptionsProp<InterpolateTempoMapOptions>> = ({ opti
                 value={beatLength}
                 onChange={e => {
                     setBeatLength(e.target.value as BeatLengthBasis);
-                    setOptions({ beatLength, epsilon });
+                    setOptions({ beatLength, epsilon, precision });
                 }}>
                 {beatLengthBasis.map(basis => {
                     return (
@@ -28,7 +29,16 @@ export const TempoOptions: FC<OptionsProp<InterpolateTempoMapOptions>> = ({ opti
                 value={epsilon}
                 onChange={e => {
                     setEpsilon(+e.target.value);
-                    setOptions({ beatLength, epsilon });
+                    setOptions({ beatLength, epsilon, precision });
+                }}
+                type='number' />
+            <TextField
+                sx={optionsStyle}
+                label='Precision'
+                value={precision}
+                onChange={e => {
+                    setPrecision(+e.target.value);
+                    setOptions({ beatLength, epsilon, precision });
                 }}
                 type='number' />
         </div>
