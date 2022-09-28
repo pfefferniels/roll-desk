@@ -22,9 +22,6 @@ const downloadFile = (filename: string, contents: string, type: string) => {
 export const ExportAlignmentDialog: FC<ExportDialogProps> = ({ alignedPerformance, dialogOpen, setDialogOpen }): JSX.Element => {
   const [actor, setActor] = useState('')
 
-  const jsonLdVisitor = new JsonLdVisitor()
-  // const [jsonLdVisitor, setJsonLdVisitor] = useState<JsonLdVisitor>(new JsonLdVisitor())
-
   return (
     <Dialog open={dialogOpen}>
       <DialogTitle>Export</DialogTitle>

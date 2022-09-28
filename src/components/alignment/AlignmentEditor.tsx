@@ -5,7 +5,7 @@ import { MidiNote } from "../../lib/Performance"
 import { basePitchOfNote, MeiNote } from "../../lib/Score"
 import { EditMotivation } from "./EditMotivation"
 import { SmuflSymbol } from "../score/SmuflSymbol"
-import { Grid } from "../score/Grid"
+import { MidiGrid, StaffGrid } from "../score/Grid"
 import { System } from "../score/System"
 import { SVGElementConnector } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
@@ -142,38 +142,38 @@ export default function AlignmentEditor() {
     return (
       <g ref={(el) => {
         if (el/* && !el.isEqualNode(svgRef)*/) {
-          console.log('updateing!')
+          console.log('updating alignment display')
           setSvgRef(svgRef + 1)
         }
       }}>
         <g className='scoreArea' transform={`translate(0, ${100})`}>
           <System spacing={9} staffSize={scoreDimensions.staffSize}>
-            <Grid type='music-staff' clef='G' staffSize={scoreDimensions.staffSize} width={2000}>
+            <StaffGrid clef='G' staffSize={scoreDimensions.staffSize} width={2000}>
               {(getVerticalPosition) =>
                 <>
                   <SmuflSymbol name='gClef' x={10} y={getVerticalPosition(65)} staffSize={7} />
                   {fillScoreStaff(1, getVerticalPosition)}
                 </>
               }
-            </Grid>
-            <Grid type='music-staff' clef='F' staffSize={scoreDimensions.staffSize} width={2000}>
+            </StaffGrid>
+            <StaffGrid clef='F' staffSize={scoreDimensions.staffSize} width={2000}>
               {(getVerticalPosition) =>
                 <>
                   <SmuflSymbol name='fClef' x={10} y={getVerticalPosition(53)} staffSize={7} />
                   {fillScoreStaff(2, getVerticalPosition)}
                 </>
               }
-            </Grid>
+            </StaffGrid>
           </System>
         </g>
 
         <g className='midiArea' transform={`translate(0, ${midiDimensions.areaHeight})`}>
           <System spacing={7} staffSize={midiDimensions.staffSize}>
-            <Grid type='midi' staffSize={midiDimensions.staffSize} width={2000}>
+            <MidiGrid pitchHeight={midiDimensions.staffSize} width={2000}>
               {(getVerticalPosition) => {
                 return fillMidiStaff(getVerticalPosition)
               }}
-            </Grid>
+            </MidiGrid>
           </System>
         </g>
       </g>

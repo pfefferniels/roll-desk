@@ -8,6 +8,10 @@ import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { PipelineEditor } from "./pipeline-editor/PipelineEditor"
 import { EditMetadata } from "./EditMetadata"
+import { GraphicalGrid, StaffGrid } from "../score/Grid"
+import { MSM } from "../../lib/Msm"
+import { SmuflSymbol } from "../score/SmuflSymbol"
+import { System } from "../score/System"
 
 // TODO this should be a graphical editor ...
 export default function InterpolationEditor() {
@@ -22,12 +26,16 @@ export default function InterpolationEditor() {
     const [editMetadataOpen, setEditMetadataOpen] = useState(false)
 
     const [mpm, setMPM] = useState<MPM>()
+    const [msm, setMSM] = useState<MSM>()
     const [interpolation, setInterpolation] = useState<Interpolation>()
+
+    const [horizontalStretch, setHorizontalStretch] = useState(0.3)
 
     useEffect(() => {
         if (!alignmentReady || !alignedPerformance.ready()) return
 
         setInterpolation(new Interpolation(alignedPerformance))
+        setMSM(new MSM(alignedPerformance))
     }, [alignmentReady])
 
     const updateMPM = () => {
@@ -75,28 +83,75 @@ export default function InterpolationEditor() {
                 </Paper>
             )}
 
+            {msm && (
+                <div className='msm'>
+                    <svg className='msm' width={2000}>
+                        <System spacing={14} staffSize={7}>
+                            <StaffGrid clef='G' width={2000} staffSize={7}>
+                                {(getVerticalPosition: any) => {
+                                    return (
+                                        <g>
+                                            {msm.allNotes.filter(note => note.part === 1).map(note => {
+                                                const x = note.date * horizontalStretch
+                                                return (
+                                                    <SmuflSymbol name='noteheadBlack' staffSize={7} y={getVerticalPosition(note["midi.pitch"])} x={x} />
+                                                )
+                                            })}
+                                        </g>
+                                    )
+                                }}
+                            </StaffGrid>
+                            <StaffGrid clef='F' width={2000} staffSize={7}>
+                                {(getVerticalPosition: any) => {
+                                    return (
+                                        <g>
+                                            {msm.allNotes.filter(note => note.part === 2).map(note => {
+                                                const x = note.date * horizontalStretch
+                                                return (
+                                                    <SmuflSymbol name='noteheadBlack' staffSize={7} y={getVerticalPosition(note['midi.pitch'])} x={x} />
+                                                )
+                                            })}
+                                        </g>
+                                    )
+                                }}
+                            </StaffGrid>
+                        </System>
+                    </svg>
+                </div>
+            )}
+
             {mpm && (
                 <div className='mpm'>
-                    <svg className='overallSvg' width={2000}>
-                        {mpm.getInstructions<Tempo>('tempo', 'global').map(tempo => {
-                            const x = tempo.date / 2
-                            return (
-                                <>
-                                  <rect x={x} y={30} stroke='black' fill='none' width={90} height={30} />
-                                  <text x={x} y={45}>{tempo.bpm}</text>
-                                </>
-                            )
-                        })}
-                        {mpm.getInstructions<Ornament>('ornament', 'global').map(ornament => {
-                            const x = ornament.date / 2
-                            return (
-                                <>
-                                  <rect x={x} y={70} stroke='black' fill='none' width={90} height={30} />
-                                  <text x={x} y={85}>{ornament["name.ref"]}</text>
-                                </>
-                            )
-                        })}
+                    <svg className='mpm' width={2000}>
+                        <GraphicalGrid numberOfRows={3} width={2000}>
+                            {(getVerticalPosition: any) => {
+                                return (
+                                    <g>
+                                        {mpm.getInstructions<Tempo>('tempo', 'global').map(tempo => {
+                                            const x = tempo.date * horizontalStretch
+                                            return (
+                                                <>
+                                                    <rect x={x} y={getVerticalPosition(1)} stroke='black' fill='none' width={90} height={30} />
+                                                    <text x={x} y={getVerticalPosition(1) + 15}>{tempo.bpm}</text>
+                                                </>
+                                            )
+                                        })}
+
+                                        {mpm.getInstructions<Ornament>('ornament', 'global').map(ornament => {
+                                            const x = ornament.date * horizontalStretch
+                                            return (
+                                                <>
+                                                    <rect x={x} y={getVerticalPosition(2)} stroke='black' fill='none' width={90} height={30} />
+                                                    <text x={x} y={getVerticalPosition(2) + 15}>{ornament["name.ref"]}</text>
+                                                </>
+                                            )
+                                        })}
+                                    </g>
+                                )
+                            }}
+                        </GraphicalGrid>
                     </svg>
+
                     <pre>
                         {mpm.serialize()}
                     </pre>
