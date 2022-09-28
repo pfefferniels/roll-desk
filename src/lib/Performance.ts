@@ -1,5 +1,7 @@
 import { PianoRoll, pitchToSitch } from 'alignmenttool';
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent, SetTempoEvent } from 'midifile-ts';
+import { Visitable } from './visitors/Visitable';
+import { Visitor } from './visitors/Visitor';
 
 export type MidiNote = {
     id: number,
@@ -12,7 +14,7 @@ export type MidiNote = {
 /**
  * wrapper for a raw MIDI performance
  */
-export class RawPerformance {
+export class RawPerformance implements Visitable {
     midi: MidiFile | null
 
     constructor(performance: MidiFile) {
@@ -102,48 +104,8 @@ export class RawPerformance {
         return this.asNotes().find(note => note.id === id)
     }
 
-    /**
-     * This function generates RDF triples using the 
-     * MIDI-LD vocabulary.
-     * 
-     * @returns string of RDF triples in JSON-LD format.
-     */
-    public serializeToRDF(): string {
-        if (!this.midi) return ''
-
-        const result = {
-            "@context": {
-                // define namespaces here
-                "mid": "http://example.org/midi#",
-                "xsd": "http://www.w3.org/2001/XMLSchema#",
-            },
-            "@graph": [
-                {
-                    "@id": "http://example.org/midi/a-performance",
-                    "@type": "mid:Pattern",
-                    "mid:hasTrack": this.midi.tracks.map((track, i) => `http://example.org/midi/a-performance/track_${i}`)
-                },
-                ...this.midi.tracks.map((track, i) => ({
-                    "@id": `http://example.org/midi/a-performance/track_${i}`,
-                    "@type": "mid:Track",
-                    "mid:hasEvent": [track.map((event, j) => `http://example.org/midi/a-performance/track_${i}/event_${j}`)]
-                })),
-
-                ...this.midi.tracks.map((track, i) => {
-                    // TODO: determine event type and add properties accordingly
-
-                    return track.map((event, j) => {
-                        return {
-                            "@id": `http://example.org/midi/a-performance/track_${i}/event_${j}`,
-                            "@type": `mid:${event?.type}`
-                        }
-                    })
-                }).flat()
-            ]
-        }
-
-        return JSON.stringify(result)
+    public accept(visitor: Visitor) {
+        return visitor.visitPerformance(this)
     }
-
 }
 

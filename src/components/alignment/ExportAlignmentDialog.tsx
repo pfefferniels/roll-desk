@@ -2,6 +2,8 @@ import { Dialog, DialogTitle, DialogContent, Box, TextField, Button, DialogActio
 import { FC, useState } from "react"
 import { AlignedPerformance } from "../../lib/AlignedPerformance"
 import { MSM } from "../../lib/Msm"
+import { JsonLdVisitor } from "../../lib/visitors/JsonLdVisitor"
+import { Visitable } from "../../lib/visitors/Visitable"
 
 interface ExportDialogProps {
   alignedPerformance: AlignedPerformance,
@@ -19,6 +21,9 @@ const downloadFile = (filename: string, contents: string, type: string) => {
 
 export const ExportAlignmentDialog: FC<ExportDialogProps> = ({ alignedPerformance, dialogOpen, setDialogOpen }): JSX.Element => {
   const [actor, setActor] = useState('')
+
+  const jsonLdVisitor = new JsonLdVisitor()
+  // const [jsonLdVisitor, setJsonLdVisitor] = useState<JsonLdVisitor>(new JsonLdVisitor())
 
   return (
     <Dialog open={dialogOpen}>
@@ -39,14 +44,14 @@ export const ExportAlignmentDialog: FC<ExportDialogProps> = ({ alignedPerformanc
             onChange={(e) => {
               setActor(e.target.value)
             }} />
+
           <Button
             sx={{ m: 1 }}
             variant='outlined'
             onClick={() => {
-              downloadFile(
-                'midi.jsonld',
-                alignedPerformance.rawPerformance?.serializeToRDF() || '',
-                'application/ld+json')
+              const visitor = new JsonLdVisitor()
+              alignedPerformance.rawPerformance?.accept(visitor)
+              downloadFile('midi.jsonld', visitor.serialize(), 'application/ld+json')
             }}>Export MIDI as RDF</Button>
           <br />
 
@@ -73,19 +78,33 @@ export const ExportAlignmentDialog: FC<ExportDialogProps> = ({ alignedPerformanc
                 'application/xml'
               )
             }}>
-              Export Score as MSM
+            Export Score as MSM
           </Button>
 
           <Button
             sx={{ m: 1 }}
             variant='outlined'
             onClick={() => {
-              downloadFile(
-                'alignment.jsonld',
-                alignedPerformance.serializeToRDF(actor) || '',
-                'application/ld+json'
-              )
+              const visitor = new JsonLdVisitor()
+              visitor.setCarriedOutBy(actor)
+              alignedPerformance.accept(visitor)
+              downloadFile('alignment.jsonld', visitor.serialize(), 'application/ld+json')
             }}>Export Alignments as RDF</Button>
+
+          <Button
+            sx={{ m: 1 }}
+            variant='outlined'
+            onClick={() => {
+              const visitor = new JsonLdVisitor()
+              visitor.setCarriedOutBy(actor)
+
+              const visitables: Visitable[] = [
+                alignedPerformance,
+                alignedPerformance.rawPerformance!]
+              visitables.forEach(visitable => visitable.accept(visitor));
+
+              downloadFile('all.jsonld', visitor.serialize(), 'application/ld+json')
+            }}>Export All as RDF</Button>
         </Box>
       </DialogContent>
       <DialogActions>
