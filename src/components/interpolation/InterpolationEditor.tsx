@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { Interpolation } from "../../lib/Interpolation"
 import GlobalContext from "../GlobalContext"
 import { Box, IconButton, Paper } from "@mui/material"
-import { MPM, Ornament, Tempo } from "../../lib/Mpm"
+import { Dynamics, MPM, Ornament, Tempo } from "../../lib/Mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -122,8 +122,8 @@ export default function InterpolationEditor() {
 
             {mpm && (
                 <div className='mpm'>
-                    <svg className='mpm' width={2000}>
-                        <GraphicalGrid numberOfRows={3} width={2000}>
+                    <svg className='mpm' height={300} width={2000}>
+                        <GraphicalGrid numberOfRows={4} width={2000}>
                             {(getVerticalPosition: any) => {
                                 return (
                                     <g>
@@ -143,6 +143,26 @@ export default function InterpolationEditor() {
                                                 <>
                                                     <rect x={x} y={getVerticalPosition(2)} stroke='black' fill='none' width={90} height={30} />
                                                     <text x={x} y={getVerticalPosition(2) + 15}>{ornament["name.ref"]}</text>
+                                                </>
+                                            )
+                                        })}
+
+                                        {mpm.getInstructions<Dynamics>('dynamics', 0).map(dynamics => {
+                                            const x = dynamics.date * horizontalStretch
+                                            return (
+                                                <>
+                                                    <rect x={x} y={getVerticalPosition(3)} stroke='black' fill='none' width={90} height={30} />
+                                                    <text x={x} y={getVerticalPosition(3) + 15}>{dynamics.volume}</text>
+                                                </>
+                                            )
+                                        })}
+
+                                        {mpm.getInstructions<Dynamics>('dynamics', 1).map(dynamics => {
+                                            const x = dynamics.date * horizontalStretch
+                                            return (
+                                                <>
+                                                    <rect x={x} y={getVerticalPosition(4)} stroke='black' fill='none' width={90} height={30} />
+                                                    <text x={x} y={getVerticalPosition(4) + 15}>{dynamics.volume}</text>
                                                 </>
                                             )
                                         })}
