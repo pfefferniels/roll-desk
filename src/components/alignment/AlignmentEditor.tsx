@@ -34,6 +34,9 @@ export default function AlignmentEditor() {
     areaHeight: 280
   })
 
+  const maxWidth = alignedPerformance.ready() ? Math.max(alignedPerformance.score!.getMaxQstamp() * scoreDimensions.stretch + scoreDimensions.shift, 
+  alignedPerformance.rawPerformance!.asNotes().at(-1)!.onsetTime * midiDimensions.stretch + midiDimensions.shift) : 0
+
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [currentAlignmentPair, setCurrentAlignmentPair] = useState<SemanticAlignmentPair>()
   const [activeScoreNote, setActiveScoreNote] = useState<MeiNote>()
@@ -148,7 +151,7 @@ export default function AlignmentEditor() {
       }}>
         <g className='scoreArea' transform={`translate(0, ${100})`}>
           <System spacing={9} staffSize={scoreDimensions.staffSize}>
-            <StaffGrid clef='G' staffSize={scoreDimensions.staffSize} width={2000}>
+            <StaffGrid clef='G' staffSize={scoreDimensions.staffSize} width={maxWidth}>
               {(getVerticalPosition) =>
                 <>
                   <SmuflSymbol name='gClef' x={10} y={getVerticalPosition(65)} staffSize={7} />
@@ -156,7 +159,7 @@ export default function AlignmentEditor() {
                 </>
               }
             </StaffGrid>
-            <StaffGrid clef='F' staffSize={scoreDimensions.staffSize} width={2000}>
+            <StaffGrid clef='F' staffSize={scoreDimensions.staffSize} width={maxWidth}>
               {(getVerticalPosition) =>
                 <>
                   <SmuflSymbol name='fClef' x={10} y={getVerticalPosition(53)} staffSize={7} />
@@ -169,7 +172,7 @@ export default function AlignmentEditor() {
 
         <g className='midiArea' transform={`translate(0, ${midiDimensions.areaHeight})`}>
           <System spacing={7} staffSize={midiDimensions.staffSize}>
-            <MidiGrid pitchHeight={midiDimensions.staffSize} width={2000}>
+            <MidiGrid pitchHeight={midiDimensions.staffSize} width={maxWidth}>
               {(getVerticalPosition) => {
                 return fillMidiStaff(getVerticalPosition)
               }}
@@ -259,7 +262,7 @@ export default function AlignmentEditor() {
       {alignedPerformance.ready() && (
         <svg
           id='alignment'
-          width={2000}
+          width={maxWidth}
           height={scoreDimensions.areaHeight + midiDimensions.areaHeight}
           style={{ margin: '1rem' }}>
           {area}
