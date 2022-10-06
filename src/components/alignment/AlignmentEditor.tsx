@@ -81,7 +81,7 @@ export default function AlignmentEditor() {
                   '1': 'accidentalSharp',
                   '2': 'accidentalDoubleSharp'
                 }[scoreNote.accid.toString()] || ''}
-                id={`${scoreNote.id}_accidental`}
+                annotationTarget={`${scoreNote.id}_accidental`}
                 x={horizontalPosition - 10}
                 y={getVerticalPosition(basePitch)}
                 staffSize={scoreDimensions.staffSize} />
@@ -89,7 +89,7 @@ export default function AlignmentEditor() {
             <SmuflSymbol
               name='noteheadBlack'
               key={`note_${scoreNote.id}`}
-              id={scoreNote.id}
+              annotationTarget={scoreNote.id}
               missingNote={p.motivation === Motivation.Omission}
               active={scoreNote === activeScoreNote}
               x={horizontalPosition}

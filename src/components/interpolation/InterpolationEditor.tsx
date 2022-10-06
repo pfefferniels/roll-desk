@@ -12,8 +12,30 @@ import { GraphicalGrid, StaffGrid } from "../score/Grid"
 import { MSM } from "../../lib/Msm"
 import { SmuflSymbol } from "../score/SmuflSymbol"
 import { System } from "../score/System"
+import { withAnnotation } from "../annotation/WithAnnotation"
 
-// TODO this should be a graphical editor ...
+const SvgRect = (props: any) => {
+    const onAnnotation = props.onAnnotation 
+    const annotationTarget = props.annotationTarget
+    const onClick = props.onClick
+
+    return (
+        <rect
+            onClick={(e) => {
+                if (onAnnotation && e.altKey) {
+                    onAnnotation(annotationTarget || 'unknown')
+                }
+                else if (onClick) {
+                    onClick()
+                }
+            }}
+            {...props} />
+    )
+}
+
+const AnnotatableSmuflSymbol = withAnnotation(SmuflSymbol)
+const AnnotatableRect = withAnnotation(SvgRect)
+
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
 
@@ -94,7 +116,11 @@ export default function InterpolationEditor() {
                                             {msm.allNotes.filter(note => note.part === 1).map(note => {
                                                 const x = note.date * horizontalStretch
                                                 return (
-                                                    <SmuflSymbol name='noteheadBlack' staffSize={7} y={getVerticalPosition(note["midi.pitch"])} x={x} />
+                                                    <AnnotatableSmuflSymbol
+                                                        name='noteheadBlack'
+                                                        staffSize={7}
+                                                        x={x}
+                                                        y={getVerticalPosition(note["midi.pitch"])} />
                                                 )
                                             })}
                                         </g>
@@ -108,7 +134,11 @@ export default function InterpolationEditor() {
                                             {msm.allNotes.filter(note => note.part === 2).map(note => {
                                                 const x = note.date * horizontalStretch
                                                 return (
-                                                    <SmuflSymbol name='noteheadBlack' staffSize={7} y={getVerticalPosition(note['midi.pitch'])} x={x} />
+                                                    <AnnotatableSmuflSymbol
+                                                        name='noteheadBlack'
+                                                        staffSize={7}
+                                                        x={x}
+                                                        y={getVerticalPosition(note['midi.pitch'])} />
                                                 )
                                             })}
                                         </g>
@@ -131,7 +161,14 @@ export default function InterpolationEditor() {
                                             const x = tempo.date * horizontalStretch
                                             return (
                                                 <>
-                                                    <rect x={x} y={getVerticalPosition(1)} stroke='black' fill='none' width={90} height={30} />
+                                                    <AnnotatableRect
+                                                        annotationTarget={`interpolation.mpm#tempo_${tempo.date}`}
+                                                        x={x}
+                                                        y={getVerticalPosition(1)}
+                                                        stroke='black'
+                                                        fill='white'
+                                                        width={90}
+                                                        height={30} />
                                                     <text x={x} y={getVerticalPosition(1) + 15}>{tempo.bpm}</text>
                                                 </>
                                             )
@@ -141,7 +178,14 @@ export default function InterpolationEditor() {
                                             const x = ornament.date * horizontalStretch
                                             return (
                                                 <>
-                                                    <rect x={x} y={getVerticalPosition(2)} stroke='black' fill='none' width={90} height={30} />
+                                                    <AnnotatableRect
+                                                        annotationTarget={`interpolation.mpm#ornament_${ornament['name.ref']}`}
+                                                        x={x}
+                                                        y={getVerticalPosition(2)}
+                                                        stroke='black'
+                                                        fill='white'
+                                                        width={90}
+                                                        height={30} />
                                                     <text x={x} y={getVerticalPosition(2) + 15}>{ornament["name.ref"]}</text>
                                                 </>
                                             )
@@ -151,7 +195,14 @@ export default function InterpolationEditor() {
                                             const x = dynamics.date * horizontalStretch
                                             return (
                                                 <>
-                                                    <rect x={x} y={getVerticalPosition(3)} stroke='black' fill='none' width={90} height={30} />
+                                                    <AnnotatableRect
+                                                        annotationTarget={`interpolation.mpm#dynamics_${dynamics.date}`}
+                                                        x={x}
+                                                        y={getVerticalPosition(3)}
+                                                        stroke='black'
+                                                        fill='white'
+                                                        width={90}
+                                                        height={30} />
                                                     <text x={x} y={getVerticalPosition(3) + 15}>{dynamics.volume}</text>
                                                 </>
                                             )
@@ -161,7 +212,13 @@ export default function InterpolationEditor() {
                                             const x = dynamics.date * horizontalStretch
                                             return (
                                                 <>
-                                                    <rect x={x} y={getVerticalPosition(4)} stroke='black' fill='none' width={90} height={30} />
+                                                    <AnnotatableRect
+                                                        annotationTarget={`interpolation.mpm#dynamics_${dynamics.date}`}
+                                                        x={x}
+                                                        y={getVerticalPosition(4)}
+                                                        stroke='black'
+                                                        fill='white'
+                                                        width={90} height={30} />
                                                     <text x={x} y={getVerticalPosition(4) + 15}>{dynamics.volume}</text>
                                                 </>
                                             )

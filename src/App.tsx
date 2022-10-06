@@ -6,7 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box } from '@mui/system';
 import AlignmentEditor from './components/alignment/AlignmentEditor';
 import InterpolationEditor from './components/interpolation/InterpolationEditor';
-import AnnotatedScore from './components/AnnotatedScore';
+import Annotations from './components/Annotations';
 import GlobalContext from './components/GlobalContext';
 import Upload from './components/Upload'
 import { AlignedPerformance } from './lib/AlignedPerformance';
@@ -60,9 +60,9 @@ function App() {
           triggerUpdate
         }}>
           <Tabs value={activeTab} onChange={(e, nv) => setActiveTab(nv)} aria-label="main tabs">
-            <Tab value='alignment-editor' label="Alignment Editor" />
-            <Tab value='interpolation-editor' label="Interpolation Editor" />
-            <Tab value='annotated-score' label="Annotated Score" />
+            <Tab value='alignment-editor' label="Alignment" />
+            <Tab value='interpolation-editor' label="Interpolation" />
+            <Tab value='annotated-score' label="Annotation" />
           </Tabs>
           <TabPanel value={activeTab} index='alignment-editor'>
             <AlignmentEditor />
@@ -71,7 +71,7 @@ function App() {
             <InterpolationEditor />
           </TabPanel>
           <TabPanel value={activeTab} index='annotated-score'>
-            <AnnotatedScore />
+            <Annotations />
           </TabPanel>
 
           <SpeedDial
