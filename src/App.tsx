@@ -33,10 +33,10 @@ function App() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('alignment-editor')
 
-  const [alignedPerformance, setAlignedPerformance] = useState(new AlignedPerformance())
+  const [alignedPerformance] = useState(new AlignedPerformance())
   const [alignmentReady, setAlignmentReady] = useState<number>(0)
 
-  const [rdfStore, setRdfStore] = useState<Store>(graph())
+  const [rdfStore] = useState<Store>(graph())
 
   const closeUploadDialog = () => setUploadDialogOpen(false)
   const openUploadDialog = () => setUploadDialogOpen(true)

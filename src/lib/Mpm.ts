@@ -1,4 +1,5 @@
 import { parse } from "js2xmlparser"
+import { uuid } from "./globals"
 
 /**
  * A part can be specified as either a given
@@ -183,13 +184,6 @@ export class MPM {
                     'name.ref': 'performance_style'
                 }
             }
-        }
-
-        function uuid() {
-            return 'xxxxx'.replace(/[x]/g, function (c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
         }
 
         const name = `def_${uuid()}`

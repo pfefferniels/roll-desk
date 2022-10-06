@@ -3,7 +3,12 @@ import * as rdf from "rdflib";
 import { useContext, useMemo, useState } from "react";
 import { RdfStoreContext } from "../../RDFStoreContext";
 import { Editable, Slate, withReact } from 'slate-react'
-import { createEditor } from "slate";
+import { createEditor, Node } from "slate";
+import { uuid } from "../../lib/globals";
+
+const serialize = (nodes: Node[]) => {
+    return nodes.map(n => Node.string(n)).join('\n');
+}
 
 export interface WithAnnotationProps {
     onAnnotation?: (annotationTarget: string) => void,
@@ -41,10 +46,15 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
 
             const oa = new (rdf.Namespace as any)('http://www.w3.org/2006/oa/ns#');
 
-            const annotation = store.sym('https://measuring-early-records.org/annotation123');
+            const bodyId = uuid()
+
+            const annotation = store.sym('https://measuring-early-records.org/annotation_' + uuid());
+            const body = store.sym('https://measuring-early-records.org/annotation_' + bodyId)
+
+            store.add(body, oa('rdf:value'), serialize(annotationBody), body.doc())
 
             store.add(annotation, oa('hasTarget'), annotationTarget, annotation.doc());
-            store.add(annotation, oa('hasBody'), JSON.stringify(annotationBody), annotation.doc());
+            store.add(annotation, oa('hasBody'), body, annotation.doc());
 
             setAnnotationDialogOpen(false);
         }
