@@ -44,17 +44,21 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
 
             const store = storeCtx.rdfStore;
 
-            const oa = new (rdf.Namespace as any)('http://www.w3.org/2006/oa/ns#');
+            const OA = new (rdf.Namespace as any)('http://www.w3.org/ns/oa#');
+            const RDF = new (rdf.Namespace as any)('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
+            const DCTERMS = new (rdf.Namespace as any)('http://purl.org/dc/terms/')
 
             const bodyId = uuid()
 
             const annotation = store.sym('https://measuring-early-records.org/annotation_' + uuid());
-            const body = store.sym('https://measuring-early-records.org/annotation_' + bodyId)
+            const body = store.sym('https://measuring-early-records.org/body_' + bodyId)
 
-            store.add(body, oa('rdf:value'), serialize(annotationBody), body.doc())
+            store.add(body, RDF('rdf:value'), serialize(annotationBody), body.doc())
 
-            store.add(annotation, oa('hasTarget'), annotationTarget, annotation.doc());
-            store.add(annotation, oa('hasBody'), body, annotation.doc());
+            store.add(annotation, OA('hasTarget'), annotationTarget, annotation.doc());
+            store.add(annotation, OA('hasBody'), body, annotation.doc());
+            store.add(annotation, OA('hasMotivation'), 'oa:commenting', annotation.doc())
+            store.add(annotation, DCTERMS('created'), new Date(Date.now()).toISOString(), annotation.doc())
 
             setAnnotationDialogOpen(false);
         }
