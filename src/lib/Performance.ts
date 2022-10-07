@@ -32,33 +32,40 @@ export class RawPerformance implements Visitable {
         return [firstOnset, lastOnset]
     }
 
+    private getTickTimeForTempoEvent(event: SetTempoEvent) {
+        const microsecondsPerBeat = event.microsecondsPerBeat
+        if (!microsecondsPerBeat || !this.midi) return -1
+
+        const BPM = 60000000 / microsecondsPerBeat
+        const realTimePerBeat = 60 / BPM
+        const ticksPerBeat = this.midi.header.ticksPerBeat
+        return realTimePerBeat / ticksPerBeat
+    }
+
     public asNotes(): MidiNote[] {
         if (!this.midi) return []
 
         const isNoteOn = (event: AnyEvent) => (event as NoteOnEvent).subtype === "noteOn"
         const isNoteOff = (event: AnyEvent) => (event as NoteOffEvent).subtype === "noteOff"
-
-        // find time per tick
-        const microsecondsPerBeat: number =
-            (this.midi.tracks[0].find((event: AnyEvent) => (event as SetTempoEvent).subtype === "setTempo") as SetTempoEvent).microsecondsPerBeat
-        if (!microsecondsPerBeat) return []
-
-        const BPM = 60000000 / microsecondsPerBeat
-        const realTimePerBeat = 60 / BPM
-        const ticksPerBeat = this.midi.header.ticksPerBeat
-        const tickTime = realTimePerBeat / ticksPerBeat
+        const isSetTempo = (event: AnyEvent) => (event as SetTempoEvent).subtype === "setTempo"
 
         let result: MidiNote[] = []
         let currentTime = 0
+        let currentTickTime = 0
+
         this.midi.tracks.forEach((events: AnyEvent[]) => {
-            events.slice(1).forEach((event: AnyEvent, index: number, array: AnyEvent[]) => {
-                if (isNoteOn(event)) {
+            events.forEach((event: AnyEvent, index: number) => {
+                currentTime += event.deltaTime
+
+                if (isSetTempo(event)) {
+                    currentTickTime = this.getTickTimeForTempoEvent(event as SetTempoEvent)
+                }
+                else if (isNoteOn(event)) {
                     const noteOnEvent = event as NoteOnEvent
-                    currentTime += noteOnEvent.deltaTime
 
                     result.push({
                         id: index,
-                        onsetTime: tickTime * currentTime,
+                        onsetTime: currentTickTime * currentTime,
                         pitch: noteOnEvent.noteNumber || 0,
                         velocity: noteOnEvent.velocity || 0,
                         duration: 0
@@ -66,13 +73,12 @@ export class RawPerformance implements Visitable {
                 }
                 else if (isNoteOff(event)) {
                     const noteOffEvent = event as NoteOffEvent
-                    currentTime += noteOffEvent.deltaTime
                     const correspNote = result.slice().reverse().find(note => note.pitch === noteOffEvent.noteNumber)
                     if (!correspNote) {
                         console.log('no corresponding noteOn event found for noteOff', noteOffEvent)
                         return
                     }
-                    correspNote.duration = (tickTime * currentTime) - correspNote.onsetTime
+                    correspNote.duration = (currentTickTime * currentTime) - correspNote.onsetTime
                 }
             })
         })
@@ -96,7 +102,7 @@ export class RawPerformance implements Visitable {
                 label: note.id.toString()
             }
         })
-        
+
         return pr
     }
 
