@@ -106,7 +106,7 @@ export class RawPerformance implements Visitable {
         return pr
     }
 
-    public at(id: number): MidiNote | undefined {
+    public getById(id: number): MidiNote | undefined {
         return this.asNotes().find(note => note.id === id)
     }
 

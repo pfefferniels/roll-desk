@@ -1,0 +1,372 @@
+{
+    "@context": {
+        "la": "http://example.org/linked_alignment#",
+        "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
+    },
+    "@graph": [
+        {
+            "@id": "http://example.org/my-alignment",
+            "@type": "la:Alignment",
+            "crm:P14_carried_out_by": {
+                "@id": "http://example_org/",
+                "@type": "E39_Actor"
+            },
+            "dcterms:created": "2022-10-07T11:21:16.781Z",
+            "la:hasAlignmentPair": [
+                "http//example.org/my-alignment/pair_5096",
+                "http//example.org/my-alignment/pair_5097",
+                "http//example.org/my-alignment/pair_5098",
+                "http//example.org/my-alignment/pair_5099",
+                "http//example.org/my-alignment/pair_5100",
+                "http//example.org/my-alignment/pair_5101",
+                "http//example.org/my-alignment/pair_5102",
+                "http//example.org/my-alignment/pair_5103",
+                "http//example.org/my-alignment/pair_5104",
+                "http//example.org/my-alignment/pair_5105",
+                "http//example.org/my-alignment/pair_5106",
+                "http//example.org/my-alignment/pair_5107",
+                "http//example.org/my-alignment/pair_5108",
+                "http//example.org/my-alignment/pair_5109",
+                "http//example.org/my-alignment/pair_5110",
+                "http//example.org/my-alignment/pair_5111",
+                "http//example.org/my-alignment/pair_5112",
+                "http//example.org/my-alignment/pair_5113",
+                "http//example.org/my-alignment/pair_5114",
+                "http//example.org/my-alignment/pair_5115",
+                "http//example.org/my-alignment/pair_5116",
+                "http//example.org/my-alignment/pair_5117",
+                "http//example.org/my-alignment/pair_5118",
+                "http//example.org/my-alignment/pair_5119",
+                "http//example.org/my-alignment/pair_5120",
+                "http//example.org/my-alignment/pair_5121",
+                "http//example.org/my-alignment/pair_5122",
+                "http//example.org/my-alignment/pair_5123",
+                "http//example.org/my-alignment/pair_5124",
+                "http//example.org/my-alignment/pair_5125",
+                "http//example.org/my-alignment/pair_5126",
+                "http//example.org/my-alignment/pair_5127",
+                "http//example.org/my-alignment/pair_5128",
+                "http//example.org/my-alignment/pair_5129",
+                "http//example.org/my-alignment/pair_5130",
+                "http//example.org/my-alignment/pair_5131",
+                "http//example.org/my-alignment/pair_5132",
+                "http//example.org/my-alignment/pair_5133",
+                "http//example.org/my-alignment/pair_5134",
+                "http//example.org/my-alignment/pair_5135",
+                "http//example.org/my-alignment/pair_5136",
+                "http//example.org/my-alignment/pair_5137",
+                "http//example.org/my-alignment/pair_5138",
+                "http//example.org/my-alignment/pair_5139"
+            ]
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5096",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-44",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_7"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5097",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-48",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_5"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5098",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-47",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_6"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5099",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-60",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_4"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5100",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-59",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_3"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5101",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-58",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_2"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5102",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-51",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_14"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5103",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-50",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_16"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5104",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-64",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_17"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5105",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-63",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_15"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5106",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-62",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_13"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5107",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-54",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_27"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5108",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-53",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_26"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5109",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-68",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_25"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5110",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-67",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_24"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5111",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-66",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_23"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5112",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-72",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_39"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5113",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-76",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_38"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5114",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-75",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_37"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5115",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-91",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_35"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5116",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-90",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_33"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5117",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-89",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_30"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5118",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-77",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_50"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5119",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-80",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_48"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5120",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-81",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_49"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5121",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-95",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_47"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5122",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-94",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_46"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5123",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-93",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_45"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5124",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-82",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_61"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5125",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-84",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_58"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5126",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-99",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_59"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5127",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-98",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_57"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5128",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-97",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_56"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5129",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-85",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_64"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5130",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-104",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_73"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5131",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-110",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_71"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5132",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-109",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_70"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5133",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-108",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_69"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5134",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-114",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_79"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5135",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-113",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_78"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5136",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-112",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_77"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5137",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-118",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_84"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5138",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-117",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_85"
+        },
+        {
+            "@id": "http://example.org/my-alignment/pair_5139",
+            "@type": "la:AlignmentPair",
+            "la:hasMotivation": "http://example.org/alignment-motivation#ExactMatch",
+            "la:hasScoreNote": "http://example.org/my-alignment/score.mei#m-116",
+            "la:hasMIDINote": "http://example.org/midi/a-performance/track_0/event_83"
+        }
+    ]
+}

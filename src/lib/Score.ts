@@ -215,7 +215,7 @@ export class Mei {
      * @param id as specified in the in the MEI with the @xml:id attribute.
      * @returns 
      */
-    public at(id: string): MeiNote | undefined {
+    public getById(id: string): MeiNote | undefined {
         return this.allNotes().find((value: MeiNote) => value.id === id)
     }
 

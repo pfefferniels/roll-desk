@@ -67,15 +67,15 @@ export class AlignedPerformance implements Visitable {
             }
 
             return {
-                scoreNote: this.score?.at(scoreId || ''),
-                midiNote: this.rawPerformance?.at(+midiId),
+                scoreNote: this.score?.getById(scoreId || ''),
+                midiNote: this.rawPerformance?.getById(+midiId),
                 motivation
             }
         })
 
         this.semanticPairs = [...this.semanticPairs, ...matches.missingNotes.map((missingNote): SemanticAlignmentPair => {
             return {
-                scoreNote: this.score?.at(missingNote.meiId),
+                scoreNote: this.score?.getById(missingNote.meiId),
                 motivation: Motivation.Omission
             }
         })]
@@ -143,16 +143,15 @@ export class AlignedPerformance implements Visitable {
      * @param midiNote 
      * @param scoreNote 
      */
-    public align(midiNote: MidiNote, scoreNote: MeiNote) {
+    public align(midiNote: MidiNote, scoreNote: MeiNote, motivation: Motivation = Motivation.Uncertain) {
         // remove orphanes
         const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote === midiNote && pair.motivation === Motivation.Addition)
-        this.semanticPairs.splice(orphanMidiNoteIndex, 1)
+        if (orphanMidiNoteIndex !== -1) this.semanticPairs.splice(orphanMidiNoteIndex, 1)
 
         const orphanScoreNoteIndex = this.semanticPairs.findIndex(pair => pair.scoreNote === scoreNote && pair.motivation === Motivation.Omission)
-        this.semanticPairs.splice(orphanScoreNoteIndex, 1)
+        if (orphanScoreNoteIndex !== -1) this.semanticPairs.splice(orphanScoreNoteIndex, 1)
 
         // insert new pair and try to determine its possible motivation
-        let motivation = Motivation.Uncertain
         if (scoreNote.pnum === midiNote.pitch) {
             motivation = Motivation.ExactMatch
         }
@@ -169,10 +168,6 @@ export class AlignedPerformance implements Visitable {
 
     public accept(visitor: Visitor) {
         visitor.visitAlignment(this)
-    }
-
-    public noteAtId(id: string) {
-        return this.score?.at(id)
     }
 
     /**
