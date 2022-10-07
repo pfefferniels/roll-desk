@@ -14,7 +14,7 @@ export default function Annotations() {
 
             {storeCtx && (
                 <pre>
-                    ${rdf.serialize(null, storeCtx.rdfStore)}
+                    {rdf.serialize(null, storeCtx.rdfStore)}
                 </pre>
             )}
         </div>

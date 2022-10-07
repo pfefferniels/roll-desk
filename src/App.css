@@ -42,3 +42,17 @@
   stroke-width: 0.2;
 }
 
+.instruction {
+  fill: gray;
+  fill-opacity: 0.3;
+}
+
+.instruction:hover {
+  fill-opacity: 0.6;
+}
+
+.separator-line {
+  stroke: black;
+  stroke-dasharray: 4 4;
+}
+

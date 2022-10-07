@@ -20,7 +20,7 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
 ) {
     const displayName = WrappedComponent.displayName || WrappedComponent.name || "Component";
 
-    const ComponentWithAnnotation = (props: Omit<T, keyof WithAnnotationProps>) => {
+    const ComponentWithAnnotation = (props: T) => {
         const storeCtx = useContext(RdfStoreContext);
 
         const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);

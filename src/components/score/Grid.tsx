@@ -104,12 +104,11 @@ export const GraphicalGrid: FC<GraphicalGridProps> = ({ children, numberOfRows, 
       {Array.from(Array(numberOfRows).keys()).map(lineNumber => (
         <line
           key={`line${Date.now()}-${lineNumber}`}
-          className='sepeartor-line'
-          stroke='black'
+          className='separator-line'
           x1={0}
           y1={(lineNumber + 1) * rowHeight}
           x2={width}
-          y2={(lineNumber + 1) * rowHeight} />
+          y2={(lineNumber + 1) * rowHeight}/>
       ))}
       {children(getVerticalPosition)}
     </g>
