@@ -1,6 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, Box, TextField, Button, DialogActions } from "@mui/material"
 import { FC, useState } from "react"
 import { AlignedPerformance } from "../../lib/AlignedPerformance"
+import { downloadFile } from "../../lib/globals"
 import { MSM } from "../../lib/Msm"
 import { JsonLdVisitor } from "../../lib/visitors/JsonLdVisitor"
 import { Visitable } from "../../lib/visitors/Visitable"
@@ -9,14 +10,6 @@ interface ExportDialogProps {
   alignedPerformance: AlignedPerformance,
   dialogOpen: boolean,
   setDialogOpen: (open: boolean) => void
-}
-
-const downloadFile = (filename: string, contents: string, type: string) => {
-  const element = document.createElement('a')
-  const file = new Blob([contents || ''], { type: type });
-  element.href = URL.createObjectURL(file)
-  element.download = filename
-  element.click()
 }
 
 export const ExportAlignmentDialog: FC<ExportDialogProps> = ({ alignedPerformance, dialogOpen, setDialogOpen }): JSX.Element => {

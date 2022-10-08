@@ -5,102 +5,137 @@
 import os
 import sys
 from argparse import ArgumentParser
-import jpype    # this package (JPype1-py3) enables Java integration in Python
+import jpype
+import web
 
-def generate_midi(mei_file, mpm_file):
+def read_file(filename):
+    File = jpype.java.io.File
+    
+    # check if file is a valid path to a file
+    if (filename is None) or (not os.path.isfile(filename)):
+        print('Cannot find MEI input file. Please check that the path and file name are correct.', file=sys.stderr)
+        return 66
+
+    return File(os.path.realpath(filename))
+
+def generate_msm(mei_file):
+    Mei = jpype.JPackage('meico').mei.Mei
+
+    try:
+        mei = Mei(mei_file)
+    except jpype.JavaException as e:
+        print('MEI/MPM file is not valid.', file=sys.stderr)
+        print(e.message(), file=sys.stderr)
+        jpype.shutdownJVM()
+        return 65
+    
+    if mei.isEmpty():
+        print('MEI file could not be loaded.', file=sys.stderr)
+        jpype.shutdownJVM()
+        return 66
+    
+    return mei.exportMsm(720, False, False, True).get(0) # get(0)
+
+def generate_midi(mei_file, mpm_file, msm_file):
     # check if meico.jar is present
     if not os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'meico.jar')):
         print('__file__', __file__)
         print('Cannot find meico.jar. Please place it in the same folder as this Python script.')
         return 69
 
-    # check if MSM file is a valid path to a file
-    if (mei_file is None) or (not os.path.isfile(mei_file)) or (mpm_file is None) or (not os.path.isfile(mpm_file)):
-        print('Cannot find MEI/MPM input file. Please check that the path and file name are correct.', file=sys.stderr)
-        return 66
-
     # start the JavaVM and set the class path to meico.jar (has to be placed in the same directory as the Python script)
     jpype.startJVM('/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home/lib/server/libjvm.dylib', '-ea', '-Djava.class.path=' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'meico.jar'))
 
-    # definitions
-    File = jpype.java.io.File
-    Mei = jpype.JPackage('meico').mei.Mei
     Mpm = jpype.JPackage('meico').mpm.Mpm
-    # Msm = jpype.JPackage('meico').msm.Msm
-    Performance = jpype.JPackage('meico').mpm.elements.Performance
+    Msm = jpype.JPackage('meico').msm.Msm
 
-    meiFile = File(os.path.realpath(mei_file))                  # the MSM file as a Java File object, ensure that the absolute (canonical) path is used (so, when writing the output files to the same path, everything is consistent; alternatively, applications can specify their own output path when calling the write{Mei,Msm,Midi,Audio}() methods)
-    mpmFile = File(os.path.realpath(mpm_file))                  # the MPM file as a Java File object, ensure that the absolute (canonical) path is used (so, when writing the output files to the same path, everything is consistent; alternatively, applications can specify their own output path when calling the write{Mei,Msm,Midi,Audio}() methods)
+    msm = None
 
-    try:
-        mei = Mei(meiFile)
-        mpm = Mpm(mpmFile)
-    except jpype.JavaException as e:                            # actually an IOException or ParsingException in Java
-        print('MEI/MPM file is not valid.', file=sys.stderr)        # error message
-        print(e.message(), file=sys.stderr)                     # actual exception message
-        jpype.shutdownJVM()                                     # stop the JavaVM
-        return 65
-
-    print('MPM includes performances:', mpm.getAllPerformances())
-
-    if mei.isEmpty():                                           # check if MEI is empty
-        print('MEI file could not be loaded.', file=sys.stderr) # error message
-        jpype.shutdownJVM()                                     # stop the JavaVM
+    if msm_file:
+        try:
+            msm = Msm(msm_file)
+        except jpype.JavaException as e:
+            print('MSM file is not valid.', file=sys.stderr)
+            print(e.message(), file=sys.stderr)
+            jpype.shutdownJVM()
+            return 65
+    elif mei_file:
+        print('using MEI file')
+        msm = generate_msm(mei_file)
+    else:
+        print('either MEI or MSM file must be present')
         return 66
 
-    print('Converting MEI to MSM.')
-    msms = mei.exportMsm(720, False, False, True)   # usually, the application should use mei.exportMsm(720); the cleanup flag is just for debugging (in debug mode no cleanup is done)
-    if msms.isEmpty():                                          # did something come out? if not
-        print('No MSM data created.', file=sys.stderr)          # error message
-        jpype.shutdownJVM()                                     # stop the JavaVM
+    if msm.isEmpty():
+        print('No MSM data created.', file=sys.stderr)
+        jpype.shutdownJVM()
         return 1
 
-    for i in range(msms.size()):                                # process all MSM objects just exported from MEI
-        print('Processing MSM: movement ' + str(i))
-        msm = msms.get(i)                                       # get the MSM instance
+    try:
+        mpm = Mpm(mpm_file)
+    except jpype.JavaException as e:
+        print('MPM file is not valid.', file=sys.stderr)
+        print(e.message(), file=sys.stderr)
+        jpype.shutdownJVM()
+        return 65
 
-    print('Processing MSM: removing rests.')
-    msm.removeRests()                                       # purge the data (some applications may keep the rests from the MEI; these should not call this function)
+    # purge the data (some applications may keep the rests from the MEI;
+    # these should not call this function)
+    msm.removeRests()
 
-    print('Processing MSM: expanding sequencingMaps.')
-    msm.resolveSequencingMaps()                             # instead of using sequencingMaps (which encode repetitions, dacapi etc.) resolve them and, hence, expand all scores and maps according to the sequencing information (be aware: the sequencingMaps are deleted because they no longer apply)
+    # instead of using sequencingMaps (which encode repetitions, dacapi etc.) resolve
+    # them and, hence, expand all scores and maps according to the sequencing information
+    # (be aware: the sequencingMaps are deleted because they no longer apply)
+    msm.resolveSequencingMaps()
 
-    performance = mpm.getPerformance(0)
-    # performedMsm = performance.perform(msm)
-    # performedMsm.writeMsm()
-
-    midi = msm.exportExpressiveMidi(mpm.getPerformance(0), True) # do the conversion to MIDI
+    midi = msm.exportExpressiveMidi(mpm.getPerformance(0), True)
     midi.setFile('result.mid')
 
-    print('Writing MIDI to file system: ' + midi.getFile().getPath())
-    if not midi.writeMidi():                        # write midi file to the file system
+    print('Writing MIDI to file system')
+    if not midi.writeMidi():
         return
 
-    jpype.shutdownJVM()                                         # stop the JavaVM
+    jpype.shutdownJVM()
     return 0
 
 
-
-def main(arguments, mei_file):
+def command_line(arguments, mpm_file):
     """
-    Before starting the conversion itself, this function parses the command line arguments. It corresponds with meico's native command line mode.
-    :param arguments: holds all command line arguments except the script itself and the final parameter, which is the MEI file reference
-    :param mei_file: holds the MEI file reference
+    This program applies MPM in to a given MEI or MSM file to MIDI.
+    :param arguments: holds the given MEI or MSM file
+    :param mei_file: holds the MPM file reference
     :return:
     """
 
-    parser = ArgumentParser()               # instantiate the command line argument parser
+    parser = ArgumentParser()
 
     # set the command line arguments
-    parser.add_argument('-m', '--mpm', action='store', default=False, help='defines MPM input file.')
+    parser.add_argument('-s', '--mei', action='store', default=False, help='defines MEI input file.')
+    parser.add_argument('-m', '--msm', action='store', default=False, help='defines MSM input file.')
 
-    args = parser.parse_args(arguments)     # parse the command line arguments
+    args = parser.parse_args(arguments)
 
-    # call the conversion method
-    return generate_midi(mpm_file = args.mpm,
-                         mei_file = mei_file)
+    return generate_midi(mei_file = read_file(args.mei),
+                         mpm_file = read_file(mpm_file),
+                         msm_file = read_file(args.msm))
+
+urls = (
+    '/convert', 'convert'
+)
+
+class convert:
+    def POST(self):
+        post_data = web.input()
+        msm = post_data.msm
+        mpm = post_data.mpm
+        generate_midi(False, mpm, msm)
+        print('msm=', msm)
+        print('mpm=', mpm)
+        return 'MIDI blub'
 
 
 # entry point to this script
 if __name__ == "__main__":
-    main(sys.argv[1:-1], sys.argv[-1])
+    # command_line(sys.argv[1:-1], sys.argv[-1])
+    app = web.application(urls, globals())
+    app.run()

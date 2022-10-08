@@ -2,16 +2,16 @@ import { useContext, useEffect, useState } from "react"
 import { Interpolation } from "../../lib/Interpolation"
 import GlobalContext from "../GlobalContext"
 import { Box, IconButton, Paper } from "@mui/material"
-import { Dynamics, MPM, Ornament, Tempo } from "../../lib/Mpm"
+import { MPM } from "../../lib/Mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { PipelineEditor } from "./pipeline-editor/PipelineEditor"
 import { EditMetadata } from "./EditMetadata"
-import { GraphicalGrid, StaffGrid } from "../score/Grid"
 import { MSM } from "../../lib/Msm"
-import { System } from "../score/System"
-import { AnnotatableNote, AnnotatableInstruction } from "./Instruction"
+import { MPMGrid } from "./MPMGrid"
+import { MSMGrid } from "./MSMGrid"
+import { downloadFile } from "../../lib/globals"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -61,21 +61,14 @@ export default function InterpolationEditor() {
                             display: 'flex',
                             alignItems: 'flex-start',
                             flexDirection: 'column',
-                        }}
-                    >
+                        }}>
                         <IconButton onClick={() => setEditMetadataOpen(true)}>
                             <EditAttributesIcon />
                         </IconButton>
                         <IconButton onClick={() => setEditPipelineOpen(true)}>
                             <LayersIcon />
                         </IconButton>
-                        <IconButton onClick={() => {
-                            const element = document.createElement('a')
-                            const file = new Blob([mpm?.serialize() || ''], { type: 'text/xml' });
-                            element.href = URL.createObjectURL(file)
-                            element.download = `${performanceName.trim()}.mpm`
-                            element.click()
-                        }}>
+                        <IconButton onClick={() => downloadFile(`${performanceName.trim()}.mpm`, mpm?.serialize() || '', 'text/xml')}>
                             <FileDownloadIcon />
                         </IconButton>
                     </Box>
@@ -85,44 +78,7 @@ export default function InterpolationEditor() {
             {msm && (
                 <div className='msm'>
                     <svg className='msm' width={2000}>
-                        <System spacing={14} staffSize={7}>
-                            <StaffGrid clef='G' width={2000} staffSize={7}>
-                                {(getVerticalPosition: any) => {
-                                    return (
-                                        <g>
-                                            {msm.allNotes.filter(note => note.part === 1).map(note => {
-                                                const x = note.date * horizontalStretch
-                                                return (
-                                                    <AnnotatableNote
-                                                        name='noteheadBlack'
-                                                        staffSize={7}
-                                                        x={x}
-                                                        y={getVerticalPosition(note["midi.pitch"])} />
-                                                )
-                                            })}
-                                        </g>
-                                    )
-                                }}
-                            </StaffGrid>
-                            <StaffGrid clef='F' width={2000} staffSize={7}>
-                                {(getVerticalPosition: any) => {
-                                    return (
-                                        <g>
-                                            {msm.allNotes.filter(note => note.part === 2).map(note => {
-                                                const x = note.date * horizontalStretch
-                                                return (
-                                                    <AnnotatableNote
-                                                        name='noteheadBlack'
-                                                        staffSize={7}
-                                                        x={x}
-                                                        y={getVerticalPosition(note['midi.pitch'])} />
-                                                )
-                                            })}
-                                        </g>
-                                    )
-                                }}
-                            </StaffGrid>
-                        </System>
+                        <MSMGrid msm={msm} horizontalStretch={horizontalStretch} />
                     </svg>
                 </div>
             )}
@@ -130,65 +86,7 @@ export default function InterpolationEditor() {
             {mpm && (
                 <div className='mpm'>
                     <svg className='mpm' height={300} width={2000}>
-                        <GraphicalGrid numberOfRows={4} width={2000}>
-                            {(getVerticalPosition: any) => {
-                                return (
-                                    <g>
-                                        {mpm.getInstructions<Tempo>('tempo', 'global').map(tempo => {
-                                            const x = tempo.date * horizontalStretch
-                                            return (
-                                                <>
-                                                    <AnnotatableInstruction
-                                                        annotationTarget={`interpolation.mpm#tempo_${tempo.date}`}
-                                                        x={x}
-                                                        y={getVerticalPosition(1)}
-                                                        text={tempo.bpm.toString()} />
-                                                </>
-                                            )
-                                        })}
-
-                                        {mpm.getInstructions<Ornament>('ornament', 'global').map(ornament => {
-                                            const x = ornament.date * horizontalStretch
-                                            return (
-                                                <>
-                                                    <AnnotatableInstruction
-                                                        annotationTarget={`interpolation.mpm#ornament_${ornament['name.ref']}`}
-                                                        x={x}
-                                                        y={getVerticalPosition(2)}
-                                                        text={ornament['name.ref']}/>
-                                                </>
-                                            )
-                                        })}
-
-                                        {mpm.getInstructions<Dynamics>('dynamics', 0).map(dynamics => {
-                                            const x = dynamics.date * horizontalStretch
-                                            return (
-                                                <>
-                                                    <AnnotatableInstruction
-                                                        annotationTarget={`interpolation.mpm#dynamics_${dynamics.date}`}
-                                                        x={x}
-                                                        y={getVerticalPosition(3)}
-                                                        text={dynamics.volume.toString()} />
-                                                </>
-                                            )
-                                        })}
-
-                                        {mpm.getInstructions<Dynamics>('dynamics', 1).map(dynamics => {
-                                            const x = dynamics.date * horizontalStretch
-                                            return (
-                                                <>
-                                                    <AnnotatableInstruction
-                                                        annotationTarget={`interpolation.mpm#dynamics_${dynamics.date}`}
-                                                        x={x}
-                                                        y={getVerticalPosition(4)}
-                                                        text={dynamics.volume.toString()} />
-                                                </>
-                                            )
-                                        })}
-                                    </g>
-                                )
-                            }}
-                        </GraphicalGrid>
+                        <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
                     </svg>
                 </div>
             )}
@@ -216,3 +114,4 @@ export default function InterpolationEditor() {
         </div>
     )
 }
+

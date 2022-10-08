@@ -9,6 +9,15 @@ export function uuid() {
     });
 }
 
+
+export function downloadFile(filename: string, content: string, type: string) {
+    const element = document.createElement('a')
+    const file = new Blob([content], { type })
+    element.href = URL.createObjectURL(file)
+    element.download = filename
+    element.click()
+}
+
 export async function loadDomParser(): Promise<DOMParser> {
     if (isNode) {
         const jsdom = await import('jsdom')

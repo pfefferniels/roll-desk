@@ -6,6 +6,17 @@ import { Editable, Slate, withReact } from 'slate-react'
 import { createEditor, Node } from "slate";
 import { uuid } from "../../lib/globals";
 
+/**
+ * `commenting` is used in a subjective meaning,
+ * whereas `describing` refers to something more
+ * objective, making the latter suitable for explaining
+ * e.g. editorial decisions. 
+ * 
+ * More motivation types might be added at a later point
+ * (`identifying`, `linking`?)
+ */
+type AnnotationMotivation = 'oa:commenting' | 'oa:describing'
+
 const serialize = (nodes: Node[]) => {
     return nodes.map(n => Node.string(n)).join('\n');
 }
