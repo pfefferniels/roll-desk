@@ -50,7 +50,6 @@ export default function InterpolationEditor() {
               })
             const data = await response.arrayBuffer()
             setMidi(read(data))
-            //console.log('data=', data)
         }
 
         fetchMidi()
@@ -101,7 +100,7 @@ export default function InterpolationEditor() {
                 </Paper>
             )}
 
-            {midi && <Player midi={midi} />}
+            {midi ? <Player midi={midi} /> : <span>failed loading MIDI</span>}
 
             {msm && (
                 <div className='msm'>

@@ -52,6 +52,11 @@ export const Player: React.FC<PlayerProps> = ({ midi }): JSX.Element => {
     }
 
     const setupMIDIInput = async () => {
+        if ((navigator as any).requestMIDIAccess === undefined) {
+            setError(new Error('Web MIDI API not supported by your browser'))
+            return
+        }
+
         const midiAccess = await (navigator as any).requestMIDIAccess()
 
         midiAccess.inputs.forEach((entry: any) => {
