@@ -31,6 +31,28 @@ export default function InterpolationEditor() {
     const [horizontalStretch, setHorizontalStretch] = useState(0.3)
 
     useEffect(() => {
+        if (!mpm) return
+
+        const fetchMidi = async () => {
+            const response = await fetch('http://0.0.0.0:8080/convert', {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/octet-stream',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    msm: msm?.serialize() || '',
+                    mpm: mpm.serialize()
+                })
+              })
+            const data = response.arrayBuffer()
+            console.log('data=', data)
+        }
+
+        fetchMidi()
+    }, [mpm])
+
+    useEffect(() => {
         if (!alignmentReady || !alignedPerformance.ready()) return
 
         setInterpolation(new Interpolation(alignedPerformance))
