@@ -56,3 +56,7 @@
   stroke-dasharray: 4 4;
 }
 
+.playbackPosition {
+  stroke: rgb(255, 161, 161);
+  stroke-width: 5;
+}
