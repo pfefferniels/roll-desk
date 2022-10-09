@@ -4,10 +4,13 @@ import { FC } from "react"
 interface EditMetadataProps {
     author: string,
     setAuthor: (author: string) => void,
+
     comment: string,
     setComment: (comment: string) => void,
+
     performanceName: string,
     setPerformanceName: (performanceName: string) => void,
+
     dialogOpen: boolean,
     onReady: () => void
 }

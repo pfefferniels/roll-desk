@@ -5,9 +5,10 @@ import { MIDIPlayer } from "../../lib/midi-player"
 
 interface PlayerProps {
     midi: MidiFile
+    onProgress: (progress: number) => void
 }
 
-export const Player: React.FC<PlayerProps> = ({ midi }): JSX.Element => {
+export const Player: React.FC<PlayerProps> = ({ midi, onProgress }): JSX.Element => {
     const [setupFinished, setSetupFinished] = useState(false)
     const [error, setError] = useState<Error>()
 
@@ -53,6 +54,7 @@ export const Player: React.FC<PlayerProps> = ({ midi }): JSX.Element => {
 
     const setupMIDIInput = async () => {
         if ((navigator as any).requestMIDIAccess === undefined) {
+            console.warn('Web MIDI API not supported by your browser')
             setError(new Error('Web MIDI API not supported by your browser'))
             return
         }
@@ -81,19 +83,17 @@ export const Player: React.FC<PlayerProps> = ({ midi }): JSX.Element => {
             setError(e))
     }, [])
 
-    // TODO: to change MIDI position use:
-    // midiPlayer?.seek(seekbar.valueAsNumber)
+    useEffect(() => {
+        resetMidiPlayer(midi)
+    }, [midi])
 
     const resetMidiPlayer = (midi: MidiFile) => {
-        //midiPlayer?.pause()
-        //context.resume()
         const newMidiPlayer = new MIDIPlayer(midi, context.sampleRate, postSynthMessage)
-        newMidiPlayer.onProgress = (progress) => {
-            // TODO: use progress to update a seekbar
-            //seekbar.valueAsNumber = progress
-        }
-        newMidiPlayer?.resume()
+        newMidiPlayer.onProgress = onProgress
         setMidiPlayer(newMidiPlayer)
+        midiPlayer?.pause()
+        context.resume()
+        newMidiPlayer?.resume()
     }
 
     return (
@@ -104,6 +104,7 @@ export const Player: React.FC<PlayerProps> = ({ midi }): JSX.Element => {
                         id='play'
                         onClick={() => {
                             context.resume()
+                            midiPlayer?.seek(0)
                             midiPlayer?.resume()
                         }}>
                         Play

@@ -127,26 +127,22 @@ export class MIDIPlayer {
     this.onProgress?.(this.scheduler.currentTick / this.endOfSong)
   }
 
-  private handleEvent(
-    e: AnyEvent & Tick,
-    delayTime: number
-  ): SynthEvent | null {
+  private handleEvent(e: AnyEvent & Tick, delayTime: number): SynthEvent | null {
     switch (e.type) {
-      case "channel":
+      case 'channel':
         return {
-          type: "midi",
+          type: 'midi',
           midi: e,
           delayTime,
         }
-      case "meta":
-        switch (e.subtype) {
-          case "setTempo":
-            this.tempo = (60 * 1000000) / e.microsecondsPerBeat
-            break
-          default:
-            console.warn(`not supported meta event`, e)
-            break
+      case 'meta':
+        if (e.subtype === 'setTempo') {
+          this.tempo = (60 * 1000000) / e.microsecondsPerBeat
         }
+        else {
+          console.warn('not supported meta event', e)
+        }
+        break;
     }
     return null
   }

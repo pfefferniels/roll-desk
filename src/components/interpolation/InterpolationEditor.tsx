@@ -14,6 +14,7 @@ import { MSMGrid } from "./MSMGrid"
 import { downloadFile } from "../../lib/globals"
 import { Player } from "../player/Player"
 import { MidiFile, read } from "midifile-ts"
+import { PlaybackPosition } from "../player/PlaybackPosition"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -31,6 +32,8 @@ export default function InterpolationEditor() {
     const [midi, setMidi] = useState<MidiFile>()
     const [interpolation, setInterpolation] = useState<Interpolation>()
 
+    const [playbackPosition, setPlaybackPosition] = useState(0)
+
     const [horizontalStretch, setHorizontalStretch] = useState(0.3)
 
     useEffect(() => {
@@ -40,14 +43,14 @@ export default function InterpolationEditor() {
             const response = await fetch('http://0.0.0.0:8080/convert', {
                 method: 'POST',
                 headers: {
-                  'Accept': 'application/octet-stream',
-                  'Content-Type': 'application/json'
+                    'Accept': 'application/octet-stream',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     msm: msm?.serialize() || '',
                     mpm: mpm.serialize()
                 })
-              })
+            })
             const data = await response.arrayBuffer()
             setMidi(read(data))
         }
@@ -100,20 +103,26 @@ export default function InterpolationEditor() {
                 </Paper>
             )}
 
-            {midi ? <Player midi={midi} /> : <span>failed loading MIDI</span>}
+            {midi ? (
+                <Player midi={midi} onProgress={(progress) => {
+                    setPlaybackPosition(progress * (msm?.lastDate() || 0))
+                }} />)
+                : <span>failed loading MIDI</span>}
 
             {msm && (
                 <div className='msm'>
-                    <svg className='msm' width={2000}>
+                    <svg className='msm' width={msm.lastDate() * horizontalStretch}>
                         <MSMGrid msm={msm} horizontalStretch={horizontalStretch} />
+                        <PlaybackPosition position={playbackPosition * horizontalStretch} />
                     </svg>
                 </div>
             )}
 
             {mpm && (
                 <div className='mpm'>
-                    <svg className='mpm' height={300} width={2000}>
+                    <svg className='mpm' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
+                        <PlaybackPosition position={playbackPosition * horizontalStretch} />
                     </svg>
                 </div>
             )}

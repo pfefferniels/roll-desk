@@ -150,7 +150,7 @@ class convert:
         data = json.loads(web.data())
         write_file('input.msm', data['msm'])
         write_file('input.mpm', data['mpm'])
-        generate_midi(False, read_file('input.msm'), read_file('input.mpm'))
+        generate_midi(False, read_file('input.mpm'), read_file('input.msm'))
         f = open("result.mid", "r+b")
         return f.read()
     
@@ -166,8 +166,8 @@ class convert:
 # entry point to this script
 if __name__ == "__main__":
     start_jvm()
-    command_line(sys.argv[1:-1], sys.argv[-1])
-    # app = web.application(urls, globals())
-    # app.run()
+    # command_line(sys.argv[1:-1], sys.argv[-1])
+    app = web.application(urls, globals())
+    app.run()
     shutdown_jvm()
 

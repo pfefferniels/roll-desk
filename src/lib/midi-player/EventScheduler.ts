@@ -8,7 +8,7 @@ export interface SchedulableEvent {
  * https://www.html5rocks.com/ja/tutorials/audio/scheduling/
  */
 export default class EventScheduler<E extends SchedulableEvent> {
-    // Leading time (MS)
+    // leading time in ms
     lookAheadTime = 100
 
     // 1/4 tick number for each beat

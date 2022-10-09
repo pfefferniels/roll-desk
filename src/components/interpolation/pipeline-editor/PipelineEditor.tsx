@@ -24,9 +24,9 @@ export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, dialogOpen, 
                 <Stack>
                     <List sx={{minWidth: '1000', m: 2}}>
                         {pipeline?.map((transformer, i) => {
-                            console.log('transformer=', transformer)
                             return (
                                 <ListItem
+                                    key={`transformer_${i}`}
                                     sx={{
                                         marginBottom: '2rem',
                                         display: 'block',
