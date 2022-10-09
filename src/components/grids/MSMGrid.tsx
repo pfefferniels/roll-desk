@@ -1,7 +1,7 @@
-import { StaffGrid } from "../score/Grid";
+import { StaffLikeGrid } from "../score/Grid";
 import { MSM } from "../../lib/Msm";
 import { System } from "../score/System";
-import { AnnotatableNote } from "./Instruction";
+import { AnnotatableNote } from "../interpolation/Instruction";
 import { FC } from "react";
 
 interface MSMGridProps {
@@ -12,7 +12,7 @@ interface MSMGridProps {
 export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
     return (
         <System spacing={14} staffSize={7}>
-            <StaffGrid clef='G' width={2000} staffSize={7}>
+            <StaffLikeGrid clef='G' width={2000} staffSize={7}>
                 {(getVerticalPosition: any) => {
                     return (
                         <g>
@@ -29,8 +29,8 @@ export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
                         </g>
                     );
                 }}
-            </StaffGrid>
-            <StaffGrid clef='F' width={2000} staffSize={7}>
+            </StaffLikeGrid>
+            <StaffLikeGrid clef='F' width={2000} staffSize={7}>
                 {(getVerticalPosition: any) => {
                     return (
                         <g>
@@ -47,7 +47,7 @@ export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
                         </g>
                     );
                 }}
-            </StaffGrid>
+            </StaffLikeGrid>
         </System>
     );
 }

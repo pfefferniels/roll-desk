@@ -1,6 +1,6 @@
 import { Dynamics, MPM, Ornament, Tempo } from "../../lib/Mpm";
-import { GraphicalGrid } from "../score/Grid";
-import { AnnotatableInstruction } from "./Instruction";
+import { GraphicalLikeGrid } from "../score/Grid";
+import { AnnotatableInstruction } from "../interpolation/Instruction";
 
 interface MPMGridProps {
     mpm: MPM;
@@ -9,7 +9,7 @@ interface MPMGridProps {
 
 export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
     return (
-        <GraphicalGrid numberOfRows={4} width={2000}>
+        <GraphicalLikeGrid numberOfRows={4} width={2000}>
             {(getVerticalPosition: any) => {
                 return (
                     <g>
@@ -67,7 +67,7 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                     </g>
                 );
             }}
-        </GraphicalGrid>
+        </GraphicalLikeGrid>
+    )
+}
 
-    );
-};

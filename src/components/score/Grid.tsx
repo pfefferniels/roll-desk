@@ -7,7 +7,7 @@ interface GenericGridProps {
 
 export type Clef = 'G' | 'F'
 
-interface StaffGridProps extends GenericGridProps {
+interface StaffLikeGridProps extends GenericGridProps {
   clef: Clef
   staffSize: number
 }
@@ -15,7 +15,7 @@ interface StaffGridProps extends GenericGridProps {
 /**
  * Draws SVG staff lines using the standard F and G clef.
  */
-export const StaffGrid: FC<StaffGridProps> = ({ children, staffSize, width, clef }): JSX.Element => {
+export const StaffLikeGrid: FC<StaffLikeGridProps> = ({ children, staffSize, width, clef }): JSX.Element => {
   const getVerticalPosition = (pnum: number) => {
     const staffLocationsByClef = {
       G: 76,
@@ -57,7 +57,7 @@ export const StaffGrid: FC<StaffGridProps> = ({ children, staffSize, width, clef
 }
 
 
-interface MidiGridProps extends GenericGridProps {
+interface MidiLikeGridProps extends GenericGridProps {
   // vertical space required to display a single MIDI pitch
   pitchHeight: number
 }
@@ -65,7 +65,7 @@ interface MidiGridProps extends GenericGridProps {
 /**
  * Draws a MIDI grid
  */
-export const MidiGrid: FC<MidiGridProps> = ({ children, pitchHeight, width }): JSX.Element => {
+export const MidiLikeGrid: FC<MidiLikeGridProps> = ({ children, pitchHeight, width }): JSX.Element => {
   const getVerticalPosition = (pnum: number) => {
     return 172 - pnum * pitchHeight
   }
@@ -86,14 +86,14 @@ export const MidiGrid: FC<MidiGridProps> = ({ children, pitchHeight, width }): J
   )
 }
 
-interface GraphicalGridProps extends GenericGridProps {
+interface GraphicalLikeGridProps extends GenericGridProps {
   numberOfRows: number
 }
 
 /**
  * Draws a Grid for graphical notation
  */
-export const GraphicalGrid: FC<GraphicalGridProps> = ({ children, numberOfRows, width }): JSX.Element => {
+export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, numberOfRows, width }): JSX.Element => {
   const rowHeight = 50
   const getVerticalPosition = (row: number) => {
     return row * rowHeight
