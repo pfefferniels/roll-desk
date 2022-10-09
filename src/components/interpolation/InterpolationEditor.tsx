@@ -12,6 +12,8 @@ import { MSM } from "../../lib/Msm"
 import { MPMGrid } from "./MPMGrid"
 import { MSMGrid } from "./MSMGrid"
 import { downloadFile } from "../../lib/globals"
+import { Player } from "../player/Player"
+import { MidiFile, read } from "midifile-ts"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -26,6 +28,7 @@ export default function InterpolationEditor() {
 
     const [mpm, setMPM] = useState<MPM>()
     const [msm, setMSM] = useState<MSM>()
+    const [midi, setMidi] = useState<MidiFile>()
     const [interpolation, setInterpolation] = useState<Interpolation>()
 
     const [horizontalStretch, setHorizontalStretch] = useState(0.3)
@@ -45,8 +48,9 @@ export default function InterpolationEditor() {
                     mpm: mpm.serialize()
                 })
               })
-            const data = response.arrayBuffer()
-            console.log('data=', data)
+            const data = await response.arrayBuffer()
+            setMidi(read(data))
+            //console.log('data=', data)
         }
 
         fetchMidi()
@@ -96,6 +100,8 @@ export default function InterpolationEditor() {
                     </Box>
                 </Paper>
             )}
+
+            {midi && <Player midi={midi} />}
 
             {msm && (
                 <div className='msm'>
