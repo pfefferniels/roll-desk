@@ -124,6 +124,14 @@ export class MSM {
                     },
                     header: {},
                     dated: {
+                        'programChangeMap': {
+                            'programChange': {
+                                '@': {
+                                    date: 0,
+                                    value: 0
+                                }
+                            }
+                        },
                         'keySignatureMap': {
                             'keySignature': {
                                 '@': {
