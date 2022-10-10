@@ -20,6 +20,7 @@ export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
                                 const x = note.date * horizontalStretch;
                                 return (
                                     <AnnotatableNote
+                                        key={`annotatableNote_${note["xml:id"]}`}
                                         name='noteheadBlack'
                                         staffSize={7}
                                         x={x}
@@ -38,6 +39,7 @@ export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
                                 const x = note.date * horizontalStretch;
                                 return (
                                     <AnnotatableNote
+                                        key={`annotatableNote_${note["xml:id"]}`}
                                         name='noteheadBlack'
                                         staffSize={7}
                                         x={x}

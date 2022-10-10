@@ -43,35 +43,4 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActive
 }
 
 /*
-      onKeyDown={(e) => {
-        e.preventDefault()
-        if (e.key === 'ArrowDown') {
-          setMidiDimensions((prev) => {
-            const newDimensions = { ...prev }
-            newDimensions.stretch -= 10
-            return newDimensions
-          })
-        }
-        else if (e.key === 'ArrowUp') {
-          setMidiDimensions((prev) => {
-            const newDimensions = { ...prev }
-            newDimensions.stretch += 10
-            return newDimensions
-          })
-        }
-        else if (e.key === 'ArrowLeft') {
-          setMidiDimensions((prev) => {
-            const newDimensions = { ...prev }
-            newDimensions.shift -= 10
-            return newDimensions
-          })
-        }
-        else if (e.key === 'ArrowRight') {
-          setMidiDimensions((prev) => {
-            const newDimensions = { ...prev }
-            newDimensions.shift += 10
-            return newDimensions
-          })
-        }
-      }}
 */

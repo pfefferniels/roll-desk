@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react"
+import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import GlobalContext from "../GlobalContext"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
 import { MeiNote } from "../../lib/Score"
@@ -13,21 +13,41 @@ export default function AlignmentEditor() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [currentAlignmentPair, setCurrentAlignmentPair] = useState<SemanticAlignmentPair>()
   const [activeScoreNote, setActiveScoreNote] = useState<MeiNote>()
-  const [svgRef, setSvgRef] = useState<number>(0)
+  const [svgChanged, setSvgChanged] = useState<number>(0)
+  const [observer, setObserver] = useState<any>()
+
+  const areaRef = useRef<any>()
+
+  const updateConnectors = () => setSvgChanged(prev => prev + 1)
 
   const changeMotivation = (pair: SemanticAlignmentPair, target: Motivation) => {
     alignedPerformance.updateMotivation(pair, target)
     triggerUpdate()
   }
 
+  useEffect(() => {
+    const observer = new MutationObserver((mutationRecords) => updateConnectors());
+    setObserver(observer);
+  }, []);
+
+  useEffect(() => {
+    if (!areaRef.current) {
+      console.log('couldnt find area ref element')
+      return
+    }
+
+    observer.observe(areaRef.current, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true
+    });
+    console.log('started observing')
+  }, [areaRef.current])
+
   const area = useMemo(() => {
     return (
-      <g ref={(el) => {
-        if (el/* && !el.isEqualNode(svgRef)*/) {
-          console.log('updating alignment display')
-          setSvgRef(svgRef + 1)
-        }
-      }}>
+      <g ref={areaRef} data-test={svgChanged}>
         <g className='scoreArea' transform={`translate(0, ${100})`}>
           <MEIGrid
             notes={alignedPerformance.getSemanticPairs().filter(p => p.scoreNote !== undefined).map(p => p.scoreNote!)}
@@ -52,10 +72,7 @@ export default function AlignmentEditor() {
     )
   }, [activeScoreNote, alignedPerformance, alignmentReady])
 
-  const connectors = useMemo(() => {
-    if (!svgRef) return null
-
-    return (
+  const connectors = 
       <g className='connectionLines'>
         {alignedPerformance.getSemanticPairs()
           .filter(pair => pair.midiNote && pair.scoreNote)
@@ -86,8 +103,6 @@ export default function AlignmentEditor() {
                 }} />)
           })}
       </g>
-    )
-  }, [svgRef, currentAlignmentPair, alignmentReady, alignedPerformance])
 
   return (
     <div
