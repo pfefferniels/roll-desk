@@ -3,7 +3,7 @@ import GlobalContext from "../GlobalContext"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
 import { MeiNote } from "../../lib/Score"
 import { EditMotivation } from "./EditMotivation"
-import { SVGElementConnector } from "../SVGElementConnector"
+import { AnnotatableAlignment, SVGElementConnector } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
 import { MEIGrid, MIDIGrid } from "../grids"
 
@@ -18,12 +18,12 @@ export default function AlignmentEditor() {
 
   const areaRef = useRef<any>()
 
-  const updateConnectors = () => setSvgChanged(prev => prev + 1)
-
   const changeMotivation = (pair: SemanticAlignmentPair, target: Motivation) => {
     alignedPerformance.updateMotivation(pair, target)
     triggerUpdate()
   }
+
+  const updateConnectors = () => setSvgChanged(prev => prev + 1)
 
   useEffect(() => {
     const observer = new MutationObserver((mutationRecords) => updateConnectors());
@@ -87,13 +87,14 @@ export default function AlignmentEditor() {
             }
 
             return (
-              <SVGElementConnector
+              <AnnotatableAlignment
                 key={`connector_${n}_${Date.now()}`}
+                annotationTarget={`alignment_${n}`}
                 parentElement={parentEl}
                 firstElement={scoreNoteEl}
                 secondElement={midiNoteEl}
                 highlight={pair.motivation !== Motivation.ExactMatch}
-                onAltClick={() => {
+                onAltShiftClick={() => {
                   alignedPerformance.removeAlignment(pair)
                   triggerUpdate()
                 }}

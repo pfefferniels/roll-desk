@@ -17,7 +17,7 @@ const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarge
                 width={90}
                 height={30}
                 onClick={(e) => {
-                    if (onAnnotation && e.altKey) {
+                    if (onAnnotation && e.shiftKey) {
                         onAnnotation(annotationTarget || 'unknown');
                     }
                     else if (onClick) {

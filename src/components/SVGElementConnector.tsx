@@ -1,15 +1,16 @@
 import { FC } from "react"
+import { withAnnotation, WithAnnotationProps } from "./annotation/WithAnnotation"
 
-type SVGElementConnectorProps = {
+interface SVGElementConnectorProps extends WithAnnotationProps {
     parentElement: Element
     firstElement: Element
     secondElement: Element
     highlight: boolean
-    onAltClick: () => void
+    onAltShiftClick: () => void
     onClick: () => void
 }
 
-export const SVGElementConnector: FC<SVGElementConnectorProps> = ({ parentElement, firstElement, secondElement, highlight, onAltClick, onClick }): JSX.Element => {
+export const SVGElementConnector: FC<SVGElementConnectorProps> = ({ parentElement, firstElement, secondElement, highlight, onAltShiftClick, onClick, onAnnotation, annotationTarget }): JSX.Element => {
     const parentBox = parentElement.getBoundingClientRect()
     const parentX = parentBox.x
     const parentY = parentBox.y
@@ -33,8 +34,11 @@ export const SVGElementConnector: FC<SVGElementConnectorProps> = ({ parentElemen
                 y2={secondElement.getBoundingClientRect().y - parentY}
                 stroke={highlight ? 'blue' : 'black'}
                 onClick={(e) => {
-                    if (e.altKey) {
-                        onAltClick()
+                    if (e.altKey && e.shiftKey) {
+                        onAltShiftClick()
+                    }
+                    else if (e.shiftKey && onAnnotation) {
+                        onAnnotation(annotationTarget || 'unknown target')
                     }
                     else {
                         onClick()
@@ -43,3 +47,5 @@ export const SVGElementConnector: FC<SVGElementConnectorProps> = ({ parentElemen
         </g>
     )
 }
+
+export const AnnotatableAlignment = withAnnotation(SVGElementConnector)
