@@ -15,6 +15,7 @@ import { downloadFile } from "../../lib/globals"
 import { Player } from "../player/Player"
 import { MidiFile, read } from "midifile-ts"
 import { PlaybackPosition } from "../player/PlaybackPosition"
+import { Mei } from "../../lib/Score"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -105,7 +106,18 @@ export default function InterpolationEditor() {
 
             {midi ? (
                 <Player midi={midi} onProgress={(progress) => {
-                    setPlaybackPosition(progress * (msm?.lastDate() || 0))
+                    // since alignedPerformance.ready() is true, we 
+                    // can safely assume that performance and score are defined
+                    const perf = alignedPerformance.rawPerformance!
+
+                    const nearestMidiNote = perf.nearestNote(progress * (perf.totalDuration() || 0))
+                    if (!nearestMidiNote) return
+
+                    const pair = alignedPerformance.getSemanticPairs().find(pair => pair.midiNote?.id === nearestMidiNote.id)
+                    if (!pair || !pair.scoreNote) return
+
+                    const symbolicalPosition = Mei.qstampToTstamp(pair.scoreNote.qstamp)
+                    setPlaybackPosition(symbolicalPosition)
                 }} />)
                 : <span>failed loading MIDI</span>}
 

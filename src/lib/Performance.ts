@@ -110,6 +110,28 @@ export class RawPerformance implements Visitable {
         return this.asNotes().find(note => note.id === id)
     }
 
+    /**
+     * Finds the MIDI note which is the closest to a given
+     * onset time.
+     * 
+     * @param goalTime 
+     * @returns 
+     */
+    public nearestNote(goalTime: number): MidiNote | undefined {
+        console.log('nearestNote')
+        const nearestNote = this.asNotes().reduce(function (prev, curr) {
+            return (Math.abs(curr.onsetTime - goalTime) < Math.abs(prev.onsetTime - goalTime) ? curr : prev);
+        })
+        console.log('nearestNote=', nearestNote)
+        return nearestNote
+    }
+
+    public totalDuration(): number | undefined {
+        const lastNote = this.asNotes().at(-1)
+        if (!lastNote) return
+        return lastNote.onsetTime + lastNote.duration
+    }
+
     public accept(visitor: Visitor) {
         return visitor.visitPerformance(this)
     }

@@ -125,9 +125,16 @@ export class Mei {
         return qstamp * 720
     }
 
-    // get last qstamp
-    public getMaxQstamp(): number {
-        return this.timemap.at(-1).qstamp;
+    /**
+     * Returns the last qstamp of the score.
+     */
+    public lastQstamp(includeLastDuration = false): number {
+        if (this.allNotes().length === 0) return 0
+
+        const lastNote = this.allNotes().at(-1)!
+
+        if (!includeLastDuration) return lastNote.qstamp
+        return lastNote.qstamp + lastNote.duration
     }
 
     public notesInRange(start: number, end: number): MeiNote[] {
