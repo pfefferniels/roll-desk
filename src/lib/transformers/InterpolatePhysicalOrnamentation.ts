@@ -1,6 +1,8 @@
+import { randomUUID } from "crypto"
 import { DynamicsGradient, MPM, Ornament } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
+import { uuid } from '../globals'
 
 const isSorted = (arr: number[]) => {
     let direction = -(arr[0] - arr[1])
@@ -78,6 +80,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
 
             ornaments.push({
                 'type': 'ornament',
+                'xml:id': 'ornament_' + uuid(),
                 'date': +date,
                 'name.ref': 'neutralArpeggio',
                 'note.order': noteOrder,

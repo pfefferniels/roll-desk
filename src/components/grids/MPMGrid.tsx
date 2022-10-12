@@ -17,10 +17,10 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                             const x = ornament.date * horizontalStretch;
                             return (
                                 <AnnotatableInstruction
-                                    key={`ornament_${ornament['name.ref']}`}
-                                    annotationTarget={`interpolation.mpm#ornament_${ornament['name.ref']}`}
+                                    key={`instruction_${ornament["xml:id"]}`}
+                                    annotationTarget={`interpolation.mpm#${ornament["xml:id"]}`}
                                     x={x}
-                                    y={getVerticalPosition(2)}
+                                    y={getVerticalPosition(1)}
                                     text={ornament['name.ref']} />
                             );
                         })}
@@ -29,10 +29,10 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                             const x = tempo.date * horizontalStretch;
                             return (
                                 <AnnotatableInstruction
-                                    key={`global_tempo_${tempo.date}`}
-                                    annotationTarget={`interpolation.mpm#tempo_${tempo.date}`}
+                                    key={`instruction_${tempo["xml:id"]}`}
+                                    annotationTarget={`interpolation.mpm#${tempo["xml:id"]}`}
                                     x={x}
-                                    y={getVerticalPosition(1)}
+                                    y={getVerticalPosition(2)}
                                     text={tempo.bpm.toString()} />
                             );
                         })}
@@ -41,8 +41,8 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                             const x = dynamics.date * horizontalStretch;
                             return (
                                 <AnnotatableInstruction
-                                    key={`part0_dynamics_${dynamics.date}`}
-                                    annotationTarget={`interpolation.mpm#dynamics_${dynamics.date}`}
+                                    key={`instruction_${dynamics["xml:id"]}}`}
+                                    annotationTarget={`interpolation.mpm#${dynamics["xml:id"]}`}
                                     x={x}
                                     y={getVerticalPosition(3)}
                                     text={dynamics.volume.toString()} />
@@ -53,8 +53,8 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                             const x = dynamics.date * horizontalStretch;
                             return (
                                 <AnnotatableInstruction
-                                    key={`part1_dynamics_${dynamics.date}`}
-                                    annotationTarget={`interpolation.mpm#dynamics_${dynamics.date}`}
+                                    key={`instruction_${dynamics["xml:id"]}}`}
+                                    annotationTarget={`interpolation.mpm#${dynamics["xml:id"]}`}
                                     x={x}
                                     y={getVerticalPosition(4)}
                                     text={dynamics.volume.toString()} />

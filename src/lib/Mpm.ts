@@ -1,6 +1,10 @@
 import { parse } from "js2xmlparser"
 import { uuid } from "./globals"
 
+interface WithXmlId {
+    'xml:id': string
+}
+
 /**
  * A part can be specified as either a given
  * part number or global. This definition is 
@@ -30,7 +34,7 @@ type DatedInstruction<T extends string> = {
 /**
  * Maps the <dynamics> element of MPM
  */
-export interface Dynamics extends DatedInstruction<'dynamics'> {
+export interface Dynamics extends DatedInstruction<'dynamics'>, WithXmlId {
     date: number
     volume: number | string
     'transition.to'?: number
@@ -39,7 +43,7 @@ export interface Dynamics extends DatedInstruction<'dynamics'> {
 /**
  * Maps the <tempo> element of MPM
  */
-export interface Tempo extends DatedInstruction<'tempo'> {
+export interface Tempo extends DatedInstruction<'tempo'>, WithXmlId {
     'date': number
     'bpm': number
     'beatLength': number
@@ -52,7 +56,7 @@ export type DynamicsGradient = 'crescendo' | 'decrescendo' | 'no-gradient'
 /**
  * Maps the <ornament> element of MPM
  */
-export interface Ornament extends DatedInstruction<'ornament'> {
+export interface Ornament extends DatedInstruction<'ornament'>, WithXmlId {
     'date': number
     'name.ref': string
     'note.order': string

@@ -1,3 +1,4 @@
+import { uuid } from "../globals";
 import { MPM, Tempo } from "../Mpm";
 import { MSM } from "../Msm";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
@@ -119,6 +120,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 else {
                     tempos.push({
                         'type': 'tempo',
+                        'xml:id': 'tempo_' + uuid(),
                         'date': start.tstamp,
                         'bpm': start.bpm,
                         'transition.to': end.bpm,
@@ -135,6 +137,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             else {
                 tempos.push({
                     'type': 'tempo',
+                    'xml:id': 'tempo_' + uuid(),
                     'date': start.tstamp,
                     'bpm': start.bpm,
                     'beatLength': beatLength / 720 / 4

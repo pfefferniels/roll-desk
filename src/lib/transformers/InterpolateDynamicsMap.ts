@@ -1,3 +1,4 @@
+import { uuid } from "../globals"
 import { Dynamics, MPM, Part } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
@@ -64,7 +65,8 @@ export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynam
             acc.push({
                 type: 'dynamics',
                 date: curr.date,
-                volume: curr.volume
+                volume: curr.volume,
+                'xml:id': 'dynamics_' + uuid()
             })
             return acc
         }, new Array<Dynamics>())
