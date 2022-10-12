@@ -121,7 +121,9 @@ export class AlignedPerformance implements Visitable {
      * removes all alignments and inserts orphanes instead.
      */
     public removeAllAlignments() {
-        this.semanticPairs.forEach(pair => this.removeAlignment(pair))
+        this.semanticPairs
+            .filter(pair => pair.scoreNote !== undefined && pair.midiNote !== undefined) // don't make an orphane if it is already one
+            .forEach(pair => this.removeAlignment(pair))
     }
 
     /**
