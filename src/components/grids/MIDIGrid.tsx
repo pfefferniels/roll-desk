@@ -7,7 +7,7 @@ import { GridDimensions } from "./GridDimensions";
 interface MidiGridProps {
   notes: MidiNote[]
   activeNote?: MidiNote
-  setActiveNote: (note: MidiNote) => void
+  setActiveNote?: (note: MidiNote) => void
 }
 
 export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActiveNote }) => {
@@ -30,7 +30,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActive
         y={getVerticalPosition(n.pitch) + 400}
         width={n.duration * dimensions.stretch}
         height={5}
-        onClick={() => setActiveNote(n)} />
+        onClick={() => setActiveNote && setActiveNote(n)} />
     )
 
   return (

@@ -16,6 +16,8 @@ import { Player } from "../player/Player"
 import { MidiFile, read } from "midifile-ts"
 import { PlaybackPosition } from "../player/PlaybackPosition"
 import { Mei } from "../../lib/Score"
+import { MIDIGrid } from "../grids"
+import { RawPerformance } from "../../lib/Performance"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -81,6 +83,23 @@ export default function InterpolationEditor() {
         interpolation.setPerformanceName(performanceName)
     }, [performanceName, author, comment])
 
+    const calculateSymbolicPlaybackPosition = (progress: number) => {
+        const perf = alignedPerformance.rawPerformance
+        if (!perf) return 0
+
+        const nearestMidiNote = perf.nearestNote(progress * (perf.totalDuration() || 0))
+        if (!nearestMidiNote) return 0
+
+        const pair = alignedPerformance.getSemanticPairs().find(pair => pair.midiNote?.id === nearestMidiNote.id)
+        if (!pair || !pair.scoreNote) return 0
+
+        return Mei.qstampToTstamp(pair.scoreNote.qstamp)
+    }
+
+    const symbolicPlaybackPosition = calculateSymbolicPlaybackPosition(playbackPosition)
+    const physicalPlaybackPosition = playbackPosition * (alignedPerformance.rawPerformance?.totalDuration() || 0)
+    console.log('physical pos=', physicalPlaybackPosition)
+
     return (
         <div>
             {alignedPerformance.ready() && (
@@ -105,27 +124,14 @@ export default function InterpolationEditor() {
             )}
 
             {midi ? (
-                <Player midi={midi} onProgress={(progress) => {
-                    // since alignedPerformance.ready() is true, we 
-                    // can safely assume that performance and score are defined
-                    const perf = alignedPerformance.rawPerformance!
-
-                    const nearestMidiNote = perf.nearestNote(progress * (perf.totalDuration() || 0))
-                    if (!nearestMidiNote) return
-
-                    const pair = alignedPerformance.getSemanticPairs().find(pair => pair.midiNote?.id === nearestMidiNote.id)
-                    if (!pair || !pair.scoreNote) return
-
-                    const symbolicalPosition = Mei.qstampToTstamp(pair.scoreNote.qstamp)
-                    setPlaybackPosition(symbolicalPosition)
-                }} />)
+                <Player midi={midi} onProgress={(progress) => setPlaybackPosition(progress)} />)
                 : <span>failed loading MIDI</span>}
 
             {msm && (
                 <div className='msm'>
                     <svg className='msm' width={msm.lastDate() * horizontalStretch}>
                         <MSMGrid msm={msm} horizontalStretch={horizontalStretch} />
-                        <PlaybackPosition position={playbackPosition * horizontalStretch} />
+                        <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
                     </svg>
                 </div>
             )}
@@ -134,10 +140,19 @@ export default function InterpolationEditor() {
                 <div className='mpm'>
                     <svg className='mpm' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
-                        <PlaybackPosition position={playbackPosition * horizontalStretch} />
+                        <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
                     </svg>
                 </div>
             )}
+
+            {midi &&
+                <div className='midi'>
+                    <svg className='midi' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
+                        <MIDIGrid notes={new RawPerformance(midi).asNotes()} />
+                        <PlaybackPosition position={physicalPlaybackPosition * horizontalStretch * 60} />
+                    </svg>
+                </div>
+            }
 
             <PipelineEditor
                 pipeline={interpolation?.pipeline}

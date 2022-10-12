@@ -1,9 +1,9 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { MutableRefObject, useContext, useEffect, useMemo, useRef, useState } from "react"
 import GlobalContext from "../GlobalContext"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
 import { MeiNote } from "../../lib/Score"
 import { EditMotivation } from "./EditMotivation"
-import { AnnotatableAlignment, SVGElementConnector } from "../SVGElementConnector"
+import { AnnotatableAlignment } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
 import { MEIGrid, MIDIGrid } from "../grids"
 
@@ -15,8 +15,7 @@ export default function AlignmentEditor() {
   const [activeScoreNote, setActiveScoreNote] = useState<MeiNote>()
   const [svgChanged, setSvgChanged] = useState<number>(0)
   const [observer, setObserver] = useState<any>()
-
-  const areaRef = useRef<any>()
+  const [areaRef, setAreaRef] = useState<MutableRefObject<SVGGElement>>()
 
   const changeMotivation = (pair: SemanticAlignmentPair, target: Motivation) => {
     alignedPerformance.updateMotivation(pair, target)
@@ -31,7 +30,7 @@ export default function AlignmentEditor() {
   }, []);
 
   useEffect(() => {
-    if (!areaRef.current) {
+    if (!areaRef || !areaRef.current) {
       console.log('couldnt find area ref element')
       return
     }
@@ -42,12 +41,11 @@ export default function AlignmentEditor() {
       childList: true,
       subtree: true
     });
-    console.log('started observing')
-  }, [areaRef.current])
+  }, [areaRef])
 
   const area = useMemo(() => {
     return (
-      <g ref={areaRef} data-test={svgChanged}>
+      <g ref={(ref) => ref && setAreaRef({ current: ref })} data-test={svgChanged}>
         <g className='scoreArea' transform={`translate(0, ${100})`}>
           <MEIGrid
             notes={alignedPerformance.getSemanticPairs().filter(p => p.scoreNote !== undefined).map(p => p.scoreNote!)}
