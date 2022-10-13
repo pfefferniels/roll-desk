@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, DialogTitle, Box, Stepper, Step, StepLabel, StepContent, Paper, Typography } from "@mui/material"
+import { Button, Dialog, DialogContent, DialogTitle, Box, Stepper, Step, StepLabel, StepContent, Typography } from "@mui/material"
 import { read, MidiFile } from "midifile-ts"
 import { useEffect, useRef, useState } from "react"
 import { Mei } from "../lib/Score"
@@ -49,9 +49,6 @@ type UploadProps = {
 }
 
 export default function Upload({open, onClose, setScore, setPerformance}: UploadProps) {
-  const meiInputRef = useRef(null)
-  const midiInputRef = useRef(null)
-
   const [vrvToolkit, setVrvToolkit] = useState<verovio.toolkit>()
   const [domParser, setDomParser] = useState<DOMParser>()
   const [activeStep, setActiveStep] = useState(0);

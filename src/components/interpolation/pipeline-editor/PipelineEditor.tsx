@@ -1,5 +1,5 @@
 import { AddOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, ListItemAvatar, Stack } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, Stack } from "@mui/material"
 import { FC, useState } from "react"
 import { Interpolation } from "../../../lib/Interpolation"
 import { InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions } from "../../../lib/transformers"
