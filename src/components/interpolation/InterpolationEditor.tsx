@@ -83,11 +83,13 @@ export default function InterpolationEditor() {
         interpolation.setPerformanceName(performanceName)
     }, [performanceName, author, comment])
 
-    const calculateSymbolicPlaybackPosition = (progress: number) => {
+    const physicalProgress = playbackPosition * (alignedPerformance.rawPerformance?.totalDuration() || 0)
+
+    const calculateSymbolicPlaybackPosition = () => {
         const perf = alignedPerformance.rawPerformance
         if (!perf) return 0
 
-        const nearestMidiNote = perf.nearestNote(progress * (perf.totalDuration() || 0))
+        const nearestMidiNote = perf.nearestNote(physicalProgress)
         if (!nearestMidiNote) return 0
 
         const pair = alignedPerformance.getSemanticPairs().find(pair => pair.midiNote?.id === nearestMidiNote.id)
@@ -96,9 +98,7 @@ export default function InterpolationEditor() {
         return Mei.qstampToTstamp(pair.scoreNote.qstamp)
     }
 
-    const symbolicPlaybackPosition = calculateSymbolicPlaybackPosition(playbackPosition)
-    const physicalPlaybackPosition = playbackPosition * (alignedPerformance.rawPerformance?.totalDuration() || 0)
-    console.log('physical pos=', physicalPlaybackPosition)
+    const symbolicPlaybackPosition = calculateSymbolicPlaybackPosition()
 
     return (
         <div>
@@ -149,7 +149,7 @@ export default function InterpolationEditor() {
                 <div className='midi'>
                     <svg className='midi' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MIDIGrid notes={new RawPerformance(midi).asNotes()} />
-                        <PlaybackPosition position={physicalPlaybackPosition * horizontalStretch * 60} />
+                        <PlaybackPosition position={physicalProgress * horizontalStretch * 60} />
                     </svg>
                 </div>
             }

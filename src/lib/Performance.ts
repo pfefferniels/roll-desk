@@ -118,11 +118,9 @@ export class RawPerformance implements Visitable {
      * @returns 
      */
     public nearestNote(goalTime: number): MidiNote | undefined {
-        console.log('nearestNote')
-        const nearestNote = this.asNotes().reduce(function (prev, curr) {
+        const nearestNote = this.asNotes().reduce((prev, curr) => {
             return (Math.abs(curr.onsetTime - goalTime) < Math.abs(prev.onsetTime - goalTime) ? curr : prev);
         })
-        console.log('nearestNote=', nearestNote)
         return nearestNote
     }
 
