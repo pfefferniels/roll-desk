@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { playNote } from "../../lib/midi-player";
 import { MidiNote } from "../../lib/Performance";
+import { MidiOutputContext } from "../../providers";
 import { MidiLikeGrid } from "../score/Grid";
 import { System } from "../score/System";
 import { GridDimensions } from "./GridDimensions";
@@ -11,6 +13,8 @@ interface MidiGridProps {
 }
 
 export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActiveNote }) => {
+  const { postSynthMessage } = useContext(MidiOutputContext)
+
   const [dimensions, setDimensions] = useState<GridDimensions>({
     shift: 60,
     stretch: 60,
@@ -30,7 +34,10 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActive
         y={getVerticalPosition(n.pitch) + 400}
         width={n.duration * dimensions.stretch}
         height={5}
-        onClick={() => setActiveNote && setActiveNote(n)} />
+        onClick={() => {
+          postSynthMessage && playNote(n.pitch, postSynthMessage)
+          setActiveNote && setActiveNote(n)
+        }} />
     )
 
   return (
