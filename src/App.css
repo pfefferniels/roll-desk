@@ -60,3 +60,12 @@
   stroke: rgb(255, 161, 161);
   stroke-width: 5;
 }
+
+.annotation-editor {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  min-width: 400px;
+  height: 200px;
+}

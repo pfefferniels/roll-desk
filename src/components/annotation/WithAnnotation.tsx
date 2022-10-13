@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Select, Typography } from "@mui/material";
 import * as rdf from "rdflib";
 import { useContext, useMemo, useState } from "react";
 import { RdfStoreContext } from "../../providers/RDFStoreContext";
@@ -15,7 +15,11 @@ import { uuid } from "../../lib/globals";
  * More motivation types might be added at a later point
  * (`identifying`, `linking`?)
  */
-type AnnotationMotivation = 'oa:commenting' | 'oa:describing'
+const enum AnnotationMotivation {
+    Commenting = 'oa:commenting',
+    Describing = 'oa:describing',
+    Questioning = 'oa:questioning'
+}
 
 const serialize = (nodes: Node[]) => {
     return nodes.map(n => Node.string(n)).join('\n');
@@ -36,11 +40,12 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
 
         const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);
         const [annotationTarget, setAnnotationTarget] = useState('unknown');
+        const [annotationMotivation, setAnnotationMotivation] = useState(AnnotationMotivation.Commenting)
         const [annotationBody, setAnnotationBody] = useState<any>([
             {
                 type: 'paragraph',
                 children: [{
-                    text: 'annotation body'
+                    text: ''
                 }]
             }
         ])
@@ -68,7 +73,7 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
 
             store.add(annotation, OA('hasTarget'), annotationTarget, annotation.doc());
             store.add(annotation, OA('hasBody'), body, annotation.doc());
-            store.add(annotation, OA('hasMotivation'), 'oa:commenting', annotation.doc())
+            store.add(annotation, OA('hasMotivation'), annotationMotivation, annotation.doc())
             store.add(annotation, DCTERMS('created'), new Date(Date.now()).toISOString(), annotation.doc())
 
             setAnnotationDialogOpen(false);
@@ -80,14 +85,37 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
                     <DialogTitle>Annotate</DialogTitle>
 
                     <DialogContent>
-                        Target: {annotationTarget}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                flexDirection: 'column',
+                            }}
+                        >
+                            <Typography>Target: {annotationTarget}</Typography>
 
-                        <Slate
-                            editor={editor}
-                            value={annotationBody}
-                            onChange={annotationBody => setAnnotationBody(annotationBody)}>
-                            <Editable />
-                        </Slate>
+                            <Select
+                                size='small'
+                                label='motivated by'
+                                value={annotationMotivation}
+                                onChange={(e) => {
+                                    setAnnotationMotivation(e.target.value as AnnotationMotivation)
+                                }}>
+                                <MenuItem value={AnnotationMotivation.Commenting}>Commenting</MenuItem>
+                                <MenuItem value={AnnotationMotivation.Describing}>Describing</MenuItem>
+                                <MenuItem value={AnnotationMotivation.Questioning}>Questioning</MenuItem>
+                            </Select>
+
+                            <Slate
+                                editor={editor}
+                                value={annotationBody}
+                                onChange={annotationBody => setAnnotationBody(annotationBody)}>
+                                <Editable
+                                    className='annotation-editor'
+                                    placeholder='Enter some annotation …'
+                                    autoFocus />
+                            </Slate>
+                        </Box>
                     </DialogContent>
 
                     <DialogActions>
