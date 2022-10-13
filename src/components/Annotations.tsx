@@ -1,7 +1,7 @@
 import { Button, Paper } from "@mui/material";
 import * as rdf from "rdflib"
 import { useContext } from "react";
-import { RdfStoreContext } from "../RDFStoreContext";
+import { RdfStoreContext } from "../providers/RDFStoreContext";
 
 export default function Annotations() {
     const storeCtx = useContext(RdfStoreContext)

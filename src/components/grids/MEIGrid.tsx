@@ -3,8 +3,10 @@ import { StaffLikeGrid } from "../score/Grid";
 import { System } from "../score/System";
 import { GridDimensions } from "./GridDimensions";
 import { basePitchOfNote, MeiNote } from "../../lib/Score";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { GraphicalScoreNote } from "../score/GraphicalScoreNote";
+import { MidiOutputContext } from "../../providers";
+import { playNote } from "../../lib/midi-player";
 
 interface MEIGridProps {
     notes: MeiNote[]
@@ -13,6 +15,8 @@ interface MEIGridProps {
 }
 
 export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNote }): JSX.Element => {
+    const { postSynthMessage } = useContext(MidiOutputContext)
+
     const [dimensions, setDimensions] = useState<GridDimensions>({
         shift: 60,
         stretch: 60,
@@ -57,7 +61,10 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
                         active={n === activeNote}
                         missing={false}
                         staffSize={dimensions.staffSize}
-                        onClick={() => setActiveNote(n)}
+                        onClick={() => {
+                            if (postSynthMessage) playNote(n.pnum, postSynthMessage)
+                            setActiveNote(n)
+                        }}
                     />
                 )
             })

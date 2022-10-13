@@ -1,7 +1,8 @@
 import { SynthEvent, getSamplesFromSoundFont } from "@ryohey/wavelet"
 import { MidiFile } from "midifile-ts"
-import { useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { MIDIPlayer } from "../../lib/midi-player"
+import { MidiOutputContext } from "../../providers"
 
 interface PlayerProps {
     midi: MidiFile
@@ -9,76 +10,24 @@ interface PlayerProps {
 }
 
 export const Player: React.FC<PlayerProps> = ({ midi, onProgress }): JSX.Element => {
-    const [setupFinished, setSetupFinished] = useState(false)
-    const [error, setError] = useState<Error>()
-
-    const [context] = useState(new AudioContext())
-    const [synth, setSynth] = useState<AudioWorkletNode>()
-
+    const { postSynthMessage, error, audioContext, setupFinished } = useContext(MidiOutputContext)
     const [midiPlayer, setMidiPlayer] = useState<MIDIPlayer>()
 
-    const setup = async () => {
-        try {
-            await context.audioWorklet.addModule("js/processor.js")
-        } catch (e) {
-            console.error("Failed to add AudioWorklet module", e)
-            setError(e as Error)
-        }
-
-        const newSynth = new AudioWorkletNode(context, "synth-processor", {
-            numberOfInputs: 0,
-            outputChannelCount: [2],
-        })
-        newSynth.connect(context.destination)
-        setSynth(newSynth)
-    }
-
-    const postSynthMessage = (e: SynthEvent, transfer?: Transferable[]) => {
-        if (!synth) return
-
-        synth.port.postMessage(e, transfer ?? [])
-    }
-
-    const loadSoundFont = async (soundFontUrl: string) => {
-        const soundFontData = await (await fetch(soundFontUrl)).arrayBuffer()
-        const parsed = getSamplesFromSoundFont(
-            new Uint8Array(soundFontData),
-            context
-        )
-
-        for (const sample of parsed) {
-            postSynthMessage(
-                sample,
-                [sample.sample.buffer] // transfer instead of copy
-            )
-        }
-    }
-
     const resetMidiPlayer = (midi: MidiFile) => {
+        if (!postSynthMessage) {
+            console.log('MIDI setup not completed')
+            return
+        }
+
         midiPlayer?.pause()
-        const newMidiPlayer = new MIDIPlayer(midi, context.sampleRate, postSynthMessage)
+        const newMidiPlayer = new MIDIPlayer(midi, audioContext.sampleRate, postSynthMessage)
         newMidiPlayer.onProgress = onProgress
         setMidiPlayer(newMidiPlayer)
     }
 
     useEffect(() => {
-        setup()
-    }, [])
-
-    useEffect(() => {
-        if (!synth) return
-        loadSoundFont('soundfonts/A320U.sf2')
-            .then(() =>
-                setSetupFinished(true)
-            )
-
-    }, [synth])
-
-    useEffect(() => {
-        if (!setupFinished) return
-
         resetMidiPlayer(midi)
-    }, [setupFinished, midi])
+    }, [midi])
 
     return (
         <div>
@@ -87,7 +36,7 @@ export const Player: React.FC<PlayerProps> = ({ midi, onProgress }): JSX.Element
                     <button
                         id='play'
                         onClick={() => {
-                            context.resume()
+                            audioContext.resume()
                             midiPlayer?.seek(0)
                             midiPlayer?.resume()
                         }}>

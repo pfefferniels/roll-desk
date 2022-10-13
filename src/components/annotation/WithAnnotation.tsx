@@ -1,7 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import * as rdf from "rdflib";
 import { useContext, useMemo, useState } from "react";
-import { RdfStoreContext } from "../../RDFStoreContext";
+import { RdfStoreContext } from "../../providers/RDFStoreContext";
 import { Editable, Slate, withReact } from 'slate-react'
 import { createEditor, Node } from "slate";
 import { uuid } from "../../lib/globals";

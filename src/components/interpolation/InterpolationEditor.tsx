@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { Interpolation } from "../../lib/Interpolation"
-import GlobalContext from "../GlobalContext"
+import { GlobalContext } from "../../providers"
 import { Box, IconButton, Paper } from "@mui/material"
 import { MPM } from "../../lib/Mpm"
 import LayersIcon from '@mui/icons-material/Layers';

@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogContent, DialogTitle, Box, Stepper, Step, StepLabel, StepContent, Typography } from "@mui/material"
 import { read, MidiFile } from "midifile-ts"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { Mei } from "../lib/Score"
 import { RawPerformance } from "../lib/Performance"
 import verovio from "verovio"

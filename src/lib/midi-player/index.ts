@@ -1,2 +1,2 @@
-export { MIDIPlayer } from "./MIDIPlayer"
+export { MIDIPlayer, playNote } from "./MIDIPlayer"
 

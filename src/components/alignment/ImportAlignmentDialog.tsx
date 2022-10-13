@@ -1,8 +1,8 @@
-import { Dialog, DialogTitle, DialogContent, Box, TextField, Button, DialogActions } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, Box, Button, DialogActions } from "@mui/material"
 import { parse, Query } from "rdflib"
 import { FC, useContext, useState } from "react"
 import { AlignedPerformance, Motivation } from "../../lib/AlignedPerformance"
-import { RdfStoreContext } from "../../RDFStoreContext"
+import { RdfStoreContext } from "../../providers/RDFStoreContext"
 
 interface ImportDialogProps {
   alignedPerformance: AlignedPerformance

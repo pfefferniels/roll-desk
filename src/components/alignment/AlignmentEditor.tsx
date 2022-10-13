@@ -1,5 +1,5 @@
-import { MutableRefObject, useContext, useEffect, useMemo, useRef, useState } from "react"
-import GlobalContext from "../GlobalContext"
+import { MutableRefObject, useContext, useEffect, useMemo, useState } from "react"
+import { GlobalContext } from "../../providers"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
 import { MeiNote } from "../../lib/Score"
 import { EditMotivation } from "./EditMotivation"
