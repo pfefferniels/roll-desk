@@ -35,7 +35,7 @@ export const StaffLikeGrid: FC<StaffLikeGridProps> = ({ children, staffSize, wid
     const octaveOf = (pnum: number) => Math.trunc(pnum / 12 - 1)
     const relativeOctave = octaveOf(pnum) - octaveOf(start)
 
-    return (-(relativeOctave * 6 + relativeDiatonicPitch) + 3) * (staffSize / 2)
+    return (-(relativeOctave * 7 + relativeDiatonicPitch) + 3) * (staffSize / 2)
   }
 
   return (
