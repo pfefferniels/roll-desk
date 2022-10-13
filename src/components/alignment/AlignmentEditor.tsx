@@ -44,11 +44,13 @@ export default function AlignmentEditor() {
   }, [areaRef])
 
   const area = useMemo(() => {
+    if (!alignedPerformance.ready()) return
+
     return (
       <g ref={(ref) => ref && setAreaRef({ current: ref })} data-test={svgChanged}>
         <g className='scoreArea' transform={`translate(0, ${100})`}>
           <MEIGrid
-            notes={alignedPerformance.getSemanticPairs().filter(p => p.scoreNote !== undefined).map(p => p.scoreNote!)}
+            notes={alignedPerformance.score!.allNotes()}
             activeNote={activeScoreNote}
             setActiveNote={setActiveScoreNote}
           />
@@ -56,7 +58,7 @@ export default function AlignmentEditor() {
 
         <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 280})`}>
           <MIDIGrid
-            notes={alignedPerformance.getSemanticPairs().filter(p => p.midiNote !== undefined).map(p => p.midiNote!)}
+            notes={alignedPerformance.rawPerformance!.asNotes()}
             setActiveNote={(note) => {
               if (!activeScoreNote) return
 

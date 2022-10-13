@@ -4,7 +4,7 @@ import { AlignedPerformance } from "../../lib/AlignedPerformance";
 import { ExportAlignmentDialog } from "./ExportAlignmentDialog";
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ClearIcon from '@mui/icons-material/Clear';
-import { FileUploadOutlined } from "@mui/icons-material";
+import { FileUploadOutlined, PlayArrowOutlined, RunCircleOutlined } from "@mui/icons-material";
 import { ImportAlignmentDialog } from "./ImportAlignmentDialog";
 
 interface AlignmentActionsProps {
@@ -43,6 +43,13 @@ export const AlignmentActions: FC<AlignmentActionsProps> = ({ alignedPerformance
 
                     <IconButton onClick={() => setImportDialogOpen(true)}>
                         <FileUploadOutlined />
+                    </IconButton>
+
+                    <IconButton onClick={() => {
+                        alignedPerformance.performAlignment();
+                        triggerUpdate();
+                    }}>
+                        <PlayArrowOutlined />
                     </IconButton>
 
                     <IconButton onClick={() => {

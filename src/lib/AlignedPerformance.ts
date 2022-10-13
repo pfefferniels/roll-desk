@@ -37,11 +37,9 @@ export class AlignedPerformance implements Visitable {
         this.score = score
         this.rawPerformance = rawPerformance
         this.semanticPairs = []
-
-        this.performAlignment()
     }
 
-    private performAlignment() {
+    public performAlignment() {
         if (!this.score || !this.rawPerformance) return
 
         const pr = this.rawPerformance.asPianoRoll()
@@ -83,12 +81,10 @@ export class AlignedPerformance implements Visitable {
 
     public setScore(score: Mei) {
         this.score = score
-        this.performAlignment()
     }
 
     public setPerformance(performance: RawPerformance) {
         this.rawPerformance = performance
-        this.performAlignment()
     }
 
     public getSemanticPairs(): SemanticAlignmentPair[] {

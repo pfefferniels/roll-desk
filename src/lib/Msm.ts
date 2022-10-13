@@ -80,12 +80,15 @@ export class MSM {
                     'duration': Mei.qstampToTstamp(pair.scoreNote!.duration)
                 }
             })
-
-        console.log('all notes=', this.allNotes.filter(n => n.duration === 0).map(n => n['xml:id']))
         this.timeSignature = alignedPerformance.score?.timeSignature()
     }
 
     public serialize() {
+        if (this.allNotes.length === 0) {
+            console.log('no notes to serialize')
+            return
+        }
+
         const msm = {
             '@': {
                 title: 'aligned performance',
