@@ -26,7 +26,9 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
 
     useEffect(() => {
         document.addEventListener('keydown', (e) => {
-            e.preventDefault()
+            // TODO: add the event listener to a DOM element 
+            // closer to the <MeiGrid> component, so that preventing
+            // default doesn't make everything else stop working.
             if (e.key === 'ArrowLeft') {
                 setDimensions(prev => {
                     const copy = { ...prev }
@@ -70,7 +72,7 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
             })
     }
 
-    const maxWidth = Math.max(...notes.map(n => n.qstamp)) * dimensions.stretch + dimensions.shift
+    const maxWidth = Math.max(...notes.map(n => n.qstamp + n.duration)) * dimensions.stretch + dimensions.shift
 
     return (
         <g>
