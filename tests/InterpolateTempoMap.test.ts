@@ -17,6 +17,7 @@ const generateMSM = async (meiFile: string, midiFile: string): Promise<MSM> => {
     const score = new Mei(mei, await loadVerovio(), await loadDomParser())
     const performance = new RawPerformance(read(arr))
     const alignedPerformance = new AlignedPerformance(score, performance)
+    alignedPerformance.performAlignment()
     return new MSM(alignedPerformance)
 }
 
@@ -34,6 +35,7 @@ describe('InterpolateTempoMap', () => {
         // Assert
         const tempoInstructions = mpm.getInstructions<Tempo>('tempo', 'global')
         expect(tempoInstructions).toEqual([{
+            'xml:id': expect.any(String),
             type: 'tempo',
             date: 0,
             beatLength: 0.25,

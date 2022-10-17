@@ -22,15 +22,14 @@ const generateMSM = async (meiFile: string, midiFile: string): Promise<MSM> => {
 
 describe('InterpolatePhysicalOrnamentation', () => {
     it(`does not interpolate anything when no ornamentation is given`, async () => {
-        const msm = await generateMSM('tests/files/test000/score.mei', 'tests/files/test000/neutral.mid')
+        const msm = await generateMSM('tests/files/arpeggiation/score.mei', 'tests/files/arpeggiation/test.mid')
         const mpm = new MPM()
 
         const transformer = new InterpolatePhysicalOrnamentation()
         transformer.transform(msm, mpm)
 
         const ornamentInstruction = mpm.getInstructions<Ornament>('ornament', 'global')
-        console.log('ornamentInstructions=', ornamentInstruction)
 
-        //expect(ornamentInstruction.length).toEqual(0)
+        expect(ornamentInstruction.length).toEqual(0)
     })
 })
