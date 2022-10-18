@@ -41,47 +41,10 @@ export const ImportAlignmentDialog: FC<ImportDialogProps> = ({ alignedPerformanc
       return
     }
 
-    const store = storeCtx.rdfStore
-    parse(alignmentFile, store, 'http://example.org', 'application/ld+json')
-    const sparql = `
-        PREFIX la: <http://example.org/linked_alignment#> .
-        SELECT ?scoreNote ?midiNote ?motivation
-        WHERE {
-            ?alignment la:hasScoreNote ?scoreNote .
-            ?alignment la:hasMIDINote ?midiNote .
-            ?alignment la:hasMotivation ?motivation .
-        }`
-
-    // TODO: a weird bug shows up when importing SPARQLToQuery 
-    // directly (invalid super call). Needs further investigation.
-    const { SPARQLToQuery } = await import('rdflib')
-    const query = SPARQLToQuery(sparql, false, store)
-
-    if (!query) {
-      console.log('something went wrong')
-    }
-
-    alignedPerformance.semanticPairs = []
-    store.query(query as Query, function (result) {
-      const scoreNote = result['?scoreNote'].value
-      const midiNote = result['?midiNote'].value
-      const motivation = result['?motivation'].value
-
-      const meiId = scoreNote.slice(scoreNote.lastIndexOf('#') + 1)
-      const midiId = midiNote.slice(midiNote.lastIndexOf('_') + 1)
-      const motivationId = motivation.slice(motivation.lastIndexOf('#' + 1))
-      const scoreNoteObj = alignedPerformance.score?.getById(meiId)
-      const midiNoteObj = alignedPerformance.rawPerformance?.getById(+midiId)
-
-      if (!scoreNoteObj || !midiNoteObj) {
-        console.log('could not find the objects in the alignments in the given score and MIDI file.')
-        return
-      }
-
-      alignedPerformance.align(midiNoteObj, scoreNoteObj, motivationId as Motivation)
-      triggerUpdate()
-    })
+    await alignedPerformance.loadAlignment(alignmentFile)
+    triggerUpdate()
   }
+
 
   return (
     <Dialog open={dialogOpen}>

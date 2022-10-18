@@ -1,35 +1,39 @@
 import { MPM, Ornament } from "../src/lib/Mpm"
-import { MSM } from "../src/lib/Msm"
-import { AlignedPerformance } from "../src/lib/AlignedPerformance"
-import { Mei } from "../src/lib/Score"
-import { RawPerformance } from "../src/lib/Performance"
 import { InterpolatePhysicalOrnamentation } from "../src/lib/transformers/InterpolatePhysicalOrnamentation"
-import * as fs from 'fs';
-import { loadVerovio, loadDomParser } from '../src/lib/globals'
-
-const generateMSM = async (meiFile: string, midiFile: string): Promise<MSM> => {
-    let { read } = await import("midifile-ts");
-
-    const mei = fs.readFileSync(meiFile, 'utf16le')
-    const midi = fs.readFileSync(midiFile)
-    const arr = Uint8Array.from(midi)
-
-    const score = new Mei(mei, await loadVerovio(), await loadDomParser())
-    const performance = new RawPerformance(read(arr))
-    const alignedPerformance = new AlignedPerformance(score, performance)
-    return new MSM(alignedPerformance)
-}
+import { prepareMSM } from "../src/lib/prepareMSM"
+import { readFileSync } from "fs"
 
 describe('InterpolatePhysicalOrnamentation', () => {
-    it(`does not interpolate anything when no ornamentation is given`, async () => {
-        const msm = await generateMSM('tests/files/arpeggiation/score.mei', 'tests/files/arpeggiation/test.mid')
+    it(`does not interpolate anything when no arpeggiation is given`, async () => {
+        // Arrange
+        const msm = await prepareMSM(
+            readFileSync('tests/files/arpeggiation/score.mei', 'utf16le'),
+            readFileSync('tests/files/arpeggiation/neutral.mid'))
         const mpm = new MPM()
 
+        // Act
         const transformer = new InterpolatePhysicalOrnamentation()
         transformer.transform(msm, mpm)
 
+        // Assert
         const ornamentInstruction = mpm.getInstructions<Ornament>('ornament', 'global')
+        expect(ornamentInstruction.length).toEqual(2)
+    })
 
-        expect(ornamentInstruction.length).toEqual(0)
+    it(`correctly interpolates complex arpeggiations (WM 79)`, async () => {
+        // Arrange
+        const msm = await prepareMSM(
+            readFileSync('tests/files/arpeggiation/score.mei', 'utf16le'),
+            readFileSync('tests/files/arpeggiation/arpeggiated.mid'),
+            readFileSync('tests/files/arpeggiation/alignment.jsonld', 'utf-8'))
+        const mpm = new MPM()
+
+        // Act
+        const transformer = new InterpolatePhysicalOrnamentation()
+        transformer.transform(msm, mpm)
+
+        // Assert
+        const ornamentInstruction = mpm.getInstructions<Ornament>('ornament', 'global')
+        expect(ornamentInstruction.length).toEqual(7)
     })
 })

@@ -4,6 +4,7 @@ import { ScoreFollower, ErrorDetector } from "alignmenttool/dist/index"
 import { ErrorIndex } from "alignmenttool/dist/Match"
 import { Visitable } from "./visitors/Visitable"
 import { Visitor } from "./visitors/Visitor"
+import { graph, parse, Query, Store } from "rdflib"
 
 export enum Motivation {
     ExactMatch = "ExactMatch",
@@ -89,6 +90,59 @@ export class AlignedPerformance implements Visitable {
 
     public getSemanticPairs(): SemanticAlignmentPair[] {
         return this.semanticPairs
+    }
+
+    /**
+     * Import semantic pairs from a given RDF representation.
+     * 
+     * @param pair RDF representation of alignments in any format.
+     */
+    public async loadAlignment(alignmentFile: string) {
+        const store: Store = graph()
+        parse(alignmentFile, store, 'http://example.org', 'application/ld+json')
+        const sparql = `
+            PREFIX la: <http://example.org/linked_alignment#> .
+            SELECT ?scoreNote ?midiNote ?motivation
+            WHERE {
+                ?alignment la:hasScoreNote ?scoreNote .
+                ?alignment la:hasMIDINote ?midiNote .
+                ?alignment la:hasMotivation ?motivation .
+            }`
+
+        // TODO: a weird bug shows up when importing SPARQLToQuery 
+        // directly (invalid super call). Needs further investigation.
+        const { SPARQLToQuery } = await import('rdflib')
+        const query = SPARQLToQuery(sparql, false, store)
+
+        if (!query) {
+            console.log('Failed creating a SPARQL query')
+            return
+        }
+
+        this.semanticPairs = []
+
+        return new Promise((resolve, _) => {
+            store.query(query as Query, result => {
+                const scoreNote = result['?scoreNote'].value
+                const midiNote = result['?midiNote'].value
+                const motivation = result['?motivation'].value
+
+                const meiId = scoreNote.slice(scoreNote.lastIndexOf('#') + 1)
+                const midiId = midiNote.slice(midiNote.lastIndexOf('_') + 1)
+                const motivationId = motivation.slice(motivation.lastIndexOf('#' + 1))
+                const scoreNoteObj = this.score?.getById(meiId)
+                const midiNoteObj = this.rawPerformance?.getById(+midiId)
+
+                if (!scoreNoteObj || !midiNoteObj) {
+                    console.log('could not find the objects in the alignments in the given score and MIDI file.')
+                    return
+                }
+
+                this.align(midiNoteObj, scoreNoteObj, motivationId as Motivation)
+            }, null, () => {
+                resolve(null)
+            })
+        })
     }
 
     /**
