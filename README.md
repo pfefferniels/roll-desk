@@ -28,6 +28,12 @@ For testing this package relies on JSDOM. In order to make it work properly, add
       },
 ```
 
+Also, the package `@digitalbazaar/http-client`, which is included by 
+the the package `jsonld` doesn't work well with ESM in a testing environment.
+To resolve this issue, simple delete the http-client folder in the
+local node_modules of jsonld.
+
+
 ## Available Scripts
 
 In the project directory, you can run:
