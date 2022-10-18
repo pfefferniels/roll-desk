@@ -197,10 +197,10 @@ export class AlignedPerformance implements Visitable {
      */
     public align(midiNote: MidiNote, scoreNote: MeiNote, motivation: Motivation = Motivation.Uncertain) {
         // remove orphanes
-        const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote === midiNote && pair.motivation === Motivation.Addition)
+        const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote?.id === midiNote.id && pair.motivation === Motivation.Addition)
         if (orphanMidiNoteIndex !== -1) this.semanticPairs.splice(orphanMidiNoteIndex, 1)
 
-        const orphanScoreNoteIndex = this.semanticPairs.findIndex(pair => pair.scoreNote === scoreNote && pair.motivation === Motivation.Omission)
+        const orphanScoreNoteIndex = this.semanticPairs.findIndex(pair => pair.scoreNote?.id === scoreNote.id && pair.motivation === Motivation.Omission)
         if (orphanScoreNoteIndex !== -1) this.semanticPairs.splice(orphanScoreNoteIndex, 1)
 
         // insert new pair and try to determine its possible motivation

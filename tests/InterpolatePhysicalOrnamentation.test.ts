@@ -8,7 +8,8 @@ describe('InterpolatePhysicalOrnamentation', () => {
         // Arrange
         const msm = await prepareMSM(
             readFileSync('tests/files/arpeggiation/score.mei', 'utf16le'),
-            readFileSync('tests/files/arpeggiation/neutral.mid'))
+            readFileSync('tests/files/arpeggiation/neutral.mid'),
+            readFileSync('tests/files/arpeggiation/neutral-alignment.jsonld', 'utf-8'))
         const mpm = new MPM()
 
         // Act
@@ -17,7 +18,7 @@ describe('InterpolatePhysicalOrnamentation', () => {
 
         // Assert
         const ornamentInstruction = mpm.getInstructions<Ornament>('ornament', 'global')
-        expect(ornamentInstruction.length).toEqual(2)
+        expect(ornamentInstruction.length).toEqual(0)
     })
 
     it(`correctly interpolates complex arpeggiations (WM 79)`, async () => {
@@ -25,7 +26,7 @@ describe('InterpolatePhysicalOrnamentation', () => {
         const msm = await prepareMSM(
             readFileSync('tests/files/arpeggiation/score.mei', 'utf16le'),
             readFileSync('tests/files/arpeggiation/arpeggiated.mid'),
-            readFileSync('tests/files/arpeggiation/alignment.jsonld', 'utf-8'))
+            readFileSync('tests/files/arpeggiation/arpeggiated-alignment.jsonld', 'utf-8'))
         const mpm = new MPM()
 
         // Act
@@ -33,7 +34,12 @@ describe('InterpolatePhysicalOrnamentation', () => {
         transformer.transform(msm, mpm)
 
         // Assert
-        const ornamentInstruction = mpm.getInstructions<Ornament>('ornament', 'global')
-        expect(ornamentInstruction.length).toEqual(7)
+        const ornamentInstructions = mpm.getInstructions<Ornament>('ornament', 'global')
+        expect(ornamentInstructions.length).toEqual(7)
+        ornamentInstructions.forEach(ornament => {
+            expect(ornament).toMatchSnapshot({
+                'xml:id': expect.any(String)
+            })
+        })
     })
 })

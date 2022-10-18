@@ -1,0 +1,106 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 1`] = `
+Object {
+  "date": 0,
+  "frame.start": -65.10416666666674,
+  "frameLength": 130.20833333333348,
+  "gradient": "crescendo",
+  "name.ref": "neutralArpeggio",
+  "note.order": "#m-58 #m-59 #m-60 #m-48 #m-47 #m-44",
+  "scale": 2.5,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 2`] = `
+Object {
+  "date": 720,
+  "frame.start": -17.708333333333435,
+  "frameLength": 35.41666666666687,
+  "gradient": "no-gradient",
+  "name.ref": "neutralArpeggio",
+  "note.order": "#m-62 #m-51 #m-63 #m-50 #m-64",
+  "scale": 0,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 3`] = `
+Object {
+  "date": 1440,
+  "frame.start": -49.479166666666515,
+  "frameLength": 98.95833333333303,
+  "gradient": "crescendo",
+  "name.ref": "neutralArpeggio",
+  "note.order": "#m-66 #m-68 #m-67 #m-53 #m-54",
+  "scale": 0.5,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 4`] = `
+Object {
+  "date": 2160,
+  "frame.start": -155.2083333333334,
+  "frameLength": 310.4166666666668,
+  "gradient": "crescendo",
+  "name.ref": "neutralArpeggio",
+  "note.order": "ascending pitch",
+  "scale": 7.5,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 5`] = `
+Object {
+  "date": 2880,
+  "frame.start": -68.22916666666634,
+  "frameLength": 136.4583333333327,
+  "gradient": "crescendo",
+  "name.ref": "neutralArpeggio",
+  "note.order": "#m-94 #m-93 #m-95 #m-80 #m-81 #m-77",
+  "scale": 4.5,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 6`] = `
+Object {
+  "date": 3600,
+  "frame.start": -93.75,
+  "frameLength": 187.5,
+  "gradient": "crescendo",
+  "name.ref": "neutralArpeggio",
+  "note.order": "#m-97 #m-98 #m-84 #m-99 #m-82",
+  "scale": 3,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
+
+exports[`InterpolatePhysicalOrnamentation correctly interpolates complex arpeggiations (WM 79) 7`] = `
+Object {
+  "date": 4320,
+  "frame.start": -85.9375,
+  "frameLength": 171.875,
+  "gradient": "crescendo",
+  "name.ref": "neutralArpeggio",
+  "note.order": "ascending pitch",
+  "scale": 2.5,
+  "time.unit": "milliseconds",
+  "type": "ornament",
+  "xml:id": Any<String>,
+}
+`;
