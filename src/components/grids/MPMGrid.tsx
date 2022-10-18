@@ -33,7 +33,8 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                     annotationTarget={`interpolation.mpm#${tempo["xml:id"]}`}
                                     x={x}
                                     y={getVerticalPosition(2)}
-                                    text={tempo.bpm.toString()} />
+                                    text={tempo.bpm.toString()} 
+                                    details={`transition to: ${tempo["transition.to"]}`}/>
                             );
                         })}
 

@@ -1,13 +1,18 @@
 import { SmuflSymbol } from "../score/SmuflSymbol";
 import { withAnnotation, WithAnnotationProps } from "../annotation/WithAnnotation";
+import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
+import { useState } from "react";
 
 interface InstructionProps extends WithAnnotationProps {
-    onClick?: () => void;
+    details?: string;
     x: number;
     y: number;
     text: string;
 }
-const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarget, onClick, x, y, text }) => {
+
+const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarget, details, x, y, text }) => {
+    const [showDetails, setShowDetails] = useState(false)
+
     return (
         <>
             <rect
@@ -20,12 +25,22 @@ const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarge
                     if (onAnnotation && e.shiftKey) {
                         onAnnotation(annotationTarget || 'unknown');
                     }
-                    else if (onClick) {
-                        onClick();
+                    else {
+                        setShowDetails(true);
                     }
                 }} />
             <text />
             <text x={x} y={y + 15}>{text}</text>
+            <foreignObject>
+                <Dialog open={showDetails}>
+                    <DialogContent>
+                        {details || 'no details'}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setShowDetails(false)}>Close</Button>
+                    </DialogActions>
+                </Dialog>
+            </foreignObject>
         </>
     );
 };

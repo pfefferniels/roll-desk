@@ -8,7 +8,6 @@ import {
     InterpolateTempoMap,
     InterpolateTimingImprecision
 } from "./transformers"
-import { InterpolateTempoMapOptions } from "./transformers"
 import { ExtractStyleDefinitions } from "./transformers/ExtractStyleDefinitions"
 import { AbstractTransformer, TransformationOptions } from "./transformers/Transformer"
 
