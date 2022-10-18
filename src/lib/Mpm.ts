@@ -115,6 +115,7 @@ export class MPM {
                     dated: {
                         'tempoMap': {},
                         'ornamentationMap': {},
+                        'dynamicsMap': {},
                         'imprecisionMap.timing': {}
                     }
                 },

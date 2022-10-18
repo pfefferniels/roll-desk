@@ -1,16 +1,10 @@
 import { uuid } from "../globals";
 import { MPM, Tempo } from "../Mpm";
 import { MSM } from "../Msm";
+import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
 
 const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
-
-/**
- * Calculation of tempo can be done on the basis of whole bar, 
- * half bar and the denominator values.
- */
-export const beatLengthBasis = ['bar', 'halfbar', 'denominator'] as const
-export type BeatLengthBasis = typeof beatLengthBasis[number]
 
 export interface InterpolateTempoMapOptions extends TransformationOptions {
     beatLength: BeatLengthBasis
@@ -44,20 +38,17 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
     public name() { return 'InterpolateTempoMap' }
 
     transform(msm: MSM, mpm: MPM): string {
-        let beatLength = 720
-        if (msm.timeSignature && this.options) {
-            switch (this.options.beatLength) {
-                case 'denominator':
-                    beatLength = (4 / msm.timeSignature.denominator) * 720
-                    break;
-                case 'bar':
-                    beatLength = (4 / msm.timeSignature.denominator) * msm.timeSignature.numerator * 720
-                    break;
-                case 'halfbar':
-                    beatLength = (4 / msm.timeSignature.denominator) * 0.5 * msm.timeSignature.numerator * 720
-                    break;
-            }
+        if (!msm.timeSignature) {
+            console.warn('A time signature must be given to interpolate a tempo map.')
+            return super.transform(msm, mpm);
         }
+
+        if (this.options?.beatLength === 'everything') {
+            console.warn('Beat length basis on every note is not yet implemented.')
+            return super.transform(msm, mpm);
+        }
+
+        let beatLength = calculateBeatLength(this.options?.beatLength || 'bar', msm.timeSignature);
 
         let tempos: Tempo[] = []
 

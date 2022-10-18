@@ -1,6 +1,7 @@
 import { TextField, Select, MenuItem } from "@mui/material";
 import { FC, useState } from "react";
-import { beatLengthBasis, BeatLengthBasis, InterpolateTempoMapOptions } from "../../../../lib/transformers";
+import { beatLengthBasis, BeatLengthBasis } from "../../../../lib/transformers/BeatLengthBasis";
+import { InterpolateTempoMapOptions } from "../../../../lib/transformers";
 import { OptionsProp, optionsStyle } from "./Options";
 
 export const TempoOptions: FC<OptionsProp<InterpolateTempoMapOptions>> = ({ options, setOptions }) => {

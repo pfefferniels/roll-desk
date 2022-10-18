@@ -40,8 +40,9 @@ export class Interpolation {
             new InterpolatePhysicalOrnamentation(),
             new InterpolateTempoMap(),
             new InterpolateSymbolicOrnamentation(),
-            new InterpolateDynamicsMap(1),
-            new InterpolateDynamicsMap(0),
+            // by default, interpolate a global dynamics map. 
+            // TODO: this should configurable by the user.
+            new InterpolateDynamicsMap(),
             new InterpolateTimingImprecision(),
             new ExtractStyleDefinitions('global'),
             new ExtractStyleDefinitions(1),

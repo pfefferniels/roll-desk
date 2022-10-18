@@ -9,7 +9,7 @@ interface MPMGridProps {
 
 export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
     return (
-        <GraphicalLikeGrid numberOfRows={4} width={2000}>
+        <GraphicalLikeGrid numberOfRows={5} width={2000}>
             {(getVerticalPosition: any) => {
                 return (
                     <g>
@@ -37,7 +37,7 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                             );
                         })}
 
-                        {mpm.getInstructions<Dynamics>('dynamics', 0).map(dynamics => {
+                        {mpm.getInstructions<Dynamics>('dynamics', 'global').map(dynamics => {
                             const x = dynamics.date * horizontalStretch;
                             return (
                                 <AnnotatableInstruction
@@ -49,7 +49,7 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                             );
                         })}
 
-                        {mpm.getInstructions<Dynamics>('dynamics', 1).map(dynamics => {
+                        {mpm.getInstructions<Dynamics>('dynamics', 0).map(dynamics => {
                             const x = dynamics.date * horizontalStretch;
                             return (
                                 <AnnotatableInstruction
@@ -57,6 +57,18 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                     annotationTarget={`interpolation.mpm#${dynamics["xml:id"]}`}
                                     x={x}
                                     y={getVerticalPosition(4)}
+                                    text={dynamics.volume.toString()} />
+                            );
+                        })}
+
+                        {mpm.getInstructions<Dynamics>('dynamics', 1).map(dynamics => {
+                            const x = dynamics.date * horizontalStretch;
+                            return (
+                                <AnnotatableInstruction
+                                    key={`instruction_${dynamics["xml:id"]}}`}
+                                    annotationTarget={`interpolation.mpm#${dynamics["xml:id"]}`}
+                                    x={x}
+                                    y={getVerticalPosition(5)}
                                     text={dynamics.volume.toString()} />
                             );
                         })}
