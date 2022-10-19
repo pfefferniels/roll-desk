@@ -1,10 +1,10 @@
 import { SmuflSymbol } from "../score/SmuflSymbol";
 import { withAnnotation, WithAnnotationProps } from "../annotation/WithAnnotation";
 import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 interface InstructionProps extends WithAnnotationProps {
-    details?: string;
+    details?: string | ReactNode;
     x: number;
     y: number;
     text: string;

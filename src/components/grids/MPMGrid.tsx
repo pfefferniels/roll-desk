@@ -1,6 +1,7 @@
 import { Dynamics, MPM, Ornament, Tempo } from "../../lib/Mpm";
 import { GraphicalLikeGrid } from "../score/Grid";
 import { AnnotatableInstruction } from "../interpolation/Instruction";
+import { Table, TableBody, TableCell, TableRow } from "@mui/material";
 
 interface MPMGridProps {
     mpm: MPM;
@@ -21,7 +22,21 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                     annotationTarget={`interpolation.mpm#${ornament["xml:id"]}`}
                                     x={x}
                                     y={getVerticalPosition(1)}
-                                    text={ornament['name.ref']} />
+                                    text={ornament['name.ref']}
+                                    details={
+                                        <Table>
+                                            <TableBody>
+                                                <TableRow>
+                                                    <TableCell>Order</TableCell>
+                                                    <TableCell>{ornament['note.order']}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Frame length</TableCell>
+                                                    <TableCell>{}</TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    } />
                             );
                         })}
 
@@ -33,8 +48,8 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                     annotationTarget={`interpolation.mpm#${tempo["xml:id"]}`}
                                     x={x}
                                     y={getVerticalPosition(2)}
-                                    text={tempo.bpm.toString()} 
-                                    details={`transition to: ${tempo["transition.to"]}`}/>
+                                    text={tempo.bpm.toString() + (tempo['transition.to'] ? ` → ${tempo['transition.to']}` : '')}
+                                    />
                             );
                         })}
 
