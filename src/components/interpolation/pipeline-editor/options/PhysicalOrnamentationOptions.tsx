@@ -1,4 +1,4 @@
-import { duration, TextField } from "@mui/material";
+import { MenuItem, Select, TextField } from "@mui/material";
 import { FC, useState } from "react";
 import { Part } from "../../../../lib/Mpm";
 import { InterpolatePhysicalOrnamentationOptions } from "../../../../lib/transformers";
@@ -39,19 +39,20 @@ export const PhysicalOrnamentationOptions: FC<OptionsProp<InterpolatePhysicalOrn
                     });
                 }}
                 type='number' />
-            <TextField
-                sx={optionsStyle}
-                label='Part'
-                size='small'
+            <Select
                 value={part}
                 onChange={(e) => {
-                    setPart(+e.target.value);
+                    setPart(e.target.value as Part)
                     setOptions({
                         minimumArpeggioSize,
                         durationThreshold,
                         part
-                    });
-                }} />
+                    })
+                }}>
+                <MenuItem value={0}>Right Hand</MenuItem>
+                <MenuItem value={1}>Left Hand</MenuItem>
+                <MenuItem value={'global'}>Both Hands</MenuItem>
+            </Select>
         </div>
     );
 };

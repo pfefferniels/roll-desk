@@ -10,7 +10,7 @@ interface WithXmlId {
  * part number or global. This definition is 
  * used in both, MSM and MPM.
  */
-export type Part = number | 'global'
+export type Part = 0 | 1 | 'global'
 
 type Definition<T extends string> = {
     readonly type: T

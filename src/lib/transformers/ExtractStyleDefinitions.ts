@@ -3,7 +3,22 @@ import { MSM } from "../Msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 export interface ExtractStyleDefinitionsOptions extends TransformationOptions {
-    tolerance: number
+    /**
+     * Tolerance applied to the temporal domain such as tempo, rubato, asynchrony
+     * and ornamentation. Given in BPM.
+     */
+    temporalTolerance: number
+
+    /**
+     * Tolerance applied to volume values such as dynamics, metrical accentuation
+     */
+    volumeTolerance: number
+
+    /**
+     * standard dynamic definitions e.g. for p, mf, f and loud
+     * in the case of Welte
+     */
+    standardDynamics: { name: string, value: number }[]
 }
 
 /**
@@ -16,6 +31,22 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
     constructor(part: Part) {
         super()
         this.part = part
+
+        this.options = {
+            // consider 1bpm to be indistinguishable
+            temporalTolerance: 1,
+            volumeTolerance: 0.5,
+
+            // These are the values used by SUPRA's midi2exp. 
+            // Ideally, they should be extracted from the given 
+            // MIDI file's metadata.
+            standardDynamics: [
+                { name: 'p', value: 38 },
+                { name: 'mf', value: 60 },
+                { name: 'f', value: 85 },
+                { name: 'loud', value: 70 }
+            ]
+        }
     }
 
     public name() { return 'ExtractStyleDefinitions' }

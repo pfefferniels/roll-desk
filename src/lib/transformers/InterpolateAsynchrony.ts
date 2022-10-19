@@ -28,7 +28,8 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
     public name() { return 'InterpolateAsynchrony' }
 
     public transform(msm: MSM, mpm: MPM): string {
-        // TODO
+        // calculate the difference to the other part 
+        // for every tstamp
         
         return super.transform(msm, mpm)
     }
