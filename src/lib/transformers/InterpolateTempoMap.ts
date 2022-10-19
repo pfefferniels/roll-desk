@@ -150,8 +150,9 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 tstamps.push(date)
             }
             else {
-                // TODO: if a qstamp has no notes, this probably 
-                // indicates rests, possibly filling up to an upbeat.
+                // if a tstamp has no notes, this probably 
+                // indicates rests which can safely be ignored.
+                // TODO is this correct?
                 console.log('empty tstamp', date)
             }
         }

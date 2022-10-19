@@ -1,8 +1,15 @@
-import { DynamicsGradient, MPM, Ornament } from "../Mpm"
+import { DynamicsGradient, MPM, Ornament, Part } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 import { uuid } from '../globals'
 
+/**
+ * A little helper function to detect how an array is sorted.
+ * 
+ * @param arr 
+ * @returns -1 if the array is sorted in descending order, 1 if its 
+ * sorted in ascending order, 0 if it isn't sorted.
+ */
 const isSorted = (arr: number[]) => {
     let direction = -(arr[0] - arr[1])
     for (let [i, val] of arr.entries()) {
@@ -23,6 +30,11 @@ export interface InterpolatePhysicalOrnamentationOptions extends TransformationO
      * The minimum amount of time in milliseconds an ornamentation should spread over
      */
     durationThreshold: number
+
+    /**
+     * The part on which the transformer is to be applied to.
+     */
+    part: Part
 }
 
 /**
@@ -37,8 +49,9 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
 
         // set the default options
         this.setOptions({
-            minimumArpeggioSize: 2,
-            durationThreshold: 30
+            minimumArpeggioSize: 3,
+            durationThreshold: 30,
+            part: 'global'
         })
     }
 
@@ -47,7 +60,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
     public transform(msm: MSM, mpm: MPM): string {
         const ornaments: Ornament[] = []
 
-        const chords = msm.asChords()
+        const chords = msm.asChords(this.options?.part)
         for (const [date, arpeggioNotes] of Object.entries(chords)) {
             // make sure number of arpeggiated notes is greater or equal than minimum arpeggio size
             if (arpeggioNotes.length < (this.options?.minimumArpeggioSize || 2)) continue
@@ -99,7 +112,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             })
         }
 
-        mpm.insertInstructions(ornaments, 'global')
+        mpm.insertInstructions(ornaments, this.options?.part || 'global')
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)

@@ -184,8 +184,9 @@ export class MSM {
      * Generates a homophonized version of the MSM score.
      * @returns 
      */
-    public asChords(): Chords {
-        return this.allNotes.reduce((prev: any, curr) => {
+    public asChords(part: Part = 'global'): Chords {
+        const notes = part === 'global' ? this.allNotes : this.allNotes.filter(n => n.part-1 === part)
+        return notes.reduce((prev: any, curr) => {
             if (prev[curr.date]) {
                 prev[curr.date].push(curr)
             }
