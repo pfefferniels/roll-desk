@@ -1,4 +1,5 @@
-import { MPM, Part } from "../Mpm"
+import { uuid } from "../globals"
+import { Asynchrony, MPM, Part } from "../Mpm"
 import { MSM } from "../Msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
@@ -36,6 +37,7 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
     public transform(msm: MSM, mpm: MPM): string {
         // Calculate the difference to the other part 
         // for every tstamp
+        const asynchronies: Asynchrony[] = []
 
         const chords = msm.asChords(this.options?.part as Part || 0)
         for (const [date, chord] of Object.entries(chords)) {
@@ -64,14 +66,15 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
             const otherOnset = otherChord[0]['midi.onset']
             
             const offset = otherOnset - onset
-            const asynchrony: any = {
-                date: date,
+            asynchronies.push({
+                'type': 'asynchrony',
+                'xml:id': 'asynchrony_' + uuid(),
+                'date': +date,
                 'milliseconds.offset': offset
-            }
-
-            // TODO
-            // mpm.insertInstructions([asynchrony], 0)
+            })
         }
+
+        mpm.insertInstructions(asynchronies, 0)
 
         return super.transform(msm, mpm)
     }

@@ -29,13 +29,13 @@ type AnyDefinition =
 
 type DatedInstruction<T extends string> = {
     readonly type: T
+    date: number
 }
 
 /**
  * Maps the <dynamics> element of MPM
  */
 export interface Dynamics extends DatedInstruction<'dynamics'>, WithXmlId {
-    date: number
     volume: number | string
     'transition.to'?: number
 }
@@ -44,11 +44,14 @@ export interface Dynamics extends DatedInstruction<'dynamics'>, WithXmlId {
  * Maps the <tempo> element of MPM
  */
 export interface Tempo extends DatedInstruction<'tempo'>, WithXmlId {
-    'date': number
     'bpm': number
     'beatLength': number
     'transition.to'?: number
     'meanTempoAt'?: number
+}
+
+export interface Asynchrony extends DatedInstruction<'asynchrony'>, WithXmlId {
+    'milliseconds.offset': number
 }
 
 export type DynamicsGradient = 'crescendo' | 'decrescendo' | 'no-gradient'
@@ -57,7 +60,6 @@ export type DynamicsGradient = 'crescendo' | 'decrescendo' | 'no-gradient'
  * Maps the <ornament> element of MPM
  */
 export interface Ornament extends DatedInstruction<'ornament'>, WithXmlId {
-    'date': number
     'name.ref': string
     'note.order': string
     'frameLength'?: number
@@ -73,11 +75,13 @@ type AnyInstruction =
     | Tempo
     | Ornament
     | Dynamics
+    | Asynchrony
 
 type InstructionType =
     | 'tempo'
     | 'ornament'
     | 'dynamics'
+    | 'asynchrony'
 
 type RelatedResource = {
     uri: string,
@@ -358,9 +362,10 @@ export class MPM {
 
     private correspondingMapNameFor(instructionType: InstructionType) {
         return {
-            dynamics: 'dynamicsMap',
-            ornament: 'ornamentationMap',
-            tempo: 'tempoMap'
+            dynamics:   'dynamicsMap',
+            ornament:   'ornamentationMap',
+            tempo:      'tempoMap',
+            asynchrony: 'asynchronyMap'
         }[instructionType]
     }
 }
