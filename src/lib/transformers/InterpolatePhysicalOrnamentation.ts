@@ -44,11 +44,11 @@ export interface InterpolatePhysicalOrnamentationOptions extends TransformationO
  * onset.
  */
 export class InterpolatePhysicalOrnamentation extends AbstractTransformer<InterpolatePhysicalOrnamentationOptions> {
-    constructor() {
+    constructor(options?: InterpolatePhysicalOrnamentationOptions) {
         super()
 
         // set the default options
-        this.setOptions({
+        this.setOptions(options || {
             minimumArpeggioSize: 3,
             durationThreshold: 30,
             part: 'global'

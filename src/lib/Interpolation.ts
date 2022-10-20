@@ -9,6 +9,7 @@ import {
     InterpolateTimingImprecision
 } from "./transformers"
 import { ExtractStyleDefinitions } from "./transformers/ExtractStyleDefinitions"
+import { InterpolateAsynchrony } from "./transformers/InterpolateAsynchrony"
 import { AbstractTransformer, TransformationOptions } from "./transformers/Transformer"
 
 /**
@@ -18,7 +19,7 @@ import { AbstractTransformer, TransformationOptions } from "./transformers/Trans
 export class Interpolation {
     alignedPerformance: AlignedPerformance
     performanceName: string
-    author: string 
+    author: string
     comment: string
 
     pipeline: AbstractTransformer<TransformationOptions>[]
@@ -29,18 +30,57 @@ export class Interpolation {
         this.author = 'unknown'
         this.comment = `generated using the MPM interpolation tool from the
                          "Measuring Early Records" project`
-        
+
         // the default order of transformations
-        this.pipeline = Interpolation.defaultPipeline()
+        this.pipeline = Interpolation.melodicTexturePipeline()
     }
 
-    public static defaultPipeline(): AbstractTransformer<TransformationOptions>[] {
+    public optimalPipeline(): AbstractTransformer<TransformationOptions>[] {
+        // TODO based on the texture of the piece it
+        // tries to identify the optimal interpolation pipeline.
+        return []
+    }
+
+
+    public static melodicTexturePipeline(): AbstractTransformer<TransformationOptions>[] {
+        return [
+            new InterpolatePhysicalOrnamentation({
+                part: 0,
+                minimumArpeggioSize: 2,
+                durationThreshold: 5
+            }),
+            new InterpolatePhysicalOrnamentation({
+                part: 1,
+                minimumArpeggioSize: 2,
+                durationThreshold: 5
+            }),
+            new InterpolateTempoMap(),
+            new InterpolateSymbolicOrnamentation(),
+            new InterpolateDynamicsMap({
+                part: 0,
+                beatLengthBasis: 'everything'
+            }),
+            new InterpolateDynamicsMap({
+                part: 1,
+                beatLengthBasis: 'everything'
+            }),
+            new InterpolateAsynchrony({
+                part: 0,
+                tolerance: 20
+            }),
+            new InterpolateTimingImprecision(),
+            new ExtractStyleDefinitions('global'),
+            new ExtractStyleDefinitions(1),
+            new ExtractStyleDefinitions(0)
+        ]
+    }
+
+
+    public static chordalTexturePipeline(): AbstractTransformer<TransformationOptions>[] {
         return [
             new InterpolatePhysicalOrnamentation(),
             new InterpolateTempoMap(),
             new InterpolateSymbolicOrnamentation(),
-            // by default, interpolate a global dynamics map. 
-            // TODO: this should configurable by the user.
             new InterpolateDynamicsMap(),
             new InterpolateTimingImprecision(),
             new ExtractStyleDefinitions('global'),
@@ -91,7 +131,7 @@ export class Interpolation {
             let copy = this.pipeline.slice()
             copy.reduce((acc, curr) => acc.setNext(curr), copy[0])
             const chainedTransformation = copy[0]
-    
+
             // kick-off the transformation chain
             if (!chainedTransformation) {
                 console.log('something went wrong')

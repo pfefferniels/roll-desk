@@ -19,11 +19,11 @@ export interface InterpolateDynamicsMapOptions extends TransformationOptions {
 }
 
 export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynamicsMapOptions> {
-    constructor() {
+    constructor(options?: InterpolateDynamicsMapOptions) {
         super()
 
         // set the default options
-        this.setOptions({
+        this.setOptions(options || {
             part: 'global',
             beatLengthBasis: 'everything'
         })

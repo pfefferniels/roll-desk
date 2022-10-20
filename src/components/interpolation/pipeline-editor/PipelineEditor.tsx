@@ -86,7 +86,7 @@ export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, dialogOpen, 
                     <IconButton>
                         <AddOutlined />
                     </IconButton>
-                    <Button onClick={() => setTransformations(Interpolation.defaultPipeline())}>
+                    <Button onClick={() => setTransformations(Interpolation.melodicTexturePipeline())}>
                         Reset
                     </Button>
                 </Stack>
