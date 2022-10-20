@@ -22,11 +22,11 @@ export interface InterpolateAsynchronyOptions extends TransformationOptions {
  * of dynamics map should be partwise.
  */
 export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynchronyOptions> {
-    constructor() {
+    constructor(options?: InterpolateAsynchronyOptions) {
         super()
 
         // set the default options
-        this.setOptions({
+        this.setOptions(options || {
             part: 0,
             tolerance: 10
         })
@@ -64,13 +64,21 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
             }
 
             const otherOnset = otherChord[0]['midi.onset']
-            
-            const offset = onset - otherOnset
+
+            const offset = (onset - otherOnset) * 1000
+
+            // Check whether the new offset is in the tolerance range of the previous one.
+            // If yes, do not insert it into the map
+            const lastOffset = asynchronies.at(-1)?.["milliseconds.offset"]
+            if (lastOffset && Math.abs(offset - lastOffset) < this.options!.tolerance) {
+                continue;
+            }
+
             asynchronies.push({
                 'type': 'asynchrony',
                 'xml:id': 'asynchrony_' + uuid(),
                 'date': +date,
-                'milliseconds.offset': offset * 1000
+                'milliseconds.offset': offset
             })
         }
 
