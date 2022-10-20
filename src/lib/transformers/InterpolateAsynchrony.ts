@@ -14,13 +14,19 @@ export interface InterpolateAsynchronyOptions extends TransformationOptions {
     tolerance: number
 }
 
+/**
+ * This transformer interpolates asynchrony instructions. It maybe applied only 
+ * to a part, not globally. Under certain circumstances it should not be applied
+ * after a global ornamentationMap has been interpolated. A subsequent interpolation
+ * of dynamics map should be partwise.
+ */
 export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynchronyOptions> {
     constructor() {
         super()
 
         // set the default options
         this.setOptions({
-            part: 1,
+            part: 0,
             tolerance: 10
         })
     }
@@ -28,9 +34,45 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
     public name() { return 'InterpolateAsynchrony' }
 
     public transform(msm: MSM, mpm: MPM): string {
-        // calculate the difference to the other part 
+        // Calculate the difference to the other part 
         // for every tstamp
-        
+
+        const chords = msm.asChords(this.options?.part as Part || 0)
+        for (const [date, chord] of Object.entries(chords)) {
+            if (!chord.length) {
+                // This is not supposed to happen. Throw an error instead?
+                continue
+            }
+
+            // Assume, that all notes of that part 
+            // are synchronized already as arpeggiations.
+            // If not, take the first note and print a warning.
+            const firstNote = chord[0]
+            const onset = firstNote['midi.onset']
+            if (!chord.every(note => note['midi.onset'] === onset)) {
+                console.log(`Multiple notes inside a chord of part should be 
+                    synchronized before applying the InterpolateAsynchrony transformer.`)
+            }
+
+            const otherChords = msm.asChords(1)
+            const otherChord = otherChords[+date]
+            if (!otherChord || !otherChord.length) {
+                console.log('something went wrong with the other chord')
+                continue;
+            }
+
+            const otherOnset = otherChord[0]['midi.onset']
+            
+            const offset = otherOnset - onset
+            const asynchrony: any = {
+                date: date,
+                'milliseconds.offset': offset
+            }
+
+            // TODO
+            // mpm.insertInstructions([asynchrony], 0)
+        }
+
         return super.transform(msm, mpm)
     }
 }
