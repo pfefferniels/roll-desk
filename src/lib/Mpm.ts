@@ -134,7 +134,8 @@ export class MPM {
                         dated: {
                             dynamicsMap: {},
                             asynchronyMap: {},
-                            articulationMap: {}
+                            articulationMap: {},
+                            ornamentationMap: {}
                         }
                     }
                 })
@@ -173,7 +174,7 @@ export class MPM {
         const correspondingStylesName = {
             'ornament': 'ornamentationStyles'
         }[type]
-        const styles = this.getStyles(correspondingStylesName, part)
+        const styles = this.getStyles(correspondingStylesName)
         if (!styles) return ''
 
         // insert a style def if it doesn't exist yet
@@ -249,6 +250,8 @@ export class MPM {
         if (!correspondingMapName) return
 
         const map = this.getMap(correspondingMapName, part)
+
+        console.log('inserting instructions into', map)
         if (!map) {
             console.log('cannot find part', part, 'in the MPM')
             return
@@ -340,24 +343,15 @@ export class MPM {
     }
 
     /**
-     * Get a style of a certain part. Given e.g. the
-     * style name 'ornamentationStyles' and the part 'global'
-     * it returns the <ornamentationStyles> inside the <header> of the 
-     * <global> environemnt. 
+     * Get a style. We assume all styles do be part of 
+     * the global environment, since defining local styles
+     * for a piano performance doesn't seem reasonable.
      * 
      * @param stylesName 
-     * @param part 
      * @returns 
      */
-    getStyles(stylesName: string, part: Part): any {
-        let styles
-        if (part === 'global') {
-            styles = this.rawMPM.performance.global.header[stylesName]
-        }
-        else if (typeof part === 'number') {
-            styles = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).header[stylesName]
-        }
-        return styles
+    getStyles(stylesName: string): any {
+        return this.rawMPM.performance.global.header[stylesName]
     }
 
     private correspondingMapNameFor(instructionType: InstructionType) {

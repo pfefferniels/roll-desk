@@ -65,12 +65,12 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
 
             const otherOnset = otherChord[0]['midi.onset']
             
-            const offset = otherOnset - onset
+            const offset = onset - otherOnset
             asynchronies.push({
                 'type': 'asynchrony',
                 'xml:id': 'asynchrony_' + uuid(),
                 'date': +date,
-                'milliseconds.offset': offset
+                'milliseconds.offset': offset * 1000
             })
         }
 

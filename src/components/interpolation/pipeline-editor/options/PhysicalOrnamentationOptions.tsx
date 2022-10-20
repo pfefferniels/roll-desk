@@ -7,7 +7,7 @@ import { OptionsProp, optionsStyle } from "./Options";
 export const PhysicalOrnamentationOptions: FC<OptionsProp<InterpolatePhysicalOrnamentationOptions>> = ({ options, setOptions }) => {
     const [minimumArpeggioSize, setMinimumArpeggioSize] = useState(options?.minimumArpeggioSize || 2);
     const [durationThreshold, setDurationThreshold] = useState(options?.durationThreshold || 30);
-    const [part, setPart] = useState<Part>('global')
+    const [part, setPart] = useState<Part>(options?.part || 'global')
 
     return (
         <div>
