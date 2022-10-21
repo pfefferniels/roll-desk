@@ -44,26 +44,26 @@ export class JsonLdVisitor implements Visitor {
         this.graph = [
             ...this.graph,
             {
-                "@id": "http://example.org/my-alignment",
+                "@id": alignment.uri,
                 "@type": "la:Alignment",
                 "crm:P14_carried_out_by": {
                     "@id": `http://example_org/${this.carriedOutBy}`,
                     "@type": "E39_Actor"
                 },
                 "dcterms:created": new Date(Date.now()).toISOString(),
-                "la:hasAlignmentPair": alignment.semanticPairs.map((pair, i) => `http//example.org/my-alignment/pair_${i}`)
+                "la:hasAlignmentPair": alignment.semanticPairs.map((pair, i) => `${alignment.uri}/pair_${i}`)
             },
             ...alignment.semanticPairs.map((pair, i) => {
                 const result: any = {
-                    "@id": `http://example.org/my-alignment/pair_${i}`,
+                    "@id": `${alignment.uri}/pair_${i}`,
                     "@type": "la:AlignmentPair",
-                    "la:hasMotivation": `http://example.org/alignment-motivation#${pair.motivation}`
+                    "la:hasMotivation": `http://measuring-early-records.org/alignment-motivation#${pair.motivation}`
                 }
                 if (pair.scoreNote) {
-                    result["la:hasScoreNote"] = `http://example.org/my-alignment/score.mei#${pair.scoreNote.id}`
+                    result["la:hasScoreNote"] = `http://measuring-early-records.org/score/score.mei#${pair.scoreNote.id}`
                 }
                 if (pair.midiNote) {
-                    result["la:hasMIDINote"] = `http://example.org/midi/a-performance/track_0/event_${pair.midiNote.id}`
+                    result["la:hasMIDINote"] = `${alignment.rawPerformance?.uri}/track_0/event_${pair.midiNote.id}`
                 }
 
                 return result
@@ -86,14 +86,14 @@ export class JsonLdVisitor implements Visitor {
         this.graph = [
             ...this.graph,
             {
-                "@id": "http://example.org/midi/a-performance",
+                "@id": performance.uri,
                 "@type": "mid:Pattern",
-                "mid:hasTrack": performance.midi.tracks.map((track, i) => `http://example.org/midi/a-performance/track_${i}`)
+                "mid:hasTrack": performance.midi.tracks.map((track, i) => `${performance.uri}/track_${i}`)
             },
             ...performance.midi.tracks.map((track, i) => ({
-                "@id": `http://example.org/midi/a-performance/track_${i}`,
+                "@id": `${performance.uri}/track_${i}`,
                 "@type": "mid:Track",
-                "mid:hasEvent": [track.map((event, j) => `http://example.org/midi/a-performance/track_${i}/event_${j}`)]
+                "mid:hasEvent": [track.map((event, j) => `${performance.uri}/track_${i}/event_${j}`)]
             })),
 
             ...performance.midi.tracks.map((track, i) => {
@@ -101,7 +101,7 @@ export class JsonLdVisitor implements Visitor {
 
                 return track.map((event, j) => {
                     return {
-                        "@id": `http://example.org/midi/a-performance/track_${i}/event_${j}`,
+                        "@id": `${performance.uri}/track_${i}/event_${j}`,
                         "@type": `mid:${event?.type}`
                     }
                 })

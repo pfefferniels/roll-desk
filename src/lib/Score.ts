@@ -1,5 +1,6 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { TimeSignature } from "./Msm"
+import { RdfEntity } from "./RdfEntity"
 
 export type MeiNote = {
     index: number,
@@ -31,7 +32,7 @@ export function basePitchOfNote(pname: string, oct: number): number {
     return (diatonic || 0) + (oct - 4) * 12
 }
 
-export class Mei {
+export class Mei extends RdfEntity {
     private scoreDOM: Document
     notes: MeiNote[]
     timemap: any[]  // TODO define type. 
@@ -39,6 +40,8 @@ export class Mei {
 
     // score encoding can be anything that Verovio can parse
     constructor(scoreEncoding: string, vrvToolkit: any, domParser: DOMParser) {
+        super()
+        this.id = 'score.mei'
         this.vrvToolkit = vrvToolkit
 
         console.log('new score object created using Verovio version', this.vrvToolkit.getVersion())

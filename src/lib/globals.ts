@@ -3,12 +3,11 @@ import createVerovioModule from 'verovio/wasm';
 import { VerovioToolkit } from 'verovio/esm';
 
 export function uuid() {
-    return 'xxxxx'.replace(/[x]/g, function (c) {
+    return 'axxxxx'.replace(/[x]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
-
 
 export function downloadFile(filename: string, content: string, type: string) {
     const element = document.createElement('a')

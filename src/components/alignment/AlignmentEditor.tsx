@@ -58,7 +58,7 @@ export default function AlignmentEditor() {
 
         <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 280})`}>
           <MIDIGrid
-            notes={alignedPerformance.rawPerformance!.asNotes()}
+            performance={alignedPerformance.rawPerformance!}
             setActiveNote={(note) => {
               if (!activeScoreNote) return
 
@@ -78,7 +78,7 @@ export default function AlignmentEditor() {
           .filter(pair => pair.midiNote && pair.scoreNote)
           .map((pair, n) => {
             const parentEl = document.querySelector('#alignment')
-            const midiNoteEl = document.querySelector(`#midiNote_${pair.midiNote!.id}`)
+            const midiNoteEl = document.querySelector(`#${alignedPerformance.rawPerformance!.id}_${pair.midiNote!.id}`)
             const scoreNoteEl = document.querySelector(`#scoreNote_${pair.scoreNote!.id}`)
 
             if (!parentEl || !midiNoteEl || !scoreNoteEl) {

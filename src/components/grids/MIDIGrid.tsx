@@ -1,19 +1,21 @@
 import { useContext, useState } from "react";
 import { playNote } from "../../lib/midi-player";
-import { MidiNote } from "../../lib/Performance";
+import { MidiNote, RawPerformance } from "../../lib/Performance";
 import { MidiOutputContext } from "../../providers";
 import { MidiLikeGrid } from "../score/Grid";
 import { System } from "../score/System";
 import { GridDimensions } from "./GridDimensions";
 
 interface MidiGridProps {
-  notes: MidiNote[]
+  performance: RawPerformance
   activeNote?: MidiNote
   setActiveNote?: (note: MidiNote) => void
 }
 
-export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActiveNote }) => {
+export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, activeNote, setActiveNote }) => {
   const { postSynthMessage } = useContext(MidiOutputContext)
+
+  const notes = performance.asNotes()
 
   const [dimensions, setDimensions] = useState<GridDimensions>({
     shift: 60,
@@ -27,9 +29,9 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActive
   const fillMidiStaff = (getVerticalPosition: (pitch: number) => number) =>
     notes.map(n =>
       <rect
-        key={`note_${n.id}`}
-        id={`midiNote_${n.id}`}
-        className={`midiNote ${/*p.motivation === Motivation.Addition && 'missingNote'*/''} ${(n === activeNote) && 'active'}`}
+        key={`${performance.id}_${n.id}`}
+        id={`${performance.id}_${n.id}`}
+        className={`midiNote ${/*p.motivation === Motivation.Addition && 'missingNote'*/''} ${(n === activeNote) ? 'active' : 'not-active'}`}
         x={n.onsetTime * dimensions.stretch + dimensions.shift}
         y={getVerticalPosition(n.pitch) + 400}
         width={n.duration * dimensions.stretch}
@@ -49,5 +51,3 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ notes, activeNote, setActive
   )
 }
 
-/*
-*/

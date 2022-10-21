@@ -5,6 +5,7 @@ import { ErrorIndex } from "alignmenttool/dist/Match"
 import { Visitable } from "./visitors/Visitable"
 import { Visitor } from "./visitors/Visitor"
 import { graph, parse, Query, Store } from "rdflib"
+import { RdfEntity } from "./RdfEntity"
 
 export enum Motivation {
     ExactMatch = "ExactMatch",
@@ -27,7 +28,7 @@ export type SemanticAlignmentPair = {
  * Stores a performance aligned to a score and 
  * information about the alignment.
  */
-export class AlignedPerformance implements Visitable {
+export class AlignedPerformance extends RdfEntity implements Visitable {
     score?: Mei
     rawPerformance?: RawPerformance
     semanticPairs: SemanticAlignmentPair[]
@@ -35,6 +36,7 @@ export class AlignedPerformance implements Visitable {
     constructor(
         score?: Mei,
         rawPerformance?: RawPerformance) {
+        super()
         this.score = score
         this.rawPerformance = rawPerformance
         this.semanticPairs = []
