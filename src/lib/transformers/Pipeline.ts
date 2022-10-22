@@ -44,5 +44,17 @@ export class Pipeline {
     insert(n: number, transformer: Transformer) {
         // TODO
     }
+
+    map<T>(callback: (transformer: Transformer, index: number) => T): T[] {
+        const result = []
+        let current: Transformer | undefined | null = this.head
+        let counter = 0;
+        while (current) {
+            result.push(callback(current, counter))
+            current = current.nextTransformer;
+            counter++
+        }
+        return result
+    }
 }
 
