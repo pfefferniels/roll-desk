@@ -27,7 +27,7 @@ export abstract class AbstractTransformer<OptionsType extends TransformationOpti
 
     public setNext(transformer: Transformer): Transformer {
         this.nextTransformer = transformer;
-        return transformer;
+        return this;
     }
 
     public transform(msm: MSM, mpm: MPM): string {

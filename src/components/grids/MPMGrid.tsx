@@ -9,6 +9,8 @@ interface MPMGridProps {
 }
 
 export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
+    console.log('visualizing MPM', mpm)
+    
     return (
         <GraphicalLikeGrid numberOfRows={5} width={2000}>
             {(getVerticalPosition: any) => {

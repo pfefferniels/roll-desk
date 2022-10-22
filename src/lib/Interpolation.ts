@@ -1,92 +1,29 @@
 import { AlignedPerformance } from "./AlignedPerformance"
 import { MPM } from "./Mpm"
 import { MSM } from "./Msm"
-import {
-    InterpolateDynamicsMap,
-    InterpolatePhysicalOrnamentation,
-    InterpolateSymbolicOrnamentation,
-    InterpolateTempoMap,
-    InterpolateTimingImprecision
-} from "./transformers"
-import { ExtractStyleDefinitions } from "./transformers/ExtractStyleDefinitions"
-import { InterpolateAsynchrony } from "./transformers/InterpolateAsynchrony"
-import { AbstractTransformer, TransformationOptions } from "./transformers/Transformer"
+import { Pipeline, defaultPipelines } from "./transformers"
 
 /**
  * Performs the interpolation of an aligned performance
  * into MPM.
  */
-export class Interpolation {
+export class Interpolator {
     alignedPerformance: AlignedPerformance
     performanceName: string
     author: string
     comment: string
 
-    pipeline: AbstractTransformer<TransformationOptions>[]
+    pipeline: Pipeline
 
-    constructor(alignedPerformance: AlignedPerformance) {
+    constructor(alignedPerformance: AlignedPerformance, defaultPipeline: 'chordal-texture' | 'melodic-texture') {
         this.alignedPerformance = alignedPerformance
         this.performanceName = 'unnamed performance'
         this.author = 'unknown'
         this.comment = `generated using the MPM interpolation tool from the
                          "Measuring Early Records" project`
 
-        // the default order of transformations
-        this.pipeline = Interpolation.melodicTexturePipeline()
-    }
-
-    public optimalPipeline(): AbstractTransformer<TransformationOptions>[] {
-        // TODO based on the texture of the piece it
-        // tries to identify the optimal interpolation pipeline.
-        return []
-    }
-
-
-    public static melodicTexturePipeline(): AbstractTransformer<TransformationOptions>[] {
-        return [
-            new InterpolatePhysicalOrnamentation({
-                part: 0,
-                minimumArpeggioSize: 2,
-                durationThreshold: 5
-            }),
-            new InterpolatePhysicalOrnamentation({
-                part: 1,
-                minimumArpeggioSize: 2,
-                durationThreshold: 5
-            }),
-            new InterpolateTempoMap(),
-            new InterpolateSymbolicOrnamentation(),
-            new InterpolateDynamicsMap({
-                part: 0,
-                beatLengthBasis: 'everything'
-            }),
-            new InterpolateDynamicsMap({
-                part: 1,
-                beatLengthBasis: 'everything'
-            }),
-            new InterpolateAsynchrony({
-                part: 0,
-                tolerance: 20
-            }),
-            new InterpolateTimingImprecision(),
-            new ExtractStyleDefinitions('global'),
-            new ExtractStyleDefinitions(1),
-            new ExtractStyleDefinitions(0)
-        ]
-    }
-
-
-    public static chordalTexturePipeline(): AbstractTransformer<TransformationOptions>[] {
-        return [
-            new InterpolatePhysicalOrnamentation(),
-            new InterpolateTempoMap(),
-            new InterpolateSymbolicOrnamentation(),
-            new InterpolateDynamicsMap(),
-            new InterpolateTimingImprecision(),
-            new ExtractStyleDefinitions('global'),
-            new ExtractStyleDefinitions(1),
-            new ExtractStyleDefinitions(0)
-        ]
+        // the preconfigured pipelines
+        this.pipeline = defaultPipelines[defaultPipeline]
     }
 
     setPerformanceName(performanceName: string) {
@@ -101,7 +38,7 @@ export class Interpolation {
         this.comment = comment
     }
 
-    setPipeline(pipeline: AbstractTransformer<TransformationOptions>[]) {
+    setPipeline(pipeline: Pipeline) {
         this.pipeline = pipeline
     }
 
@@ -127,20 +64,12 @@ export class Interpolation {
         const msm = new MSM(this.alignedPerformance)
 
         // construct the pipeline from the given order in this.pipeline
-        if (this.pipeline.length > 0) {
-            let copy = this.pipeline.slice()
-            copy.reduce((acc, curr) => acc.setNext(curr), copy[0])
-            const chainedTransformation = copy[0]
-
-            // kick-off the transformation chain
-            if (!chainedTransformation) {
-                console.log('something went wrong')
-                return
-            }
-
-            chainedTransformation.transform(msm, mpm)
+        if (!this.pipeline.head) {
+            console.log('No pipeline has been configured. The resulting MPM will be empty.')
+            return mpm
         }
 
+        this.pipeline.head.transform(msm, mpm)
         return mpm
     }
 }

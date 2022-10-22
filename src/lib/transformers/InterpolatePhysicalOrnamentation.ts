@@ -58,6 +58,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
     public name() { return 'InterpolatePhysicalOrnamentation' }
 
     public transform(msm: MSM, mpm: MPM): string {
+        console.log('interpolating physical arpeggiation')
         const ornaments: Ornament[] = []
 
         const chords = msm.asChords(this.options?.part)
