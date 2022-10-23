@@ -70,7 +70,7 @@ export default function InterpolationEditor() {
         setMSM(new MSM(alignedPerformance))
     }, [alignmentReady])
 
-    const kickOffTransformation = () => {
+    const calculateMPM = () => {
         if (!msm) {
             console.log('MSM must be set before kicking-off the pipeline')
             return
@@ -82,17 +82,24 @@ export default function InterpolationEditor() {
             return
         }
 
-        const newMPM = mpm
+        const newMPM = new MPM(2)
         pipeline.head.transform(msm, newMPM)
-        console.log('pipeline.head=', pipeline.head)
-        console.log('pipeline.next=', pipeline.head.nextTransformer)
-        console.log('transformation done. result=', newMPM)
+        newMPM.setMetadata({
+            authors: [author],
+            comments: [comment],
+            relatedResources: [{
+                uri: `${performanceName}.msm`,
+                type: 'msm'
+            }]
+        })
+        newMPM.setPerformanceName(performanceName)
+
         setMPM(newMPM)
     }
 
     // when the MSM or the pipeline has been modified 
     // kick-off a new transformation process
-    useEffect(kickOffTransformation, [msm, pipeline])
+    useEffect(calculateMPM, [msm, pipeline])
 
     useEffect(() => {
         if (!mpm) return
@@ -105,6 +112,7 @@ export default function InterpolationEditor() {
                 type: 'msm'
             }]
         })
+        mpm.setPerformanceName(performanceName)
     }, [performanceName, author, comment])
 
     const physicalProgress = playbackPosition * (alignedPerformance.rawPerformance?.totalDuration() || 0)
@@ -182,7 +190,7 @@ export default function InterpolationEditor() {
                 pipeline={pipeline}
                 onReady={() => {
                     setEditPipelineOpen(false)
-                    kickOffTransformation()
+                    calculateMPM()
                 }}
                 dialogOpen={editPipelineOpen} />
 
@@ -194,7 +202,7 @@ export default function InterpolationEditor() {
                 performanceName={performanceName}
                 setPerformanceName={setPerformanceName}
                 onReady={() => {
-                    kickOffTransformation()
+                    calculateMPM()
                     setEditMetadataOpen(false)
                 }}
                 dialogOpen={editMetadataOpen} />

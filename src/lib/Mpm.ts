@@ -109,19 +109,14 @@ export class MPM {
             metadata: {},
             performance: {
                 "@": {
-                    name: '',
+                    name: 'unknown',
                     pulsesPerQuarter: 720
                 },
                 global: {
                     header: {
                         ornamentationStyles: {}
                     },
-                    dated: {
-                        'tempoMap': {},
-                        'ornamentationMap': {},
-                        'dynamicsMap': {},
-                        'imprecisionMap.timing': {}
-                    }
+                    dated: {}
                 },
                 part: Array.from(Array(nParts).keys()).map(i => {
                     return {
@@ -131,12 +126,7 @@ export class MPM {
                             "midi.channel": `${i}`,
                             "midi.port": "0"
                         },
-                        dated: {
-                            dynamicsMap: {},
-                            asynchronyMap: {},
-                            articulationMap: {},
-                            ornamentationMap: {}
-                        }
+                        dated: {}
                     }
                 })
             }
@@ -187,7 +177,7 @@ export class MPM {
         }
 
         // insert a style switch in the map if it doesn't exist yet
-        const correspondingMap = this.getMap(this.correspondingMapNameFor(type), part)
+        const correspondingMap = this.getMap(this.correspondingMapNameFor(type), part, true)
         if (!correspondingMap.style) {
             correspondingMap.style = {
                 '@': {
@@ -249,7 +239,7 @@ export class MPM {
         const correspondingMapName = this.correspondingMapNameFor(instructionType)
         if (!correspondingMapName) return
 
-        const map = this.getMap(correspondingMapName, part)
+        const map = this.getMap(correspondingMapName, part, true)
 
         console.log('inserting instructions into', map)
         if (!map) {
@@ -270,7 +260,7 @@ export class MPM {
      */
     removeInstructions(instructionType: InstructionType, part: Part) {
         const correspondingMapName = this.correspondingMapNameFor(instructionType)
-        const map = this.getMap(correspondingMapName, part)
+        const map = this.getMap(correspondingMapName, part, false)
 
         if (!map) {
             console.log('cannot find part', part, 'in the MPM')
@@ -289,7 +279,7 @@ export class MPM {
      */
     getInstructions<T>(instructionType: InstructionType, part: Part): T[] {
         const correspondingMapName = this.correspondingMapNameFor(instructionType)
-        const map = this.getMap(correspondingMapName, part)
+        const map = this.getMap(correspondingMapName, part, false)
         if (!map) {
             console.log('map', correspondingMapName, 'not found in MPM')
             return []
@@ -329,15 +319,33 @@ export class MPM {
      * 
      * @param mapName 
      * @param part 
+     * @param create when true it creates a new map in the given part if it does not exist yet
      * @returns 
      */
-    getMap(mapName: string, part: Part): any {
+    getMap(mapName: string, part: Part, create: boolean): any {
+        const globalDated = this.rawMPM.performance.global.dated
         let map
         if (part === 'global') {
+            // if the map does not exist yet, create it
+            if (create && !globalDated[mapName]) {
+                console.log('creating new', mapName, 'in the global dated environment.')
+                globalDated[mapName] = {}
+            }
+
             map = this.rawMPM.performance.global.dated[mapName]
         }
         else if (typeof part === 'number') {
-            map = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated[mapName]
+            const dated = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated
+            
+            if (create && !dated[mapName]) {
+                console.log('creating new', mapName, 'in the dated environment of part', part)
+                dated[mapName] = {}
+
+                if (globalDated[mapName]) {
+                    console.log('new local', mapName, 'will override an existing global map.')
+                }
+            }
+            map = dated[mapName]
         }
         return map
     }
