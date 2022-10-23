@@ -3,7 +3,7 @@
  * whole bar, half bar, the denominator or for every single given note.
  */
 
-import { TimeSignature } from "../Msm";
+import { TimeSignature } from "../msm";
 
 export const beatLengthBasis = ['bar', 'halfbar', 'denominator', 'everything'] as const;
 export type BeatLengthBasis = typeof beatLengthBasis[number];

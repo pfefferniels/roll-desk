@@ -1,5 +1,5 @@
-import { MPM, Ornament, Part } from "../Mpm"
-import { MSM } from "../Msm"
+import { MPM, Ornament, Part } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 export interface ExtractStyleDefinitionsOptions extends TransformationOptions {

@@ -1,6 +1,6 @@
 import { MenuItem, Select, TextField } from "@mui/material";
 import { FC, useState } from "react";
-import { Part } from "../../../../lib/Mpm";
+import { Part } from "../../../../lib/mpm";
 import { InterpolatePhysicalOrnamentationOptions } from "../../../../lib/transformers";
 import { OptionsProp, optionsStyle } from "./Options";
 

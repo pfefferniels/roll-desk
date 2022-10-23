@@ -2,7 +2,7 @@ import { SmuflSymbol } from "../score/SmuflSymbol";
 import { StaffLikeGrid } from "../score/Grid";
 import { System } from "../score/System";
 import { GridDimensions } from "./GridDimensions";
-import { basePitchOfNote, MeiNote } from "../../lib/Score";
+import { basePitchOfNote, MeiNote } from "../../lib/mei";
 import { useContext, useEffect, useState } from "react";
 import { GraphicalScoreNote } from "../score/GraphicalScoreNote";
 import { MidiOutputContext } from "../../providers";

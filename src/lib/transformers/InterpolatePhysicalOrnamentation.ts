@@ -1,5 +1,5 @@
-import { DynamicsGradient, MPM, Ornament, Part } from "../Mpm"
-import { MSM } from "../Msm"
+import { DynamicsGradient, MPM, Ornament, Part } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 import { uuid } from '../globals'
 

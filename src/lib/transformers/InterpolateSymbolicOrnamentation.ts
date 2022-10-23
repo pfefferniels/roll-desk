@@ -1,5 +1,5 @@
-import { MPM, Ornament } from "../Mpm"
-import { MSM } from "../Msm"
+import { MPM, Ornament } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 const physicalToSymbolic = (physicalDate: number, bpm: number, beatLength: number) => {

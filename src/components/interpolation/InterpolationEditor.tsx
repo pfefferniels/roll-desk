@@ -1,23 +1,22 @@
 import { useContext, useEffect, useState } from "react"
-import { Interpolator } from "../../lib/Interpolation"
 import { GlobalContext } from "../../providers"
 import { Box, IconButton, Paper } from "@mui/material"
-import { MPM } from "../../lib/Mpm"
+import { MPM } from "../../lib/mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { PipelineEditor } from "./pipeline-editor/PipelineEditor"
 import { EditMetadata } from "./EditMetadata"
-import { MSM } from "../../lib/Msm"
+import { MSM } from "../../lib/msm"
 import { MPMGrid } from "../grids/MPMGrid"
 import { MSMGrid } from "../grids/MSMGrid"
 import { downloadFile } from "../../lib/globals"
 import { Player } from "../player/Player"
 import { MidiFile, read } from "midifile-ts"
 import { PlaybackPosition } from "../player/PlaybackPosition"
-import { Mei } from "../../lib/Score"
+import { Mei } from "../../lib/mei"
 import { MIDIGrid } from "../grids"
-import { RawPerformance } from "../../lib/Performance"
+import { RawPerformance } from "../../lib/midi/RawPerformance"
 import { defaultPipelines, Pipeline } from "../../lib/transformers"
 
 export default function InterpolationEditor() {
@@ -31,7 +30,7 @@ export default function InterpolationEditor() {
     const [editPipelineOpen, setEditPipelineOpen] = useState(false)
     const [editMetadataOpen, setEditMetadataOpen] = useState(false)
 
-    const [mpm, setMPM] = useState<MPM>(new MPM(2))
+    const [mpm, setMPM] = useState<MPM>()
     const [msm, setMSM] = useState<MSM>()
     const [midi, setMidi] = useState<MidiFile>()
     const [pipeline, setPipeline] = useState<Pipeline>(defaultPipelines['chordal-texture'])
@@ -57,6 +56,7 @@ export default function InterpolationEditor() {
                 })
             })
             const data = await response.arrayBuffer()
+            console.log('setting MIDI for MPM', mpm.serialize())
             setMidi(read(data))
         }
 

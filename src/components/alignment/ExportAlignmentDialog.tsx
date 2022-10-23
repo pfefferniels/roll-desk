@@ -2,7 +2,7 @@ import { Dialog, DialogTitle, DialogContent, Box, TextField, Button, DialogActio
 import { FC, useState } from "react"
 import { AlignedPerformance } from "../../lib/AlignedPerformance"
 import { downloadFile } from "../../lib/globals"
-import { MSM } from "../../lib/Msm"
+import { MSM } from "../../lib/msm"
 import { JsonLdVisitor } from "../../lib/visitors/JsonLdVisitor"
 import { Visitable } from "../../lib/visitors/Visitable"
 

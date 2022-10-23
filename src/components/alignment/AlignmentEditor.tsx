@@ -1,7 +1,7 @@
 import { MutableRefObject, useContext, useEffect, useMemo, useState } from "react"
 import { GlobalContext } from "../../providers"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
-import { MeiNote } from "../../lib/Score"
+import { MeiNote } from "../../lib/mei"
 import { EditMotivation } from "./EditMotivation"
 import { AnnotatableAlignment } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
@@ -31,7 +31,7 @@ export default function AlignmentEditor() {
 
   useEffect(() => {
     if (!areaRef || !areaRef.current) {
-      console.log('couldnt find area ref element')
+      console.log('No area (yet) present to connect elements.')
       return
     }
 

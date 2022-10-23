@@ -1,7 +1,7 @@
 import { BeatLengthBasis } from "./BeatLengthBasis"
 import { uuid } from "../globals"
-import { Dynamics, MPM, Part } from "../Mpm"
-import { MSM } from "../Msm"
+import { Dynamics, MPM, Part } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 export interface InterpolateDynamicsMapOptions extends TransformationOptions {

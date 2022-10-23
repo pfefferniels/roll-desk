@@ -1,6 +1,6 @@
 import { uuid } from "../globals";
-import { MPM, Tempo } from "../Mpm";
-import { MSM } from "../Msm";
+import { MPM, Tempo } from "../mpm";
+import { MSM } from "../msm";
 import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
 

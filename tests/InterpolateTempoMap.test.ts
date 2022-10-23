@@ -1,6 +1,6 @@
-import { MPM, Tempo } from "../src/lib/Mpm"
-import { InterpolateTempoMap } from "../src/lib/transformers/InterpolateTempoMap"
-import { prepareMSM } from "../src/lib/prepareMSM"
+import { MPM, Tempo } from "../src/lib/mpm"
+import { InterpolateTempoMap } from "../src/lib/transformers"
+import { prepareMSM } from "../src/lib/msm"
 import { readFileSync } from "fs"
 
 describe('InterpolateTempoMap', () => {

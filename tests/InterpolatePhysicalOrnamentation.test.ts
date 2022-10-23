@@ -1,6 +1,6 @@
-import { MPM, Ornament } from "../src/lib/Mpm"
-import { InterpolatePhysicalOrnamentation } from "../src/lib/transformers/InterpolatePhysicalOrnamentation"
-import { prepareMSM } from "../src/lib/prepareMSM"
+import { MPM, Ornament } from "../src/lib/mpm"
+import { InterpolatePhysicalOrnamentation } from "../src/lib/transformers"
+import { prepareMSM } from "../src/lib/msm"
 import { readFileSync } from "fs"
 
 describe('InterpolatePhysicalOrnamentation', () => {

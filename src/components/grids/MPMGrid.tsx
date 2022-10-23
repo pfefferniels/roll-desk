@@ -1,4 +1,4 @@
-import { Dynamics, MPM, Ornament, Tempo } from "../../lib/Mpm";
+import { Dynamics, MPM, Ornament, Tempo } from "../../lib/mpm";
 import { GraphicalLikeGrid } from "../score/Grid";
 import { AnnotatableInstruction } from "../interpolation/Instruction";
 import { Table, TableBody, TableCell, TableRow } from "@mui/material";
@@ -9,8 +9,6 @@ interface MPMGridProps {
 }
 
 export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
-    console.log('visualizing MPM', mpm)
-    
     return (
         <GraphicalLikeGrid numberOfRows={5} width={2000}>
             {(getVerticalPosition: any) => {

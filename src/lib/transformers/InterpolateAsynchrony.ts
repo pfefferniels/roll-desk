@@ -1,6 +1,6 @@
 import { uuid } from "../globals"
-import { Asynchrony, MPM, Part } from "../Mpm"
-import { MSM } from "../Msm"
+import { Asynchrony, MPM, Part } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 export interface InterpolateAsynchronyOptions extends TransformationOptions {

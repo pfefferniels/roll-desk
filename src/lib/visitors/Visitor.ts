@@ -1,5 +1,5 @@
 import { AlignedPerformance } from "../AlignedPerformance";
-import { RawPerformance } from "../Performance";
+import { RawPerformance } from "../midi/RawPerformance";
 
 export interface Visitor {
     visitPerformance(element: RawPerformance): void;
