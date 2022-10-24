@@ -56,7 +56,6 @@ export default function InterpolationEditor() {
                 })
             })
             const data = await response.arrayBuffer()
-            console.log('setting MIDI for MPM', mpm.serialize())
             setMidi(read(data))
         }
 
