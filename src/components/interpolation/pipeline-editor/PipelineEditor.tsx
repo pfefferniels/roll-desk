@@ -1,5 +1,5 @@
 import { AddOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, Stack } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, Stack, ToggleButtonGroup, ToggleButton } from "@mui/material"
 import { FC, useState } from "react"
 import { InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions, Pipeline } from "../../../lib/transformers"
 import { PhysicalOrnamentationOptions } from "./options/PhysicalOrnamentationOptions"
@@ -19,7 +19,22 @@ export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, dialogOpen, 
             <DialogTitle>Pipeline Editor</DialogTitle>
             <DialogContent>
                 <Stack>
-                    <List sx={{minWidth: '1000', m: 2}}>
+                    <ToggleButtonGroup
+                        value={'chordal-texture'}
+                        exclusive
+                        onChange={() => {
+                            console.log('changed')
+                        }}
+                        aria-label="pipeline preset">
+                        <ToggleButton value="chordal-texture" aria-label="chordal texture">
+                            chordal
+                        </ToggleButton>
+                        <ToggleButton value="center" aria-label="melodic texture">
+                            melodic
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+
+                    <List sx={{ minWidth: '1000', m: 2 }}>
                         {pipeline.map((transformer, i) => {
                             return (
                                 <ListItem
@@ -83,7 +98,7 @@ export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, dialogOpen, 
                     <IconButton>
                         <AddOutlined />
                     </IconButton>
-                    <Button onClick={() => {}}>
+                    <Button onClick={() => { }}>
                         Reset
                     </Button>
                 </Stack>
