@@ -59,10 +59,10 @@ export class RawPerformance extends RdfEntity implements Visitable {
         const isSetTempo = (event: AnyEvent) => (event as SetTempoEvent).subtype === "setTempo"
 
         let result: MidiNote[] = []
-        let currentTime = 0
         let currentTickTime = 0
 
         this.midi.tracks.forEach((events: AnyEvent[]) => {
+            let currentTime = 0
             events.forEach((event: AnyEvent, index: number) => {
                 currentTime += event.deltaTime
 
