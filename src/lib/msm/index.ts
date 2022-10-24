@@ -138,13 +138,6 @@ export class MSM {
                                 }
                             }
                         },
-                        'keySignatureMap': {
-                            'keySignature': {
-                                '@': {
-                                    date: 0
-                                }
-                            }
-                        },
                         score: {
                             'note': this.allNotes
                                 .filter(note => note.part === part + 1)
