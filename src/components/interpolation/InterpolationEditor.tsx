@@ -63,18 +63,8 @@ export default function InterpolationEditor() {
         fetchMidi()
     }, [mpm])
 
-    useEffect(() => {
-        if (!alignmentReady || !alignedPerformance.ready()) return
-
-        // when the alignment is ready or changes, reset the MSM 
-        setMSM(new MSM(alignedPerformance))
-    }, [alignmentReady])
-
     const calculateMPM = () => {
-        if (!msm) {
-            console.log('MSM must be set before kicking-off the pipeline')
-            return
-        }
+        if (!alignmentReady || !alignedPerformance.ready()) return
 
         // kick-off pipeline
         if (!pipeline.head) {
@@ -82,8 +72,11 @@ export default function InterpolationEditor() {
             return
         }
 
+        // create a fresh MSM and MPM
+        const newMSM = new MSM(alignedPerformance)
         const newMPM = new MPM(2)
-        pipeline.head.transform(msm, newMPM)
+
+        pipeline.head.transform(newMSM, newMPM)
         newMPM.setMetadata({
             authors: [author],
             comments: [comment],
@@ -94,12 +87,13 @@ export default function InterpolationEditor() {
         })
         newMPM.setPerformanceName(performanceName)
 
+        setMSM(newMSM)
         setMPM(newMPM)
     }
 
     // when the MSM or the pipeline has been modified 
     // kick-off a new transformation process
-    useEffect(calculateMPM, [msm, pipeline])
+    useEffect(calculateMPM, [alignmentReady, pipeline])
 
     useEffect(() => {
         if (!mpm) return

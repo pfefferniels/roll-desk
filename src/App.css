@@ -69,3 +69,7 @@
   min-width: 400px;
   height: 200px;
 }
+
+.note {
+  font-size: small;
+}

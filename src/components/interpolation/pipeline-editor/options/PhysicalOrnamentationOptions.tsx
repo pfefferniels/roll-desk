@@ -1,5 +1,5 @@
 import { MenuItem, Select, TextField } from "@mui/material";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { Part } from "../../../../lib/mpm";
 import { InterpolatePhysicalOrnamentationOptions } from "../../../../lib/transformers";
 import { OptionsProp, optionsStyle } from "./Options";
@@ -9,6 +9,9 @@ export const PhysicalOrnamentationOptions: FC<OptionsProp<InterpolatePhysicalOrn
     const [durationThreshold, setDurationThreshold] = useState(options?.durationThreshold || 30);
     const [part, setPart] = useState<Part>(options?.part || 'global')
 
+    // propagate changes to the internal pipeline settings
+    useEffect(() => setOptions({ minimumArpeggioSize, durationThreshold, part }))
+
     return (
         <div>
             <TextField
@@ -16,39 +19,18 @@ export const PhysicalOrnamentationOptions: FC<OptionsProp<InterpolatePhysicalOrn
                 label='Minimum arpeggio size'
                 size='small'
                 value={minimumArpeggioSize}
-                onChange={(e) => {
-                    setMinimumArpeggioSize(+e.target.value);
-                    setOptions({
-                        minimumArpeggioSize,
-                        durationThreshold,
-                        part
-                    });
-                }}
+                onChange={e => setMinimumArpeggioSize(+e.target.value)}
                 type='number' />
             <TextField
                 sx={optionsStyle}
                 label='Duration threshold'
                 size='small'
                 value={durationThreshold}
-                onChange={(e) => {
-                    setDurationThreshold(+e.target.value);
-                    setOptions({
-                        minimumArpeggioSize,
-                        durationThreshold,
-                        part
-                    });
-                }}
+                onChange={e => setDurationThreshold(+e.target.value)}
                 type='number' />
             <Select
                 value={part}
-                onChange={(e) => {
-                    setPart(e.target.value as Part)
-                    setOptions({
-                        minimumArpeggioSize,
-                        durationThreshold,
-                        part
-                    })
-                }}>
+                onChange={e => setPart(e.target.value as Part)}>
                 <MenuItem value={0}>Right Hand</MenuItem>
                 <MenuItem value={1}>Left Hand</MenuItem>
                 <MenuItem value={'global'}>Both Hands</MenuItem>
