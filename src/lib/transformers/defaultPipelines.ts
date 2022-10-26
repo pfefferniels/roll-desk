@@ -8,18 +8,23 @@ import {
 } from ".";
 import { ExtractStyleDefinitions } from "./ExtractStyleDefinitions";
 import { InterpolateAsynchrony } from "./InterpolateAsynchrony";
+import { InterpolateArticulation } from "./InterpolateArticulation";
 
 export const defaultPipelines = {
     'melodic-texture': new Pipeline(
         new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, noteOffShiftTolerance: 15, durationThreshold: 5 }).setNext(
             new InterpolatePhysicalOrnamentation({ part: 1, minimumArpeggioSize: 2, noteOffShiftTolerance: 15, durationThreshold: 5 }).setNext(
                 new InterpolateTempoMap().setNext(
-                    new InterpolateSymbolicOrnamentation().setNext(
-                        new InterpolateDynamicsMap({ part: 0, beatLengthBasis: 'everything' }).setNext(
-                            new InterpolateDynamicsMap({ part: 1, beatLengthBasis: 'everything' }).setNext(
-                                new InterpolateAsynchrony({ part: 0, tolerance: 20 }).setNext(
-                                    new InterpolateTimingImprecision().setNext(
-                                        new ExtractStyleDefinitions()
+                    new InterpolateArticulation({ part: 0, offsetTolerance: 15}).setNext(
+                        new InterpolateArticulation({ part: 1, offsetTolerance: 15}).setNext(
+                            new InterpolateSymbolicOrnamentation().setNext(
+                                new InterpolateDynamicsMap({ part: 0, beatLengthBasis: 'everything' }).setNext(
+                                    new InterpolateDynamicsMap({ part: 1, beatLengthBasis: 'everything' }).setNext(
+                                        new InterpolateAsynchrony({ part: 0, tolerance: 20 }).setNext(
+                                            new InterpolateTimingImprecision().setNext(
+                                                new ExtractStyleDefinitions()
+                                            )
+                                        )
                                     )
                                 )
                             )
@@ -32,10 +37,12 @@ export const defaultPipelines = {
     'chordal-texture': new Pipeline(
         new InterpolatePhysicalOrnamentation().setNext(
             new InterpolateTempoMap().setNext(
-                new InterpolateSymbolicOrnamentation().setNext(
-                    new InterpolateDynamicsMap().setNext(
-                        new InterpolateTimingImprecision().setNext(
-                            new ExtractStyleDefinitions()
+                new InterpolateArticulation().setNext(
+                    new InterpolateSymbolicOrnamentation().setNext(
+                        new InterpolateDynamicsMap().setNext(
+                            new InterpolateTimingImprecision().setNext(
+                                new ExtractStyleDefinitions()
+                            )
                         )
                     )
                 )
