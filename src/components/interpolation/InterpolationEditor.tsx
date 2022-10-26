@@ -17,7 +17,7 @@ import { PlaybackPosition } from "../player/PlaybackPosition"
 import { Mei } from "../../lib/mei"
 import { MIDIGrid } from "../grids"
 import { RawPerformance } from "../../lib/midi/RawPerformance"
-import { defaultPipelines, Pipeline } from "../../lib/transformers"
+import { defaultPipelines, Pipeline, PipelineName } from "../../lib/transformers"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -38,6 +38,10 @@ export default function InterpolationEditor() {
     const [playbackPosition, setPlaybackPosition] = useState(0)
 
     const [horizontalStretch, setHorizontalStretch] = useState(0.3)
+
+    const changePipelinePreset = (newPreset: PipelineName) => {
+        setPipeline(defaultPipelines[newPreset])
+    }
 
     useEffect(() => {
         if (!mpm) return
@@ -181,6 +185,7 @@ export default function InterpolationEditor() {
 
             <PipelineEditor
                 pipeline={pipeline}
+                changePipelinePreset={changePipelinePreset}
                 onReady={() => {
                     setEditPipelineOpen(false)
                     calculateMPM()

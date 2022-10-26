@@ -1,18 +1,20 @@
 import { AddOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, Stack, ToggleButtonGroup, ToggleButton } from "@mui/material"
 import { FC, useState } from "react"
-import { InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions, Pipeline } from "../../../lib/transformers"
+import { InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions, Pipeline, PipelineName } from "../../../lib/transformers"
 import { PhysicalOrnamentationOptions } from "./options/PhysicalOrnamentationOptions"
 import { TempoOptions } from "./options/TempoOptions"
 
 interface PipelineEditorProps {
     pipeline: Pipeline
+    changePipelinePreset: (name: PipelineName) => void
     onReady: () => void,
     dialogOpen: boolean,
 }
 
-export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, dialogOpen, onReady }): JSX.Element => {
+export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, changePipelinePreset, dialogOpen, onReady }): JSX.Element => {
     const [showDetails, setShowDetails] = useState('')
+    const [presetPipeline, setPresetPipeline] = useState<PipelineName>('chordal-texture')
 
     return (
         <Dialog open={dialogOpen}>
@@ -20,16 +22,17 @@ export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, dialogOpen, 
             <DialogContent>
                 <Stack>
                     <ToggleButtonGroup
-                        value={'chordal-texture'}
+                        value={presetPipeline}
                         exclusive
-                        onChange={() => {
-                            console.log('changed')
+                        onChange={(e, newTexture) => {
+                            setPresetPipeline(newTexture as PipelineName)
+                            changePipelinePreset(newTexture as PipelineName)
                         }}
                         aria-label="pipeline preset">
                         <ToggleButton value="chordal-texture" aria-label="chordal texture">
                             chordal
                         </ToggleButton>
-                        <ToggleButton value="center" aria-label="melodic texture">
+                        <ToggleButton value="melodic-texture" aria-label="melodic texture">
                             melodic
                         </ToggleButton>
                     </ToggleButtonGroup>

@@ -9,7 +9,6 @@ import {
 import { ExtractStyleDefinitions } from "./ExtractStyleDefinitions";
 import { InterpolateAsynchrony } from "./InterpolateAsynchrony";
 
-
 export const defaultPipelines = {
     'melodic-texture': new Pipeline(
         new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, durationThreshold: 5 }).setNext(
@@ -44,3 +43,5 @@ export const defaultPipelines = {
         )
     )
 };
+
+export type PipelineName = keyof typeof defaultPipelines

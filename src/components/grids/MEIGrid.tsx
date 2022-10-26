@@ -25,7 +25,7 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
     })
 
     useEffect(() => {
-        document.addEventListener('keydown', (e) => {
+        const onKeyDown = (e: KeyboardEvent) => {
             // TODO: add the event listener to a DOM element 
             // closer to the <MeiGrid> component, so that preventing
             // default doesn't make everything else stop working.
@@ -43,7 +43,11 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
                     return copy
                 })
             }
-        })
+        }
+
+        document.addEventListener('keydown', onKeyDown)
+
+        return () => document.removeEventListener('keydown', onKeyDown)
     }, [])
 
     const fillStaffForPart = (part: number, getVerticalPosition: (pitch: number) => number) => {
