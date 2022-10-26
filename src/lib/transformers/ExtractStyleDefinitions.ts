@@ -67,11 +67,15 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
                         'type': 'ornament',
                         'frameLength': ornament.frameLength,
                         'frame.start': ornament['frame.start'],
+                        'noteoff.shift': ornament['noteoff.shift'],
                         'time.unit': ornament['time.unit'],
                         'transition.from': transition[0],
                         'transition.to': transition[1]
 
                     }, 'global')
+                    delete ornament['noteoff.shift']
+                    delete ornament['time.unit']
+                    delete ornament['gradient']
                     delete ornament["frame.start"]
                     delete ornament["frameLength"]
                     ornament["name.ref"] = definitionName

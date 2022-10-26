@@ -19,6 +19,7 @@ type Definition<T extends string> = {
 export interface OrnamentDef extends Definition<'ornament'> {
     'frameLength'?: number
     'frame.start'?: number
+    'noteoff.shift'?: string,
     'transition.from'?: number
     'transition.to'?: number
     'time.unit'?: 'ticks' | 'milliseconds'
@@ -64,6 +65,7 @@ export interface Ornament extends DatedInstruction<'ornament'>, WithXmlId {
     'note.order': string
     'frameLength'?: number
     'frame.start'?: number
+    'noteoff.shift'?: string,
     'transition.from'?: number
     'transition.to'?: number
     'time.unit'?: 'ticks' | 'milliseconds'
@@ -205,12 +207,13 @@ export class MPM {
                     name
                 }
             }
-            if (definition["frame.start"] && definition['frameLength'] && definition['time.unit']) {
+            if (definition["frame.start"] && definition['frameLength'] && definition['time.unit'] && definition['noteoff.shift']) {
                 toPush['temporalSpread'] = {
                     '@': {
                         'frame.start': definition['frame.start'],
                         'frameLength': definition['frameLength'],
-                        'time.unit': definition['time.unit']
+                        'time.unit': definition['time.unit'],
+                        'noteoff.shift': definition['noteoff.shift']
                     }
                 }
             }

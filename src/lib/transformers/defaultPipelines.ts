@@ -11,8 +11,8 @@ import { InterpolateAsynchrony } from "./InterpolateAsynchrony";
 
 export const defaultPipelines = {
     'melodic-texture': new Pipeline(
-        new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, durationThreshold: 5 }).setNext(
-            new InterpolatePhysicalOrnamentation({ part: 1, minimumArpeggioSize: 2, durationThreshold: 5 }).setNext(
+        new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, noteOffShiftTolerance: 15, durationThreshold: 5 }).setNext(
+            new InterpolatePhysicalOrnamentation({ part: 1, minimumArpeggioSize: 2, noteOffShiftTolerance: 15, durationThreshold: 5 }).setNext(
                 new InterpolateTempoMap().setNext(
                     new InterpolateSymbolicOrnamentation().setNext(
                         new InterpolateDynamicsMap({ part: 0, beatLengthBasis: 'everything' }).setNext(

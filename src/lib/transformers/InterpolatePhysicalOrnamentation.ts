@@ -32,6 +32,11 @@ export interface InterpolatePhysicalOrnamentationOptions extends TransformationO
     durationThreshold: number
 
     /**
+     * The tolerance in milliseconds applied when calculating the noteoff.shift attribute.
+     */
+    noteOffShiftTolerance: number
+
+    /**
      * The part on which the transformer is to be applied to.
      */
     part: Part
@@ -50,7 +55,8 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
         // set the default options
         this.setOptions(options || {
             minimumArpeggioSize: 3,
-            durationThreshold: 30,
+            durationThreshold: 35,
+            noteOffShiftTolerance: 10,
             part: 'global'
         })
     }
@@ -91,11 +97,39 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             else gradient = 'no-gradient'
             const avarageVelocity = (lastVel + firstVel) / 2
 
+            // interpolate noteoff.shift
+            const inToleranceRange = (x: number, target: number): boolean => x >= (target - shiftTolerance / 2) && x <= (target + shiftTolerance / 2)
+            let noteOffShift = 'unknown'
+            const firstNote = sortedByOnset[0]
+            const shiftTolerance = this.options?.noteOffShiftTolerance || 0
+            const ends = sortedByOnset.map(n => n['midi.onset'] + n['midi.duration'])
+
+            // if every offset is in the tolerance range of the first offset, 
+            // no shifting is needed
+            if (ends.every(e => inToleranceRange(e, ends[0]))) noteOffShift = 'false'
+
+            // if every onset is in the tolerance range of the previous offset, 
+            // set noteoff.shift to monophonic
+            else if (sortedByOnset.every((note, i, notes) => {
+                if (i === 0) return true 
+                const lastOffset = notes[i-1]['midi.onset'] + notes[i-1]['midi.duration']
+                return inToleranceRange(note['midi.onset'], lastOffset)
+            })) {
+                noteOffShift = 'monophonic'
+            }
+
+            // if every note has the same duration (including tolerance), 
+            // set duration to 
+            else if (sortedByOnset.every(note => inToleranceRange(note['midi.duration'], firstNote['midi.duration']))) {
+                noteOffShift = 'true'
+            }
+
             ornaments.push({
                 'type': 'ornament',
                 'xml:id': 'ornament_' + uuid(),
                 'date': +date,
                 'name.ref': 'neutralArpeggio',
+                'noteoff.shift': noteOffShift,
                 'note.order': noteOrder,
                 'frame.start': (-duration / 2) * 1000,
                 'frameLength': duration * 1000,
