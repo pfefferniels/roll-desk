@@ -31,6 +31,9 @@ type AnyDefinition =
 type DatedInstruction<T extends string> = {
     readonly type: T
     date: number
+
+    // optionally, a particular note can be specified
+    noteid?: string
 }
 
 /**
@@ -51,8 +54,18 @@ export interface Tempo extends DatedInstruction<'tempo'>, WithXmlId {
     'meanTempoAt'?: number
 }
 
+/**
+ * Maps the <asynchrony> element of MPM
+ */
 export interface Asynchrony extends DatedInstruction<'asynchrony'>, WithXmlId {
     'milliseconds.offset': number
+}
+
+/**
+ * Maps the <articulation> element of MPM
+ */
+export interface Articulation extends DatedInstruction<'articulation'>, WithXmlId {
+    relativeDuration: number
 }
 
 export type DynamicsGradient = 'crescendo' | 'decrescendo' | 'no-gradient'
@@ -78,12 +91,14 @@ type AnyInstruction =
     | Ornament
     | Dynamics
     | Asynchrony
+    | Articulation
 
 type InstructionType =
     | 'tempo'
     | 'ornament'
     | 'dynamics'
     | 'asynchrony'
+    | 'articulation'
 
 type RelatedResource = {
     uri: string,
@@ -389,7 +404,8 @@ export class MPM {
             dynamics: 'dynamicsMap',
             ornament: 'ornamentationMap',
             tempo: 'tempoMap',
-            asynchrony: 'asynchronyMap'
+            asynchrony: 'asynchronyMap',
+            articulation: 'articulationMap'
         }[instructionType]
     }
 }

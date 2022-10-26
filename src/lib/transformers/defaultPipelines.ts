@@ -15,8 +15,8 @@ export const defaultPipelines = {
         new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, noteOffShiftTolerance: 15, durationThreshold: 5 }).setNext(
             new InterpolatePhysicalOrnamentation({ part: 1, minimumArpeggioSize: 2, noteOffShiftTolerance: 15, durationThreshold: 5 }).setNext(
                 new InterpolateTempoMap().setNext(
-                    new InterpolateArticulation({ part: 0, offsetTolerance: 15}).setNext(
-                        new InterpolateArticulation({ part: 1, offsetTolerance: 15}).setNext(
+                    new InterpolateArticulation({ part: 0, relativeDurationPrecision: 1, relativeDurationTolerance: 0.1 }).setNext(
+                        new InterpolateArticulation({ part: 1, relativeDurationPrecision: 1, relativeDurationTolerance: 0.1 }).setNext(
                             new InterpolateSymbolicOrnamentation().setNext(
                                 new InterpolateDynamicsMap({ part: 0, beatLengthBasis: 'everything' }).setNext(
                                     new InterpolateDynamicsMap({ part: 1, beatLengthBasis: 'everything' }).setNext(
