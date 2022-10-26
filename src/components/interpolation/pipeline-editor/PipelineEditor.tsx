@@ -1,7 +1,8 @@
 import { AddOutlined, CheckOutlined, ClearOutlined, EditOutlined } from "@mui/icons-material"
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, List, ListItem, ListItemText, Stack, ToggleButtonGroup, ToggleButton } from "@mui/material"
 import { FC, useState } from "react"
-import { InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions, Pipeline, PipelineName } from "../../../lib/transformers"
+import { InterpolateArticulationOptions, InterpolatePhysicalOrnamentationOptions, InterpolateTempoMapOptions, Pipeline, PipelineName } from "../../../lib/transformers"
+import { ArticulationOptions } from "./options/ArticulationOptions"
 import { PhysicalOrnamentationOptions } from "./options/PhysicalOrnamentationOptions"
 import { TempoOptions } from "./options/TempoOptions"
 
@@ -84,6 +85,10 @@ export const PipelineEditor: FC<PipelineEditorProps> = ({ pipeline, changePipeli
                                         secondary={
                                             showDetails === transformer.name() && (
                                                 {
+                                                    'InterpolateArticulation':
+                                                        <ArticulationOptions
+                                                            options={transformer.options as InterpolateArticulationOptions}
+                                                            setOptions={options => transformer.setOptions(options)} />,
                                                     'InterpolatePhysicalOrnamentation':
                                                         <PhysicalOrnamentationOptions
                                                             options={transformer.options as InterpolatePhysicalOrnamentationOptions}

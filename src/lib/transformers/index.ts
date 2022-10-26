@@ -1,3 +1,4 @@
+export * from "./InterpolateArticulation"
 export * from "./InterpolateDynamicsMap"
 export * from "./InterpolatePhysicalOrnamentation"
 export * from "./InterpolateSymbolicOrnamentation"
