@@ -56,7 +56,7 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
                     synchronized before applying the InterpolateAsynchrony transformer.`)
             }
 
-            const otherChords = msm.asChords(1)
+            const otherChords = msm.asChords(this.options?.part === 1 ? 0 : 1)
             const otherChord = otherChords[+date]
             if (!otherChord || !otherChord.length) {
                 console.log('something went wrong with the other chord')
@@ -68,10 +68,13 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
             const offset = (onset - otherOnset) * 1000
 
             // Check whether the new offset is in the tolerance range of the previous one.
-            // If yes, do not insert it into the map
+            // If yes ...
             const lastOffset = asynchronies.at(-1)?.["milliseconds.offset"]
             if (lastOffset && Math.abs(offset - lastOffset) < this.options!.tolerance) {
-                continue;
+                // ... remove the offset time from the onset for further processing
+                // and don't insert a new asynchrony into the map
+                chord.forEach(note => note["midi.onset"] -= (lastOffset / 1000))
+                continue
             }
 
             asynchronies.push({
@@ -80,6 +83,10 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
                 'date': +date,
                 'milliseconds.offset': offset
             })
+            chord.forEach(note => note["midi.onset"] -= (offset / 1000))
+
+            // TODO: avoid singular asynchrony instructions, as they are 
+            // better covered by @absoluteDelay of <articulation>.
         }
 
         mpm.insertInstructions(asynchronies, 0)

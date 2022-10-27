@@ -1,4 +1,4 @@
-import { Articulation, DynamicsGradient, MPM, Ornament, Part } from "../mpm"
+import { Articulation, MPM, Part } from "../mpm"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 import { uuid } from '../globals'
@@ -57,7 +57,6 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
             }
 
             const chordArticulations: Articulation[] = []
-            // assign a relativeDuration 
             chord.forEach((note, i) => {
                 if (!note.bpm) {
                     console.log('no bpm defined for the given note', note["xml:id"], 'at date', date)
@@ -65,8 +64,8 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
                 }
 
                 // convert symbolic timing + bpm to physical timing
-                const fullDuration = (60 / (chord[0]['bpm'] || 0)) * chord[0].duration / 720
-                const relativeDuration = +(chord[0]['midi.duration'] / fullDuration).toFixed(relativeDurationPrecision)
+                const fullDuration = (60 / (note.bpm || 0)) * note.duration / 720
+                const relativeDuration = +(note['midi.duration'] / fullDuration).toFixed(relativeDurationPrecision)
 
                 // if it takes the full length, we don't need to insert any instruction
                 if (relativeDuration === 1.0) return
