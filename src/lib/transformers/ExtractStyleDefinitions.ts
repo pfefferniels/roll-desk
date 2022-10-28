@@ -50,7 +50,7 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
     public name() { return 'ExtractStyleDefinitions' }
 
     public transform(msm: MSM, mpm: MPM): string {
-        [0, 1, 'global'].forEach((part => {
+        ([0, 1, 'global'] as Part[]).forEach((part => {
             mpm.getInstructions<Ornament>('ornament', part as Part).forEach(ornament => {
                 if (ornament['frame.start'] && ornament['frameLength']) {
                     // TODO: find a possibly existing definition which is in the
@@ -72,7 +72,7 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
                         'transition.from': transition[0],
                         'transition.to': transition[1]
 
-                    }, 'global')
+                    }, part)
                     delete ornament['noteoff.shift']
                     delete ornament['time.unit']
                     delete ornament['gradient']

@@ -128,7 +128,7 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
                         setAnnotationTarget(annotationTarget)
                         setAnnotationDialogOpen(true)
                     }}
-                    {...(props as T)} />;
+                    {...(props as T)} />
             </>
         );
     };
