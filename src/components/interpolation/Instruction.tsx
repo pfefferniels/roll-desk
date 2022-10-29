@@ -1,10 +1,10 @@
 import { SmuflSymbol } from "../score/SmuflSymbol";
 import { withAnnotation, WithAnnotationProps } from "../annotation/WithAnnotation";
-import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, Table, TableBody, TableCell, TableRow } from "@mui/material";
 import { ReactNode, useState } from "react";
 
 interface InstructionProps extends WithAnnotationProps {
-    details?: string | ReactNode;
+    details?: string | Object | ReactNode;
     x: number;
     y: number;
     text: string;
@@ -12,6 +12,21 @@ interface InstructionProps extends WithAnnotationProps {
 
 const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarget, details, x, y, text }) => {
     const [showDetails, setShowDetails] = useState(false)
+
+    if (details instanceof Object) {
+        details = (
+            <Table>
+                <TableBody>
+                    {Object.entries(details).map(([key, value]) => (
+                        <TableRow>
+                            <TableCell>{key}</TableCell>
+                            <TableCell>{value}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        )
+    }
 
     return (
         <>
@@ -29,7 +44,6 @@ const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarge
                         setShowDetails(true);
                     }
                 }} />
-            <text />
             <text x={x} y={y + 15}>{text}</text>
             <foreignObject>
                 <Dialog open={showDetails}>

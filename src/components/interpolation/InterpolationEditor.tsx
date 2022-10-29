@@ -167,7 +167,7 @@ export default function InterpolationEditor() {
 
             {mpm && (
                 <div className='mpm'>
-                    <svg className='mpm' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
+                    <svg className='mpm' height={500} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
                         <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
                     </svg>
