@@ -20,7 +20,7 @@ export const defaultPipelines = {
                             new InterpolateSymbolicOrnamentation().setNext(
                                 new InterpolateDynamicsMap({ part: 0, beatLengthBasis: 'everything' }).setNext(
                                     new InterpolateDynamicsMap({ part: 1, beatLengthBasis: 'everything' }).setNext(
-                                        new InterpolateAsynchrony({ part: 0, tolerance: 20 }).setNext(
+                                        new InterpolateAsynchrony({ part: 0, tolerance: 20, precision: 0 }).setNext(
                                             new InterpolateTimingImprecision().setNext(
                                                 new ExtractStyleDefinitions()
                                             )

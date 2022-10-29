@@ -7,6 +7,7 @@ import { useContext, useEffect, useState } from "react";
 import { GraphicalScoreNote } from "../score/GraphicalScoreNote";
 import { MidiOutputContext } from "../../providers";
 import { playNote } from "../../lib/midi-player";
+import { okzoomer } from "../alignment/gestures";
 
 interface MEIGridProps {
     notes: MeiNote[]
@@ -25,29 +26,30 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
     })
 
     useEffect(() => {
-        const onKeyDown = (e: KeyboardEvent) => {
-            // TODO: add the event listener to a DOM element 
-            // closer to the <MeiGrid> component, so that preventing
-            // default doesn't make everything else stop working.
-            if (e.key === 'ArrowLeft') {
-                setDimensions(prev => {
-                    const copy = { ...prev }
-                    copy.shift -= 10
-                    return copy
-                })
-            }
-            else if (e.key === 'ArrowRight') {
-                setDimensions(prev => {
-                    const copy = { ...prev }
-                    copy.shift += 10
-                    return copy
-                })
-            }
+        const container = document.querySelector('svg#alignment')
+        if (!container) {
+            console.log('no container found to attach event listeners to')
+            return
         }
 
-        document.addEventListener('keydown', onKeyDown)
+        let initialStretch = dimensions.stretch
 
-        return () => document.removeEventListener('keydown', onKeyDown)
+        okzoomer(container as SVGElement, {
+            startGesture: (g) => {
+                initialStretch = dimensions.stretch
+            },
+            doGesture: (g) => {
+                setDimensions(prev => {
+                    const copy = { ...prev }
+                    copy.shift += g.translation.x / 10
+                    copy.stretch = g.scale * initialStretch
+                    return copy
+                })
+            },
+            endGesture: (g) => {
+                initialStretch = g.scale * initialStretch
+            },
+        })
     }, [])
 
     const fillStaffForPart = (part: number, getVerticalPosition: (pitch: number) => number) => {

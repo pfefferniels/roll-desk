@@ -13,6 +13,11 @@ export interface InterpolateAsynchronyOptions extends TransformationOptions {
      * Tolerance in milliseconds for not inserting a new asynchrony instruction
      */
     tolerance: number
+
+    /**
+     * Precision (in digits after the decimal point)
+     */
+    precision: number
 }
 
 /**
@@ -28,7 +33,8 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
         // set the default options
         this.setOptions(options || {
             part: 0,
-            tolerance: 10
+            tolerance: 10,
+            precision: 0
         })
     }
 
@@ -81,7 +87,7 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
                 'type': 'asynchrony',
                 'xml:id': 'asynchrony_' + uuid(),
                 'date': +date,
-                'milliseconds.offset': offset
+                'milliseconds.offset': +offset.toFixed(this.options?.precision || 0)
             })
             chord.forEach(note => note["midi.onset"] -= (offset / 1000))
 

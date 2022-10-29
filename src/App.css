@@ -42,6 +42,10 @@
   stroke-width: 0.2;
 }
 
+.bold {
+  stroke-width: 1;
+}
+
 .instruction {
   fill: gray;
   fill-opacity: 0.3;
@@ -72,4 +76,8 @@
 
 .note {
   font-size: small;
+}
+
+.labelText {
+  font: 0.6rem sans-serif;
 }

@@ -56,7 +56,7 @@ export default function AlignmentEditor() {
           />
         </g>
 
-        <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 280})`}>
+        <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 380})`}>
           <MIDIGrid
             performance={alignedPerformance.rawPerformance!}
             setActiveNote={(note) => {
@@ -117,7 +117,7 @@ export default function AlignmentEditor() {
         <svg
           id='alignment'
           width={/*maxWidth*/ 5000}
-          height={/*midiDimensions.areaHeight * 2*/ 560}
+          height={/*midiDimensions.areaHeight * 2*/ 660}
           style={{ margin: '1rem' }}>
           {area}
           {connectors}
