@@ -12,8 +12,8 @@ import { InterpolateArticulation } from "./InterpolateArticulation";
 
 export const defaultPipelines = {
     'melodic-texture': new Pipeline(
-        new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, noteOffShiftTolerance: 250, durationThreshold: 5 }).setNext(
-            new InterpolatePhysicalOrnamentation({ part: 1, minimumArpeggioSize: 2, noteOffShiftTolerance: 250, durationThreshold: 5 }).setNext(
+        new InterpolatePhysicalOrnamentation({ part: 0, minimumArpeggioSize: 2, noteOffShiftTolerance: 250, placement: 'before-beat', durationThreshold: 5 }).setNext(
+            new InterpolatePhysicalOrnamentation({ part: 1, minimumArpeggioSize: 2, noteOffShiftTolerance: 250, placement: 'on-beat', durationThreshold: 5 }).setNext(
                 new InterpolateTempoMap().setNext(
                     new InterpolateArticulation({ part: 0, relativeDurationPrecision: 1, relativeDurationTolerance: 0.1 }).setNext(
                         new InterpolateArticulation({ part: 1, relativeDurationPrecision: 1, relativeDurationTolerance: 0.1 }).setNext(

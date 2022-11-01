@@ -178,7 +178,7 @@ export default function InterpolationEditor() {
                 <div className='midi'>
                     <svg className='midi' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MIDIGrid performance={new RawPerformance(midi)} />
-                        <PlaybackPosition position={physicalProgress * horizontalStretch * 60} />
+                        <PlaybackPosition position={physicalProgress * horizontalStretch * 180 + 60} />
                     </svg>
                 </div>
             }
