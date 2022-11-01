@@ -43,13 +43,6 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             return super.transform(msm, mpm);
         }
 
-        if (this.options?.beatLength === 'everything') {
-            console.warn('Beat length basis on every note is not yet implemented.')
-            return super.transform(msm, mpm);
-        }
-
-        let beatLength = calculateBeatLength(this.options?.beatLength || 'bar', msm.timeSignature);
-
         let tempos: Tempo[] = []
 
         const generatepPowFunction = (frameBegin: number, frameEnd: number, bpm: number, transitionTo: number, meanTempoAt: number) => {
@@ -58,7 +51,8 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
         type InterpolationPoint = {
             tstamp: number,
-            bpm: number
+            bpm: number,
+            beatLength: number
         }
 
         function douglasPeucker(points: InterpolationPoint[], epsilon: number) {
@@ -87,7 +81,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
             // In case of constant tempo no tempo curve needs to be 
             // interpolated.
-            if (start.bpm !== end.bpm && fullDistance > beatLength) {
+            if (start.bpm !== end.bpm && fullDistance > start.beatLength) {
                 const meanTempoAt = (meanTempoAtQstamp - start.tstamp) / fullDistance
 
                 // create a new tempo curve
@@ -115,13 +109,13 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         'date': start.tstamp,
                         'bpm': start.bpm,
                         'transition.to': end.bpm,
-                        'beatLength': beatLength / 720 / 4,
+                        'beatLength': start.beatLength / 720 / 4,
                         'meanTempoAt': +meanTempoAt.toFixed(2)
                     })
 
                     msm.allNotes.forEach(n => {
                         n['bpm'] = powFunction(n.date)
-                        n['bpm.beatLength'] = beatLength
+                        n['bpm.beatLength'] = start.beatLength
                     })
                 }
             }
@@ -131,36 +125,64 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     'xml:id': 'tempo_' + uuid(),
                     'date': start.tstamp,
                     'bpm': start.bpm,
-                    'beatLength': beatLength / 720 / 4
+                    'beatLength': start.beatLength / 720 / 4
                 })
                 msm.allNotes.forEach(n => {
                     n['bpm'] = start.bpm
-                    n['bpm.beatLength'] = beatLength
+                    n['bpm.beatLength'] = start.beatLength
                 })
             }
         }
 
         let onsets: number[] = []
         let tstamps: number[] = []
-        for (let date = 0; date < msm.lastDate(); date += beatLength) {
-            const performedNotes = msm.notesAtDate(date, 'global')
+        let beatLengths: number[] = []
 
-            if (performedNotes && performedNotes[0]) {
-                onsets.push(performedNotes[0]["midi.onset"])
-                tstamps.push(date)
-            }
-            else {
-                // if a tstamp has no notes, this probably 
-                // indicates rests which can safely be ignored.
-                // TODO is this correct?
-                console.log('empty tstamp', date)
+        if (this.options?.beatLength === 'everything') {
+            const chords = Object.entries(msm.asChords())
+            chords.forEach(([date, chord], i) => {
+                if (chord.length === 0) {
+                    console.warn('Empty chord found. This is not supposed to happen.')
+                    return
+                }
+
+                onsets.push(chord[0]['midi.onset'])
+                tstamps.push(+date)
+                if (i === chords.length - 1) {
+                    // in case of the last chord use its duration as the beat length
+                    beatLengths.push(chord[0]['duration'])
+                }
+                else {
+                    // otherwise use the distance to the next chord as beat length
+                    beatLengths.push((+chords[i+1][0]) - (+date))
+                }
+            })
+        }
+        else {
+            let beatLength = calculateBeatLength(this.options?.beatLength || 'bar', msm.timeSignature);
+
+            for (let date = 0; date < msm.lastDate(); date += beatLength) {
+                const performedNotes = msm.notesAtDate(date, 'global')
+
+                if (performedNotes && performedNotes[0]) {
+                    onsets.push(performedNotes[0]["midi.onset"])
+                    tstamps.push(date)
+                    beatLengths.push(beatLength)
+                }
+                else {
+                    // if a tstamp has no notes, this probably 
+                    // indicates rests which can safely be ignored.
+                    // TODO is this correct?
+                    console.log('empty tstamp', date)
+                }
             }
         }
         const bpms = asBPM(onsets)
 
         const points: InterpolationPoint[] = bpms.map((bpm, i) => ({
             tstamp: tstamps[i],
-            bpm: +bpm.toFixed(this.options?.precision)
+            bpm: +bpm.toFixed(this.options?.precision),
+            beatLength: beatLengths[i]
         }))
 
         douglasPeucker(points, this.options?.epsilon || 4)
