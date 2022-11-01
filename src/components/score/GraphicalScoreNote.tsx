@@ -1,5 +1,5 @@
 import { SmuflSymbol } from "./SmuflSymbol";
-import { MeiNote } from "../../lib/Score";
+import { MeiNote } from "../../lib/mei";
 
 interface GraphicalScoreNoteProps {
     scoreNote: MeiNote;

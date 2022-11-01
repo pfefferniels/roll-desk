@@ -1,4 +1,4 @@
-import { uuid } from "./globals";
+import { uuid } from "../globals";
 
 export class RdfEntity {
     id: string = uuid()

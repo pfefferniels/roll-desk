@@ -1,5 +1,5 @@
-import { MSM } from "../Msm";
-import { MPM } from "../Mpm";
+import { MSM } from "../msm";
+import { MPM } from "../mpm";
 
 /**
  * 
@@ -27,7 +27,7 @@ export abstract class AbstractTransformer<OptionsType extends TransformationOpti
 
     public setNext(transformer: Transformer): Transformer {
         this.nextTransformer = transformer;
-        return transformer;
+        return this;
     }
 
     public transform(msm: MSM, mpm: MPM): string {

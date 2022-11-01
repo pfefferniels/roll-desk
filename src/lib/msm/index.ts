@@ -1,7 +1,10 @@
-import { Mei } from "./Score";
-import { AlignedPerformance } from "./AlignedPerformance";
-import { Part } from "./Mpm";
+import { Mei } from "../mei";
+import { AlignedPerformance } from "../AlignedPerformance";
+import { Part } from "../mpm";
 import { parse } from "js2xmlparser";
+import { RawPerformance } from "../midi";
+import { loadVerovio, loadDomParser } from '../globals';
+
 
 /**
  * Temporary attributes used and manipulated in the process of interpolation.
@@ -70,14 +73,14 @@ export class MSM {
                     'part': pair.scoreNote!.part,
                     'xml:id': pair.scoreNote!.id,
                     'date': Mei.qstampToTstamp(pair.scoreNote!.qstamp),
+                    'duration': Mei.qstampToTstamp(pair.scoreNote!.duration),
                     'pitchname': pair.scoreNote!.pname!,
                     'octave': pair.scoreNote!.octave!,
                     'accidentals': pair.scoreNote!.accid!,
                     'midi.pitch': pair.midiNote!.pitch,
                     'midi.onset': pair.midiNote!.onsetTime,
                     'midi.duration': pair.midiNote!.duration,
-                    'midi.velocity': pair.midiNote!.velocity,
-                    'duration': Mei.qstampToTstamp(pair.scoreNote!.duration)
+                    'midi.velocity': pair.midiNote!.velocity
                 }
             })
         this.timeSignature = alignedPerformance.score?.timeSignature()
@@ -132,13 +135,6 @@ export class MSM {
                                 '@': {
                                     date: 0,
                                     value: 0
-                                }
-                            }
-                        },
-                        'keySignatureMap': {
-                            'keySignature': {
-                                '@': {
-                                    date: 0
                                 }
                             }
                         },
@@ -205,3 +201,30 @@ export class MSM {
         return Math.max(...this.allNotes.map(note => note.date))
     }
 }
+
+/**
+ * Prepares an MSM from a given MEI encoding with performed MIDI and alignment. 
+ * Mostly useful for testing. 
+ * 
+ * @param mei 
+ * @param midi 
+ * @param alignment 
+ * @returns 
+ */
+export const prepareMSM = async (mei: string, midi: ArrayLike<number>, alignment?: string): Promise<MSM> => {
+    let { read } = await import("midifile-ts");
+
+    const arr = Uint8Array.from(midi);
+
+    const score = new Mei(mei, await loadVerovio(), await loadDomParser());
+    const performance = new RawPerformance(read(arr));
+    const alignedPerformance = new AlignedPerformance(score, performance);
+    if (alignment) {
+        await alignedPerformance.loadAlignment(alignment);
+    }
+    else {
+        // if no alignment is given, perform an automatic alignment
+        alignedPerformance.performAlignment();
+    }
+    return new MSM(alignedPerformance);
+};

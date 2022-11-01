@@ -1,5 +1,5 @@
 import { AlignedPerformance } from "../AlignedPerformance";
-import { RawPerformance } from "../Performance";
+import { RawPerformance } from "../midi/RawPerformance";
 import { Visitor } from "./Visitor";
 
 export class JsonLdVisitor implements Visitor {

@@ -1,5 +1,5 @@
 import { StaffLikeGrid } from "../score/Grid";
-import { MSM } from "../../lib/Msm";
+import { MSM } from "../../lib/msm";
 import { System } from "../score/System";
 import { AnnotatableNote } from "../interpolation/Instruction";
 import { FC } from "react";

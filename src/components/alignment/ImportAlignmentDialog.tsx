@@ -76,7 +76,7 @@ export const ImportAlignmentDialog: FC<ImportDialogProps> = ({ alignedPerformanc
             </Button>
           </label>
 
-          {alignmentFile && <span>ready</span>}
+          {alignmentFile && <i className='note'>ready</i>}
         </Box>
       </DialogContent>
       <DialogActions>

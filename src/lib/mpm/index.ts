@@ -1,5 +1,5 @@
 import { parse } from "js2xmlparser"
-import { uuid } from "./globals"
+import { uuid } from "../globals"
 
 interface WithXmlId {
     'xml:id': string
@@ -19,6 +19,7 @@ type Definition<T extends string> = {
 export interface OrnamentDef extends Definition<'ornament'> {
     'frameLength'?: number
     'frame.start'?: number
+    'noteoff.shift'?: string,
     'transition.from'?: number
     'transition.to'?: number
     'time.unit'?: 'ticks' | 'milliseconds'
@@ -30,6 +31,9 @@ type AnyDefinition =
 type DatedInstruction<T extends string> = {
     readonly type: T
     date: number
+
+    // optionally, a particular note can be specified
+    noteid?: string
 }
 
 /**
@@ -50,8 +54,18 @@ export interface Tempo extends DatedInstruction<'tempo'>, WithXmlId {
     'meanTempoAt'?: number
 }
 
+/**
+ * Maps the <asynchrony> element of MPM
+ */
 export interface Asynchrony extends DatedInstruction<'asynchrony'>, WithXmlId {
     'milliseconds.offset': number
+}
+
+/**
+ * Maps the <articulation> element of MPM
+ */
+export interface Articulation extends DatedInstruction<'articulation'>, WithXmlId {
+    relativeDuration: number
 }
 
 export type DynamicsGradient = 'crescendo' | 'decrescendo' | 'no-gradient'
@@ -64,6 +78,7 @@ export interface Ornament extends DatedInstruction<'ornament'>, WithXmlId {
     'note.order': string
     'frameLength'?: number
     'frame.start'?: number
+    'noteoff.shift'?: string,
     'transition.from'?: number
     'transition.to'?: number
     'time.unit'?: 'ticks' | 'milliseconds'
@@ -76,12 +91,14 @@ type AnyInstruction =
     | Ornament
     | Dynamics
     | Asynchrony
+    | Articulation
 
 type InstructionType =
     | 'tempo'
     | 'ornament'
     | 'dynamics'
     | 'asynchrony'
+    | 'articulation'
 
 type RelatedResource = {
     uri: string,
@@ -109,19 +126,14 @@ export class MPM {
             metadata: {},
             performance: {
                 "@": {
-                    name: '',
+                    name: 'unknown',
                     pulsesPerQuarter: 720
                 },
                 global: {
                     header: {
                         ornamentationStyles: {}
                     },
-                    dated: {
-                        'tempoMap': {},
-                        'ornamentationMap': {},
-                        'dynamicsMap': {},
-                        'imprecisionMap.timing': {}
-                    }
+                    dated: {}
                 },
                 part: Array.from(Array(nParts).keys()).map(i => {
                     return {
@@ -131,12 +143,8 @@ export class MPM {
                             "midi.channel": `${i}`,
                             "midi.port": "0"
                         },
-                        dated: {
-                            dynamicsMap: {},
-                            asynchronyMap: {},
-                            articulationMap: {},
-                            ornamentationMap: {}
-                        }
+                        header: {},
+                        dated: {}
                     }
                 })
             }
@@ -187,14 +195,18 @@ export class MPM {
         }
 
         // insert a style switch in the map if it doesn't exist yet
-        const correspondingMap = this.getMap(this.correspondingMapNameFor(type), part)
-        if (!correspondingMap.style) {
-            correspondingMap.style = {
-                '@': {
-                    'date': '0.0',
-                    'name.ref': 'performance_style'
-                }
-            }
+        const correspondingMap = this.getMap(this.correspondingMapNameFor(type), part, true)
+        if (!correspondingMap.get('style')) {
+            const sortedMap = new Map(
+                [['style', {
+                    '@': {
+                        'date': '0.0',
+                        'name.ref': 'performance_style'
+                    }
+                }],
+                ...correspondingMap]
+            )
+            this.setMap(this.correspondingMapNameFor(type), part, sortedMap)
         }
 
         const name = `def_${uuid()}`
@@ -210,12 +222,13 @@ export class MPM {
                     name
                 }
             }
-            if (definition["frame.start"] && definition['frameLength'] && definition['time.unit']) {
+            if (definition["frame.start"] && definition['frameLength'] && definition['time.unit'] && definition['noteoff.shift']) {
                 toPush['temporalSpread'] = {
                     '@': {
                         'frame.start': definition['frame.start'],
                         'frameLength': definition['frameLength'],
-                        'time.unit': definition['time.unit']
+                        'time.unit': definition['time.unit'],
+                        'noteoff.shift': definition['noteoff.shift']
                     }
                 }
             }
@@ -249,7 +262,7 @@ export class MPM {
         const correspondingMapName = this.correspondingMapNameFor(instructionType)
         if (!correspondingMapName) return
 
-        const map = this.getMap(correspondingMapName, part)
+        const map = this.getMap(correspondingMapName, part, true)
 
         console.log('inserting instructions into', map)
         if (!map) {
@@ -257,11 +270,15 @@ export class MPM {
             return
         }
 
-        if (Array.isArray(map[instructionType])) {
-            map[instructionType] = [...map[instructionType], ...instructions.map(i => ({ '@': i }))]
+        if (Array.isArray(map.get(instructionType))) {
+            map.set(instructionType,
+                [...map.get(instructionType), // old instructions
+                ...instructions.map(i => ({ '@': i }))] // new instructions
+                    .sort((a, b) => (a['@']['date'] || 0) - (b['@']['date'] || 0)) // sort everything by date
+            )
         }
         else {
-            map[instructionType] = instructions.map(i => ({ '@': i }))
+            map.set(instructionType, instructions.map(i => ({ '@': i })))
         }
     }
 
@@ -270,15 +287,15 @@ export class MPM {
      */
     removeInstructions(instructionType: InstructionType, part: Part) {
         const correspondingMapName = this.correspondingMapNameFor(instructionType)
-        const map = this.getMap(correspondingMapName, part)
+        const map = this.getMap(correspondingMapName, part, false)
 
         if (!map) {
             console.log('cannot find part', part, 'in the MPM')
             return
         }
 
-        if (Array.isArray(map[instructionType])) {
-            map[instructionType] = []
+        if (Array.isArray(map.get(instructionType))) {
+            map.delete(instructionType)
         }
     }
 
@@ -289,14 +306,14 @@ export class MPM {
      */
     getInstructions<T>(instructionType: InstructionType, part: Part): T[] {
         const correspondingMapName = this.correspondingMapNameFor(instructionType)
-        const map = this.getMap(correspondingMapName, part)
+        const map = this.getMap(correspondingMapName, part, false)
         if (!map) {
             console.log('map', correspondingMapName, 'not found in MPM')
             return []
         }
 
-        if (!map[instructionType]) return []
-        return map[instructionType].map((i: any) => i['@'])
+        if (!map.get(instructionType)) return []
+        return map.get(instructionType).map((i: any) => i['@'])
     }
 
     setPerformanceName(performanceName: string) {
@@ -313,8 +330,10 @@ export class MPM {
                     '#': author
                 }
             }),
-            'comments': metadata.comments,
-            'relatedResources': ''
+            'comment': metadata.comments,
+            'relatedResources': {
+                'resource': metadata.relatedResources.map(r => ({'@': r}))
+            }
         }
     }
 
@@ -329,17 +348,43 @@ export class MPM {
      * 
      * @param mapName 
      * @param part 
+     * @param create when true it creates a new map in the given part if it does not exist yet
      * @returns 
      */
-    getMap(mapName: string, part: Part): any {
+    getMap(mapName: string, part: Part, create: boolean): Map<string, any> {
+        const globalDated = this.rawMPM.performance.global.dated
         let map
         if (part === 'global') {
+            // if the map does not exist yet, create it
+            if (create && !globalDated[mapName]) {
+                console.log('creating new', mapName, 'in the global dated environment.')
+                globalDated[mapName] = new Map<string, any>()
+            }
+
             map = this.rawMPM.performance.global.dated[mapName]
         }
         else if (typeof part === 'number') {
-            map = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated[mapName]
+            const dated = this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated
+
+            if (create && !dated[mapName]) {
+                console.log('creating new', mapName, 'in the dated environment of part', part)
+                dated[mapName] = new Map<string, any>()
+
+                if (globalDated[mapName]) {
+                    console.log('new local', mapName, 'will override an existing global map.')
+                }
+            }
+            map = dated[mapName]
         }
         return map
+    }
+
+    setMap(mapName: string, part: Part, newContents: Map<string, any>) {
+        const dated = part === 'global' ?
+            this.rawMPM.performance.global.dated :
+            this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated
+
+        dated[mapName] = newContents;
     }
 
     /**
@@ -356,10 +401,11 @@ export class MPM {
 
     private correspondingMapNameFor(instructionType: InstructionType) {
         return {
-            dynamics:   'dynamicsMap',
-            ornament:   'ornamentationMap',
-            tempo:      'tempoMap',
-            asynchrony: 'asynchronyMap'
+            dynamics: 'dynamicsMap',
+            ornament: 'ornamentationMap',
+            tempo: 'tempoMap',
+            asynchrony: 'asynchronyMap',
+            articulation: 'articulationMap'
         }[instructionType]
     }
 }

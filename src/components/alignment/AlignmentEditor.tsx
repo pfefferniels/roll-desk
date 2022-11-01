@@ -1,7 +1,7 @@
 import { MutableRefObject, useContext, useEffect, useMemo, useState } from "react"
 import { GlobalContext } from "../../providers"
 import { Motivation, SemanticAlignmentPair } from "../../lib/AlignedPerformance"
-import { MeiNote } from "../../lib/Score"
+import { MeiNote } from "../../lib/mei"
 import { EditMotivation } from "./EditMotivation"
 import { AnnotatableAlignment } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
@@ -31,7 +31,7 @@ export default function AlignmentEditor() {
 
   useEffect(() => {
     if (!areaRef || !areaRef.current) {
-      console.log('couldnt find area ref element')
+      console.log('No area (yet) present to connect elements.')
       return
     }
 
@@ -56,7 +56,7 @@ export default function AlignmentEditor() {
           />
         </g>
 
-        <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 280})`}>
+        <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 380})`}>
           <MIDIGrid
             performance={alignedPerformance.rawPerformance!}
             setActiveNote={(note) => {
@@ -117,7 +117,7 @@ export default function AlignmentEditor() {
         <svg
           id='alignment'
           width={/*maxWidth*/ 5000}
-          height={/*midiDimensions.areaHeight * 2*/ 560}
+          height={/*midiDimensions.areaHeight * 2*/ 660}
           style={{ margin: '1rem' }}>
           {area}
           {connectors}

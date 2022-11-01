@@ -2,11 +2,12 @@ import { SmuflSymbol } from "../score/SmuflSymbol";
 import { StaffLikeGrid } from "../score/Grid";
 import { System } from "../score/System";
 import { GridDimensions } from "./GridDimensions";
-import { basePitchOfNote, MeiNote } from "../../lib/Score";
+import { basePitchOfNote, MeiNote } from "../../lib/mei";
 import { useContext, useEffect, useState } from "react";
 import { GraphicalScoreNote } from "../score/GraphicalScoreNote";
 import { MidiOutputContext } from "../../providers";
 import { playNote } from "../../lib/midi-player";
+import { okzoomer } from "../alignment/gestures";
 
 interface MEIGridProps {
     notes: MeiNote[]
@@ -25,24 +26,29 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
     })
 
     useEffect(() => {
-        document.addEventListener('keydown', (e) => {
-            // TODO: add the event listener to a DOM element 
-            // closer to the <MeiGrid> component, so that preventing
-            // default doesn't make everything else stop working.
-            if (e.key === 'ArrowLeft') {
+        const container = document.querySelector('svg#alignment')
+        if (!container) {
+            console.log('no container found to attach event listeners to')
+            return
+        }
+
+        let initialStretch = dimensions.stretch
+
+        okzoomer(container as SVGElement, {
+            startGesture: (g) => {
+                initialStretch = dimensions.stretch
+            },
+            doGesture: (g) => {
                 setDimensions(prev => {
                     const copy = { ...prev }
-                    copy.shift -= 10
+                    copy.shift += g.translation.x / 10
+                    copy.stretch = g.scale * initialStretch
                     return copy
                 })
-            }
-            else if (e.key === 'ArrowRight') {
-                setDimensions(prev => {
-                    const copy = { ...prev }
-                    copy.shift += 10
-                    return copy
-                })
-            }
+            },
+            endGesture: (g) => {
+                initialStretch = g.scale * initialStretch
+            },
         })
     }, [])
 

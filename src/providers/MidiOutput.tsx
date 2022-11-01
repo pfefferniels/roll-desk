@@ -43,8 +43,6 @@ export const MidiOutputProvider: React.FC<MidiOutputProviderProps> = ({ children
             console.log('Audio worklet node not yet ready, cannot post synth message.')
             return
         }
-
-        console.log('pstSynthMessage', e)
         synth.port.postMessage(e, transfer ?? [])
     }
 

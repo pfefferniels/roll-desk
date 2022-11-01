@@ -1,7 +1,7 @@
 import { BeatLengthBasis } from "./BeatLengthBasis"
 import { uuid } from "../globals"
-import { Dynamics, MPM, Part } from "../Mpm"
-import { MSM } from "../Msm"
+import { Dynamics, MPM, Part } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 
 export interface InterpolateDynamicsMapOptions extends TransformationOptions {
@@ -98,7 +98,7 @@ export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynam
             return acc
         }, new Array<Dynamics>())
 
-        mpm.insertInstructions(dynamics, this.options?.part || 'global')
+        mpm.insertInstructions(dynamics, this.options?.part)
 
         // TODO: before handing over to the next transformer, 
         // the synthesized dynamics should be substracted from

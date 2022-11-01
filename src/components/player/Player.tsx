@@ -1,3 +1,5 @@
+import { PauseCircle, PlayArrowOutlined, PlayCircle } from "@mui/icons-material"
+import { IconButton } from "@mui/material"
 import { SynthEvent, getSamplesFromSoundFont } from "@ryohey/wavelet"
 import { MidiFile } from "midifile-ts"
 import { useContext, useEffect, useState } from "react"
@@ -33,21 +35,21 @@ export const Player: React.FC<PlayerProps> = ({ midi, onProgress }): JSX.Element
         <div>
             {setupFinished ? (
                 <div>
-                    <button
+                    <IconButton
                         id='play'
                         onClick={() => {
                             audioContext.resume()
                             midiPlayer?.seek(0)
                             midiPlayer?.resume()
                         }}>
-                        Play
-                    </button>
+                        <PlayCircle />
+                    </IconButton>
 
-                    <button
+                    <IconButton
                         id='pause'
                         onClick={() => midiPlayer?.pause()}>
-                        Pause
-                    </button>
+                        <PauseCircle />
+                    </IconButton>
                 </div>) :
                 <div>
                     MIDI setup not yet finished:

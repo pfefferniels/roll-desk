@@ -1,7 +1,9 @@
-import { DynamicsGradient, MPM, Ornament, Part } from "../Mpm"
-import { MSM } from "../Msm"
+import { DynamicsGradient, MPM, Ornament, Part } from "../mpm"
+import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 import { uuid } from '../globals'
+
+export type ArpeggioPlacement = 'on-beat' | 'before-beat' | 'estimate'
 
 /**
  * A little helper function to detect how an array is sorted.
@@ -32,6 +34,16 @@ export interface InterpolatePhysicalOrnamentationOptions extends TransformationO
     durationThreshold: number
 
     /**
+     * The tolerance in milliseconds applied when calculating the noteoff.shift attribute.
+     */
+    noteOffShiftTolerance: number
+
+    /**
+     * Where to place the arpeggio in relation to the beat?
+     */
+    placement: ArpeggioPlacement
+
+    /**
      * The part on which the transformer is to be applied to.
      */
     part: Part
@@ -50,7 +62,9 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
         // set the default options
         this.setOptions(options || {
             minimumArpeggioSize: 3,
-            durationThreshold: 30,
+            durationThreshold: 35,
+            placement: 'estimate',
+            noteOffShiftTolerance: 500,
             part: 'global'
         })
     }
@@ -58,6 +72,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
     public name() { return 'InterpolatePhysicalOrnamentation' }
 
     public transform(msm: MSM, mpm: MPM): string {
+        console.log('interpolating physical arpeggiation')
         const ornaments: Ornament[] = []
 
         const chords = msm.asChords(this.options?.part)
@@ -82,32 +97,71 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             // If a dynamics gradient exists, the temporal spread might be 
             // inserted by Welte-Mignon in order to allow dynamic gradating.
             const firstVel = arpeggioNotes[0]["midi.velocity"]
-            const lastVel = arpeggioNotes[arpeggioNotes.length-1]["midi.velocity"]
+            const lastVel = arpeggioNotes[arpeggioNotes.length - 1]["midi.velocity"]
             const dynamicDiff = lastVel - firstVel
+
             let gradient: DynamicsGradient
             if (dynamicDiff > 0) gradient = 'crescendo'
             else if (dynamicDiff < 0) gradient = 'decrescendo'
             else gradient = 'no-gradient'
+
             const avarageVelocity = (lastVel + firstVel) / 2
+
+            // helper function to check wether a value is in the shift tolerance
+            const shiftTolerance = this.options?.noteOffShiftTolerance || 0
+            const inToleranceRange = (x: number, target: number) => x >= (target - (shiftTolerance / 1000) / 2) && x <= (target + (shiftTolerance / 1000) / 2)
+
+            // by default, no offset shifting is applied
+            let noteOffShift = 'false'
+
+            // if every note has the same duration (including tolerance) like the first note, 
+            // set noteoff.shift to true
+            const firstNote = sortedByOnset[0]
+            if (sortedByOnset.every(note => inToleranceRange(note['midi.duration'], firstNote['midi.duration'])))
+                noteOffShift = 'true'
+
+            // if every onset is in the tolerance range of the previous offset, 
+            // set noteoff.shift to monophonic
+            else if (sortedByOnset.every((note, i, notes) => {
+                if (i === 0) return true
+                const lastOffset = notes[i - 1]['midi.onset'] + notes[i - 1]['midi.duration']
+                return inToleranceRange(note['midi.onset'], lastOffset)
+            }))
+                noteOffShift = 'monophonic'
+            
+            // define the frame start based on the given option
+            const frameLength = +(duration * 1000).toFixed(0)
+            let frameStart: number, newOnset: number
+            if (this.options?.placement === 'on-beat') {
+                frameStart = 0
+                newOnset = arpeggioNotes[0]['midi.onset']
+            }
+            else if (this.options?.placement === 'before-beat') {
+                frameStart = -frameLength 
+                newOnset = arpeggioNotes[arpeggioNotes.length - 1]['midi.onset']
+            }
+            else {
+                frameStart = -frameLength / 2
+                const onsetSum = arpeggioNotes.map(note => note['midi.onset']).reduce((a, b) => a + b, 0)
+                newOnset = (onsetSum / arpeggioNotes.length) || 0
+            }
 
             ornaments.push({
                 'type': 'ornament',
                 'xml:id': 'ornament_' + uuid(),
                 'date': +date,
                 'name.ref': 'neutralArpeggio',
+                'noteoff.shift': noteOffShift,
                 'note.order': noteOrder,
-                'frame.start': (-duration / 2) * 1000,
-                'frameLength': duration * 1000,
+                'frame.start': frameStart,
+                'frameLength': frameLength,
                 'scale': Math.max(lastVel, firstVel) - avarageVelocity,
                 'time.unit': 'milliseconds',
                 'gradient': gradient
             })
 
-            const onsetSum = arpeggioNotes.map(note => note['midi.onset']).reduce((a, b) => a + b, 0)
-            const avarageOnset = (onsetSum / arpeggioNotes.length) || 0
-
             arpeggioNotes.forEach(note => {
-                note['midi.onset'] = avarageOnset
+                note['midi.onset'] = newOnset
                 note['midi.velocity'] = avarageVelocity
             })
         }

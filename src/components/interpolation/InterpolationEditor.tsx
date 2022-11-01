@@ -1,23 +1,23 @@
 import { useContext, useEffect, useState } from "react"
-import { Interpolation } from "../../lib/Interpolation"
 import { GlobalContext } from "../../providers"
 import { Box, IconButton, Paper } from "@mui/material"
-import { MPM } from "../../lib/Mpm"
+import { MPM } from "../../lib/mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { PipelineEditor } from "./pipeline-editor/PipelineEditor"
 import { EditMetadata } from "./EditMetadata"
-import { MSM } from "../../lib/Msm"
+import { MSM } from "../../lib/msm"
 import { MPMGrid } from "../grids/MPMGrid"
 import { MSMGrid } from "../grids/MSMGrid"
 import { downloadFile } from "../../lib/globals"
 import { Player } from "../player/Player"
 import { MidiFile, read } from "midifile-ts"
 import { PlaybackPosition } from "../player/PlaybackPosition"
-import { Mei } from "../../lib/Score"
+import { Mei } from "../../lib/mei"
 import { MIDIGrid } from "../grids"
-import { RawPerformance } from "../../lib/Performance"
+import { RawPerformance } from "../../lib/midi/RawPerformance"
+import { defaultPipelines, Pipeline, PipelineName } from "../../lib/transformers"
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -33,15 +33,20 @@ export default function InterpolationEditor() {
     const [mpm, setMPM] = useState<MPM>()
     const [msm, setMSM] = useState<MSM>()
     const [midi, setMidi] = useState<MidiFile>()
-    const [interpolation, setInterpolation] = useState<Interpolation>()
+    const [pipeline, setPipeline] = useState<Pipeline>(defaultPipelines['chordal-texture'])
 
     const [playbackPosition, setPlaybackPosition] = useState(0)
 
     const [horizontalStretch, setHorizontalStretch] = useState(0.3)
 
+    const changePipelinePreset = (newPreset: PipelineName) => {
+        setPipeline(defaultPipelines[newPreset])
+    }
+
     useEffect(() => {
         if (!mpm) return
 
+        // when the MPM changes, load the new rendered MIDI from server
         const fetchMidi = async () => {
             const response = await fetch('http://0.0.0.0:8080/convert', {
                 method: 'POST',
@@ -61,26 +66,50 @@ export default function InterpolationEditor() {
         fetchMidi()
     }, [mpm])
 
-    useEffect(() => {
+    const calculateMPM = () => {
         if (!alignmentReady || !alignedPerformance.ready()) return
 
-        setInterpolation(new Interpolation(alignedPerformance))
-        setMSM(new MSM(alignedPerformance))
-    }, [alignmentReady])
+        // kick-off pipeline
+        if (!pipeline.head) {
+            console.log('No pipeline has been configured. The resulting MPM will be empty.')
+            return
+        }
 
-    const updateMPM = () => {
-        if (!interpolation) return
-        setMPM(interpolation.exportMPM(performanceName))
+        // create a fresh MSM and MPM
+        const newMSM = new MSM(alignedPerformance)
+        const newMPM = new MPM(2)
+
+        pipeline.head.transform(newMSM, newMPM)
+        newMPM.setMetadata({
+            authors: [author],
+            comments: [comment],
+            relatedResources: [{
+                uri: `${performanceName}.msm`,
+                type: 'msm'
+            }]
+        })
+        newMPM.setPerformanceName(performanceName)
+
+        setMSM(newMSM)
+        setMPM(newMPM)
     }
 
-    useEffect(updateMPM, [interpolation])
+    // when the MSM or the pipeline has been modified 
+    // kick-off a new transformation process
+    useEffect(calculateMPM, [alignmentReady, pipeline])
 
     useEffect(() => {
-        if (!interpolation) return
+        if (!mpm) return
 
-        interpolation.setAuthor(author)
-        interpolation.setComment(comment)
-        interpolation.setPerformanceName(performanceName)
+        mpm.setMetadata({
+            authors: [author],
+            comments: [comment],
+            relatedResources: [{
+                uri: `${performanceName}.msm`,
+                type: 'msm'
+            }]
+        })
+        mpm.setPerformanceName(performanceName)
     }, [performanceName, author, comment])
 
     const physicalProgress = playbackPosition * (alignedPerformance.rawPerformance?.totalDuration() || 0)
@@ -138,7 +167,7 @@ export default function InterpolationEditor() {
 
             {mpm && (
                 <div className='mpm'>
-                    <svg className='mpm' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
+                    <svg className='mpm' height={500} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
                         <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
                     </svg>
@@ -149,16 +178,17 @@ export default function InterpolationEditor() {
                 <div className='midi'>
                     <svg className='midi' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MIDIGrid performance={new RawPerformance(midi)} />
-                        <PlaybackPosition position={physicalProgress * horizontalStretch * 60} />
+                        <PlaybackPosition position={physicalProgress * horizontalStretch * 180 + 60} />
                     </svg>
                 </div>
             }
 
             <PipelineEditor
-                pipeline={interpolation?.pipeline}
+                pipeline={pipeline}
+                changePipelinePreset={changePipelinePreset}
                 onReady={() => {
-                    updateMPM()
                     setEditPipelineOpen(false)
+                    calculateMPM()
                 }}
                 dialogOpen={editPipelineOpen} />
 
@@ -170,7 +200,7 @@ export default function InterpolationEditor() {
                 performanceName={performanceName}
                 setPerformanceName={setPerformanceName}
                 onReady={() => {
-                    updateMPM()
+                    calculateMPM()
                     setEditMetadataOpen(false)
                 }}
                 dialogOpen={editMetadataOpen} />

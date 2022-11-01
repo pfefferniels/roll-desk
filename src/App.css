@@ -42,6 +42,10 @@
   stroke-width: 0.2;
 }
 
+.bold {
+  stroke-width: 1;
+}
+
 .instruction {
   fill: gray;
   fill-opacity: 0.3;
@@ -68,4 +72,12 @@
   border-radius: 5px;
   min-width: 400px;
   height: 200px;
+}
+
+.note {
+  font-size: small;
+}
+
+.labelText {
+  font: 0.8rem sans-serif;
 }

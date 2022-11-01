@@ -6,7 +6,14 @@
 .pnp.js
 
 # testing
-/coverage
+tests/__snapshots__
+
+# tools
+tools/__pycache__
+tools/*.mpm
+tools/*.msm
+tools/*.mid
+tools/*.jar
 
 # production
 /build

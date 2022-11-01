@@ -1,11 +1,11 @@
-import { MidiNote, RawPerformance } from "./Performance"
-import { MeiNote, Mei } from "./Score"
+import { MidiNote, RawPerformance } from "./midi/RawPerformance"
+import { MeiNote, Mei } from "./mei"
 import { ScoreFollower, ErrorDetector } from "alignmenttool/dist/index"
 import { ErrorIndex } from "alignmenttool/dist/Match"
 import { Visitable } from "./visitors/Visitable"
 import { Visitor } from "./visitors/Visitor"
 import { graph, parse, Query, Store } from "rdflib"
-import { RdfEntity } from "./RdfEntity"
+import { RdfEntity } from "./rdf"
 
 export enum Motivation {
     ExactMatch = "ExactMatch",

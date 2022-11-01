@@ -66,21 +66,32 @@ interface MidiLikeGridProps extends GenericGridProps {
  * Draws a MIDI grid
  */
 export const MidiLikeGrid: FC<MidiLikeGridProps> = ({ children, pitchHeight, width }): JSX.Element => {
+  const range = [21, 84] // normal pianos range from A0 to C8, 88 keys in total
   const getVerticalPosition = (pnum: number) => {
-    return 172 - pnum * pitchHeight
+    return (range[1] - pnum) * pitchHeight
   }
 
   return (
     <g className='midi-grid'>
-      {Array.from(Array(127).keys()).map(lineNumber => (
-        <line
-          key={`line${Date.now()}-${lineNumber}`}
-          className='midiLine'
-          x1={0}
-          y1={lineNumber * pitchHeight}
-          x2={width}
-          y2={lineNumber * pitchHeight} />
-      ))}
+      {Array.from(Array(88).keys()).map(pitch => {
+        const y = getVerticalPosition(pitch + range[0])
+        const bold = ((pitch + range[0] + 1) % 12) === 0 
+
+        return (
+          <g>
+            {bold ? (
+              <text y={y} x={0} className='labelText'>C{(pitch + range[0] + 1) / 12 - 1}</text>
+            ) : null}
+            <line
+              key={`line${Date.now()}-${pitch}`}
+              className={`midiLine${bold ? ' bold' : ''}`}
+              x1={0}
+              y1={y}
+              x2={width}
+              y2={y} />
+          </g>
+        )
+      })}
       {children(getVerticalPosition)}
     </g>
   )
@@ -96,7 +107,7 @@ interface GraphicalLikeGridProps extends GenericGridProps {
 export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, numberOfRows, width }): JSX.Element => {
   const rowHeight = 50
   const getVerticalPosition = (row: number) => {
-    return row * rowHeight
+    return (row + 1) * rowHeight
   }
 
   return (
@@ -106,9 +117,9 @@ export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, number
           key={`line${Date.now()}-${lineNumber}`}
           className='separator-line'
           x1={0}
-          y1={(lineNumber + 1) * rowHeight}
+          y1={getVerticalPosition(lineNumber)}
           x2={width}
-          y2={(lineNumber + 1) * rowHeight}/>
+          y2={getVerticalPosition(lineNumber)} />
       ))}
       {children(getVerticalPosition)}
     </g>
