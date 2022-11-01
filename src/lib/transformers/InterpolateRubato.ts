@@ -33,6 +33,21 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
     public name() { return 'InterpolateRubato' }
 
     public transform(msm: MSM, mpm: MPM): string {
+        const chords = Object.entries(msm.asChords(this.options?.part))
+        chords.forEach(([date, chord]) => {
+            if (!chord.length) {
+                console.log('empty chord encountered.')
+                return
+            }
+
+            /*
+            introduce new field epsiolon to MSM to describe the difference 
+            between the current interpolated onset time and the real onset 
+            time. Subsequent transformers can then do their work in order 
+            to reduce epsiolon to a minimum.
+            */
+        })
+
         // hand it over to the next transformer
         return super.transform(msm, mpm)
     }

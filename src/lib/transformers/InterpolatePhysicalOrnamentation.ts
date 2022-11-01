@@ -89,7 +89,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             // If a dynamics gradient exists, the temporal spread might be 
             // inserted by Welte-Mignon in order to allow dynamic gradating.
             const firstVel = arpeggioNotes[0]["midi.velocity"]
-            const lastVel = arpeggioNotes[arpeggioNotes.length-1]["midi.velocity"]
+            const lastVel = arpeggioNotes[arpeggioNotes.length - 1]["midi.velocity"]
             const dynamicDiff = lastVel - firstVel
             let gradient: DynamicsGradient
             if (dynamicDiff > 0) gradient = 'crescendo'
@@ -111,8 +111,8 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             // if every onset is in the tolerance range of the previous offset, 
             // set noteoff.shift to monophonic
             else if (sortedByOnset.every((note, i, notes) => {
-                if (i === 0) return true 
-                const lastOffset = notes[i-1]['midi.onset'] + notes[i-1]['midi.duration']
+                if (i === 0) return true
+                const lastOffset = notes[i - 1]['midi.onset'] + notes[i - 1]['midi.duration']
                 return inToleranceRange(note['midi.onset'], lastOffset)
             })) {
                 noteOffShift = 'monophonic'
@@ -131,8 +131,8 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
                 'name.ref': 'neutralArpeggio',
                 'noteoff.shift': noteOffShift,
                 'note.order': noteOrder,
-                'frame.start': (-duration / 2) * 1000,
-                'frameLength': duration * 1000,
+                'frame.start': +((-duration / 2) * 1000).toFixed(0),
+                'frameLength': +(duration * 1000).toFixed(0),
                 'scale': Math.max(lastVel, firstVel) - avarageVelocity,
                 'time.unit': 'milliseconds',
                 'gradient': gradient

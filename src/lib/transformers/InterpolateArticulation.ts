@@ -50,14 +50,14 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
 
         const articulations: Articulation[] = []
         const chords = Object.entries(msm.asChords(this.options?.part))
-        chords.forEach(([date, chord], i) => {
+        chords.forEach(([date, chord]) => {
             if (!chord.length) {
                 console.log('empty chord encountered.')
                 return
             }
 
             const chordArticulations: Articulation[] = []
-            chord.forEach((note, i) => {
+            chord.forEach(note => {
                 if (!note.bpm) {
                     console.log('no bpm defined for the given note', note["xml:id"], 'at date', date)
                     return

@@ -25,8 +25,7 @@ export const calculateBeatLength = (beatLength: Omit<'everything', BeatLengthBas
             console.log('thirdbar=', result)
             break;
         case 'everything':
-            console.warn('calculating tempo based on every note is not yet implemented');
-            break;
+            throw new Error('calculating a regular beat length is not possible for value "everything"')
     }
     return result * 720;
 }

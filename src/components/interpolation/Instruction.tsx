@@ -34,6 +34,8 @@ const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarge
                 className='instruction'
                 x={x}
                 y={y}
+                rx={8}
+                ry={8}
                 width={90}
                 height={30}
                 onClick={(e) => {

@@ -73,14 +73,14 @@ export class MSM {
                     'part': pair.scoreNote!.part,
                     'xml:id': pair.scoreNote!.id,
                     'date': Mei.qstampToTstamp(pair.scoreNote!.qstamp),
+                    'duration': Mei.qstampToTstamp(pair.scoreNote!.duration),
                     'pitchname': pair.scoreNote!.pname!,
                     'octave': pair.scoreNote!.octave!,
                     'accidentals': pair.scoreNote!.accid!,
                     'midi.pitch': pair.midiNote!.pitch,
                     'midi.onset': pair.midiNote!.onsetTime,
                     'midi.duration': pair.midiNote!.duration,
-                    'midi.velocity': pair.midiNote!.velocity,
-                    'duration': Mei.qstampToTstamp(pair.scoreNote!.duration)
+                    'midi.velocity': pair.midiNote!.velocity
                 }
             })
         this.timeSignature = alignedPerformance.score?.timeSignature()
