@@ -56,7 +56,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
         this.setOptions(options || {
             minimumArpeggioSize: 3,
             durationThreshold: 35,
-            noteOffShiftTolerance: 10,
+            noteOffShiftTolerance: 500,
             part: 'global'
         })
     }
@@ -97,16 +97,18 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             else gradient = 'no-gradient'
             const avarageVelocity = (lastVel + firstVel) / 2
 
-            // interpolate noteoff.shift
-            const inToleranceRange = (x: number, target: number): boolean => x >= (target - shiftTolerance / 2) && x <= (target + shiftTolerance / 2)
-            let noteOffShift = 'unknown'
-            const firstNote = sortedByOnset[0]
+            // helper function to check wether a value is in the shift tolerance
             const shiftTolerance = this.options?.noteOffShiftTolerance || 0
-            const ends = sortedByOnset.map(n => n['midi.onset'] + n['midi.duration'])
+            const inToleranceRange = (x: number, target: number): boolean => x >= (target - (shiftTolerance / 1000) / 2) && x <= (target + (shiftTolerance / 1000) / 2)
 
-            // if every offset is in the tolerance range of the first offset, 
-            // no shifting is needed
-            if (ends.every(e => inToleranceRange(e, ends[0]))) noteOffShift = 'false'
+            // by default, no offset shifting is applied
+            let noteOffShift = 'false'
+
+            // if every note has the same duration (including tolerance) like the first note, 
+            // set noteoff.shift to true
+            const firstNote = sortedByOnset[0]
+            if (sortedByOnset.every(note => inToleranceRange(note['midi.duration'], firstNote['midi.duration'])))
+                noteOffShift = 'true'
 
             // if every onset is in the tolerance range of the previous offset, 
             // set noteoff.shift to monophonic
@@ -114,15 +116,8 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
                 if (i === 0) return true
                 const lastOffset = notes[i - 1]['midi.onset'] + notes[i - 1]['midi.duration']
                 return inToleranceRange(note['midi.onset'], lastOffset)
-            })) {
+            }))
                 noteOffShift = 'monophonic'
-            }
-
-            // if every note has the same duration (including tolerance), 
-            // set duration to 
-            else if (sortedByOnset.every(note => inToleranceRange(note['midi.duration'], firstNote['midi.duration']))) {
-                noteOffShift = 'true'
-            }
 
             ornaments.push({
                 'type': 'ornament',

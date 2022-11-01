@@ -76,7 +76,7 @@ export const MidiLikeGrid: FC<MidiLikeGridProps> = ({ children, pitchHeight, wid
       {Array.from(Array(88).keys()).map(pitch => {
         const y = getVerticalPosition(pitch + range[0])
         const bold = ((pitch + range[0] + 1) % 12) === 0 
-        console.log('bold=', bold)
+
         return (
           <g>
             {bold ? (
@@ -107,7 +107,7 @@ interface GraphicalLikeGridProps extends GenericGridProps {
 export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, numberOfRows, width }): JSX.Element => {
   const rowHeight = 50
   const getVerticalPosition = (row: number) => {
-    return row * rowHeight
+    return (row + 1) * rowHeight
   }
 
   return (
@@ -117,9 +117,9 @@ export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, number
           key={`line${Date.now()}-${lineNumber}`}
           className='separator-line'
           x1={0}
-          y1={(lineNumber + 1) * rowHeight}
+          y1={getVerticalPosition(lineNumber)}
           x2={width}
-          y2={(lineNumber + 1) * rowHeight} />
+          y2={getVerticalPosition(lineNumber)} />
       ))}
       {children(getVerticalPosition)}
     </g>
