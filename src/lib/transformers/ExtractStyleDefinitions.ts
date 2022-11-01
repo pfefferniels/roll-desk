@@ -52,7 +52,7 @@ export class ExtractStyleDefinitions extends AbstractTransformer<ExtractStyleDef
     public transform(msm: MSM, mpm: MPM): string {
         ([0, 1, 'global'] as Part[]).forEach((part => {
             mpm.getInstructions<Ornament>('ornament', part as Part).forEach(ornament => {
-                if (ornament['frame.start'] && ornament['frameLength']) {
+                if (ornament['frame.start'] !== undefined && ornament['frameLength'] !== undefined) {
                     // TODO: find a possibly existing definition which is in the
                     // range of tolerance. If found, merge.
                     let transition: [number | undefined, number | undefined] = [undefined, undefined]
