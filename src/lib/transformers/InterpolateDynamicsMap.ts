@@ -34,7 +34,7 @@ export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynam
     public transform(msm: MSM, mpm: MPM): string {
         type TimedVelocity = {
             date: number,
-            volume: number | undefined
+            volume?: number
         }
 
         const affectedNotes =
@@ -76,16 +76,30 @@ export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynam
                 return acc
             }
 
-            // find trends
+            // Find trends. Three data points are needed: first (-2), second (-1), current (0).
+            // If possible, delete the middle element (second).
             const first = acc[acc.length - 2]
             const second = acc[acc.length - 1]
             if (first && second) {
                 if ((first.volume < second.volume && second.volume < curr.volume) || // crescendo trend
                     (first.volume > second.volume && second.volume > curr.volume)) { // or decrescendo trend
                     // remove middle element (last in acc array)
-                    // and insert a transitionTo in the one before
+                    // and add @transition.to and @protraction
+                    // to the preceding instruction.
+                    // TODO interpolate @curvature
+
+                    const averageVolume = (+first.volume + curr.volume) / 2
+                    const distance = +second.volume - averageVolume
+                    const maxDistance = averageVolume - curr.volume
+                    const protraction = distance / maxDistance
+
+                    if (first.protraction)
+                        first.protraction = +((first.protraction + (+protraction)) / 2).toFixed(2)
+                    else
+                        first.protraction = +protraction.toFixed(2)
+
+                    first['transition.to'] = curr.volume
                     acc.pop()
-                    first["transition.to"] = curr.volume
                 }
             }
 
