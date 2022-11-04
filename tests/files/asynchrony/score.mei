@@ -5,22 +5,33 @@
     <meiHead>
         <fileDesc>
             <titleStmt>
-                <title>Nocturne in D-Flat Major</title>
-                <respStmt>
-                    <persName role="composer">Frederick Chopin</persName>
-                </respStmt>
+                <title>Asynchrony Test</title>
             </titleStmt>
             <pubStmt>
-                <date isodate="2021-11-24" type="encoding-date">2021-11-24</date>
+                <respStmt>
+                    <persName role="encoder">Niels Pfeffer</persName>
+                </respStmt>
+                <date isodate="2022">2022</date>
             </pubStmt>
+            <seriesStmt>
+                <title>Measuring Early Records</title>
+            </seriesStmt>
+            <notesStmt>
+                <annot>
+                    Sauer plays this with excerpt with every melody note clearly delayed.
+                </annot>
+            </notesStmt>
+            <sourceDesc>
+                <source>
+                    <bibl>
+                        Excerpt from Chopin's Nocturne op. 27 no. 2,
+                        played by Emil von Sauer, WM 879.
+                    </bibl>
+                </source>
+            </sourceDesc>
         </fileDesc>
-        <encodingDesc xml:id="encodingdesc-2u6e1r">
-            <appInfo xml:id="appinfo-s16emm">
-                <application xml:id="application-6f48vn" isodate="2021-11-26T10:29:17" version="3.8.0-dev-6f67c0a">
-                    <name xml:id="name-hireu5">Verovio</name>
-                    <p xml:id="p-v6uaxz">Transcoded from MusicXML</p>
-                </application>
-            </appInfo>
+        <encodingDesc>
+            <appInfo />
         </encodingDesc>
     </meiHead>
     <music>
