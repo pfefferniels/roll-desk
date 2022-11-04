@@ -42,6 +42,7 @@ type DatedInstruction<T extends string> = {
 export interface Dynamics extends DatedInstruction<'dynamics'>, WithXmlId {
     volume: number | string
     'transition.to'?: number
+    protraction?: number
 }
 
 /**

@@ -1,7 +1,7 @@
 import React, { FC } from "react";
 
 interface GenericGridProps {
-  children: (fn: any) => React.ReactNode
+  children: ((fn: any) => React.ReactNode)[] | ((fn: any) => React.ReactNode)
   width: number
 }
 
@@ -51,7 +51,7 @@ export const StaffLikeGrid: FC<StaffLikeGridProps> = ({ children, staffSize, wid
           stroke='black'
           strokeWidth={0.4} />
       ))}
-      {children(getVerticalPosition)}
+      {Array.isArray(children) ? children.map(child => child(getVerticalPosition)) : children(getVerticalPosition)}
     </g>
   )
 }
@@ -92,7 +92,7 @@ export const MidiLikeGrid: FC<MidiLikeGridProps> = ({ children, pitchHeight, wid
           </g>
         )
       })}
-      {children(getVerticalPosition)}
+      {Array.isArray(children) ? children.map(child => child(getVerticalPosition)) : children(getVerticalPosition)}
     </g>
   )
 }
@@ -121,7 +121,7 @@ export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, number
           x2={width}
           y2={getVerticalPosition(lineNumber)} />
       ))}
-      {children(getVerticalPosition)}
+      {Array.isArray(children) ? children.map(child => child(getVerticalPosition)) : children(getVerticalPosition)}
     </g>
   )
 }

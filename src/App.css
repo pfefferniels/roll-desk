@@ -8,10 +8,15 @@
 }
 
 .midiNote {
-  fill-opacity: 0.3;
-  fill: gray;
+  fill-opacity: 0.4;
+  fill: white;
   stroke: black;
   cursor: crosshair;
+}
+
+.secondaryMidiNote {
+  fill-opacity: 0.2;
+  fill: blue;
 }
 
 .missingNote {

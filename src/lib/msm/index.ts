@@ -200,6 +200,14 @@ export class MSM {
     public lastDate(): number {
         return Math.max(...this.allNotes.map(note => note.date))
     }
+
+    /**
+     * Returns the last note
+     * @returns MSM note
+     */
+     public lastNote(): MsmNote | undefined {
+        return this.allNotes.find(n => n.date === this.lastDate())
+    }
 }
 
 /**

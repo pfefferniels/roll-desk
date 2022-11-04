@@ -10,9 +10,12 @@ interface MSMGridProps {
 }
 
 export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
+    const lastNote = msm.lastNote()
+    const maxWidth = ((lastNote?.date || 0) + (lastNote?.duration || 0)) * horizontalStretch
+
     return (
         <System spacing={14} staffSize={7}>
-            <StaffLikeGrid clef='G' width={2000} staffSize={7}>
+            <StaffLikeGrid clef='G' width={maxWidth} staffSize={7}>
                 {(getVerticalPosition: any) => {
                     return (
                         <g>
@@ -31,7 +34,7 @@ export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
                     );
                 }}
             </StaffLikeGrid>
-            <StaffLikeGrid clef='F' width={2000} staffSize={7}>
+            <StaffLikeGrid clef='F' width={maxWidth} staffSize={7}>
                 {(getVerticalPosition: any) => {
                     return (
                         <g>
