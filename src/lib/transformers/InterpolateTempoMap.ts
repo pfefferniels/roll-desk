@@ -24,11 +24,11 @@ export interface InterpolateTempoMapOptions extends TransformationOptions {
  * Interpolates the global tempo and inserts it into the MPM
  */
 export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMapOptions> {
-    constructor() {
+    constructor(options?: InterpolateTempoMapOptions) {
         super()
 
         // set the default options
-        this.setOptions({
+        this.setOptions(options || {
             beatLength: 'denominator',
             epsilon: 4,
             precision: 0
