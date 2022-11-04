@@ -83,6 +83,7 @@ export class MSM {
                     'midi.velocity': pair.midiNote!.velocity
                 }
             })
+            .sort((a, b) => a['date'] - b['date'])
         this.timeSignature = alignedPerformance.score?.timeSignature()
     }
 
