@@ -96,7 +96,7 @@ export class Mei extends RdfEntity {
     }
 
     public static qstampToTstamp(qstamp: number): number {
-        return qstamp * 720
+        return Math.round(qstamp * 720)
     }
 
     /**
