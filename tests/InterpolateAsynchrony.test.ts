@@ -1,9 +1,12 @@
 import { Asynchrony, MPM } from "../src/lib/mpm"
 import { prepareMSM } from "../src/lib/msm"
-import { readFile, readFileSync } from "fs"
+import { readFileSync } from "fs"
 import { InterpolateAsynchrony } from "../src/lib/transformers"
+import { jest } from '@jest/globals'
 
 describe('InterpolateAsynchrony', () => {
+    jest.setTimeout(60000)
+
     it(`Interpolates asynchrony in a real-world test case (WM 879)`, async () => {
         // Arrange
         const msm = await prepareMSM(

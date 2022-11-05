@@ -2,8 +2,11 @@ import { Dynamics, MPM } from "../src/lib/mpm"
 import { prepareMSM } from "../src/lib/msm"
 import { readFileSync } from "fs"
 import { InterpolateDynamicsMap } from "../src/lib/transformers"
+import { jest } from '@jest/globals'
 
 describe('InterpolateDynamics', () => {
+    jest.setTimeout(60000)
+
     it(`Interpolates dynamics in a real-world test case (WM 198)`, async () => {
         // Arrange
         const msm = await prepareMSM(

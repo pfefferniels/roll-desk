@@ -2,8 +2,11 @@ import { MPM, Tempo } from "../src/lib/mpm"
 import { InterpolateTempoMap } from "../src/lib/transformers"
 import { prepareMSM } from "../src/lib/msm"
 import { readFileSync } from "fs"
+import { jest } from '@jest/globals'
 
 describe('InterpolateTempoMap', () => {
+    jest.setTimeout(60000)
+
     it(`Generates a tempo map with exactly one tempo tempo
         instruction given a MIDI file with a constant tempo`, async () => {
         // Arrange

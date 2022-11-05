@@ -2,8 +2,11 @@ import { MPM, Ornament } from "../src/lib/mpm"
 import { InterpolatePhysicalOrnamentation } from "../src/lib/transformers"
 import { prepareMSM } from "../src/lib/msm"
 import { readFileSync } from "fs"
+import { jest } from '@jest/globals'
 
 describe('InterpolatePhysicalOrnamentation', () => {
+    jest.setTimeout(60000)
+
     it(`does not interpolate anything when no arpeggiation is given`, async () => {
         // Arrange
         const msm = await prepareMSM(
