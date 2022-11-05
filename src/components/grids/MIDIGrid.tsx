@@ -19,7 +19,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
 
   const [dimensions, setDimensions] = useState<GridDimensions>({
     shift: 60,
-    stretch: 60,
+    stretch: 100,
     staffSize: 5,
     areaHeight: 280
   })
@@ -51,7 +51,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
             width={n.duration * dimensions.stretch}
             height={dimensions.staffSize}
             onClick={() => {
-              postSynthMessage && playNote(n.pitch, postSynthMessage)
+              postSynthMessage && playNote(n.pitch, n.velocity, postSynthMessage)
               setActiveNote && setActiveNote(n)
             }}
             onMouseOver={() => setShowDetails(true)}

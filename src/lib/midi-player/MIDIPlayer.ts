@@ -148,7 +148,7 @@ export class MIDIPlayer {
   }
 }
 
-export const playNote = (pnum: number, postSynthMessage: (e: SynthEvent, transfer?: Transferable[]) => void) => {
+export const playNote = (pnum: number, velocity: number, postSynthMessage: (e: SynthEvent, transfer?: Transferable[]) => void) => {
   postSynthMessage({
     type: 'midi',
     midi: {
@@ -156,7 +156,7 @@ export const playNote = (pnum: number, postSynthMessage: (e: SynthEvent, transfe
       subtype: 'noteOn',
       channel: 0,
       noteNumber: pnum,
-      velocity: 70
+      velocity
     },
     delayTime: 0
   })
@@ -167,7 +167,7 @@ export const playNote = (pnum: number, postSynthMessage: (e: SynthEvent, transfe
       subtype: 'noteOff',
       channel: 0,
       noteNumber: pnum,
-      velocity: 70
+      velocity
     },
     delayTime: 20000
   })

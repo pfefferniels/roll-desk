@@ -70,7 +70,7 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
                         missing={false}
                         staffSize={dimensions.staffSize}
                         onClick={() => {
-                            if (postSynthMessage) playNote(n.pnum, postSynthMessage)
+                            if (postSynthMessage) playNote(n.pnum, 70, postSynthMessage)
                             setActiveNote(n)
                         }}
                     />
