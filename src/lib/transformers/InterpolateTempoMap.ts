@@ -187,7 +187,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
         else {
             let beatLength = calculateBeatLength(this.options?.beatLength || 'bar', msm.timeSignature);
 
-            for (let date = 0; date < msm.lastDate(); date += beatLength) {
+            for (let date = 0; date <= msm.lastDate(); date += beatLength) {
                 const performedNotes = msm.notesAtDate(date, 'global')
 
                 if (performedNotes && performedNotes[0]) {
@@ -203,6 +203,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 }
             }
         }
+        console.log('onsets=', onsets)
         const bpms = asBPM(onsets)
 
         const points: InterpolationPoint[] = bpms.map((bpm, i) => ({

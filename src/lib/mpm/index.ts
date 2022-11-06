@@ -265,7 +265,6 @@ export class MPM {
 
         const map = this.getMap(correspondingMapName, part, true)
 
-        console.log('inserting instructions into', map)
         if (!map) {
             console.log('cannot find part', part, 'in the MPM')
             return

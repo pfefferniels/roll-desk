@@ -10,11 +10,11 @@ import { loadVerovio, loadDomParser } from '../globals';
  * Temporary attributes used and manipulated in the process of interpolation.
  */
 type TemporaryAttributes = {
-    readonly 'midi.pitch': number,
-    'midi.onset': number,
-    'midi.duration': number,
-    'midi.velocity': number,
-    'bpm'?: number,
+    readonly 'midi.pitch': number
+    'midi.onset': number
+    'midi.duration': number
+    'midi.velocity': number
+    'bpm'?: number
     'bpm.beatLength'?: number
 }
 
