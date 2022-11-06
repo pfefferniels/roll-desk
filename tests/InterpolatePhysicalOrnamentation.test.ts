@@ -24,7 +24,24 @@ describe('InterpolatePhysicalOrnamentation', () => {
         expect(ornamentInstruction.length).toEqual(0)
     })
 
-    it(`correctly interpolates complex arpeggiations (WM 79)`, async () => {
+    it(`calculates the noteoff.shift attribute`, async () => {
+        // Arrange
+        const msm = await prepareMSM(
+            readFileSync('tests/files/arpeggiation/noteoff.shift.mei', 'utf-8'),
+            readFileSync('tests/files/arpeggiation/noteoff.shift.mid'),
+            readFileSync('tests/files/arpeggiation/noteoff.shift-alignment.jsonld', 'utf-8'))
+        const mpm = new MPM()
+
+        // Act
+        const transformer = new InterpolatePhysicalOrnamentation()
+        transformer.transform(msm, mpm)
+
+        // Assert
+        const ornamentInstructions = mpm.getInstructions<Ornament>('ornament', 'global')
+        expect(ornamentInstructions.map(o => o["noteoff.shift"])).toEqual(['true', 'false', 'monophonic'])
+    })
+
+    it(`correctly interpolates real-word arpeggiations (WM 79)`, async () => {
         // Arrange
         const msm = await prepareMSM(
             readFileSync('tests/files/arpeggiation/score.mei', 'utf16le'),
