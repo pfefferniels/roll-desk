@@ -2,6 +2,7 @@ import { Pipeline } from "./Pipeline";
 import {
     InterpolateDynamicsMap,
     InterpolatePhysicalOrnamentation,
+    InterpolateRubato,
     InterpolateSymbolicOrnamentation,
     InterpolateTempoMap,
     InterpolateTimingImprecision
@@ -37,11 +38,13 @@ export const defaultPipelines = {
     'chordal-texture': new Pipeline(
         new InterpolatePhysicalOrnamentation().setNext(
             new InterpolateTempoMap().setNext(
-                new InterpolateArticulation().setNext(
-                    new InterpolateSymbolicOrnamentation().setNext(
-                        new InterpolateDynamicsMap().setNext(
-                            new InterpolateTimingImprecision().setNext(
-                                new ExtractStyleDefinitions()
+                new InterpolateRubato().setNext(
+                    new InterpolateArticulation().setNext(
+                        new InterpolateSymbolicOrnamentation().setNext(
+                            new InterpolateDynamicsMap().setNext(
+                                new InterpolateTimingImprecision().setNext(
+                                    new ExtractStyleDefinitions()
+                                )
                             )
                         )
                     )
