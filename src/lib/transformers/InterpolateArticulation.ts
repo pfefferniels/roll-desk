@@ -1,4 +1,4 @@
-import { Articulation, MPM, Part } from "../mpm"
+import { Articulation, MPM, Part } from "../mpm/index"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 import { uuid } from '../globals'
@@ -25,6 +25,9 @@ export interface InterpolateArticulationOptions extends TransformationOptions {
  * It can be applied to different parts (melodic preset) or globally (chordal preset).
  * Should be applied after the `InterpolatePhysicalOrnamentation` and the 
  * `InterpolateTempoMap` transformer.
+ * 
+ * @note Interpolation of relative duration is tempo-dependent, meaning that its 
+ * precision depends on the precision of the tempo interpolation.
  */
 export class InterpolateArticulation extends AbstractTransformer<InterpolateArticulationOptions> {
     constructor(options?: InterpolateArticulationOptions) {
@@ -64,7 +67,7 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
                 }
 
                 // convert symbolic timing + bpm to physical timing
-                const fullDuration = (60 / (note.bpm || 0)) * note.duration / 720
+                const fullDuration = (60 / note.bpm) * (note.duration / 720)
                 const relativeDuration = +(note['midi.duration'] / fullDuration).toFixed(relativeDurationPrecision)
 
                 // if it takes the full length, we don't need to insert any instruction
