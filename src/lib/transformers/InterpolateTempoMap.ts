@@ -125,14 +125,33 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     douglasPeucker(points.slice(index), epsilon)
                 }
                 else {
+                    // Is there a <tempo> instruction already at the same date?
+                    const lastTempoInstruction = tempos[tempos.length - 1]
+                    if (lastTempoInstruction && lastTempoInstruction.date === start.tstamp) {
+                        // attach the transition to it
+                        lastTempoInstruction['transition.to'] = end.bpm
+                        lastTempoInstruction['meanTempoAt'] = +meanTempoAt.toFixed(2)
+                    }
+                    else {
+                        // otherwise completly new create a new instruction?
+                        tempos.push({
+                            'type': 'tempo',
+                            'xml:id': 'tempo_' + uuid(),
+                            'date': start.tstamp,
+                            'bpm': start.bpm,
+                            'transition.to': end.bpm,
+                            'beatLength': start.beatLength / 720 / 4,
+                            'meanTempoAt': +meanTempoAt.toFixed(2)
+                        })
+                    }
+
+                    // add <tempo> at the target date of the transition
                     tempos.push({
                         'type': 'tempo',
                         'xml:id': 'tempo_' + uuid(),
-                        'date': start.tstamp,
-                        'bpm': start.bpm,
-                        'transition.to': end.bpm,
-                        'beatLength': start.beatLength / 720 / 4,
-                        'meanTempoAt': +meanTempoAt.toFixed(2)
+                        'date': end.tstamp,
+                        'bpm': end.bpm,
+                        'beatLength': end.beatLength / 720 / 4
                     })
 
                     msm.allNotes.forEach(n => {
@@ -144,19 +163,24 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 }
             }
             else {
-                tempos.push({
-                    'type': 'tempo',
-                    'xml:id': 'tempo_' + uuid(),
-                    'date': start.tstamp,
-                    'bpm': start.bpm,
-                    'beatLength': start.beatLength / 720 / 4
-                })
-                msm.allNotes.forEach(n => {
-                    if (n.date >= start.tstamp) {
-                        n['bpm'] = start.bpm
-                        n['bpm.beatLength'] = start.beatLength
-                    }
-                })
+                // Is there a <tempo> instruction already at the same date? No need
+                // to insert a new one.
+                const lastTempoInstruction = tempos[tempos.length - 1]
+                if (!lastTempoInstruction || lastTempoInstruction.date !== start.tstamp) {
+                    tempos.push({
+                        'type': 'tempo',
+                        'xml:id': 'tempo_' + uuid(),
+                        'date': start.tstamp,
+                        'bpm': start.bpm,
+                        'beatLength': start.beatLength / 720 / 4
+                    })
+                    msm.allNotes.forEach(n => {
+                        if (n.date >= start.tstamp) {
+                            n['bpm'] = start.bpm
+                            n['bpm.beatLength'] = start.beatLength
+                        }
+                    })
+                }
             }
         }
 
