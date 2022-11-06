@@ -23,7 +23,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
     staffSize: 5,
     areaHeight: 280
   })
-  const [showDetails, setShowDetails] = useState(false)
+  const [showDetailsForNote, setShowDetailsForNote] = useState(-1)
 
   const notes = performance.asNotes()
   const secondaryNotes = secondaryPerformance?.asNotes()
@@ -33,7 +33,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
     return (
       notes.map(n =>
         <g>
-          {showDetails &&
+          {n.id === showDetailsForNote &&
             <text x={n.onsetTime * dimensions.stretch + dimensions.shift}
               y={getVerticalPosition(n.pitch)}
               className='labelText'>
@@ -54,8 +54,8 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
               postSynthMessage && playNote(n.pitch, n.velocity, postSynthMessage)
               setActiveNote && setActiveNote(n)
             }}
-            onMouseOver={() => setShowDetails(true)}
-            onMouseLeave={() => setShowDetails(false)}
+            onMouseOver={() => setShowDetailsForNote(n.id)}
+            onMouseLeave={() => setShowDetailsForNote(-1)}
           />
         </g>)
     )
@@ -68,13 +68,6 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
     return (
       secondaryNotes.map(n =>
         <g>
-          {showDetails &&
-            <text x={n.onsetTime * dimensions.stretch + dimensions.shift}
-              y={getVerticalPosition(n.pitch)}
-              className='labelText'>
-              {pitchToSitch(n.pitch)} ({n.velocity})
-            </text>
-          }
           <rect
             key={`${performance.id}_${n.id}`}
             id={`${performance.id}_${n.id}`}
