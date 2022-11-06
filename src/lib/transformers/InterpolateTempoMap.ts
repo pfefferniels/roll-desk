@@ -4,7 +4,15 @@ import { MSM } from "../msm";
 import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
 
-const asBPM = (arr: number[]) => arr.slice(1).map((n, i) => n - arr[i]).filter(n => n !== 0).map(d => +(60 / d).toFixed(3))
+const asBPM = (arr: number[]) => {
+    let result = []
+    for (let i = 0; i < arr.length - 1; i++) {
+        const diff = arr[i + 1] - arr[i]
+        if (diff === 0) continue
+        result.push(60 / diff)
+    }
+    return result
+}
 
 export interface InterpolateTempoMapOptions extends TransformationOptions {
     beatLength: BeatLengthBasis
@@ -37,11 +45,25 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
     public name() { return 'InterpolateTempoMap' }
 
+    /**
+     * Deletes the silence before the first note is being played 
+     * 
+     * @param msm MSM to perform the shifting on
+     */
+    private shiftToFirstOnset(msm: MSM) {
+        const firstOnset = Math.min(...msm.allNotes.map(n => n["midi.onset"]))
+        msm.allNotes.forEach(n => n["midi.onset"] -= firstOnset)
+    }
+
     transform(msm: MSM, mpm: MPM): string {
         if (!msm.timeSignature) {
             console.warn('A time signature must be given to interpolate a tempo map.')
             return super.transform(msm, mpm);
         }
+
+        // before starting to calculate the <tempo> instructions,
+        // make sure to delete the arbitrary silence before the first note onset
+        this.shiftToFirstOnset(msm)
 
         let tempos: Tempo[] = []
 
@@ -114,8 +136,10 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     })
 
                     msm.allNotes.forEach(n => {
-                        n['bpm'] = powFunction(n.date)
-                        n['bpm.beatLength'] = start.beatLength
+                        if (n.date >= start.tstamp) {
+                            n['bpm'] = powFunction(n.date)
+                            n['bpm.beatLength'] = start.beatLength
+                        }
                     })
                 }
             }
@@ -128,8 +152,10 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     'beatLength': start.beatLength / 720 / 4
                 })
                 msm.allNotes.forEach(n => {
-                    n['bpm'] = start.bpm
-                    n['bpm.beatLength'] = start.beatLength
+                    if (n.date >= start.tstamp) {
+                        n['bpm'] = start.bpm
+                        n['bpm.beatLength'] = start.beatLength
+                    }
                 })
             }
         }
@@ -154,7 +180,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 }
                 else {
                     // otherwise use the distance to the next chord as beat length
-                    beatLengths.push((+chords[i+1][0]) - (+date))
+                    beatLengths.push((+chords[i + 1][0]) - (+date))
                 }
             })
         }
@@ -188,8 +214,35 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
         douglasPeucker(points, this.options?.epsilon || 4)
 
         mpm.insertInstructions(tempos, 'global')
-
+        this.reduceMidiOnset(msm)
         return super.transform(msm, mpm)
+    }
+
+    /**
+     * Substracts the calculated onsets from the original onsets, 
+     * so that only the difference remains for further transformations.
+     * 
+     * @param msm MSM to perform the onset reduction on
+     */
+    reduceMidiOnset(msm: MSM) {
+        const chords = Object.entries(msm.asChords('global'))
+        let perfDate = 0
+        chords.forEach(([date, chord], i) => {
+            if (i === 0) return
+
+            const dateDiff = +date - (+chords[i - 1][0])
+            const bpm = chords[i - 1][1][0].bpm
+            if (!bpm) {
+                console.log('No BPM found.')
+                return
+            }
+
+            perfDate += (60 / bpm) * (dateDiff / 720)
+
+            chord.forEach(note => {
+                note['midi.onset'] -= perfDate
+            })
+        })
     }
 }
 
