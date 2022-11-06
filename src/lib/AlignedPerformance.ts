@@ -69,7 +69,7 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
 
             return {
                 scoreNote: this.score?.getById(scoreId || ''),
-                midiNote: this.rawPerformance?.getById(+midiId),
+                midiNote: this.rawPerformance?.getById(midiId),
                 motivation
             }
         })
@@ -130,10 +130,18 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
                 const motivation = result['?motivation'].value
 
                 const meiId = scoreNote.slice(scoreNote.lastIndexOf('#') + 1)
-                const midiId = midiNote.slice(midiNote.lastIndexOf('_') + 1)
+
+                const matches = midiNote.match(/track_(\d+)\/event_(\d+)/)
+                console.log('midiNote=', midiNote, matches)
+                if (!matches || matches.length != 3) {
+                    console.log('could not parse Linked MIDI entry', midiNote)
+                    return
+                }
+                const midiId = `${matches[1]}_${matches[2]}`
+
                 const motivationId = motivation.slice(motivation.lastIndexOf('#' + 1))
                 const scoreNoteObj = this.score?.getById(meiId)
-                const midiNoteObj = this.rawPerformance?.getById(+midiId)
+                const midiNoteObj = this.rawPerformance?.getById(midiId)
 
                 if (!scoreNoteObj || !midiNoteObj) {
                     console.log('could not find the objects in the alignments in the given score and MIDI file.')

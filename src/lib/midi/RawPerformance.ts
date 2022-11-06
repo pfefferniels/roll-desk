@@ -6,7 +6,7 @@ import { Visitable } from '../visitors/Visitable';
 import { Visitor } from '../visitors/Visitor';
 
 export type MidiNote = {
-    id: number,
+    id: string,
     onsetTime: number,
     pitch: number,
     velocity: number,
@@ -61,7 +61,7 @@ export class RawPerformance extends RdfEntity implements Visitable {
         let result: MidiNote[] = []
         let currentTickTime = 0
 
-        this.midi.tracks.forEach((events: AnyEvent[]) => {
+        this.midi.tracks.forEach((events: AnyEvent[], trackNumber) => {
             let currentTime = 0
             events.forEach((event: AnyEvent, index: number) => {
                 currentTime += event.deltaTime
@@ -73,7 +73,7 @@ export class RawPerformance extends RdfEntity implements Visitable {
                     const noteOnEvent = event as NoteOnEvent
 
                     result.push({
-                        id: index,
+                        id: `${trackNumber}_${index}`,
                         onsetTime: currentTickTime * currentTime,
                         pitch: noteOnEvent.noteNumber || 0,
                         velocity: noteOnEvent.velocity || 0,
@@ -101,7 +101,7 @@ export class RawPerformance extends RdfEntity implements Visitable {
             return {
                 ontime: note.onsetTime,
                 offtime: note.onsetTime + note.duration,
-                id: note.id.toString(),
+                id: note.id,
                 pitch: note.pitch,
                 sitch: pitchToSitch(note.pitch),
                 onvel: 80,
@@ -115,7 +115,7 @@ export class RawPerformance extends RdfEntity implements Visitable {
         return pr
     }
 
-    public getById(id: number): MidiNote | undefined {
+    public getById(id: string): MidiNote | undefined {
         return this.asNotes().find(note => note.id === id)
     }
 

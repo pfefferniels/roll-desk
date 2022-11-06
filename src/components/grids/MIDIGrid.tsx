@@ -23,7 +23,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
     staffSize: 5,
     areaHeight: 280
   })
-  const [showDetailsForNote, setShowDetailsForNote] = useState(-1)
+  const [showDetailsForNote, setShowDetailsForNote] = useState('')
 
   const notes = performance.asNotes()
   const secondaryNotes = secondaryPerformance?.asNotes()
@@ -55,7 +55,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
               setActiveNote && setActiveNote(n)
             }}
             onMouseOver={() => setShowDetailsForNote(n.id)}
-            onMouseLeave={() => setShowDetailsForNote(-1)}
+            onMouseLeave={() => setShowDetailsForNote('')}
           />
         </g>)
     )
