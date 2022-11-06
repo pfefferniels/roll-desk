@@ -72,7 +72,6 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
     public name() { return 'InterpolatePhysicalOrnamentation' }
 
     public transform(msm: MSM, mpm: MPM): string {
-        console.log('interpolating physical arpeggiation')
         const ornaments: Ornament[] = []
 
         const chords = msm.asChords(this.options?.part)
@@ -113,22 +112,22 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
 
             // by default, no offset shifting is applied
             let noteOffShift = 'false'
-
-            // if every note has the same duration (including tolerance) like the first note, 
-            // set noteoff.shift to true
             const firstNote = sortedByOnset[0]
-            if (sortedByOnset.every(note => inToleranceRange(note['midi.duration'], firstNote['midi.duration'])))
-                noteOffShift = 'true'
 
             // if every onset is in the tolerance range of the previous offset, 
-            // set noteoff.shift to monophonic
-            else if (sortedByOnset.every((note, i, notes) => {
+            // set noteoff.shift to monophonic. This should be tested first, 
+            // since it might be a special case of arpeggiation with regular note off shifting.
+            if (sortedByOnset.every((note, i, notes) => {
                 if (i === 0) return true
                 const lastOffset = notes[i - 1]['midi.onset'] + notes[i - 1]['midi.duration']
                 return inToleranceRange(note['midi.onset'], lastOffset)
             }))
                 noteOffShift = 'monophonic'
-            
+            // if every note has the same duration (including tolerance) like the first note, 
+            // set noteoff.shift to true
+            else if (sortedByOnset.every(note => inToleranceRange(note['midi.duration'], firstNote['midi.duration'])))
+                noteOffShift = 'true'
+
             // define the frame start based on the given option
             const frameLength = +(duration * 1000).toFixed(0)
             let frameStart: number, newOnset: number
