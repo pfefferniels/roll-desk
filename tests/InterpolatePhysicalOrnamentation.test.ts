@@ -54,12 +54,12 @@ describe('InterpolatePhysicalOrnamentation', () => {
         transformer.transform(msm, mpm)
 
         // Assert
-        const ornamentInstructions = mpm.getInstructions<Ornament>('ornament', 'global')
-        expect(ornamentInstructions.length).toEqual(7)
-        ornamentInstructions.forEach(ornament => {
-            expect(ornament).toMatchSnapshot({
-                'xml:id': expect.any(String)
-            })
-        })
+        // In all the three bars, every chord is arpeggiated, which should result
+        // in 9 arpeggio instructions. Their lengthes are measured in Sonic Visualiser.
+        // The last two, however, are being played so quickly, that they fall
+        // under the default threshold.
+        const arpeggios = mpm.getInstructions<Ornament>('ornament', 'global')
+        expect(arpeggios).toHaveLength(7)
+        expect(arpeggios.map(a => a.frameLength)).toEqual([130, 35, 99, 310, 136, 188, 172 /* 12, 3 */])
     })
 })
