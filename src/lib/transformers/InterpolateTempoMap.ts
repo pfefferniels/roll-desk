@@ -145,6 +145,14 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         })
                     }
 
+                    // update the MSM bpm values accordingly
+                    msm.allNotes.forEach(n => {
+                        if (n.date >= start.tstamp) {
+                            n['bpm'] = powFunction(n.date)
+                            n['bpm.beatLength'] = start.beatLength
+                        }
+                    })
+
                     // add <tempo> at the target date of the transition
                     tempos.push({
                         'type': 'tempo',
@@ -154,10 +162,11 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         'beatLength': end.beatLength / 720 / 4
                     })
 
+                    // update the MSM bpm values accordingly
                     msm.allNotes.forEach(n => {
-                        if (n.date >= start.tstamp) {
-                            n['bpm'] = powFunction(n.date)
-                            n['bpm.beatLength'] = start.beatLength
+                        if (n.date >= end.tstamp) {
+                            n['bpm'] = end.bpm
+                            n['bpm.beatLength'] = end.beatLength
                         }
                     })
                 }
