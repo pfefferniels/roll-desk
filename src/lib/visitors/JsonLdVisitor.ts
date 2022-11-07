@@ -63,7 +63,9 @@ export class JsonLdVisitor implements Visitor {
                     result["la:hasScoreNote"] = `http://measuring-early-records.org/score/score.mei#${pair.scoreNote.id}`
                 }
                 if (pair.midiNote) {
-                    result["la:hasMIDINote"] = `${alignment.rawPerformance?.uri}/track_0/event_${pair.midiNote.id}`
+                    const matches = pair.midiNote.id.match(/(.+)_(.+)/)
+                    if (!matches) return result
+                    result["la:hasMIDINote"] = `${alignment.rawPerformance?.uri}/track_${matches[1]}/event_${matches[2]}`
                 }
 
                 return result
