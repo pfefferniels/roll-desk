@@ -25,10 +25,10 @@ export class InterpolateSymbolicOrnamentation extends AbstractTransformer<Interp
 
             o['frame.start'] = physicalToSymbolic(o['frame.start'],
                 correspondingMsmNote.bpm || 60,
-                correspondingMsmNote['bpm.beatLength'] || 720).toFixed(2)
+                (correspondingMsmNote['bpm.beatLength'] || 0.25) * 4 * 720).toFixed(2)
             o['frameLength'] = physicalToSymbolic(o['frameLength'],
                 correspondingMsmNote.bpm || 60,
-                correspondingMsmNote['bpm.beatLength'] || 720).toFixed(2)
+                (correspondingMsmNote['bpm.beatLength'] || 0.25) * 4 * 720).toFixed(2)
             o['time.unit'] = 'ticks'
         })
 

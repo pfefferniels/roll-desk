@@ -53,7 +53,7 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
 
         const articulations: Articulation[] = []
         const chords = Object.entries(msm.asChords(this.options?.part))
-        chords.forEach(([date, chord]) => {
+        chords.forEach(([date, chord], i) => {
             if (!chord.length) {
                 console.log('empty chord encountered.')
                 return
@@ -61,13 +61,13 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
 
             const chordArticulations: Articulation[] = []
             chord.forEach(note => {
-                if (!note.bpm) {
+                if (!note.bpm || !note['bpm.beatLength']) {
                     console.log('no bpm defined for the given note', note["xml:id"], 'at date', date)
                     return
                 }
 
                 // convert symbolic timing + bpm to physical timing
-                const fullDuration = (60 / note.bpm) * (note.duration / 720)
+                const fullDuration = ((60 / ((note['bpm.beatLength'] || 0.25) * 4)) / note.bpm) * (note.duration / 720)
                 const relativeDuration = +(note['midi.duration'] / fullDuration).toFixed(relativeDurationPrecision)
 
                 // if it takes the full length, we don't need to insert any instruction

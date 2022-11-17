@@ -15,6 +15,11 @@ const asBPM = (arr: number[]) => {
 }
 
 export interface InterpolateTempoMapOptions extends TransformationOptions {
+    /**
+     * The basis on which to calculate the beat lengths on. 
+     * @todo It should be possible to define ranges in a piece
+     * with different beat lengthes.
+     */
     beatLength: BeatLengthBasis
 
     /**
@@ -151,7 +156,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     msm.allNotes.forEach(n => {
                         if (n.date >= start.tstamp) {
                             n['bpm'] = +powFunction(n.date).toFixed(precision)
-                            n['bpm.beatLength'] = start.beatLength
+                            n['bpm.beatLength'] = start.beatLength / 720 / 4
                         }
                     })
 
@@ -185,13 +190,13 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         'bpm': +start.bpm.toFixed(precision),
                         'beatLength': start.beatLength / 720 / 4
                     })
-                    msm.allNotes.forEach(n => {
-                        if (n.date >= start.tstamp) {
-                            n['bpm'] = +start.bpm.toFixed(precision)
-                            n['bpm.beatLength'] = start.beatLength
-                        }
-                    })
                 }
+                msm.allNotes.forEach(n => {
+                    if (n.date >= start.tstamp) {
+                        n['bpm'] = +start.bpm.toFixed(precision)
+                        n['bpm.beatLength'] = start.beatLength / 720 / 4
+                    }
+                })
             }
         }
 
@@ -220,7 +225,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             })
         }
         else {
-            let beatLength = calculateBeatLength(this.options?.beatLength || 'bar', msm.timeSignature);
+            const beatLength = calculateBeatLength(this.options?.beatLength || 'bar', msm.timeSignature);
 
             for (let date = 0; date <= msm.lastDate(); date += beatLength) {
                 const performedNotes = msm.notesAtDate(date, 'global')
@@ -231,10 +236,9 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     beatLengths.push(beatLength)
                 }
                 else {
-                    // if a tstamp has no notes, this probably 
-                    // indicates rests which can safely be ignored.
-                    // TODO is this correct?
-                    console.log('empty tstamp', date)
+                    // We singularly prolong the beat length until
+                    // we find a succeeding event
+                    beatLengths[beatLengths.length - 1] += beatLength
                 }
             }
         }
@@ -267,12 +271,13 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
             const dateDiff = +date - (+chords[i - 1][0])
             const bpm = chords[i - 1][1][0].bpm
+            const bpmBeatLength = chords[i - 1][1][0]["bpm.beatLength"]
             if (!bpm) {
                 console.log('No BPM found.')
                 return
             }
 
-            perfDate += (60 / bpm) * (dateDiff / 720)
+            perfDate += ((60 / ((bpmBeatLength || 0.25) * 4)) / bpm) * (dateDiff / 720)
 
             chord.forEach(note => {
                 note['midi.onset'] -= perfDate
