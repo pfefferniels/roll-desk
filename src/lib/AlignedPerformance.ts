@@ -132,7 +132,6 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
                 const meiId = scoreNote.slice(scoreNote.lastIndexOf('#') + 1)
 
                 const matches = midiNote.match(/track_(\d+)\/event_(\d+)/)
-                console.log('midiNote=', midiNote, matches)
                 if (!matches || matches.length != 3) {
                     console.log('could not parse Linked MIDI entry', midiNote)
                     return
