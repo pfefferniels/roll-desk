@@ -2,7 +2,6 @@ import { Pipeline } from "./Pipeline";
 import {
     InterpolateDynamicsMap,
     InterpolatePhysicalOrnamentation,
-    InterpolateRubato,
     InterpolateSymbolicOrnamentation,
     InterpolateTempoMap,
     InterpolateTimingImprecision
@@ -10,6 +9,7 @@ import {
 import { ExtractStyleDefinitions } from "./ExtractStyleDefinitions";
 import { InterpolateAsynchrony } from "./InterpolateAsynchrony";
 import { InterpolateArticulation } from "./InterpolateArticulation";
+import { InterpolateRubato } from "./InterpolateRubato";
 
 export const defaultPipelines = {
     'melodic-texture': new Pipeline(

@@ -40,9 +40,9 @@ type DatedInstruction<T extends string> = {
  * Maps the <dynamics> element of MPM
  */
 export interface Dynamics extends DatedInstruction<'dynamics'>, WithXmlId {
-    volume: number | string
+    'volume': number | string
     'transition.to'?: number
-    protraction?: number
+    'protraction'?: number
 }
 
 /**
@@ -87,12 +87,22 @@ export interface Ornament extends DatedInstruction<'ornament'>, WithXmlId {
     'gradient'?: 'crescendo' | 'decrescendo' | 'no-gradient'
 }
 
+/**
+ * Maps the <rubato> element of MPM
+ */
+export interface Rubato extends DatedInstruction<'rubato'>, WithXmlId {
+    'frameLength': number, 
+    'loop': boolean 
+    'intensity': number
+}
+
 type AnyInstruction =
     | Tempo
     | Ornament
     | Dynamics
     | Asynchrony
     | Articulation
+    | Rubato
 
 type InstructionType =
     | 'tempo'
@@ -100,6 +110,7 @@ type InstructionType =
     | 'dynamics'
     | 'asynchrony'
     | 'articulation'
+    | 'rubato'
 
 type RelatedResource = {
     uri: string,
@@ -405,7 +416,8 @@ export class MPM {
             ornament: 'ornamentationMap',
             tempo: 'tempoMap',
             asynchrony: 'asynchronyMap',
-            articulation: 'articulationMap'
+            articulation: 'articulationMap',
+            rubato: 'rubatoMap'
         }[instructionType]
     }
 }
