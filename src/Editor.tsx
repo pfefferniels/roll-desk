@@ -6,7 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box } from '@mui/system';
 import AlignmentEditor from './components/alignment/AlignmentEditor';
 import InterpolationEditor from './components/interpolation/InterpolationEditor';
-import Annotations from './components/Annotations';
+import AnnotationViewer from './components/annotation/AnnotationViewer';
 import { AnnotationContext, GlobalContext, MidiOutputProvider, RdfStoreContext } from './providers';
 import Upload from './components/Upload'
 import { AlignedPerformance } from './lib/AlignedPerformance';
@@ -75,7 +75,7 @@ export default function Editor() {
                 <InterpolationEditor />
               </TabPanel>
               <TabPanel value={activeTab} index='annotated-score'>
-                <Annotations />
+                <AnnotationViewer />
               </TabPanel>
 
               <SpeedDial
