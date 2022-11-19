@@ -30,7 +30,7 @@ const enum AnnotationMotivation {
 const OA = new (rdf.Namespace as any)('http://www.w3.org/ns/oa#')
 const ME = new (rdf.Namespace as any)('https://measuring-early-records.org/')
 const RDF = new (rdf.Namespace as any)('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-const DCTERMS = new (rdf.Namespace as any)('http://purl.org/dc/terms/')
+const DC = new (rdf.Namespace as any)('http://purl.org/dc/terms/')
 
 const serialize = (nodes: Node[]) => {
     return nodes.map(n => Node.string(n)).join('\n');
@@ -67,18 +67,22 @@ export const Annotator = () => {
 
         const bodyId = uuid()
 
-        const annotation = store.sym('https://measuring-early-records.org/annotation_' + uuid());
+        // storing the body of the annotation
         const body = store.sym('https://measuring-early-records.org/body_' + bodyId)
-
         store.add(body, RDF('value'), serialize(annotationBody), body.doc())
+        store.add(body, RDF('type'), OA('TextualBody'), body.doc())
+        store.add(body, DC('format'), 'application/tei+xml', body.doc())
 
+        // storing the annotation itself
+        const annotation = store.sym('https://measuring-early-records.org/annotation_' + uuid());
         targets.forEach(target => {
             store.add(annotation, OA('hasTarget'), target, annotation.doc());
         })
         store.add(annotation, OA('hasBody'), body, annotation.doc());
         store.add(annotation, OA('hasMotivation'), ME(annotationMotivation), annotation.doc())
-        store.add(annotation, DCTERMS('creator'), ME(creator), annotation.doc())
-        store.add(annotation, DCTERMS('created'), new Date(Date.now()).toISOString(), annotation.doc())
+        store.add(annotation, DC('creator'), ME(creator), annotation.doc())
+        store.add(annotation, DC('created'), new Date(Date.now()).toISOString(), annotation.doc())
+        store.add(annotation, RDF('type'), OA('Annotation'), annotation.doc())
 
         setAnnotationDialogOpen(false)
         setTargets([])
