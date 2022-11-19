@@ -10,7 +10,7 @@ export class JsonLdVisitor implements Visitor {
     constructor() {
         this.contextes = {}
         this.graph = []
-        this.carriedOutBy = ''
+        this.carriedOutBy = 'anonymous'
     }
 
     public serialize(): string {
@@ -37,7 +37,8 @@ export class JsonLdVisitor implements Visitor {
         if (!alignment.semanticPairs.length) return
 
         // defining namespaces
-        this.contextes['la'] = 'http://example.org/linked_alignment#'
+        this.contextes['me'] = 'https://measuring-early-records.org/'
+        this.contextes['la'] = 'https://measuring-early-records.org/linked_alignment#'
         this.contextes['crm'] = 'http://www.cidoc-crm.org/cidoc-crm/'
         this.contextes['xsd'] = 'http://www.w3.org/2001/XMLSchema#'
 
@@ -47,7 +48,7 @@ export class JsonLdVisitor implements Visitor {
                 "@id": alignment.uri,
                 "@type": "la:Alignment",
                 "crm:P14_carried_out_by": {
-                    "@id": `http://example_org/${this.carriedOutBy}`,
+                    "@id": `me:${this.carriedOutBy}`,
                     "@type": "E39_Actor"
                 },
                 "dcterms:created": new Date(Date.now()).toISOString(),

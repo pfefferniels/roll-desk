@@ -53,6 +53,7 @@ export const Annotator = () => {
     const [annotationMotivation, setAnnotationMotivation] = useState(AnnotationMotivation.Interpretation)
     const [annotationLevel, setAnnotationLevel] = useState<1 | 2 | 3>(1)
     const [annotationBody, setAnnotationBody] = useState<any>(initialBody)
+    const [creator, setCreator] = useState('pfefferniels')
 
     const editor = useMemo(() => withReact(createEditor()), [])
 
@@ -76,6 +77,7 @@ export const Annotator = () => {
         })
         store.add(annotation, OA('hasBody'), body, annotation.doc());
         store.add(annotation, OA('hasMotivation'), ME(annotationMotivation), annotation.doc())
+        store.add(annotation, DCTERMS('creator'), ME(creator), annotation.doc())
         store.add(annotation, DCTERMS('created'), new Date(Date.now()).toISOString(), annotation.doc())
 
         setAnnotationDialogOpen(false)
