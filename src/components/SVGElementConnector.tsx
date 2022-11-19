@@ -17,21 +17,24 @@ export const SVGElementConnector: FC<SVGElementConnectorProps> = ({ parentElemen
 
     return (
         <g>
-            <line
+            <path
                 className='innerConnectionLine'
-                x1={firstElement.getBoundingClientRect().x - parentX}
-                y1={firstElement.getBoundingClientRect().y - parentY}
-                x2={secondElement.getBoundingClientRect().x - parentX}
-                y2={secondElement.getBoundingClientRect().y - parentY}
+                d={`M ${firstElement.getBoundingClientRect().x - parentX},${firstElement.getBoundingClientRect().y - parentY}
+                    C ${firstElement.getBoundingClientRect().x - parentX},${firstElement.getBoundingClientRect().y + 90 - parentY}
+                      ${secondElement.getBoundingClientRect().x - parentX},${secondElement.getBoundingClientRect().y - 90 - parentY}
+                      ${secondElement.getBoundingClientRect().x - parentX},${secondElement.getBoundingClientRect().y - parentY}`}
                 stroke='black'
-                strokeWidth={0.7} />
-            <line
-                className='connectionLine'
+                fill='none'
+                strokeWidth={0.7}/>
+            <path
                 data-original-id={firstElement.getAttribute('id')}
-                x1={firstElement.getBoundingClientRect().x - parentX}
-                y1={firstElement.getBoundingClientRect().y - parentY}
-                x2={secondElement.getBoundingClientRect().x - parentX}
-                y2={secondElement.getBoundingClientRect().y - parentY}
+                className='connectionLine'
+                d={`M ${firstElement.getBoundingClientRect().x - parentX},${firstElement.getBoundingClientRect().y - parentY}
+                    C ${firstElement.getBoundingClientRect().x - parentX},${firstElement.getBoundingClientRect().y + 90 - parentY}
+                      ${secondElement.getBoundingClientRect().x - parentX},${secondElement.getBoundingClientRect().y - 90 - parentY}
+                      ${secondElement.getBoundingClientRect().x - parentX},${secondElement.getBoundingClientRect().y - parentY}`}
+                fill='none'
+                strokeWidth={0.7}
                 stroke={highlight ? 'blue' : 'black'}
                 onClick={(e) => {
                     if (e.altKey && e.shiftKey) {
