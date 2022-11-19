@@ -87,6 +87,27 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
   return (
     <System spacing={7} staffSize={dimensions.staffSize}>
       <MidiLikeGrid pitchHeight={dimensions.staffSize} width={maxWidth}>
+        {() =>
+          [...Array(Math.round(Math.max(...notes.map(n => n.onsetTime)) + 1)).keys()].map(second => {
+            return (
+              <g key={`barLine_${notes.length}_${second}`}>
+                <line
+                  stroke='black'
+                  strokeWidth={0.2}
+                  strokeOpacity={0.8}
+                  className='barLine'
+                  x1={second * dimensions.stretch + dimensions.shift}
+                  x2={second * dimensions.stretch + dimensions.shift}
+                  y1={-120}
+                  y2={300} />
+                <text 
+                  className='labelText'
+                  x={second * dimensions.stretch + dimensions.shift}
+                  y={270}>{second}</text>
+              </g>
+            )
+          })
+        }
         {fillGrid}
         {fillSecondaryGrid}
       </MidiLikeGrid>
