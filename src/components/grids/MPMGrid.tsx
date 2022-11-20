@@ -34,10 +34,10 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                         {
                                             instructions.map(instruction => {
                                                 const x = instruction.date * horizontalStretch
-                                                const xmlId = instruction.xmlId
+                                                const xmlId = instruction['xml:id']
                                                 let label = ''
                                                 if (instruction.type === 'ornament')
-                                                    label = instruction['xml:id']
+                                                    label = instruction['name.ref']
                                                 else if (instruction.type === 'tempo')
                                                     label = instruction.bpm.toString() + (instruction['transition.to'] ? ` → ${instruction['transition.to']}` : '')
                                                 else if (instruction.type === 'dynamics')
