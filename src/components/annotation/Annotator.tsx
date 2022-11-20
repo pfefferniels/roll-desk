@@ -1,9 +1,9 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, List, ListItem, MenuItem, Select, Typography } from "@mui/material"
-import { useContext, useEffect, useMemo, useState } from "react"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, List, ListItem, MenuItem, Paper, Select, Typography } from "@mui/material"
+import { useContext, useMemo, useState } from "react"
 import { createEditor, Node } from "slate"
 import { Slate, Editable, withReact } from "slate-react"
 import { uuid } from "../../lib/globals"
-import { AnnotationContext, RdfStoreContext } from "../../providers"
+import { RdfStoreContext } from "../../providers"
 import * as rdf from "rdflib";
 import { Delete } from "@mui/icons-material"
 
@@ -63,37 +63,40 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
 
         const store = storeCtx.rdfStore
 
+        // make sure not to set the same body twice
+        store.removeDocument(store.sym(ME(bodyId)).doc())
+
         // storing the body of the annotation
         const body = store.sym(ME(bodyId))
-
-        // make sure not to set more than one value
-        const existingValue = store.anyStatementMatching(body, RDF('value'))
-        if (existingValue) store.removeStatement(existingValue)
-
         store.add(body, RDF('value'), serialize(text), body.doc())
         store.add(body, RDF('type'), OA('TextualBody'), body.doc())
         store.add(body, DC('format'), 'application/tei+xml', body.doc())
+        store.add(body, OA('hasPurpose'), ME(purpose), body.doc())
+        store.add(body, ME('hasAnnotationLevel'), ME(`level_${level}`), body.doc())
     }
 
     return (
         <Box
+            component={Paper}
             sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                padding: '1rem',
+                marginTop: '1rem'
             }}>
             <Box
                 sx={{
                     display: 'flex',
                     alignItems: 'flex-start',
                     flexDirection: 'row',
-                }}
-            >
+                }}>
                 <Select
                     size='small'
                     label='motivated by'
                     value={purpose}
                     onChange={(e) => {
+                        setChangedSinceLastSave(true)
                         setPurpose(e.target.value as AnnotationMotivation)
                     }}>
                     <MenuItem value={AnnotationMotivation.Technique}>Technique</MenuItem>
@@ -109,7 +112,10 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
                     size='small'
                     label='level'
                     value={level}
-                    onChange={(e) => setLevel(e.target.value as AnnotationLevel)}>
+                    onChange={(e) => {
+                        setChangedSinceLastSave(true)
+                        setLevel(e.target.value as AnnotationLevel)
+                    }}>
                     <MenuItem value={1}>Level 1</MenuItem>
                     <MenuItem value={2}>Level 2</MenuItem>
                     <MenuItem value={3}>Level 3</MenuItem>
@@ -201,7 +207,10 @@ export const CreateAnno: React.FC<CreateAnnoProps> = ({ targets, setTargets }) =
                 Annotate ({targets.length})
             </Button>
 
-            <Dialog open={annotationDialogOpen}>
+            <Dialog
+                fullWidth
+                maxWidth="md"
+                open={annotationDialogOpen}>
                 <DialogTitle>Annotate</DialogTitle>
 
                 <DialogContent>
@@ -209,7 +218,7 @@ export const CreateAnno: React.FC<CreateAnnoProps> = ({ targets, setTargets }) =
                         sx={{
                             display: 'flex',
                             alignItems: 'flex-start',
-                            flexDirection: 'column',
+                            flexDirection: 'column'
                         }}
                     >
                         <div>
