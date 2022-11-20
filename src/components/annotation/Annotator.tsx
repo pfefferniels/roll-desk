@@ -51,6 +51,7 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
     const [purpose, setPurpose] = useState<AnnotationMotivation>(AnnotationMotivation.Interpretation)
     const [level, setLevel] = useState<AnnotationLevel>(1)
     const [text, setText] = useState<any>(initialBody)
+    const [changedSinceLastSave, setChangedSinceLastSave] = useState(false)
 
     const editor = useMemo(() => withReact(createEditor()), [])
 
@@ -64,6 +65,11 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
 
         // storing the body of the annotation
         const body = store.sym(ME(bodyId))
+
+        // make sure not to set more than one value
+        const existingValue = store.anyStatementMatching(body, RDF('value'))
+        if (existingValue) store.removeStatement(existingValue)
+
         store.add(body, RDF('value'), serialize(text), body.doc())
         store.add(body, RDF('type'), OA('TextualBody'), body.doc())
         store.add(body, DC('format'), 'application/tei+xml', body.doc())
@@ -113,7 +119,10 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
             <Slate
                 editor={editor}
                 value={text}
-                onChange={text => setText(text)}>
+                onChange={text => {
+                    setText(text)
+                    setChangedSinceLastSave(true)
+                }}>
                 <Editable
                     className='annotation-editor'
                     placeholder='Enter some annotation …'
@@ -121,7 +130,11 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
             </Slate>
 
             <Button
-                onClick={store}>Save</Button>
+                onClick={() => {
+                    store()
+                    setChangedSinceLastSave(false)
+                }}
+                disabled={!changedSinceLastSave}>Save</Button>
         </Box>
     )
 }
