@@ -14,7 +14,7 @@ export default function AnnotationViewer() {
     const storeCtx = useContext(RdfStoreContext)
 
     const [serialized, setSerialized] = useState('')
-    const [annotations, setAnnotations] = useState<{ name: string, body: string }[]>([])
+    const [annotations, setAnnotations] = useState<{ name: string, extract: string }[]>([])
 
     useEffect(() => {
         if (!storeCtx) return
@@ -28,12 +28,17 @@ export default function AnnotationViewer() {
                 .statementsMatching(undefined, RDF('type'), OA('Annotation'))
                 .map(statement => {
                     const name = statement.subject.toString()
-                    const hasBodyStmt = store.anyStatementMatching(statement.subject, OA('hasBody'))
-                    const body = store.anyStatementMatching(hasBodyStmt?.object as SubjectType, RDF('value'))
-                    statement.subject.toString()
+                    let extracts: string[] = []
+                    const bodyStmts = store.statementsMatching(statement.subject, OA('hasBody'))
+                    bodyStmts.forEach(bodyStmt => {
+                        const body = store.anyStatementMatching(bodyStmt?.object as SubjectType, RDF('value'))
+                        const text = body?.object.toString()
+                        extracts.push(text?.slice(0, 100) || '')
+                    })
+
                     return {
                         name: name,
-                        body: body?.object.toString() || ''
+                        extract: extracts.join(' […], ')
                     }
                 })
         )
@@ -60,7 +65,7 @@ export default function AnnotationViewer() {
                             secondaryAction={
                                 <IconButton
                                     edge="end"
-                                    aria-label="delete"
+                                    aria-label="edit"
                                     onClick={() => {
                                         // ...
                                     }}>
@@ -69,7 +74,7 @@ export default function AnnotationViewer() {
                             }>
                             <ListItemText
                                 primary={annotation.name}
-                                secondary={annotation.body} />
+                                secondary={annotation.extract} />
                         </ListItem>
                     )
                 })}
