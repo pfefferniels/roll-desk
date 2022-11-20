@@ -91,8 +91,8 @@ export interface Ornament extends DatedInstruction<'ornament'>, WithXmlId {
  * Maps the <rubato> element of MPM
  */
 export interface Rubato extends DatedInstruction<'rubato'>, WithXmlId {
-    'frameLength': number, 
-    'loop': boolean 
+    'frameLength': number,
+    'loop': boolean
     'intensity': number
 }
 
@@ -104,13 +104,17 @@ type AnyInstruction =
     | Articulation
     | Rubato
 
-type InstructionType =
-    | 'tempo'
-    | 'ornament'
-    | 'dynamics'
-    | 'asynchrony'
-    | 'articulation'
-    | 'rubato'
+export const instructionTypes =
+    [
+        'tempo',
+        'ornament',
+        'dynamics',
+        'asynchrony',
+        'articulation',
+        'rubato'
+    ] as const
+
+type InstructionType = typeof instructionTypes[number]
 
 type RelatedResource = {
     uri: string,
@@ -343,7 +347,7 @@ export class MPM {
             }),
             'comment': metadata.comments,
             'relatedResources': {
-                'resource': metadata.relatedResources.map(r => ({'@': r}))
+                'resource': metadata.relatedResources.map(r => ({ '@': r }))
             }
         }
     }
@@ -396,6 +400,19 @@ export class MPM {
             this.rawMPM.performance.part.find((p: any) => +p['@'].number === (part + 1)).dated
 
         dated[mapName] = newContents;
+    }
+
+    /**
+     * Returns the total amount of maps present in all the different parts.
+     * @returns 
+     */
+    countMaps() {
+        let counter = 0;
+        ['global', 0, 1].forEach(part => {
+            counter += instructionTypes.filter(instructionType =>
+                this.getMap(this.correspondingMapNameFor(instructionType), part as Part, false) !== undefined).length
+        })
+        return counter
     }
 
     /**

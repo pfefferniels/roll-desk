@@ -1,4 +1,4 @@
-import { Dynamics, MPM, Ornament, Part, Tempo } from "../../lib/mpm";
+import { Dynamics, instructionTypes, MPM, Ornament, Part, Tempo } from "../../lib/mpm";
 import { GraphicalLikeGrid } from "../score/Grid";
 import { AnnotatableInstruction } from "../interpolation/Instruction";
 
@@ -8,70 +8,66 @@ interface MPMGridProps {
 }
 
 export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
+    const rowsCount = mpm.countMaps()
+    let currentRow = -rowsCount - 1
+
     return (
-        <GraphicalLikeGrid numberOfRows={9} width={2000}>
+        <GraphicalLikeGrid numberOfRows={rowsCount} width={2000}>
             {(getVerticalPosition: any) => {
                 return (
                     <g>
-                        {(['global', 0, 1] as Part[]).map((part, i) => (
-                            <>
-                                <text
-                                    x={0}
-                                    y={getVerticalPosition(i * 3 + 0) - 5}
-                                    className='labelText'>Ornamentation ({part})</text>
-                                {mpm.getInstructions<Ornament>('ornament', part).map(ornament => {
-                                    const x = ornament.date * horizontalStretch;
-                                    return (
-                                        <AnnotatableInstruction
-                                            key={`instruction_${ornament["xml:id"]}`}
-                                            annotationTarget={`interpolation.mpm#${ornament["xml:id"]}`}
-                                            x={x}
-                                            y={getVerticalPosition(i * 3 + 0)}
-                                            text={ornament['name.ref']}
-                                            details={ornament} />
-                                    );
-                                })}
+                        {(['global', 0, 1] as Part[]).map((part) => {
+                            return instructionTypes.map(type => {
+                                const instructions = mpm.getInstructions<any>(type, part)
+                                if (!instructions.length)
+                                    return null
 
-                                <text
-                                    x={0}
-                                    y={getVerticalPosition(i * 3 + 1) -5}
-                                    className='labelText'>Tempo ({part})</text>
-                                {mpm.getInstructions<Tempo>('tempo', part).map(tempo => {
-                                    const x = tempo.date * horizontalStretch;
-                                    return (
-                                        <AnnotatableInstruction
-                                            key={`instruction_${tempo["xml:id"]}`}
-                                            annotationTarget={`interpolation.mpm#${tempo["xml:id"]}`}
-                                            x={x}
-                                            y={getVerticalPosition(i * 3 + 1)}
-                                            text={tempo.bpm.toString() + (tempo['transition.to'] ? ` → ${tempo['transition.to']}` : '')}
-                                            details={tempo}
-                                        />
-                                    );
-                                })}
+                                currentRow += 1
 
-                                <text
-                                    x={0}
-                                    y={getVerticalPosition(i * 3 + 2) - 5}
-                                    className='labelText'>Dynamics ({part})</text>
-                                {mpm.getInstructions<Dynamics>('dynamics', part).map(dynamics => {
-                                    const x = dynamics.date * horizontalStretch;
-                                    return (
-                                        <AnnotatableInstruction
-                                            key={`instruction_${dynamics["xml:id"]}}`}
-                                            annotationTarget={`interpolation.mpm#${dynamics["xml:id"]}`}
-                                            x={x}
-                                            y={getVerticalPosition(i * 3 + 2)}
-                                            text={dynamics.volume.toString()}
-                                            details={dynamics} />
-                                    );
-                                })}
-                            </>
-                        ))}
+                                return (
+                                    <g>
+                                        <text
+                                            x={0}
+                                            y={getVerticalPosition(currentRow)}
+                                            className='labelText'>{type} ({part})
+                                        </text>
+                                        {
+                                            instructions.map(instruction => {
+                                                const x = instruction.date * horizontalStretch
+                                                const xmlId = instruction.xmlId
+                                                let label = ''
+                                                if (instruction.type === 'ornament')
+                                                    label = instruction['xml:id']
+                                                else if (instruction.type === 'tempo')
+                                                    label = instruction.bpm.toString() + (instruction['transition.to'] ? ` → ${instruction['transition.to']}` : '')
+                                                else if (instruction.type === 'dynamics')
+                                                    label = instruction.volume.toString()
+                                                else if (instruction.type === 'articulation')
+                                                    label = instruction.relativeDuration.toString()
+                                                else if (instruction.type === 'asynchrony')
+                                                    label = instruction['milliseconds.offset'].toString()
+
+                                                return (
+                                                    <AnnotatableInstruction
+                                                        key={`instruction_${xmlId}`}
+                                                        annotationTarget={`interpolation.mpm#${xmlId}`}
+                                                        x={x}
+                                                        y={getVerticalPosition(currentRow)}
+                                                        text={label}
+                                                        details={instruction} />
+                                                )
+                                            })
+                                        }
+                                    </g>
+                                )
+
+                            })
+                        })
+                        }
                     </g>
-                );
+                )
             }}
-        </GraphicalLikeGrid>
+        </GraphicalLikeGrid >
     )
 }
 

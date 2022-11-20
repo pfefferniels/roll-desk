@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useState } from "react";
 
 interface GenericGridProps {
   children: ((fn: any) => React.ReactNode)[] | ((fn: any) => React.ReactNode)
@@ -105,6 +105,7 @@ interface GraphicalLikeGridProps extends GenericGridProps {
  * Draws a Grid for graphical notation
  */
 export const GraphicalLikeGrid: FC<GraphicalLikeGridProps> = ({ children, numberOfRows, width }): JSX.Element => {
+
   const rowHeight = 50
   const getVerticalPosition = (row: number) => {
     return (row + 1) * rowHeight
