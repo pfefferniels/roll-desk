@@ -1,17 +1,20 @@
 import { Edit } from "@mui/icons-material";
 import { Button, IconButton, List, ListItem, ListItemText, Paper } from "@mui/material";
 import * as rdf from "rdflib"
+import { NamedNode } from "rdflib";
 import { SubjectType } from "rdflib/lib/types";
 import { useContext, useEffect, useState } from "react";
 import { downloadFile } from "../../lib/globals";
 import { RdfStoreContext } from "../../providers";
+import { EditAnnotationDialog } from "./EditAnnotationDialog";
 import { OA, RDF } from "./namespaces";
 
 export default function AnnotationViewer() {
     const storeCtx = useContext(RdfStoreContext)
 
     const [serialized, setSerialized] = useState('')
-    const [annotations, setAnnotations] = useState<{ name: string, extract: string }[]>([])
+    const [annotations, setAnnotations] = useState<{ node: rdf.NamedNode, name: string, extract: string }[]>([])
+    const [annotationToEdit, setAnnotationToEdit] = useState<rdf.NamedNode>()
 
     useEffect(() => {
         if (!storeCtx) return
@@ -34,6 +37,7 @@ export default function AnnotationViewer() {
                     })
 
                     return {
+                        node: statement.subject as NamedNode,
                         name: name,
                         extract: extracts.join(' […], ')
                     }
@@ -63,9 +67,7 @@ export default function AnnotationViewer() {
                                 <IconButton
                                     edge="end"
                                     aria-label="edit"
-                                    onClick={() => {
-                                        // ...
-                                    }}>
+                                    onClick={() => setAnnotationToEdit(annotation.node)}>
                                     <Edit />
                                 </IconButton>
                             }>
@@ -76,6 +78,13 @@ export default function AnnotationViewer() {
                     )
                 })}
             </List>
+
+            {annotationToEdit && (
+                <EditAnnotationDialog 
+                    dialogOpen={true}
+                    onClose={() => setAnnotationToEdit(undefined)}
+                    annotation={annotationToEdit} />
+            )}
         </div>
     )
 }

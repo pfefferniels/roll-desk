@@ -1,4 +1,5 @@
 import { Button } from "@mui/material"
+import { NamedNode } from "rdflib"
 import { useContext, useState } from "react"
 import { Node } from "slate"
 import { uuid } from "../../lib/globals"
@@ -17,7 +18,7 @@ export const AnnotatorButton = () => {
     const storeCtx = useContext(RdfStoreContext)
     const { targets, setTargets } = useContext(AnnotationContext)
 
-    const [annotationId, setAnnotationId] = useState<string | null>(null)
+    const [annotation, setAnnotation] = useState<NamedNode | null>(null)
 
     /**
      * Inserts a new annotation object into the graph which
@@ -36,7 +37,7 @@ export const AnnotatorButton = () => {
         const annotation = store.sym(ME(annoId));
 
         targets.forEach(target => {
-            store.add(annotation, OA('hasTarget'), target, annotation.doc());
+            store.add(annotation, OA('hasTarget'), ME(target), annotation.doc());
         })
 
         store.add(annotation, OA('hasMotivation'), OA('commenting'), annotation.doc())
@@ -44,7 +45,7 @@ export const AnnotatorButton = () => {
         store.add(annotation, DC('created'), new Date(Date.now()).toISOString(), annotation.doc())
         store.add(annotation, RDF('type'), OA('Annotation'), annotation.doc())
 
-        setAnnotationId(annoId)
+        setAnnotation(annotation)
     }
 
     if (targets.length === 0) return null
@@ -58,14 +59,14 @@ export const AnnotatorButton = () => {
                 Annotate ({targets.length})
             </Button>
 
-            {annotationId && (
+            {annotation && (
                 <EditAnnotationDialog
                     dialogOpen={true}
                     onClose={() => {
                         setTargets([])
-                        setAnnotationId(null)
+                        setAnnotation(null)
                     }}
-                    annoId={annotationId || ''} />
+                    annotation={annotation} />
             )}
         </>
     )

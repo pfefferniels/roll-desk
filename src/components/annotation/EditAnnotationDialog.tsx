@@ -5,23 +5,25 @@ import { RdfStoreContext } from "../../providers";
 import { Delete } from "@mui/icons-material";
 import { AnnotationBody } from "./AnnotationBody";
 import { ME, OA, DC, RDF } from "./namespaces";
-
+import { Literal, NamedNode } from "rdflib";
 
 export interface EditAnnotationDialogProps {
-    annoId: string;
+    annotation: NamedNode;
     dialogOpen: boolean;
     onClose: () => void;
 }
+
 /**
  * Opens a dialog to either create a new annotation.
+ * 
+ * @note The prop annoId should be a full IRI.
  */
-
-export const EditAnnotationDialog: React.FC<EditAnnotationDialogProps> = ({ annoId, dialogOpen, onClose }) => {
+export const EditAnnotationDialog: React.FC<EditAnnotationDialogProps> = ({ annotation, dialogOpen, onClose }) => {
     const storeCtx = useContext(RdfStoreContext);
 
-    const [targets, setTargets] = useState<string[]>([]);
-    const [bodyIds, setBodyIds] = useState<string[]>([]);
-    const [creator, setCreator] = useState('pfefferniels');
+    const [targets, setTargets] = useState<(NamedNode | Literal)[]>([]);
+    const [bodies, setBodies] = useState<NamedNode[]>([]);
+    const [creator, setCreator] = useState<NamedNode>();
 
     useEffect(() => {
         // Load the given annotation ID from the store and fill the state accordingly
@@ -34,43 +36,56 @@ export const EditAnnotationDialog: React.FC<EditAnnotationDialogProps> = ({ anno
 
         // storing the annotation itself
         setTargets(
-            store.statementsMatching(ME(annoId), OA('hasTarget'))
-                .map(statement => statement.object.toString()));
-        setBodyIds(
-            store.statementsMatching(ME(annoId), OA('hasBody'))
-                .map(statement => statement.object.toString()));
+            store.statementsMatching(annotation, OA('hasTarget'))
+                .map(statement => {
+                    return statement.object as Literal
+                }));
+        setBodies(
+            store.statementsMatching(annotation, OA('hasBody'))
+                .map(statement => statement.object as NamedNode));
         setCreator(
-            store.anyStatementMatching(ME(annoId), DC('creator'))?.object.toString() || ''
+            store.anyStatementMatching(annotation, DC('creator'))?.object as NamedNode || undefined
         );
     }, []);
 
     const store = () => {
         if (!storeCtx) {
-            console.warn('could not find RDF store');
-            return;
+            console.warn('Failed loading RDF store')
+            return
         }
 
-        const store = storeCtx.rdfStore;
+        const store = storeCtx.rdfStore
 
         // make sure not to set the same annotation twice
-        store.removeDocument(store.sym(ME(annoId)).doc());
+        store.removeMany(annotation)
+
+        console.log(store.statementsMatching(annotation))
 
         // storing the annotation itself
-        const annotation = store.sym(ME(annoId));
-
         targets.forEach(target => {
-            store.add(annotation, OA('hasTarget'), ME(target), annotation.doc());
+            store.add(annotation, OA('hasTarget'), target, annotation.doc());
         });
 
-        bodyIds.forEach(bodyId => {
-            store.add(annotation, OA('hasBody'), ME(bodyId), annotation.doc());
+        bodies.forEach(body => {
+            store.add(annotation, OA('hasBody'), body, annotation.doc());
         });
 
         store.add(annotation, OA('hasMotivation'), OA('commenting'), annotation.doc());
         store.add(annotation, DC('creator'), creator, annotation.doc());
         store.add(annotation, DC('created'), new Date(Date.now()).toISOString(), annotation.doc());
         store.add(annotation, RDF('type'), OA('Annotation'), annotation.doc());
-    };
+    }
+
+    const createBody = () => {
+        if (!storeCtx) {
+            console.warn('Failed loading RDF store')
+            return
+        }
+
+        const store = storeCtx.rdfStore
+        
+        return store.sym(ME(`body_${uuid()}`))
+    }
 
     if (targets.length === 0)
         return null;
@@ -111,18 +126,18 @@ export const EditAnnotationDialog: React.FC<EditAnnotationDialogProps> = ({ anno
                                         <Delete />
                                     </IconButton>}
                                 >
-                                    {target}
+                                    {target.toString()}
                                 </ListItem>))}
                         </List>
                     </div>
 
-                    {bodyIds.map(bodyId => <AnnotationBody key={bodyId} bodyId={bodyId} />)}
+                    {bodies.map(body => <AnnotationBody key={`body_${body.value}`} body={body} />)}
 
                     <Button
                         onClick={() => {
-                            setBodyIds(
-                                [...bodyIds,
-                                `body_${uuid()}`]
+                            setBodies(
+                                [...bodies,
+                                createBody()!]
                             );
                         }}
                     >Add Body</Button>

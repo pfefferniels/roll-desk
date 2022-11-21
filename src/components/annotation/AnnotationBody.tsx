@@ -6,34 +6,41 @@ import { RdfStoreContext } from "../../providers";
 import { serialize } from "./AnnotatorButton";
 import { ME, RDF, OA, DC } from "./namespaces";
 import { AnnotationMotivation } from "./AnnotationMotivation";
+import { NamedNode } from "rdflib";
 
 export type AnnotationLevel = 1 | 2 | 3
 
-const initialBody = [
-    {
-        type: 'paragraph',
-        children: [{
-            text: ''
-        }]
-    }
-]
+const deserialize = (raw: string) => {
+    return ([
+        {
+            type: 'paragraph',
+            children: [{
+                text: raw
+            }]
+        }
+    ]
+    )
+}
 
 interface AnnotationBodyProps {
-    bodyId: string;
+    body: NamedNode;
 }
 
 /**
  * UI to edit an existing annotation body or to create a new one.
  */
-export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
+export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ body }) => {
     const storeCtx = useContext(RdfStoreContext);
 
     const [purpose, setPurpose] = useState<AnnotationMotivation>(AnnotationMotivation.Interpretation);
     const [level, setLevel] = useState<AnnotationLevel>(1);
-    const [text, setText] = useState<any>(initialBody);
+    const [text, setText] = useState<any>(deserialize(
+        storeCtx!.rdfStore.anyStatementMatching(body, RDF('value'))?.object.toString() || ''
+    ));
     const [changedSinceLastSave, setChangedSinceLastSave] = useState(false);
 
     const editor = useMemo(() => withReact(createEditor()), []);
+    editor.children = text
 
     const store = () => {
         if (!storeCtx) {
@@ -44,10 +51,9 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
         const store = storeCtx.rdfStore;
 
         // make sure not to set the same body twice
-        store.removeDocument(store.sym(ME(bodyId)).doc());
+        store.removeMany(body)
 
         // storing the body of the annotation
-        const body = store.sym(ME(bodyId));
         store.add(body, RDF('value'), serialize(text), body.doc());
         store.add(body, RDF('type'), OA('TextualBody'), body.doc());
         store.add(body, DC('format'), 'application/tei+xml', body.doc());
@@ -106,7 +112,7 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ bodyId }) => {
                 editor={editor}
                 value={text}
                 onChange={text => {
-                    setText(text);
+                    setText(text)
                     setChangedSinceLastSave(true);
                 }}>
                 <Editable
