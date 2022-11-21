@@ -1,5 +1,11 @@
-import { useContext } from "react";
-import { AnnotationContext } from "../../providers";
+import { useContext, useEffect } from "react";
+import { AnnotationContext, RdfStoreContext } from "../../providers";
+import * as rdf from "rdflib";
+
+const OA = new (rdf.Namespace as any)('http://www.w3.org/ns/oa#')
+const ME = new (rdf.Namespace as any)('https://measuring-early-records.org/')
+const RDF = new (rdf.Namespace as any)('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
+const DC = new (rdf.Namespace as any)('http://purl.org/dc/terms/')
 
 export interface WithAnnotationProps {
     onAnnotation?: (annotationTarget: string) => void,
@@ -13,6 +19,19 @@ export function withAnnotation<T extends WithAnnotationProps = WithAnnotationPro
 
     const ComponentWithAnnotation = (props: T) => {
         const { targets, setTargets } = useContext(AnnotationContext)
+        const rdfStore = useContext(RdfStoreContext)
+
+        const findExistingAnnotation = (target: string) => {
+            console.log('searching for', props.annotationTarget, 'in', rdfStore)
+            if (!rdfStore) {
+                console.warn('Failed loading RDF store')
+                return
+            }
+
+            const store = rdfStore.rdfStore
+
+            store.anyStatementMatching(undefined, OA('hasTarget'), ME(target))
+        }
 
         return (
             <>

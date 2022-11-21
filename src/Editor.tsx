@@ -11,7 +11,7 @@ import { AnnotationContext, GlobalContext, MidiOutputProvider, RdfStoreContext }
 import Upload from './components/Upload'
 import { AlignedPerformance } from './lib/AlignedPerformance';
 import { Store, graph } from 'rdflib'
-import { CreateAnno } from './components/annotation/Annotator';
+import { AnnotatorButton } from './components/annotation/AnnotatorButton';
 
 function TabPanel(props: { children: ReactElement, index: string, value: string }) {
   const { children, value, index } = props;
@@ -56,9 +56,7 @@ export default function Editor() {
           rdfStore: rdfStore
         }}>
           <AnnotationContext.Provider value={{ targets: annotationTargets, setTargets: setAnnotationTargets }}>
-            <CreateAnno
-              targets={annotationTargets}
-              setTargets={setAnnotationTargets} />
+            <AnnotatorButton />
 
             <GlobalContext.Provider value={{
               alignedPerformance,

@@ -1,14 +1,11 @@
 import { Edit } from "@mui/icons-material";
 import { Button, IconButton, List, ListItem, ListItemText, Paper } from "@mui/material";
-import { maxWidth } from "@mui/system";
 import * as rdf from "rdflib"
 import { SubjectType } from "rdflib/lib/types";
 import { useContext, useEffect, useState } from "react";
 import { downloadFile } from "../../lib/globals";
 import { RdfStoreContext } from "../../providers";
-
-const RDF = new (rdf.Namespace as any)('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-const OA = new (rdf.Namespace as any)('http://www.w3.org/ns/oa#')
+import { OA, RDF } from "./namespaces";
 
 export default function AnnotationViewer() {
     const storeCtx = useContext(RdfStoreContext)
