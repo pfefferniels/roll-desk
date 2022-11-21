@@ -12,6 +12,7 @@ interface InstructionProps extends WithAnnotationProps {
 
 const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarget, details, x, y, text }) => {
     const [showDetails, setShowDetails] = useState(false)
+    const [textWidth, setTextWidth] = useState(0)
 
     if (details instanceof Object) {
         details = (
@@ -36,8 +37,8 @@ const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarge
                 y={y}
                 rx={8}
                 ry={8}
-                width={90}
-                height={30}
+                width={textWidth}
+                height={25}
                 onClick={(e) => {
                     if (onAnnotation && e.shiftKey) {
                         onAnnotation(annotationTarget || 'unknown');
@@ -46,7 +47,14 @@ const Instruction: React.FC<InstructionProps> = ({ onAnnotation, annotationTarge
                         setShowDetails(true);
                     }
                 }} />
-            <text x={x} y={y + 15}>{text}</text>
+            <text
+                x={x}
+                y={y + 15}
+                ref={(ref) => {
+                    if (ref && textWidth !== ref.getComputedTextLength()) {
+                        setTextWidth(ref.getComputedTextLength())
+                    }
+                }}>{text}</text>
             <foreignObject>
                 <Dialog open={showDetails}>
                     <DialogContent>

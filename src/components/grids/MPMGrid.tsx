@@ -32,8 +32,19 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                             className='labelText'>{type} ({part})
                                         </text>
                                         {
-                                            instructions.map(instruction => {
+                                            instructions.map((instruction, i) => {
                                                 const x = instruction.date * horizontalStretch
+
+                                                // in particular in the articulationMap there are 
+                                                // often multiple instructions per date. Make sure
+                                                // that they don't overlap
+                                                const internalPosition =
+                                                    instructions
+                                                        .slice(0, i)
+                                                        .filter(prevInstruction => prevInstruction.date === instruction.date)
+                                                        .length
+                                                const itemsAtDate = instructions.filter(otherInstruction => instruction.date === otherInstruction.date).length
+
                                                 const xmlId = instruction['xml:id']
                                                 let label = ''
                                                 if (instruction.type === 'ornament')
@@ -52,7 +63,7 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                                         key={`instruction_${xmlId}`}
                                                         annotationTarget={`interpolation.mpm#${xmlId}`}
                                                         x={x}
-                                                        y={getVerticalPosition(currentRow)}
+                                                        y={getVerticalPosition(currentRow) + internalPosition * (50 / itemsAtDate)}
                                                         text={label}
                                                         details={instruction} />
                                                 )
