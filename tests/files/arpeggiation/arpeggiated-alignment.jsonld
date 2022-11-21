@@ -1,6 +1,6 @@
 {
     "@context": {
-        "la": "http://example.org/linked_alignment#",
+        "la": "https://measuring-early-records.org/linked_alignment#",
         "crm": "http://www.cidoc-crm.org/cidoc-crm/",
         "xsd": "http://www.w3.org/2001/XMLSchema#"
     },

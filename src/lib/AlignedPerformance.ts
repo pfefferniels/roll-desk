@@ -103,7 +103,7 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
         const store: Store = graph()
         parse(alignmentFile, store, 'http://example.org', 'application/ld+json')
         const sparql = `
-            PREFIX la: <http://example.org/linked_alignment#> .
+            PREFIX la: <https://measuring-early-records.org/linked_alignment#> .
             SELECT ?scoreNote ?midiNote ?motivation
             WHERE {
                 ?alignment la:hasScoreNote ?scoreNote .
@@ -125,6 +125,7 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
 
         return new Promise((resolve, _) => {
             store.query(query as Query, result => {
+                console.log('result=', result)
                 const scoreNote = result['?scoreNote'].value
                 const midiNote = result['?midiNote'].value
                 const motivation = result['?motivation'].value
