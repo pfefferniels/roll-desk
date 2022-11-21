@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { GlobalContext } from "../../providers"
-import { Box, IconButton, Paper } from "@mui/material"
+import { Box, IconButton, Paper, Tooltip } from "@mui/material"
 import { MPM } from "../../lib/mpm"
 import LayersIcon from '@mui/icons-material/Layers';
 import EditAttributesIcon from '@mui/icons-material/EditAttributes';
@@ -18,6 +18,7 @@ import { Mei } from "../../lib/mei"
 import { MIDIGrid } from "../grids"
 import { RawPerformance } from "../../lib/midi/RawPerformance"
 import { defaultPipelines, Pipeline, PipelineName } from "../../lib/transformers"
+import { PlayArrowOutlined, UploadFile } from "@mui/icons-material";
 
 export default function InterpolationEditor() {
     const { alignedPerformance, alignmentReady } = useContext(GlobalContext)
@@ -38,6 +39,8 @@ export default function InterpolationEditor() {
     const [playbackPosition, setPlaybackPosition] = useState(0)
 
     const [horizontalStretch, setHorizontalStretch] = useState(0.3)
+
+    const [alignmentDidChange, setAlignmentDidChange] = useState(false)
 
     const changePipelinePreset = (newPreset: PipelineName) => {
         setPipeline(defaultPipelines[newPreset])
@@ -96,7 +99,7 @@ export default function InterpolationEditor() {
 
     // when the MSM or the pipeline has been modified 
     // kick-off a new transformation process
-    useEffect(calculateMPM, [alignmentReady, pipeline])
+    useEffect(() => setAlignmentDidChange(true), [alignmentReady, pipeline])
 
     useEffect(() => {
         if (!mpm) return
@@ -139,42 +142,74 @@ export default function InterpolationEditor() {
                             alignItems: 'flex-start',
                             flexDirection: 'column',
                         }}>
-                        <IconButton onClick={() => setEditMetadataOpen(true)}>
-                            <EditAttributesIcon />
-                        </IconButton>
-                        <IconButton onClick={() => setEditPipelineOpen(true)}>
-                            <LayersIcon />
-                        </IconButton>
-                        <IconButton onClick={() => downloadFile(`${performanceName.trim()}.mpm`, mpm?.serialize() || '', 'text/xml')}>
-                            <FileDownloadIcon />
-                        </IconButton>
+                        <Tooltip title="Edit metadata" placement='left'>
+                            <IconButton onClick={() => setEditMetadataOpen(true)}>
+                                <EditAttributesIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit interpolation pipeline" placement='left'>
+                            <IconButton onClick={() => setEditPipelineOpen(true)}>
+                                <LayersIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Perform MPM interpolation" placement='left'>
+                            <IconButton
+                                onClick={() => {
+                                    calculateMPM()
+                                    setAlignmentDidChange(false)
+                                }}
+                                disabled={!alignmentDidChange}
+                            >
+                                <PlayArrowOutlined />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Upload existing MPM" placement='left'>
+                            <IconButton onClick={() => {
+                                // setMPM(...)
+                            }}>
+                                <UploadFile />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Download MPM" placement='left'>
+                            <IconButton onClick={() => downloadFile(`${performanceName.trim()}.mpm`, mpm?.serialize() || '', 'text/xml')}>
+                                <FileDownloadIcon />
+                            </IconButton>
+                        </Tooltip>
                     </Box>
                 </Paper>
-            )}
+            )
+            }
 
-            {midi ? (
-                <Player midi={midi} onProgress={(progress) => setPlaybackPosition(progress)} />)
-                : <span>failed loading MIDI</span>}
+            {
+                midi ? (
+                    <Player midi={midi} onProgress={(progress) => setPlaybackPosition(progress)} />)
+                    : <span>failed loading MIDI</span>
+            }
 
-            {msm && (
-                <div className='msm'>
-                    <svg className='msm' width={msm.lastDate() * horizontalStretch}>
-                        <MSMGrid msm={msm} horizontalStretch={horizontalStretch} />
-                        <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
-                    </svg>
-                </div>
-            )}
+            {
+                msm && (
+                    <div className='msm'>
+                        <svg className='msm' width={msm.lastDate() * horizontalStretch}>
+                            <MSMGrid msm={msm} horizontalStretch={horizontalStretch} />
+                            <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
+                        </svg>
+                    </div>
+                )
+            }
 
-            {mpm && (
-                <div className='mpm'>
-                    <svg className='mpm' height={(mpm.countMaps() + 1) * 50} width={((msm?.lastDate() || 0) + (msm?.lastNote()?.duration || 0)) * horizontalStretch}>
-                        <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
-                        <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
-                    </svg>
-                </div>
-            )}
+            {
+                mpm && (
+                    <div className='mpm'>
+                        <svg className='mpm' height={(mpm.countMaps() + 1) * 50} width={((msm?.lastDate() || 0) + (msm?.lastNote()?.duration || 0)) * horizontalStretch}>
+                            <MPMGrid mpm={mpm} horizontalStretch={horizontalStretch} />
+                            <PlaybackPosition position={symbolicPlaybackPosition * horizontalStretch} />
+                        </svg>
+                    </div>
+                )
+            }
 
-            {midi &&
+            {
+                midi &&
                 <div className='midi'>
                     <svg className='midi' height={300} width={(msm?.lastDate() || 0) * horizontalStretch}>
                         <MIDIGrid
@@ -206,7 +241,7 @@ export default function InterpolationEditor() {
                     setEditMetadataOpen(false)
                 }}
                 dialogOpen={editMetadataOpen} />
-        </div>
+        </div >
     )
 }
 
