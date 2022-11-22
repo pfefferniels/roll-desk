@@ -1,4 +1,4 @@
-import { Dynamics, instructionTypes, MPM, Ornament, Part, Tempo } from "../../lib/mpm";
+import { instructionTypes, MPM, Part } from "../../lib/mpm";
 import { GraphicalLikeGrid } from "../score/Grid";
 import { AnnotatableInstruction } from "../interpolation/Instruction";
 
@@ -18,6 +18,7 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                     <g>
                         {(['global', 0, 1] as Part[]).map((part) => {
                             return instructionTypes.map(type => {
+                                // TODO: find a way to make this typesafe
                                 const instructions = mpm.getInstructions<any>(type, part)
                                 if (!instructions.length)
                                     return null
@@ -57,6 +58,8 @@ export const MPMGrid: React.FC<MPMGridProps> = ({ mpm, horizontalStretch }) => {
                                                     label = instruction.relativeDuration.toString()
                                                 else if (instruction.type === 'asynchrony')
                                                     label = instruction['milliseconds.offset'].toString()
+                                                else if (instruction.type === 'rubato')
+                                                    label = instruction.intensity?.toString() || ''
 
                                                 return (
                                                     <AnnotatableInstruction

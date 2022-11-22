@@ -183,7 +183,7 @@ export default function InterpolationEditor() {
             {
                 midi ? (
                     <Player midi={midi} onProgress={(progress) => setPlaybackPosition(progress)} />)
-                    : <span>failed loading MIDI</span>
+                    : <span />
             }
 
             {

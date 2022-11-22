@@ -1,5 +1,5 @@
-
 export const enum AnnotationMotivation {
+    Highlighting = 'highlighting',
     Technique = 'technique',
     Form = 'form',
     Intratext = 'intratext',

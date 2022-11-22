@@ -1,4 +1,4 @@
-import { Edit } from "@mui/icons-material";
+import { Delete, Edit } from "@mui/icons-material";
 import { Button, IconButton, List, ListItem, ListItemText, Paper } from "@mui/material";
 import * as rdf from "rdflib"
 import { NamedNode } from "rdflib";
@@ -64,12 +64,26 @@ export default function AnnotationViewer() {
                         <ListItem
                             key={`annotationViewer_annot_${i}`}
                             secondaryAction={
-                                <IconButton
-                                    edge="end"
-                                    aria-label="edit"
-                                    onClick={() => setAnnotationToEdit(annotation.node)}>
-                                    <Edit />
-                                </IconButton>
+                                <>
+                                    <IconButton
+                                        edge="end"
+                                        aria-label="edit"
+                                        onClick={() => setAnnotationToEdit(annotation.node)}>
+                                        <Edit />
+                                    </IconButton>
+                                    <IconButton
+                                        edge="end"
+                                        aria-label="delete"
+                                        onClick={() => {
+                                            // TODO: also remove body
+                                            storeCtx!.rdfStore.removeMany(annotation.node)
+                                            setAnnotations(
+                                                [...annotations.slice(0, i), ...annotations.slice(i+1)]
+                                            )
+                                        }}>
+                                        <Delete />
+                                    </IconButton>
+                                </>
                             }>
                             <ListItemText
                                 primary={annotation.name}
@@ -80,7 +94,7 @@ export default function AnnotationViewer() {
             </List>
 
             {annotationToEdit && (
-                <EditAnnotationDialog 
+                <EditAnnotationDialog
                     dialogOpen={true}
                     onClose={() => setAnnotationToEdit(undefined)}
                     annotation={annotationToEdit} />

@@ -34,7 +34,7 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ body }) => {
 
     const [purpose, setPurpose] = useState<AnnotationMotivation>(AnnotationMotivation.Interpretation);
     const [level, setLevel] = useState<AnnotationLevel>(1);
-    const [text, setText] = useState<any>(deserialize(
+    const [text, setText] = useState<any[]>(deserialize(
         storeCtx!.rdfStore.anyStatementMatching(body, RDF('value'))?.object.toString() || ''
     ));
     const [changedSinceLastSave, setChangedSinceLastSave] = useState(false);

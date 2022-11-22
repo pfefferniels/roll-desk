@@ -125,7 +125,6 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
 
         return new Promise((resolve, _) => {
             store.query(query as Query, result => {
-                console.log('result=', result)
                 const scoreNote = result['?scoreNote'].value
                 const midiNote = result['?midiNote'].value
                 const motivation = result['?motivation'].value
