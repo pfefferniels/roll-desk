@@ -4,7 +4,7 @@ import { System } from "../score/System";
 import { GridDimensions } from "./GridDimensions";
 import { basePitchOfNote, MeiNote } from "../../lib/mei";
 import { useContext, useEffect, useState } from "react";
-import { GraphicalScoreNote } from "../score/GraphicalScoreNote";
+import { AnnotatableScoreNote } from "../score/GraphicalScoreNote";
 import { MidiOutputContext } from "../../providers";
 import { playNote } from "../../lib/midi-player";
 import { okzoomer } from "../alignment/gestures";
@@ -62,9 +62,10 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
                     basePitchOfNote(n.pname || 'c', n.octave || 0.0))
 
                 return (
-                    <GraphicalScoreNote
+                    <AnnotatableScoreNote
                         key={`graphicalScoreNote_${n.id}`}
                         scoreNote={n}
+                        annotationTarget={`score.mei#${n.id}`}
                         x={x}
                         y={y}
                         active={n === activeNote}

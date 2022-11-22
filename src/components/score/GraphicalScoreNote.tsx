@@ -1,7 +1,8 @@
 import { SmuflSymbol } from "./SmuflSymbol";
 import { MeiNote } from "../../lib/mei";
+import { withAnnotation, WithAnnotationProps } from "../annotation/WithAnnotation";
 
-interface GraphicalScoreNoteProps {
+interface GraphicalScoreNoteProps extends WithAnnotationProps {
     scoreNote: MeiNote;
     x: number;
     y: number;
@@ -10,7 +11,8 @@ interface GraphicalScoreNoteProps {
     missing: boolean; // p.motivation === Motivation.Omission
     onClick: () => void;
 }
-export const GraphicalScoreNote: React.FC<GraphicalScoreNoteProps> = ({ scoreNote, active, missing, x, y, staffSize, onClick }): JSX.Element => {
+
+export const GraphicalScoreNote: React.FC<GraphicalScoreNoteProps> = ({ scoreNote, active, missing, x, y, staffSize, onClick, onAnnotation, annotationTarget }): JSX.Element => {
     return (
         <>
             {scoreNote.accid && scoreNote.accid !== 0 && (
@@ -29,14 +31,22 @@ export const GraphicalScoreNote: React.FC<GraphicalScoreNoteProps> = ({ scoreNot
             <SmuflSymbol
                 name='noteheadBlack'
                 key={`note_${scoreNote.id}`}
-                annotationTarget={scoreNote.id}
                 missingNote={missing}
                 active={active}
                 x={x}
                 y={y}
                 staffSize={staffSize}
-                onClick={onClick} />
+                onClick={(e) => {
+                    if (e.shiftKey && onAnnotation) {
+                        onAnnotation(annotationTarget || 'unknown target')
+                    }
+                    else {
+                        onClick()
+                    }
+                }} />
         </>
 
     );
 };
+
+export const AnnotatableScoreNote = withAnnotation(GraphicalScoreNote)

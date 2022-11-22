@@ -38,7 +38,7 @@ export const SmuflSymbol: FC<SmuflSymbolProps> = ({ name, x, y, staffSize, activ
             onAnnotation(annotationTarget || 'unknown')
           }
           else if (onClick) {
-            onClick()
+            onClick(e)
           }
         }}
         d={glyphs[glyphNameToCodePoint(glyphnames[name].codepoint)]}>
