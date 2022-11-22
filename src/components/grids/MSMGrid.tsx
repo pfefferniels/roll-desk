@@ -4,6 +4,7 @@ import { System } from "../score/System";
 import { AnnotatableNote } from "../interpolation/Instruction";
 import { FC } from "react";
 import { calculateBeatLength } from "../../lib/transformers/BeatLengthBasis"
+import { GraphicalScoreNote } from "../score/GraphicalScoreNote";
 
 interface MSMGridProps {
     msm: MSM
@@ -62,12 +63,12 @@ export const MSMGrid: FC<MSMGridProps> = ({ msm, horizontalStretch }) => {
                             {msm.allNotes.filter(note => note.part === 2).map(note => {
                                 const x = note.date * horizontalStretch;
                                 return (
-                                    <AnnotatableNote
-                                        key={`annotatableNote_${note["xml:id"]}`}
-                                        name='noteheadBlack'
+                                    <GraphicalScoreNote
+                                        scoreNote={note}
                                         staffSize={7}
                                         x={x}
-                                        y={getVerticalPosition(note['midi.pitch'])} />
+                                        y={getVerticalPosition(note['midi.pitch'])}
+                                    />
                                 );
                             })}
                         </g>
