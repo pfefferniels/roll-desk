@@ -85,6 +85,7 @@ export const AnnotationBody: React.FC<AnnotationBodyProps> = ({ body }) => {
                         setChangedSinceLastSave(true);
                         setPurpose(e.target.value as AnnotationMotivation);
                     }}>
+                    <MenuItem value={AnnotationMotivation.Highlighting}>Highlighting</MenuItem>
                     <MenuItem value={AnnotationMotivation.Technique}>Technique</MenuItem>
                     <MenuItem value={AnnotationMotivation.Form}>Form</MenuItem>
                     <MenuItem value={AnnotationMotivation.Intratext}>Intratext</MenuItem>

@@ -1,5 +1,7 @@
-import { Delete, Edit } from "@mui/icons-material";
-import { Button, IconButton, List, ListItem, ListItemText, Paper } from "@mui/material";
+import { Delete, Edit, FileUpload } from "@mui/icons-material";
+import FileDownload from "@mui/icons-material/FileDownload";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, List, ListItem, ListItemText, Paper } from "@mui/material";
+import { Box } from "@mui/system";
 import * as rdf from "rdflib"
 import { NamedNode } from "rdflib";
 import { SubjectType } from "rdflib/lib/types";
@@ -9,12 +11,84 @@ import { RdfStoreContext } from "../../providers";
 import { EditAnnotationDialog } from "./EditAnnotationDialog";
 import { OA, RDF } from "./namespaces";
 
+interface ImportAnnotationDialogProps {
+    dialogOpen: boolean
+    setDialogOpen: (dialogOpen: boolean) => void
+}
+
+const ImportAnnotationDialog: React.FC<ImportAnnotationDialogProps> = ({ dialogOpen, setDialogOpen }) => {
+    const [file, setFile] = useState<string>()
+    const storeCtx = useContext(RdfStoreContext)
+
+    const upload = (source: HTMLInputElement) => {
+        if (!source || !source.files || source.files.length === 0) {
+            return
+        }
+        const file = source.files[0]
+        const fileReader = new FileReader();
+        fileReader.onloadend = async () => {
+            const content = fileReader.result as string
+            setFile(content)
+        };
+        fileReader.readAsText(file)
+    }
+
+    const store = () => {
+        if (!file) return 
+        if (!storeCtx) return
+
+        rdf.parse(file, storeCtx.rdfStore, 'http://example.org', 'text/turtle')
+    }
+
+    return (
+        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+            <DialogTitle>Import Annotations</DialogTitle>
+            <DialogContent>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        flexDirection: 'column',
+                    }}
+                >
+                    <input
+                        style={{
+                            display: 'none'
+                        }}
+                        type='file'
+                        id='alignment-input'
+                        className='alignment-file'
+                        accept='.ttl'
+                        onChange={(e) => upload(e.target as HTMLInputElement)}
+                    />
+                    <label
+                        htmlFor="alignment-input">
+                        <Button variant="outlined" color="primary" component="span">
+                            Upload annotations
+                        </Button>
+                    </label>
+
+                    {file && <i className='note'>ready</i>}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button onClick={() => {
+                    store()
+                    setDialogOpen(false)
+                }}>Import</Button>
+            </DialogActions>
+        </Dialog>
+    )
+}
+
 export default function AnnotationViewer() {
     const storeCtx = useContext(RdfStoreContext)
 
     const [serialized, setSerialized] = useState('')
     const [annotations, setAnnotations] = useState<{ node: rdf.NamedNode, name: string, extract: string }[]>([])
     const [annotationToEdit, setAnnotationToEdit] = useState<rdf.NamedNode>()
+    const [importAnnotationDialogOpen, setImportAnnotationDialogOpen] = useState(false)
 
     useEffect(() => {
         if (!storeCtx) return
@@ -48,12 +122,28 @@ export default function AnnotationViewer() {
 
     return (
         <div>
-            <Paper style={{ position: 'fixed', padding: '0.5rem', right: '0.5rem' }}>
-                <Button
-                    onClick={() => {
-                        downloadFile('annotations.ttl', serialized, 'text/turtle')
+            <ImportAnnotationDialog
+                dialogOpen={importAnnotationDialogOpen}
+                setDialogOpen={setImportAnnotationDialogOpen} />
+
+            <Paper style={{ position: 'fixed', padding: '0.5rem', right: 0 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        flexDirection: 'column',
                     }}
-                    variant='outlined'>Download Annotations</Button>
+                >
+                    <IconButton onClick={() => setImportAnnotationDialogOpen(true)}>
+                        <FileUpload />
+                    </IconButton>
+
+                    <IconButton onClick={() => {
+                        downloadFile('annotations.ttl', serialized, 'text/turtle')
+                    }}>
+                        <FileDownload />
+                    </IconButton>
+                </Box>
             </Paper>
 
             <List sx={{
@@ -78,7 +168,7 @@ export default function AnnotationViewer() {
                                             // TODO: also remove body
                                             storeCtx!.rdfStore.removeMany(annotation.node)
                                             setAnnotations(
-                                                [...annotations.slice(0, i), ...annotations.slice(i+1)]
+                                                [...annotations.slice(0, i), ...annotations.slice(i + 1)]
                                             )
                                         }}>
                                         <Delete />
