@@ -9,12 +9,13 @@ import { GridDimensions } from "./GridDimensions";
 
 interface MidiGridProps {
   performance: RawPerformance
+  addedNotes?: MidiNote[]
   secondaryPerformance?: RawPerformance
   activeNote?: MidiNote
   setActiveNote?: (note: MidiNote) => void
 }
 
-export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerformance, activeNote, setActiveNote }) => {
+export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, addedNotes, secondaryPerformance, activeNote, setActiveNote }) => {
   const { postSynthMessage } = useContext(MidiOutputContext)
 
   const [dimensions, setDimensions] = useState<GridDimensions>({
@@ -31,33 +32,37 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
 
   const fillGrid = useCallback((getVerticalPosition: any) => {
     return (
-      notes.map(n =>
-        <g>
-          {n.id === showDetailsForNote &&
-            <text x={n.onsetTime * dimensions.stretch + dimensions.shift}
+      notes.map(n => {
+        const added = addedNotes?.map(n => n.id).includes(n.id)
+
+        return (
+          <g>
+            {n.id === showDetailsForNote &&
+              <text x={n.onsetTime * dimensions.stretch + dimensions.shift}
+                y={getVerticalPosition(n.pitch)}
+                className='labelText'>
+                {pitchToSitch(n.pitch)} ({n.velocity})
+              </text>
+            }
+            <rect
+              key={`${performance.id}_${n.id}`}
+              id={`${performance.id}_${n.id}`}
+              className={`midiNote ${added ? 'addedNote' : ''} ${(n === activeNote) ? 'active' : 'not-active'}`}
+              x={n.onsetTime * dimensions.stretch + dimensions.shift}
               y={getVerticalPosition(n.pitch)}
-              className='labelText'>
-              {pitchToSitch(n.pitch)} ({n.velocity})
-            </text>
-          }
-          <rect
-            key={`${performance.id}_${n.id}`}
-            id={`${performance.id}_${n.id}`}
-            className={`midiNote ${/*p.motivation === Motivation.Addition && 'missingNote'*/''} ${(n === activeNote) ? 'active' : 'not-active'}`}
-            x={n.onsetTime * dimensions.stretch + dimensions.shift}
-            y={getVerticalPosition(n.pitch)}
-            rx={1}
-            ry={1}
-            width={n.duration * dimensions.stretch}
-            height={dimensions.staffSize}
-            onClick={() => {
-              postSynthMessage && playNote(n.pitch, n.velocity, postSynthMessage)
-              setActiveNote && setActiveNote(n)
-            }}
-            onMouseOver={() => setShowDetailsForNote(n.id)}
-            onMouseLeave={() => setShowDetailsForNote('')}
-          />
-        </g>)
+              rx={1}
+              ry={1}
+              width={n.duration * dimensions.stretch}
+              height={dimensions.staffSize}
+              onClick={() => {
+                postSynthMessage && playNote(n.pitch, n.velocity, postSynthMessage)
+                setActiveNote && setActiveNote(n)
+              }}
+              onMouseOver={() => setShowDetailsForNote(n.id)}
+              onMouseLeave={() => setShowDetailsForNote('')}
+            />
+          </g>)
+      })
     )
   }, [notes])
 
@@ -100,7 +105,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
                   x2={second * dimensions.stretch + dimensions.shift}
                   y1={-120}
                   y2={300} />
-                <text 
+                <text
                   className='labelText'
                   x={second * dimensions.stretch + dimensions.shift}
                   y={270}>{second}</text>
@@ -109,7 +114,7 @@ export const MIDIGrid: React.FC<MidiGridProps> = ({ performance, secondaryPerfor
           })
         }
         {fillGrid}
-        {fillSecondaryGrid}
+        {/*fillSecondaryGrid*/}
       </MidiLikeGrid>
     </System>
   )

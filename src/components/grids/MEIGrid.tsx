@@ -11,11 +11,12 @@ import { okzoomer } from "../alignment/gestures";
 
 interface MEIGridProps {
     notes: MeiNote[]
+    missingNotes: MeiNote[]
     activeNote?: MeiNote
     setActiveNote: (note: MeiNote) => void
 }
 
-export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNote }): JSX.Element => {
+export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNote, missingNotes }): JSX.Element => {
     const { postSynthMessage } = useContext(MidiOutputContext)
 
     const [dimensions, setDimensions] = useState<GridDimensions>({
@@ -67,7 +68,7 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
                         x={x}
                         y={y}
                         active={n === activeNote}
-                        missing={false}
+                        missing={missingNotes.includes(n)}
                         staffSize={dimensions.staffSize}
                         onClick={() => {
                             if (postSynthMessage) playNote(n.pnum, 70, postSynthMessage)

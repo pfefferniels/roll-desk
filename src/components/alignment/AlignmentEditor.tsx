@@ -51,6 +51,10 @@ export default function AlignmentEditor() {
         <g className='scoreArea' transform={`translate(0, ${100})`}>
           <MEIGrid
             notes={alignedPerformance.score!.allNotes()}
+            missingNotes={
+              alignedPerformance.getSemanticPairs()
+                .filter(note => !note.midiNote && note.scoreNote)
+                .map(note => note.scoreNote!)}
             activeNote={activeScoreNote}
             setActiveNote={setActiveScoreNote}
           />
@@ -59,6 +63,11 @@ export default function AlignmentEditor() {
         <g className='midiArea' transform={`translate(0, ${/*midiDimensions.areaHeight*/ 380})`}>
           <MIDIGrid
             performance={alignedPerformance.rawPerformance!}
+            addedNotes={
+              alignedPerformance.getSemanticPairs()
+                .filter(note => !note.scoreNote && note.midiNote)
+                .map(note => note.midiNote!)
+            }
             setActiveNote={(note) => {
               if (!activeScoreNote) return
 
@@ -89,7 +98,7 @@ export default function AlignmentEditor() {
             return (
               <AnnotatableAlignment
                 key={`connector_${n}_${Date.now()}`}
-                annotationTarget={`alignment_${n}`}
+                annotationTarget={`${alignedPerformance.id}/pair_${n}`}
                 parentElement={parentEl}
                 firstElement={scoreNoteEl}
                 secondElement={midiNoteEl}
