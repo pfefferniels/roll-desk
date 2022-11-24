@@ -115,7 +115,11 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
                     last.loop = true
                     return all
                 }
-                all.push(curr as Rubato)
+
+                // make sure that we use only valid intensities
+                if (isFinite((curr as Rubato).intensity)) {
+                    all.push(curr as Rubato)
+                }
                 return all
             }, new Array<Rubato>())
 
