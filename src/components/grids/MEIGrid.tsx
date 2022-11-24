@@ -21,7 +21,7 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
 
     const [dimensions, setDimensions] = useState<GridDimensions>({
         shift: 60,
-        stretch: 60,
+        stretch: 90,
         staffSize: 7,
         areaHeight: 280
     })
@@ -54,10 +54,17 @@ export const MEIGrid: React.FC<MEIGridProps> = ({ notes, activeNote, setActiveNo
     }, [])
 
     const fillStaffForPart = (part: number, getVerticalPosition: (pitch: number) => number) => {
-        return notes
-            .filter(n => n.part === part)
-            .map(n => {
-                const x = n.qstamp * dimensions.stretch + dimensions.shift
+        const partNotes = notes.filter(n => n.part === part)
+        return partNotes
+            .map((n, i) => {
+                let x = n.qstamp * dimensions.stretch + dimensions.shift
+
+                // simple collision detection
+                if (partNotes[i - 1] && partNotes[i - 1].qstamp === n.qstamp &&
+                    n.pnum >= partNotes[i - 1].pnum - 2 &&
+                    n.pnum < partNotes[i - 1].pnum + 2) {
+                    x -= 8
+                }
                 const y = getVerticalPosition(
                     basePitchOfNote(n.pname || 'c', n.octave || 0.0))
 
