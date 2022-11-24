@@ -49,7 +49,7 @@ export class JsonLdVisitor implements Visitor {
                 "@type": "la:Alignment",
                 "crm:P14_carried_out_by": {
                     "@id": `me:${this.carriedOutBy}`,
-                    "@type": "E39_Actor"
+                    "@type": "crm:E39_Actor"
                 },
                 "dcterms:created": new Date(Date.now()).toISOString(),
                 "la:hasAlignmentPair": alignment.semanticPairs.map((pair, i) => `${alignment.uri}/pair_${i}`)
@@ -58,10 +58,10 @@ export class JsonLdVisitor implements Visitor {
                 const result: any = {
                     "@id": `${alignment.uri}/pair_${i}`,
                     "@type": "la:AlignmentPair",
-                    "la:hasMotivation": `http://measuring-early-records.org/alignment-motivation#${pair.motivation}`
+                    "la:hasMotivation": `https://measuring-early-records.org/alignment-motivation#${pair.motivation}`
                 }
                 if (pair.scoreNote) {
-                    result["la:hasScoreNote"] = `http://measuring-early-records.org/score/score.mei#${pair.scoreNote.id}`
+                    result["la:hasScoreNote"] = `https://measuring-early-records.org/score/score.mei#${pair.scoreNote.id}`
                 }
                 if (pair.midiNote) {
                     const matches = pair.midiNote.id.match(/(.+)_(.+)/)
