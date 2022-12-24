@@ -12,6 +12,8 @@ import Upload from './components/Upload'
 import { AlignedPerformance } from './lib/AlignedPerformance';
 import { Store, graph } from 'rdflib'
 import { AnnotatorButton } from './components/annotation/AnnotatorButton';
+import { SessionProvider } from '@inrupt/solid-ui-react';
+import { LoginForm } from './components/login';
 
 function TabPanel(props: { children: ReactElement, index: string, value: string }) {
   const { children, value, index } = props;
@@ -52,62 +54,65 @@ export default function Editor() {
   return (
     <div className="App">
       <MidiOutputProvider>
-        <RdfStoreContext.Provider value={rdfStore && {
-          rdfStore: rdfStore
-        }}>
-          <AnnotationContext.Provider value={{ targets: annotationTargets, setTargets: setAnnotationTargets }}>
-            <AnnotatorButton />
+        <SessionProvider sessionId="measuring-session">
+          <RdfStoreContext.Provider value={rdfStore && {
+            rdfStore: rdfStore
+          }}>
+            <AnnotationContext.Provider value={{ targets: annotationTargets, setTargets: setAnnotationTargets }}>
+              <AnnotatorButton />
 
-            <GlobalContext.Provider value={{
-              alignedPerformance,
-              alignmentReady,
-              triggerUpdate
-            }}>
-              <Tabs value={activeTab} onChange={(e, nv) => setActiveTab(nv)} aria-label="main tabs">
-                <Tab value='alignment-editor' label="Alignment" />
-                <Tab value='interpolation-editor' label="Interpolation" />
-                <Tab value='annotated-score' label="Annotation" />
-              </Tabs>
-              <TabPanel value={activeTab} index='alignment-editor'>
-                <AlignmentEditor />
-              </TabPanel>
-              <TabPanel value={activeTab} index='interpolation-editor'>
-                <InterpolationEditor />
-              </TabPanel>
-              <TabPanel value={activeTab} index='annotated-score'>
-                <AnnotationViewer />
-              </TabPanel>
+              <GlobalContext.Provider value={{
+                alignedPerformance,
+                alignmentReady,
+                triggerUpdate
+              }}>
+                <LoginForm />
+                
+                <Tabs value={activeTab} onChange={(e, nv) => setActiveTab(nv)} aria-label="main tabs">
+                  <Tab value='alignment-editor' label="Alignment" />
+                  <Tab value='interpolation-editor' label="Interpolation" />
+                  <Tab value='annotated-score' label="Annotation" />
+                </Tabs>
+                <TabPanel value={activeTab} index='alignment-editor'>
+                  <AlignmentEditor />
+                </TabPanel>
+                <TabPanel value={activeTab} index='interpolation-editor'>
+                  <InterpolationEditor />
+                </TabPanel>
+                <TabPanel value={activeTab} index='annotated-score'>
+                  <AnnotationViewer />
+                </TabPanel>
 
-              <SpeedDial
-                ariaLabel="modify workspace"
-                sx={{ position: 'fixed', bottom: 16, right: 16 }}
-                icon={<SpeedDialIcon />}
-              >
-                {actions.map((action) => (
-                  <SpeedDialAction
-                    key={action.name}
-                    icon={action.icon}
-                    tooltipTitle={action.name}
-                    onClick={action.action}
-                  />
-                ))}
-              </SpeedDial>
+                <SpeedDial
+                  ariaLabel="modify workspace"
+                  sx={{ position: 'fixed', bottom: 16, right: 16 }}
+                  icon={<SpeedDialIcon />}
+                >
+                  {actions.map((action) => (
+                    <SpeedDialAction
+                      key={action.name}
+                      icon={action.icon}
+                      tooltipTitle={action.name}
+                      onClick={action.action}
+                    />
+                  ))}
+                </SpeedDial>
 
-              <Upload
-                open={uploadDialogOpen}
-                onClose={closeUploadDialog}
-                setScore={(newScore) => {
-                  alignedPerformance.setScore(newScore)
-                  triggerUpdate()
-                }}
-                setPerformance={(newPerformance) => {
-                  alignedPerformance.setPerformance(newPerformance)
-                  triggerUpdate()
-                }} />
-            </GlobalContext.Provider>
-          </AnnotationContext.Provider>
-        </RdfStoreContext.Provider>
-
+                <Upload
+                  open={uploadDialogOpen}
+                  onClose={closeUploadDialog}
+                  setScore={(newScore) => {
+                    alignedPerformance.setScore(newScore)
+                    triggerUpdate()
+                  }}
+                  setPerformance={(newPerformance) => {
+                    alignedPerformance.setPerformance(newPerformance)
+                    triggerUpdate()
+                  }} />
+              </GlobalContext.Provider>
+            </AnnotationContext.Provider>
+          </RdfStoreContext.Provider>
+        </SessionProvider>
       </MidiOutputProvider>
     </div>
   );
