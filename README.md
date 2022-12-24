@@ -33,15 +33,26 @@ the the package `jsonld` doesn't work well with ESM in a testing environment.
 To resolve this issue, simple delete the http-client folder in the
 local node_modules of jsonld.
 
+In order to enable MIDI generation through meico, make sure to run:
+
+```
+cd tools
+python3 generate-midi.py
+```
 
 ## Available Scripts
 
 In the project directory, you can run:
 
-### `npm start`
+### `HTTPS=true npm start`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Runs the app in the development mode.
+
+Please note that in order to save things to your POD, the application
+must be run via HTTPS.
+
+Open [https://localhost:3000](https://localhost:3000) to view it in the browser and
+ignore the browser's certificate warning.
 
 ### `npm test`
 
