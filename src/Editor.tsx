@@ -14,6 +14,7 @@ import { Store, graph } from 'rdflib'
 import { AnnotatorButton } from './components/annotation/AnnotatorButton';
 import { SessionProvider } from '@inrupt/solid-ui-react';
 import { LoginForm } from './components/login';
+import { NetworkOverview } from './components/network-overview';
 
 function TabPanel(props: { children: ReactElement, index: string, value: string }) {
   const { children, value, index } = props;
@@ -69,10 +70,14 @@ export default function Editor() {
                 <LoginForm />
                 
                 <Tabs value={activeTab} onChange={(e, nv) => setActiveTab(nv)} aria-label="main tabs">
-                  <Tab value='alignment-editor' label="Alignment" />
-                  <Tab value='interpolation-editor' label="Interpolation" />
-                  <Tab value='annotated-score' label="Annotation" />
+                  <Tab value='network-overview' label="Overview" />
+                  <Tab value='alignment-editor' label="Alignment Editor" />
+                  <Tab value='interpolation-editor' label="MPM Editor" />
+                  <Tab value='annotated-score' label="Annotations" />
                 </Tabs>
+                <TabPanel value={activeTab} index='network-overview'>
+                  <NetworkOverview />
+                </TabPanel>
                 <TabPanel value={activeTab} index='alignment-editor'>
                   <AlignmentEditor />
                 </TabPanel>
