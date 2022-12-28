@@ -57,8 +57,13 @@ digraph G {
     Alignment -> MIDI2, ScoreEdition [color="grey"]
 
     ScoreEdition[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>Notenausgabe als MEI-Codierung>]
-    IndividualWork1 -> ScoreEdition [label="is realized in"]
+    IndividualWork1 -> ScoreEdition [label="is realised in"]
 
     IndividualWork1 -> ComplexWork [label="P10 is member of"]
     IndividualWork2 -> ComplexWork [label="P10 is member of"]
+
+    ReductionScore[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MEI-Codierung der Reduktion>]
+    ReductionSound[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MP3-Codierung der Reduktion,<BR/>gerendert mit einem spezifischen MPM-Dokument>]
+    IndividualWork2 -> ReductionScore[label="is realised in"]
+    IndividualWork2 -> ReductionSound[label="is realised in"]
 }
