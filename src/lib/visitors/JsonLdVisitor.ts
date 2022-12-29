@@ -2,6 +2,11 @@ import { AlignedPerformance } from "../AlignedPerformance";
 import { RawPerformance } from "../midi/RawPerformance";
 import { Visitor } from "./Visitor";
 
+/**
+ * JSON-LD visitor.
+ * 
+ * @deprecated Please use the `RDFVisitor` instead.
+ */
 export class JsonLdVisitor implements Visitor {
     private contextes: any
     private graph: Array<any>
