@@ -1,16 +1,14 @@
 import { CombinedDataProvider, LoginButton, LogoutButton, Text, useSession } from "@inrupt/solid-ui-react";
 import { FOAF } from "@inrupt/vocab-common-rdf";
-import { Button, Paper } from "@mui/material";
+import { Button, CircularProgress, Paper } from "@mui/material";
 
 function Profile() {
     const { session, sessionRequestInProgress } = useSession();
-    if (sessionRequestInProgress) return <p>Loading...</p>;
+    if (sessionRequestInProgress) return <CircularProgress/>
 
     const webId = session.info.webId;
 
-    if (!webId) return <span>something went wrong</span>
-
-    console.log('session=', session)
+    if (!webId) return <span>Something went wrong</span>
 
     return (
         <CombinedDataProvider datasetUrl={webId} thingUrl={webId}>
@@ -35,8 +33,10 @@ export function LoginForm() {
                     <LoginButton
                         oidcIssuer='https://inrupt.net'
                         redirectUrl={window.location.href}
-                        authOptions={{ clientName: 'Measuring Early Records' }}>
-                        <Button disabled={sessionRequestInProgress}>Log In</Button>
+                        authOptions={{ clientName: 'Linked Early Records' }}>
+                        <Button disabled={sessionRequestInProgress}>
+                            {sessionRequestInProgress ? <CircularProgress /> : "Log In"}
+                        </Button>
                     </LoginButton>
                 </>
             }
