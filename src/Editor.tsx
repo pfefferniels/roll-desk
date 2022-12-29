@@ -8,7 +8,6 @@ import AlignmentEditor from './components/alignment/AlignmentEditor';
 import InterpolationEditor from './components/interpolation/InterpolationEditor';
 import AnnotationViewer from './components/annotation/AnnotationViewer';
 import { AnnotationContext, GlobalContext, MidiOutputProvider, RdfStoreContext } from './providers';
-import Upload from './components/Upload'
 import { AlignedPerformance } from './lib/AlignedPerformance';
 import { Store, graph } from 'rdflib'
 import { AnnotatorButton } from './components/annotation/AnnotatorButton';
@@ -33,8 +32,7 @@ function TabPanel(props: { children: ReactElement, index: string, value: string 
 }
 
 export default function Editor() {
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('alignment-editor')
+  const [activeTab, setActiveTab] = useState('network-overview')
 
   const [alignedPerformance] = useState(new AlignedPerformance())
   const [alignmentReady, setAlignmentReady] = useState<number>(0)
@@ -42,15 +40,7 @@ export default function Editor() {
   const [rdfStore] = useState<Store>(graph())
   const [annotationTargets, setAnnotationTargets] = useState<string[]>([])
 
-  const closeUploadDialog = () => setUploadDialogOpen(false)
-  const openUploadDialog = () => setUploadDialogOpen(true)
-
   const triggerUpdate = () => setAlignmentReady(alignmentReady + 1)
-
-  const actions = [
-    { icon: <SaveIcon />, name: 'Save' },
-    { icon: <AddIcon />, name: 'Choose Interpretation', action: openUploadDialog },
-  ];
 
   return (
     <div className="App">
@@ -75,6 +65,7 @@ export default function Editor() {
                   <Tab value='interpolation-editor' label="MPM Editor" />
                   <Tab value='annotated-score' label="Annotations" />
                 </Tabs>
+                
                 <TabPanel value={activeTab} index='network-overview'>
                   <NetworkOverview />
                 </TabPanel>
@@ -88,32 +79,7 @@ export default function Editor() {
                   <AnnotationViewer />
                 </TabPanel>
 
-                <SpeedDial
-                  ariaLabel="modify workspace"
-                  sx={{ position: 'fixed', bottom: 16, right: 16 }}
-                  icon={<SpeedDialIcon />}
-                >
-                  {actions.map((action) => (
-                    <SpeedDialAction
-                      key={action.name}
-                      icon={action.icon}
-                      tooltipTitle={action.name}
-                      onClick={action.action}
-                    />
-                  ))}
-                </SpeedDial>
 
-                <Upload
-                  open={uploadDialogOpen}
-                  onClose={closeUploadDialog}
-                  setScore={(newScore) => {
-                    alignedPerformance.setScore(newScore)
-                    triggerUpdate()
-                  }}
-                  setPerformance={(newPerformance) => {
-                    alignedPerformance.setPerformance(newPerformance)
-                    triggerUpdate()
-                  }} />
               </GlobalContext.Provider>
             </AnnotationContext.Provider>
           </RdfStoreContext.Provider>
