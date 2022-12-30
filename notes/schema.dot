@@ -66,4 +66,10 @@ digraph G {
     ReductionSound[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MP3-Codierung der Reduktion,<BR/>gerendert mit einem spezifischen MPM-Dokument>]
     IndividualWork2 -> ReductionScore[label="is realised in"]
     IndividualWork2 -> ReductionSound[label="is realised in"]
+
+    FormalAlteration[label=<<B>Formal Alteration</B><BR/>subclass of E11 <B>Modification</B><BR/>Formale Alterationen am Notentext,<BR/>Wiederholungsstruktur der Interpretationen>]
+    ScoreEditionWithExpand[label=<D1 <B>Digital Object</B><BR/>MEI-Codierung mit expansion-Elementen>]
+
+    FormalAlteration -> ScoreEdition [label="P31 has modified"]
+    FormalAlteration -> ScoreEditionWithExpand [label="P108 has produced"]
 }
