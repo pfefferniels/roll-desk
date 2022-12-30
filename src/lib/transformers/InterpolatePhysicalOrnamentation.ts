@@ -16,11 +16,8 @@ const determineSortDirection = (arr: number[]) => {
     if (arr.length < 2) return 0;
 
     const direction = Math.sign(arr[1] - arr[0]);
-    for (let i = 1; i < arr.length - 1; i++) {
-        if (Math.sign(arr[i + 1] - arr[i]) !== direction) return 0;
-    }
-
-    return direction;
+    return arr.slice(1).every((val, i) =>
+      Math.sign(val - arr[i]) === direction) ? direction : 0;
 }
 
 export interface InterpolatePhysicalOrnamentationOptions extends TransformationOptions {
