@@ -4,6 +4,13 @@ import { MSM } from "../msm";
 import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
 
+/**
+ * Calculates the BPMs between time onsets.
+ * 
+ * @param arr The time onsets array.
+ * @returns The array of BPMs, typically with one less element than
+ * the input array. BPMs of value 0 are being filtered out.
+ */
 const asBPM = (arr: number[]) => {
     let result = []
     for (let i = 0; i < arr.length - 1; i++) {
@@ -92,6 +99,11 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
             const start = points[0]
             const end = points[points.length - 1]
+
+            //if (points.length > 1) {
+            //    start.bpm = points[0].bpm - (points[1].bpm - points[0].bpm)
+            //}
+
             const meanTempo = (start.bpm + end.bpm) / 2
 
             // console.log('douglasPeucker [', start.tstamp, '-', end.tstamp, '], [', start.bpm, '-', end.bpm, ']')
@@ -103,7 +115,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 const distance = Math.abs(points[i].bpm - meanTempo)
                 if (distance < optimal) {
                     optimal = distance
-                    meanTempoAtQstamp = points[i].tstamp;
+                    meanTempoAtQstamp = points[i].tstamp
                 }
             }
             const fullDistance = end.tstamp - start.tstamp
