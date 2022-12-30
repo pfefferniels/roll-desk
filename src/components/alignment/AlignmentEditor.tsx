@@ -6,6 +6,7 @@ import { EditMotivation } from "./EditMotivation"
 import { AnnotatableAlignment } from "../SVGElementConnector"
 import { AlignmentActions } from "./AlignmentActions"
 import { MEIGrid, MIDIGrid } from "../grids"
+import { Typography } from "@mui/material"
 
 export default function AlignmentEditor() {
   const { alignedPerformance, alignmentReady, triggerUpdate } = useContext(GlobalContext)
@@ -118,6 +119,11 @@ export default function AlignmentEditor() {
     <div
       tabIndex={0}
     >
+      <Typography>
+        You can start here by creating a new alignment from a given MEI score 
+        and expressive MIDI file or by editing an existing alignment.
+      </Typography>
+
       {alignedPerformance.ready() && (
         <AlignmentActions alignedPerformance={alignedPerformance} triggerUpdate={triggerUpdate} />
       )}
@@ -125,7 +131,7 @@ export default function AlignmentEditor() {
       {alignedPerformance.ready() && (
         <svg
           id='alignment'
-          width={/*maxWidth*/ 5000}
+          width={/*maxWidth*/ 9000}
           height={/*midiDimensions.areaHeight * 2*/ 660}
           style={{ margin: '1rem' }}>
           {area}
