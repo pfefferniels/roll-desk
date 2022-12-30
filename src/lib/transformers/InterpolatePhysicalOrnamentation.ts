@@ -6,20 +6,21 @@ import { uuid } from '../globals'
 export type ArpeggioPlacement = 'on-beat' | 'before-beat' | 'estimate'
 
 /**
- * A little helper function to detect how an array is sorted.
+ * A little helper function to determine how an array is sorted.
  * 
- * @param arr 
+ * @param arr The array to check
  * @returns -1 if the array is sorted in descending order, 1 if its 
  * sorted in ascending order, 0 if it isn't sorted.
  */
-const isSorted = (arr: number[]) => {
-    let direction = -(arr[0] - arr[1])
-    for (let [i, val] of arr.entries()) {
-        direction = !direction ? -(arr[i - 1] - arr[i]) : direction
-        if (i === arr.length - 1)
-            return !direction ? 0 : direction / Math.abs(direction)
-        else if ((val - arr[i + 1]) * direction > 0) return 0
+const determineSortDirection = (arr: number[]) => {
+    if (arr.length < 2) return 0;
+
+    const direction = Math.sign(arr[1] - arr[0]);
+    for (let i = 1; i < arr.length - 1; i++) {
+        if (Math.sign(arr[i + 1] - arr[i]) !== direction) return 0;
     }
+
+    return direction;
 }
 
 export interface InterpolatePhysicalOrnamentationOptions extends TransformationOptions {
@@ -82,7 +83,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             const sortedByOnset = arpeggioNotes.sort((a, b) => a['midi.onset'] - b['midi.onset'])
 
             // detecting the direction of the arpeggiated notes.
-            const arpeggioDirection = isSorted(sortedByOnset.map(note => note["midi.pitch"]))
+            const arpeggioDirection = determineSortDirection(sortedByOnset.map(note => note["midi.pitch"]))
             let noteOrder = ''
             if (arpeggioDirection === 1) noteOrder = 'ascending pitch'
             else if (arpeggioDirection === -1) noteOrder = 'descending pitch'
@@ -136,7 +137,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
                 newOnset = arpeggioNotes[0]['midi.onset']
             }
             else if (this.options?.placement === 'before-beat') {
-                frameStart = -frameLength 
+                frameStart = -frameLength
                 newOnset = arpeggioNotes[arpeggioNotes.length - 1]['midi.onset']
             }
             else {
