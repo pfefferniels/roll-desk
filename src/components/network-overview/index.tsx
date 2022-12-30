@@ -55,7 +55,7 @@ export const NetworkOverview = () => {
     if (!session.info.isLoggedIn) return <span>You must be logged in</span>
 
     return (
-        <DatasetProvider datasetUrl="https://pfefferniels.inrupt.net/notes/test.ttl">
+        <>
             <SigmaContainer style={{ height: "500px", width: "900px" }}>
                 <LoadGraph />
                 <ControlsContainer position='top-left'>
@@ -84,7 +84,7 @@ export const NetworkOverview = () => {
             </SpeedDial>
 
             <AddDigitalObjects open={addDialogOpen} setOpen={setAddDialogOpen} />
-        </DatasetProvider>
+        </>
     );
 };
 
