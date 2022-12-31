@@ -1,36 +1,81 @@
 digraph G {
     node [shape="box"]
-    
+
     ComplexWork[label=<F15 <B>Complex Work</B> <BR/> Chopin op. 27 Nr. 2>]
 
-    PerformanceWork[label=<F20 <B>Performance Work</B><BR/>Emil Sauer spielt Chopin, 1907>]
-    PerformancePlan[label=<F25 <B>Performance Plan</B><BR/>Beschreibung eines interpretativen Vorgehens,<BR/>z. B. als rekonstruiertes Music Performance Markup>]
-    MPMCreation[label=<F28 <B>Expression Creation</B><BR/>Herstellung des Music Performance Markup>]
+    subgraph cluster_3 {
+        label = "Notentext"
+        IndividualWork1[label=<F14 <B>Individual Work</B> <BR/> Notenausgabe Sauer> style=filled]
+        ScoreEdition[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>Notenausgabe als MEI-Codierung>]
+    }
 
-    Performance[label=<F31 <B>Performance</B> <BR/>Sauers Spiel im Welte-Aufnahmestudio (20.9.1907)>]
+    subgraph cluster_7 {
+        label = "Analytische Ableitungen"
+        IndividualWork2[label=<F14 <B>Individual Work</B> <BR/> z.B. eine harmonische Reduktion> style=filled]
+        ReductionScore[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MEI-Codierung der Reduktion>]
+        ReductionSound[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MP3-Codierung der Reduktion,<BR/>gerendert mit einem spezifischen MPM-Dokument>]
+    }
+
+    subgraph cluster_4 {
+        label = "Klavierrolle"
+        PerformanceWork[label=<F20 <B>Performance Work</B><BR/>Emil Sauer spielt Chopin, 1907> style=filled]
+
+        subgraph cluster_5 {
+            label = "Herstellungsprozess einer (physischen) Klavierrolle"
+            PerformanceCreation[label=<F28 <B>Expression Creation</B> <BR/>Produktion der Klavierrolle>]
+            Performance[label=<F31 <B>Performance</B> <BR/>Sauers Spiel im Welte-Aufnahmestudio (20.9.1907)>]
+            Editing[label=<E7 <B>Activity</B> <BR/>Bearbeitungen auf der Masterrolle, <BR/> Produktion der Rollenkopien>]
+
+            PianoRoll[label=<F24 <B>Publication Expression</B><BR/>Veröffentlichte Rolle>]
+            PianoRollCopy[label=<F5 <B>Item</B><BR/>Physische Kopie einer Rolle>]
+        }
+
+        subgraph cluster_6 {
+            label = "Digitalisierung einer Klavierrolle"
+            Processing[label=<D2 <B>Digitization Process</B><BR/>Digitalisierung der Rolle>]
+            Image[label=<D1 <B>Digital Object</B><BR/>Scan (TIFF)>]
+            MIDI1[label=<D1 <B>Digital Object</B><BR/>Raw-MIDI>]
+            MIDI2[label=<D1 <B>Digital Object</B><BR/>Expressive-MIDI>]
+            ImageToRaw[label=<D3 <B>Formal Derivation</B><BR/>Konversion → MIDI>]
+            RawToExpr[label=<D3 <B>Formal Derivation</B><BR/>Konversion → Expressives MIDI>]
+        }
+
+        subgraph cluster_8 {
+            label = "Beschreibung der Veränderungen am Notentext"
+            FormalAlteration[label=<F28 <B>Expression Creation</B><BR/>E11 <B>Modification</B><BR/>Beschreibung der am Notentext vorgenommenen Alterationen>]
+            ScoreEditionWithExpand[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>Transkription des alterierten Notentextes<BR/>als MEI-Codierung>]
+        }
+
+        subgraph cluster_7 {
+            label = "Herstellungsprozess von Music Performance Markup"
+            MPMCreation[label=<F28 <B>Expression Creation</B><BR/>Herstellung des Music Performance Markup>]
+            InterpolationAlgorithm[label=<D10 <B>Software Execution</B><BR/>Ausführung der MPM-Interpolierung<BR/>mit bestimmten Parametern>]
+            ManualInterpolation[label=<D7 <B>Digital Machine Event</B><BR/>Manuelle Nachbearbeitung des MPM>]
+            PerformancePlan[label=<F25 <B>Performance Plan</B><BR/>Beschreibung eines interpretativen Vorgehens,<BR/>z. B. als rekonstruiertes Music Performance Markup>]
+        }
+
+        subgraph cluster_9 {
+            label = "Verknüpfung von Klang und (angenommener) Notation"
+            Alignment[color="grey" fontcolor="grey" shape="oval"]
+        }
+    }
+
+    IndividualWork1 -> ScoreEdition [label="is realised in"]
+
+    IndividualWork1 -> ComplexWork [label="P10 is member of"]
+    IndividualWork2 -> ComplexWork [label="P10 is member of"]
+
+    IndividualWork2 -> ReductionScore[label="is realised in"]
+    IndividualWork2 -> ReductionSound[label="is realised in"]
 
     Performance -> ScoreEdition [label="R66 included performed version of"]
 
-    IndividualWork1[label=<F14 <B>Individual Work</B> <BR/> Notenausgabe Sauer>]
-    IndividualWork2[label=<F14 <B>Individual Work</B> <BR/> z.B. eine harmonische Reduktion>]
-    Editing[label=<E7 <B>Activity</B> <BR/>Bearbeitungen auf der Masterrolle, <BR/> Produktion der Rollenkopien>]
-    PianoRoll[label=<F24 <B>Publication Expression</B><BR/>Veröffentlichte Rolle>]
-    PianoRollCopy[label=<F5 <B>Item</B><BR/>Physische Kopie einer Rolle>]
     PianoRollCopy -> PianoRoll[label="carries"]
 
-    Processing[label=<D2 <B>Digitization Process</B><BR/>Digitalisierung der Rolle>]
-    Image[label=<D1 <B>Digital Object</B><BR/>Scan (TIFF)>]
-    MIDI1[label=<D1 <B>Digital Object</B><BR/>Raw-MIDI>]
-    MIDI2[label=<D1 <B>Digital Object</B><BR/>Expressive-MIDI>]
-
-    PerformanceCreation[label=<F28 <B>Expression Creation</B> <BR/>Produktion der Klavierrolle>]
     PerformanceCreation -> Performance[label="P9 consists of"]
     PerformanceCreation -> Editing [label="P9 consists of"]
     PerformanceCreation -> PerformanceWork [label="R19 created a realization of"]
     PerformanceCreation -> PianoRoll [label="R17 created"]
-
-    InterpolationAlgorithm[label=<D10 <B>Software Execution</B><BR/>Ausführung der MPM-Interpolierung<BR/>mit bestimmten Parametern>]
-    ManualInterpolation[label=<D7 <B>Digital Machine Event</B><BR/>Manuelle Nachbearbeitung des MPM>]
 
     MPMCreation -> PerformanceWork [label="R19 created a realization of"]
     MPMCreation -> PerformancePlan [label="R17 created"]
@@ -41,11 +86,9 @@ digraph G {
     Processing -> PianoRollCopy [label="digitized"]
     Processing -> Image [label="has created"]
 
-    ImageToRaw[label=<D3 <B>Formal Derivation</B><BR/>Konversion → MIDI>]
     ImageToRaw -> Image [label="L21 used as derivation source"]
     ImageToRaw -> MIDI1 [label="L22 created derivative"]
 
-    RawToExpr[label=<D3 <B>Formal Derivation</B><BR/>Konversion → Expressives MIDI>]
     RawToExpr -> MIDI1 [label="L21 used as derivation source"]
     RawToExpr -> MIDI2 [label="L22 created derivative"]
 
@@ -53,23 +96,10 @@ digraph G {
     PerformanceWork -> ComplexWork [label="P10 is member of"]
     Performance -> PerformancePlan [label="R25 performed"]
 
-    Alignment[color="grey" fontcolor="grey" shape="oval"]
-    Alignment -> MIDI2, ScoreEdition [color="grey"]
-
-    ScoreEdition[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>Notenausgabe als MEI-Codierung>]
-    IndividualWork1 -> ScoreEdition [label="is realised in"]
-
-    IndividualWork1 -> ComplexWork [label="P10 is member of"]
-    IndividualWork2 -> ComplexWork [label="P10 is member of"]
-
-    ReductionScore[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MEI-Codierung der Reduktion>]
-    ReductionSound[label=<F22 <B>Self-Contained Expression</B><BR/>D1 <B>Digital Object</B><BR/>MP3-Codierung der Reduktion,<BR/>gerendert mit einem spezifischen MPM-Dokument>]
-    IndividualWork2 -> ReductionScore[label="is realised in"]
-    IndividualWork2 -> ReductionSound[label="is realised in"]
-
-    FormalAlteration[label=<<B>Formal Alteration</B><BR/>subclass of E11 <B>Modification</B><BR/>Formale Alterationen am Notentext,<BR/>Wiederholungsstruktur der Interpretationen>]
-    ScoreEditionWithExpand[label=<D1 <B>Digital Object</B><BR/>MEI-Codierung mit expansion-Elementen>]
+    Alignment -> MIDI2, ScoreEditionWithExpand [color="grey"]
 
     FormalAlteration -> ScoreEdition [label="P31 has modified"]
     FormalAlteration -> ScoreEditionWithExpand [label="P108 has produced"]
+
+    PerformanceWork -> ScoreEditionWithExpand[label="R3 is realised in"]
 }
