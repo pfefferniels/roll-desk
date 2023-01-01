@@ -11,7 +11,7 @@ import { AnnotatorButton } from './components/annotation/AnnotatorButton';
 import { DatasetProvider, SessionProvider } from '@inrupt/solid-ui-react';
 import { LoginForm } from './components/login';
 import { NetworkOverview } from './components/network-overview';
-import { FormalAlterationEditor } from './components/formal-alteration';
+import { FormalAlterationEditor } from './components/alteration';
 
 function TabPanel(props: { children: ReactElement, index: string, value: string }) {
   const { children, value, index } = props;
@@ -39,6 +39,8 @@ export default function Editor() {
     <div className="App">
       <MidiOutputProvider>
         <SessionProvider sessionId="measuring-session">
+          <LoginForm />
+
           <RdfStoreContext.Provider value={rdfStore && {
             rdfStore: rdfStore
           }}>
@@ -46,8 +48,6 @@ export default function Editor() {
               <AnnotatorButton />
 
               <DatasetProvider datasetUrl="https://pfefferniels.inrupt.net/notes/test.ttl">
-                <LoginForm />
-                
                 <Tabs value={activeTab} onChange={(e, nv) => setActiveTab(nv)} aria-label="main tabs">
                   <Tab value='network-overview' label="Overview" />
                   <Tab value='formal-alteration' label="Formal Alterations" />
