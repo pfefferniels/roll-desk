@@ -2,22 +2,16 @@ import { Button, Dialog, DialogContent, DialogTitle, Box, Stepper, Step, StepLab
 import { read, MidiFile } from "midifile-ts"
 import { useState } from "react"
 import { useDataset, useSession } from "@inrupt/solid-ui-react"
-import { buildThing, createThing, deleteContainer, getSourceUrl, overwriteFile, saveSolidDatasetAt, setThing, SolidDataset, Thing } from "@inrupt/solid-client"
+import { buildThing, createThing, getSourceUrl, overwriteFile, saveSolidDatasetAt, setThing, SolidDataset, Thing } from "@inrupt/solid-client"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { RawPerformance } from "../../lib/midi"
-import { JsonLdVisitor } from "../../lib/visitors/JsonLdVisitor"
 import { uuid } from "../../lib/globals"
 import { RdfVisitor } from "../../lib/visitors/RDFVisitor"
 
 const parseMidiInput = (
-  input: HTMLInputElement,
+  file: File,
   callback: (midi: MidiFile | null) => void
 ) => {
-  if (input.files === null || input.files.length === 0) {
-    return
-  }
-
-  const file = input.files[0]
   const reader = new FileReader()
 
   reader.onload = e => {
@@ -44,7 +38,7 @@ export function AddDigitalObjects({ open, setOpen }: UploadProps) {
   const [errorMessage, setErrorMessage] = useState<string>()
 
   const [mei, setMEI] = useState<File>()
-  const [midi, setMIDI] = useState<SolidDataset>()
+  const [midi, setMIDI] = useState<File>()
 
   const { dataset } = useDataset();
   const { session } = useSession();
@@ -62,25 +56,41 @@ export function AddDigitalObjects({ open, setOpen }: UploadProps) {
         mei,
         { contentType: 'text/xml', fetch: session.fetch as any }
       )
-      const location = getSourceUrl(savedMEI)
+      const meiLocation = getSourceUrl(savedMEI)
 
-      // (2) Save the MIDI-LD dataset
-      saveSolidDatasetAt(
-        `https://pfefferniels.inrupt.net/notes/${uuid()}.ttl`,
+      // (2) Upload the MIDI file
+      const savedMIDI = await overwriteFile(
+        `https://pfefferniels.inrupt.net/notes/${uuid()}.midi`,
         midi,
-        { fetch: session.fetch as any })
+        { fetch: session.fetch as any }
+      )
+      const midiLocation = getSourceUrl(savedMEI)
 
-      // (3) create the corresponding D1 Digital Object entities
+      // (3) Create and save the MIDI-LD dataset
+      parseMidiInput(midi, (midi: MidiFile | null) => {
+        if (!midi) return
+        const performance = new RawPerformance(midi)
+        const visitor = new RdfVisitor()
+        performance.accept(visitor)
+        const midiDataset = visitor.datasets[0]
+
+        saveSolidDatasetAt(
+          `https://pfefferniels.inrupt.net/notes/${uuid()}.ttl`,
+          midiDataset,
+          { fetch: session.fetch as any })
+        })
+
+      // (4) create the corresponding D1 Digital Object entities
       const meiThing = buildThing(createThing())
         .addUrl(RDF.type, `http://www.ics.forth.gr/isl/CRMdig/D1_Digital_Object`)
         .addUrl(RDF.type, `http://www.cidoc-crm.org/cidoc-crm/E31_Document`)
-        .addUrl(RDFS.label, location)
+        .addUrl(RDFS.label, meiLocation)
         .build()
 
       const midiThing = buildThing(createThing())
         .addUrl(RDF.type, `http://www.ics.forth.gr/isl/CRMdig/D1_Digital_Object`)
         .addUrl(RDF.type, `http://www.cidoc-crm.org/cidoc-crm/E31_Document`)
-        .addStringNoLocale(RDFS.label, "MIDI file")
+        .addStringNoLocale(RDFS.label, midiLocation) // TODO: add MIDI-LD document
         .build();
 
       const withMEI = setThing(dataset, meiThing)
@@ -104,13 +114,10 @@ export function AddDigitalObjects({ open, setOpen }: UploadProps) {
   }
 
   const buildMIDI = (midiSource: HTMLInputElement) => {
-    parseMidiInput(midiSource, (midi: MidiFile | null) => {
-      if (!midi) return
-      const performance = new RawPerformance(midi)
-      const visitor = new RdfVisitor()
-      performance.accept(visitor)
-      setMIDI(visitor.datasets[0])
-    })
+    if (!midiSource || !midiSource.files || midiSource.files.length === 0) {
+      return
+    }
+    setMIDI(midiSource.files[0])
   }
 
   const handleNext = () => setActiveStep((prevActiveStep) => prevActiveStep + 1);
