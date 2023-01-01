@@ -1,11 +1,14 @@
-import { getContentType, getFile, getSourceUrl, getUrl, isRawData, Thing } from "@inrupt/solid-client"
+import { getContentType, getFile, getSourceUrl, getStringNoLocale, getUrl, isRawData, Thing } from "@inrupt/solid-client"
 import { useSession } from "@inrupt/solid-ui-react"
 import { RDFS } from "@inrupt/vocab-common-rdf"
 import { PlayArrowRounded } from "@mui/icons-material"
 import { Button, IconButton, Typography } from "@mui/material"
 import { useState } from "react"
 import { loadVerovio } from "../../lib/globals"
+import { RawPerformance } from "../../lib/midi"
 import { FindEntity } from "../network-overview/FindEntity"
+import { read } from "midifile-ts"
+import { MIDIViewer } from "../grids/MIDIViewer"
 
 type SelectionMode = 'score' | 'midi'
 
@@ -22,10 +25,28 @@ export const FormalAlterationEditor = () => {
     const [selectionMode, setSelectionMode] = useState<SelectionMode>()
 
     const [svg, setSVG] = useState()
+    const [performance, setPerformance] = useState<RawPerformance>()
 
     const handleFindEntity = (type: SelectionMode) => {
         setSelectionMode(type)
         setEntityFinderOpen(true)
+    }
+
+    const renderMIDI = async (thing: Thing) => {
+        const fileURL = getStringNoLocale(thing, RDFS.label)
+        console.log('fileurl=', fileURL)
+        if (!fileURL) return
+
+        try {
+            const file = await getFile(fileURL, { fetch: session.fetch })
+            if (!isRawData(file)) {
+                console.warn('The resource should not be a dataset and should have the MIME type "application/xml"')
+            }
+            setPerformance(new RawPerformance(read(await file.arrayBuffer())))
+        }
+        catch (e) {
+            console.warn(e)
+        }
     }
 
     const renderMEI = async (thing: Thing) => {
@@ -75,6 +96,8 @@ export const FormalAlterationEditor = () => {
 
             <div style={{width: '80vw'}} dangerouslySetInnerHTML={{__html: svg || ''}} />
 
+            {performance && <MIDIViewer piece={performance} width={800} height={400} />}
+            
             <div>
                 <h3>Alterations Overview</h3>
             </div>
@@ -85,7 +108,7 @@ export const FormalAlterationEditor = () => {
                 onClose={() => setEntityFinderOpen(false)}
                 onFound={(thing: Thing) => {
                     if (selectionMode === 'midi') {
-                        // Use thing to play it
+                        renderMIDI(thing)
                     }
                     else if (selectionMode === 'score') {
                         renderMEI(thing)
