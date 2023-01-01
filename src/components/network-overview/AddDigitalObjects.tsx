@@ -64,7 +64,7 @@ export function AddDigitalObjects({ open, setOpen }: UploadProps) {
         midi,
         { fetch: session.fetch as any }
       )
-      const midiLocation = getSourceUrl(savedMEI)
+      const midiLocation = getSourceUrl(savedMIDI)
 
       // (3) Create and save the MIDI-LD dataset
       parseMidiInput(midi, (midi: MidiFile | null) => {
@@ -90,7 +90,7 @@ export function AddDigitalObjects({ open, setOpen }: UploadProps) {
       const midiThing = buildThing(createThing())
         .addUrl(RDF.type, `http://www.ics.forth.gr/isl/CRMdig/D1_Digital_Object`)
         .addUrl(RDF.type, `http://www.cidoc-crm.org/cidoc-crm/E31_Document`)
-        .addStringNoLocale(RDFS.label, midiLocation) // TODO: add MIDI-LD document
+        .addUrl(RDFS.label, midiLocation) // TODO: add MIDI-LD document
         .build();
 
       const withMEI = setThing(dataset, meiThing)
