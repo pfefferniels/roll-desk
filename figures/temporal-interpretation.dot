@@ -1,0 +1,25 @@
+digraph G {
+    node [shape="box"]
+
+    Measurement[label=<E16 <B>Measurement</B> >]
+    Dimension[label=<E54 <B>Dimension</B>>]
+    Region[label=<E25 <B>Man-Made Feature</B>  <BR/>Stanzung>]
+    Measurement -> Region[label="P39 measured"]
+    Measurement -> Dimension[label="P40 observed dimension"]
+
+    Event[label=<E5 <B>Event</B><BR/>D35 <B>Area</B><BR/>Zeitlich interpretiertes Klangereignis,<BR/>das sich beim Abspielen einer Klavierrolle<BR/>aus einer bestimmten Stanzung ergibt>]
+    TimeSpan[label=<E52 <B>Time-Span</B>>]
+
+    Event -> TimeSpan[label="P4 has time-span [E13 Attribute Assignment]"]
+
+    # or: occured in the presence of
+    Region -> Event[label="P12i was present at"] 
+ 
+    Zeitpunkt[label=<E61 <B>Time Primitive</B>>]
+
+    TimeSpan -> Zeitpunkt[label="P82a begin of the begin"]
+    TimeSpan -> Zeitpunkt[label="P81a end of the begin"]
+
+    TimeSpan -> Zeitpunkt[label="P82b begin of the end"]
+    TimeSpan -> Zeitpunkt[label="P81b end of the end"]
+}

@@ -1,0 +1,25 @@
+digraph G {
+    node [shape="box"]
+
+    Event[label=<E5 <B>Event</B><BR/>D1 <B>Digital Object</B><BR/>Anschlagsereignis>]
+
+    TypeAssignment[label="E17 Type Assignment"]
+    TypeAssignment -> Event[label="P41 classified"]
+
+    E13[label="E13 Attribute Assignment"]
+    E13 -> Event[label="assigned to"]
+
+    Belief1[label="Belief"]
+    Likely1[label="I6 Belief Value"]
+    Belief1 -> TypeAssignment[label="that"]
+    Belief1 -> Likely1[label="holds to be"]
+
+    Belief2[label="Belief"]
+    Likely2[label="I6 Belief Value"]
+    Belief2 -> E13[label="that"]
+    Belief2 -> Likely2[label="holds to be"]
+
+    Argumentation[label=<I1 <B>Argumentation</B>>]
+    Argumentation -> Belief1[label="used as premise"]
+    Argumentation -> Belief2[label="concluded that"]
+}

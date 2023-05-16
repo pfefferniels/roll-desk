@@ -1,0 +1,13 @@
+digraph G {
+    node [shape="box"]
+
+    PerformanceWork[label=<F21 <B>Recording Work</B><BR/>Emil Sauer spielt Chopin, 1907> style=filled]
+
+    Expression1[label=<Physische Klavierrolle und eventuelle Kopien>]
+    Expression2[label=<Digitalisierte (und kollationierte) Klavierrolle>]
+    Expression3[label=<Interpretation<BR/>Person A>]
+    Expression4[label=<Interpretation<BR/>Person B>]
+    Expression5[label=<Interpretation<BR/>Person C>]
+
+    PerformanceWork -> Expression1, Expression2, Expression3, Expression4, Expression5[label="is realized in"]
+}

@@ -1,0 +1,26 @@
+digraph G {
+    node [shape="box"]
+
+    PerformanceWork[label=<F21 <B>Recording Work</B><BR/>Emil Sauer spielt Chopin, 1907> style=filled]
+
+    Scan[label=<D2 <B>Digitization Process</B><BR/>Digitalisierung (Scannen) der Rolle>]
+    Recognize[label=<D3 <B>Formal Derivation</B><BR/>Erkennen von Stanzungen,<BR/>Konversion → RDF-Triples>]
+    Collate[label=<D3 <B>Formal Derivation</B><BR/>Kollationierung mehrerer Rollenkopien>]
+    Correct[label=<D3 <B>Software Execution</B><BR/>Manuelle Fehlerkorrekturen>]
+
+    DigitalRollExpression[label=<F26 <B>Recording</B><BR/> Digitale Repräsentation einer Klavierrolle>]
+    Event[label=<D1 <B>Digital Object</B>>]
+
+    PerformanceWork -> DigitalRollExpression[label="R3 is realised in"]
+
+    DigitizationCreation[label=<F28 <B>Expression Creation</B>>]
+
+    PerformanceWork -> DigitizationCreation[label="R22i was realised through"]
+    DigitizationCreation -> DigitalRollExpression[label="R17 created"]
+    DigitalRollExpression -> Event[label="P165 incorporates"]
+
+    DigitizationCreation -> Scan, Recognize, Collate, Correct[label="P9 consists of"]
+
+    Copy[label=<F5 <B>Item</B><BR/>Physische Kopie einer Rolle>]
+    Scan -> Copy [label="L1 digitized"]
+}
