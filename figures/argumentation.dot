@@ -2,19 +2,22 @@ digraph G {
     node [shape="box"]
 
     Event[label=<E5 <B>Event</B><BR/>D1 <B>Digital Object</B><BR/>Anschlagsereignis>]
+    Selection[label=<E90 <B>Symbolic Object</B><BR/>Auswahl bestimmter Events>]
+
+    Selection -> Event[label="P106 is composed of"]
 
     TypeAssignment[label="E17 Type Assignment"]
-    TypeAssignment -> Event[label="P41 classified"]
+    TypeAssignment -> Selection[label="P41 classified"]
 
     E13[label="E13 Attribute Assignment"]
-    E13 -> Event[label="assigned to"]
+    E13 -> Event[label="P140 assigned attribute to"]
 
-    Belief1[label="Belief"]
+    Belief1[label="I2 Belief"]
     Likely1[label="I6 Belief Value"]
     Belief1 -> TypeAssignment[label="that"]
     Belief1 -> Likely1[label="holds to be"]
 
-    Belief2[label="Belief"]
+    Belief2[label="I2 Belief"]
     Likely2[label="I6 Belief Value"]
     Belief2 -> E13[label="that"]
     Belief2 -> Likely2[label="holds to be"]
