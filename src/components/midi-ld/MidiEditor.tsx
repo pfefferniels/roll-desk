@@ -4,14 +4,16 @@ import { DatasetProvider } from '../DatasetProvider';
 import { Piece } from './Piece';
 import { NoteProvider } from '../../providers/NoteContext';
 import Slider from '@mui/material/Slider';
-import Drawer from '@mui/material/Drawer';
 import Button from '@mui/material/Button';
+import { Thing } from '@inrupt/solid-client';
+import { Details } from './Details';
 
 const MidiEditor: React.FC = () => {
   const { midiId, noteId } = useParams();
 
   const noteHeight = 8;
 
+  const [currentSelection, setCurrentSelection] = useState<Thing>()
   const [pixelsPerTick, setPixelsPerTick] = useState(0.01);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -33,27 +35,24 @@ const MidiEditor: React.FC = () => {
 
       <Button onClick={toggleDrawer}>Settings</Button>
 
-      <Drawer
-        anchor='right'
-        open={drawerOpen}
-        onClose={toggleDrawer}
-        variant='persistent'
-      >
-        <div style={{ padding: '20px' }}>
-          <p>Pixels per tick:</p>
-          <Slider
-            value={pixelsPerTick}
-            onChange={handlePixelsPerTickChange}
-            min={0.1}
-            max={1.5}
-            step={0.1}
-            valueLabelDisplay="auto"
-          />
-        </div>
-      </Drawer>
+      <div style={{ padding: '20px', width: '30vw' }}>
+        <Slider
+          value={pixelsPerTick}
+          onChange={handlePixelsPerTickChange}
+          min={0.1}
+          max={1.5}
+          step={0.1}
+          valueLabelDisplay="auto"
+        />
+      </div>
 
-      <NoteProvider pixelsPerTick={pixelsPerTick} noteHeight={noteHeight}>
+      <NoteProvider
+        pixelsPerTick={pixelsPerTick}
+        noteHeight={noteHeight}
+        currentSelection={currentSelection}
+        setCurrentSelection={setCurrentSelection}>
         <Piece />
+        <Details />
       </NoteProvider>
     </DatasetProvider>
   );
