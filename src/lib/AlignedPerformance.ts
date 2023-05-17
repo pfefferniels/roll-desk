@@ -6,6 +6,7 @@ import { Visitable } from "./visitors/Visitable"
 import { Visitor } from "./visitors/Visitor"
 import { graph, parse, Query, Store } from "rdflib"
 import { RdfEntity } from "./rdf"
+import { LA } from "../helpers/namespaces"
 
 export enum Motivation {
     ExactMatch = "ExactMatch",
@@ -100,8 +101,13 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
      * @param pair RDF representation of alignments in any format.
      */
     public async loadAlignment(alignmentFile: string) {
+        console.log('loading ...', alignmentFile)
         const store: Store = graph()
-        parse(alignmentFile, store, 'http://example.org', 'application/ld+json')
+        parse(alignmentFile, store, 'https://measuring-early-records.org', 'application/ld+json',
+        () => {
+            const stmts = store.anyStatementMatching(undefined, LA('hasScoreNote'))
+            console.log('stmts', stmts)
+        })
         const sparql = `
             PREFIX la: <https://measuring-early-records.org/linked_alignment#> .
             SELECT ?scoreNote ?midiNote ?motivation
@@ -109,7 +115,7 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
                 ?alignment la:hasScoreNote ?scoreNote .
                 ?alignment la:hasMIDINote ?midiNote .
                 ?alignment la:hasMotivation ?motivation .
-            }`
+            } .`
 
         // TODO: a weird bug shows up when importing SPARQLToQuery 
         // directly (invalid super call). Needs further investigation.
@@ -125,6 +131,7 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
 
         return new Promise((resolve, _) => {
             store.query(query as Query, result => {
+                console.log('result=', result)
                 const scoreNote = result['?scoreNote'].value
                 const midiNote = result['?midiNote'].value
                 const motivation = result['?motivation'].value

@@ -1,5 +1,6 @@
 import { parse } from "js2xmlparser"
 import { uuid } from "../globals"
+import { v4 } from "uuid"
 
 interface WithXmlId {
     'xml:id': string
@@ -225,7 +226,7 @@ export class MPM {
             this.setMap(this.correspondingMapNameFor(type), part, sortedMap)
         }
 
-        const name = `def_${uuid()}`
+        const name = `def_${v4()}`
 
         if (type === 'ornament') {
             if (!styles.styleDef.ornamentDef) {

@@ -1,0 +1,62 @@
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { DatasetProvider } from '../DatasetProvider';
+import { Piece } from './Piece';
+import { NoteProvider } from '../../providers/NoteContext';
+import Slider from '@mui/material/Slider';
+import Drawer from '@mui/material/Drawer';
+import Button from '@mui/material/Button';
+
+const MidiEditor: React.FC = () => {
+  const { midiId, noteId } = useParams();
+
+  const noteHeight = 8;
+
+  const [pixelsPerTick, setPixelsPerTick] = useState(0.01);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handlePixelsPerTickChange = (event: any, newValue: number | number[]) => {
+    setPixelsPerTick(newValue as number);
+  };
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  if (!midiId) return <div>no MIDI id provided</div>
+
+  return (
+    <DatasetProvider datasetName={`${midiId}.ttl`}>
+      <h2>MIDI Editor</h2>
+      <p>MIDI ID: {midiId}</p>
+      {noteId && <p>highlighting note {noteId}</p>}
+
+      <Button onClick={toggleDrawer}>Settings</Button>
+
+      <Drawer
+        anchor='right'
+        open={drawerOpen}
+        onClose={toggleDrawer}
+        variant='persistent'
+      >
+        <div style={{ padding: '20px' }}>
+          <p>Pixels per tick:</p>
+          <Slider
+            value={pixelsPerTick}
+            onChange={handlePixelsPerTickChange}
+            min={0.1}
+            max={1.5}
+            step={0.1}
+            valueLabelDisplay="auto"
+          />
+        </div>
+      </Drawer>
+
+      <NoteProvider pixelsPerTick={pixelsPerTick} noteHeight={noteHeight}>
+        <Piece />
+      </NoteProvider>
+    </DatasetProvider>
+  );
+};
+
+export default MidiEditor;

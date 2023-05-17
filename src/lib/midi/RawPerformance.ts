@@ -1,6 +1,5 @@
 import { PianoRoll, pitchToSitch } from 'alignmenttool';
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent, SetTempoEvent, TextEvent } from 'midifile-ts';
-import { uuid } from '../globals';
 import { RdfEntity } from '../rdf';
 import { Visitable } from '../visitors/Visitable';
 import { Visitor } from '../visitors/Visitor';

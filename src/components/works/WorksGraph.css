@@ -1,0 +1,14 @@
+.node-symbol-hover {
+    stroke: #333;
+    stroke-width: 1.5px;
+}
+
+.node-label-hover {
+    font-weight: bold;
+}
+
+.node-label {
+    user-select: none;
+    cursor: pointer;
+}
+
