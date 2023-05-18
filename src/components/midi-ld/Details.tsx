@@ -1,9 +1,24 @@
 import { Drawer } from "@mui/material"
 import { useNoteContext } from "../../providers/NoteContext"
-import { thingAsMarkdown } from "@inrupt/solid-client"
+import { getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
+import { RDF } from "@inrupt/vocab-common-rdf"
+import { crm, midi } from "../../helpers/namespaces"
+import { NoteDetails } from "./NoteDetails"
 
 export const Details = () => {
     const { currentSelection } = useNoteContext()
+
+    const renderDetails = () => {
+        if (!currentSelection) {
+            return <span>nothing selected</span>
+        }
+        else if (getUrlAll(currentSelection, crm('P2_has_type')).includes(midi('NoteEvent'))) {
+            return <NoteDetails thing={currentSelection} />
+        }
+        else {
+            return thingAsMarkdown(currentSelection)
+        }
+    }
 
     return (
         <Drawer
@@ -13,7 +28,7 @@ export const Details = () => {
             open={true}
             variant='persistent'
         >
-            {currentSelection && thingAsMarkdown(currentSelection)}
+            {renderDetails()}
         </Drawer>
     )
 }
