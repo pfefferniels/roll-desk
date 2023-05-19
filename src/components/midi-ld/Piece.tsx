@@ -4,12 +4,26 @@ import { useContext, useRef, useEffect } from "react"
 import { midi } from "../../helpers/namespaces"
 import { Track } from "./Track"
 import { useNoteContext } from "../../providers/NoteContext"
-import { UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom';
+import * as d3 from 'd3';
 
 export const Piece = () => {
   const { thing: piece } = useContext(ThingContext)
   const { solidDataset } = useContext(DatasetContext)
   const { noteHeight } = useNoteContext()
+  const ref = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const svg = d3.select(ref.current);
+    const zoom = d3.zoom()
+      .on('zoom', (event) => {
+        svg
+          .select('#roll')
+          .attr('transform', event.transform);
+      })
+    svg.call(zoom as any);
+  }, [ref, ref.current]);
+
 
   if (!piece || !solidDataset) return null
 
@@ -23,7 +37,8 @@ export const Piece = () => {
   const trackColors = ["red", "blue", "green", "purple", "orange"];
 
   return (
-      <svg width={10000} height={128 * noteHeight}>
+    <svg ref={ref} width={1000} height={128 * noteHeight}>
+      <g id='roll'>
         {tracks.map((track, trackIndex) => (
           <Track
             track={track}
@@ -31,6 +46,7 @@ export const Piece = () => {
             color={trackColors[trackIndex % trackColors.length]}
           />
         ))}
-      </svg>
+      </g>
+    </svg>
   );
 };
