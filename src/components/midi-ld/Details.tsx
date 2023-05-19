@@ -6,17 +6,17 @@ import { crm, midi } from "../../helpers/namespaces"
 import { NoteDetails } from "./NoteDetails"
 
 export const Details = () => {
-    const { currentSelection } = useNoteContext()
+    const { selectedNote } = useNoteContext()
 
     const renderDetails = () => {
-        if (!currentSelection) {
+        if (!selectedNote) {
             return <span>nothing selected</span>
         }
-        else if (getUrlAll(currentSelection, crm('P2_has_type')).includes(midi('NoteEvent'))) {
-            return <NoteDetails thing={currentSelection} />
+        else if (getUrlAll(selectedNote, crm('P2_has_type')).includes(midi('NoteEvent'))) {
+            return <NoteDetails thing={selectedNote} />
         }
         else {
-            return thingAsMarkdown(currentSelection)
+            return thingAsMarkdown(selectedNote)
         }
     }
 

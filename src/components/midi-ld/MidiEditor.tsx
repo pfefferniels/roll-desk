@@ -13,7 +13,7 @@ const MidiEditor: React.FC = () => {
 
   const noteHeight = 8;
 
-  const [currentSelection, setCurrentSelection] = useState<Thing>()
+  const [selectedNote, setSelectedNote] = useState<Thing>()
   const [pixelsPerTick, setPixelsPerTick] = useState(0.01);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -49,8 +49,8 @@ const MidiEditor: React.FC = () => {
       <NoteProvider
         pixelsPerTick={pixelsPerTick}
         noteHeight={noteHeight}
-        currentSelection={currentSelection}
-        setCurrentSelection={setCurrentSelection}>
+        selectedNote={selectedNote}
+        setSelectedNote={setSelectedNote}>
         <Piece />
         <Details />
       </NoteProvider>
