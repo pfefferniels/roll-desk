@@ -8,7 +8,11 @@ import Button from '@mui/material/Button';
 import { Thing } from '@inrupt/solid-client';
 import { Details } from './Details';
 
-const MidiEditor: React.FC = () => {
+interface MidiEditorProps {
+  onChange?: (newAttributes: Thing[]) => void
+}
+
+const MidiEditor = ({ onChange }: MidiEditorProps) => {
   const { midiId, noteId } = useParams();
 
   const noteHeight = 8;
@@ -50,7 +54,8 @@ const MidiEditor: React.FC = () => {
         pixelsPerTick={pixelsPerTick}
         noteHeight={noteHeight}
         selectedNote={selectedNote}
-        setSelectedNote={setSelectedNote}>
+        setSelectedNote={setSelectedNote}
+        onChange={onChange}>
         <Piece />
         <Details />
       </NoteProvider>

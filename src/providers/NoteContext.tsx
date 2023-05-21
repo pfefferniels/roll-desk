@@ -4,8 +4,11 @@ import { createContext, useContext } from 'react';
 interface NoteContextProps {
   pixelsPerTick: number;
   noteHeight: number;
+
   selectedNote?: Thing
   setSelectedNote: (newSelection: Thing) => void
+
+  onChange?: (newAttributes: Thing[]) => void
 }
 
 export const NoteContext = createContext<NoteContextProps | undefined>(undefined);
@@ -18,16 +21,12 @@ export const useNoteContext = () => {
   return context;
 };
 
-interface NoteProviderProps {
+interface NoteProviderProps extends NoteContextProps {
   children: React.ReactNode;
-  pixelsPerTick: number;
-  noteHeight: number;
-  selectedNote?: Thing
-  setSelectedNote: (newSelection: Thing) => void
 }
 
-export const NoteProvider: React.FC<NoteProviderProps> = ({ children, pixelsPerTick, noteHeight, selectedNote, setSelectedNote }) => (
-  <NoteContext.Provider value={{ pixelsPerTick, noteHeight, selectedNote, setSelectedNote }}>
+export const NoteProvider: React.FC<NoteProviderProps> = ({ children, pixelsPerTick, noteHeight, selectedNote, setSelectedNote, onChange }) => (
+  <NoteContext.Provider value={{ pixelsPerTick, noteHeight, selectedNote, setSelectedNote, onChange }}>
     {children}
   </NoteContext.Provider>
 );
