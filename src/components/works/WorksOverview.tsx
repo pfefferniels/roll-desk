@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import WorksGraph from './WorksGraph';
 import { SolidDataset, getSolidDataset } from '@inrupt/solid-client';
-import Button from '@mui/material/Button';
-import { datasetUrl } from '../../helpers/datasetUrl';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import RecordingWorkDialog from './RecordingWorkDialog';
 import ScoreDialog from './ScoreDialog';
+import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material';
+import { MusicNote, RecordVoiceOver } from '@mui/icons-material';
+import { datasetUrl } from '../../helpers/datasetUrl';
 
 const WorksOverview: React.FC = () => {
   const { session } = useSession()
-
   const [dataset, setDataset] = useState<SolidDataset>();
-
   const [openAddWorkDialog, setOpenAddWorkDialog] = useState(false);
   const [openScoreDialog, setOpenScoreDialog] = useState(false);
 
@@ -36,6 +35,11 @@ const WorksOverview: React.FC = () => {
     setOpenAddWorkDialog(false);
   };
 
+  const actions = [
+    { name: 'Add Recording', icon: <RecordVoiceOver />, onClick: handleOpenAddWorkDialog },
+    { name: 'Add Score', icon: <MusicNote />, onClick: () => setOpenScoreDialog(true) },
+  ];
+
   return (
     <DatasetContext.Provider value={{
       solidDataset: dataset,
@@ -43,13 +47,21 @@ const WorksOverview: React.FC = () => {
     }}>
       <h1>Works Overview</h1>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleOpenAddWorkDialog}
+      <SpeedDial
+        ariaLabel="Add Entities"
+        sx={{ position: 'fixed', bottom: 16, left: 16 }}
+        icon={<SpeedDialIcon />}
       >
-        Add Recording
-      </Button>
+        {actions.map((action) => (
+          <SpeedDialAction
+            key={action.name}
+            icon={action.icon}
+            tooltipTitle={action.name}
+            onClick={action.onClick}
+          />
+        ))}
+      </SpeedDial>
+
       <WorksGraph />
 
       <ScoreDialog
