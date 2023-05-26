@@ -1,7 +1,8 @@
-import { Thing, getInteger } from '@inrupt/solid-client';
+import { Thing, buildThing, createThing, getInteger, thingAsMarkdown } from '@inrupt/solid-client';
 import { crm, midi } from '../../helpers/namespaces';
 import { Boundary } from './Boundary';
 import { useNoteContext } from '../../providers/NoteContext';
+import { RDF } from '@inrupt/vocab-common-rdf';
 
 interface NoteProps {
   note: Thing;
@@ -9,7 +10,7 @@ interface NoteProps {
 }
 
 export const Note = ({ note, color }: NoteProps) => {
-  const { pixelsPerTick, noteHeight, setSelectedNote } = useNoteContext()
+  const { pixelsPerTick, noteHeight, setSelectedNote, onChange } = useNoteContext()
 
   const beginOfBegin = getInteger(note, crm('P82a_begin_of_the_begin')) || 0
   const endOfBegin = getInteger(note, crm('P81a_end_of_the_begin')) || 0
@@ -23,6 +24,19 @@ export const Note = ({ note, color }: NoteProps) => {
     setSelectedNote(note)
   };
 
+  const onChangeProperty = (property: string, newValue: number) => {
+    if (!onChange) return
+
+    const newThing = buildThing(createThing())
+      .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
+      .addUrl(crm('P140_assigned_attribute_to'), note)
+      .addInteger(crm('P141_assigned'), newValue)
+      .addUrl(crm('P177_assigned_property_of_type'), property)
+      .build()
+    console.log(thingAsMarkdown(newThing))
+    onChange([newThing])
+  }
+
   return (
     <>
       <rect // The note
@@ -35,8 +49,19 @@ export const Note = ({ note, color }: NoteProps) => {
         onClick={handleClick}
       />
 
-      <Boundary begin={beginOfBegin} end={endOfBegin} pitch={pitch} pixelsPerTick={pixelsPerTick} noteHeight={noteHeight} />
-      <Boundary begin={beginOfEnd} end={endOfEnd} pitch={pitch} pixelsPerTick={pixelsPerTick} noteHeight={noteHeight} />
+      <Boundary
+        begin={beginOfBegin}
+        end={endOfBegin}
+        pitch={pitch}
+        onChangeBegin={n => onChangeProperty(crm('P82a_begin_of_the_begin'), n)}
+        onChangeEnd={n => onChangeProperty(crm('P81a_end_of_the_begin'), n)}/>
+
+      <Boundary
+        begin={beginOfEnd}
+        end={endOfEnd}
+        pitch={pitch}
+        onChangeBegin={n => onChangeProperty(crm('P81b_begin_of_the_end'), n)}
+        onChangeEnd={n => onChangeProperty(crm('P82b_end_of_the_end'), n)} />
     </>
   );
 };

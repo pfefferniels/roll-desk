@@ -13,7 +13,7 @@ interface MidiEditorProps {
 }
 
 const MidiEditor = ({ onChange }: MidiEditorProps) => {
-  const { midiId, noteId } = useParams();
+  const { midiId, eventId } = useParams();
 
   const noteHeight = 8;
 
@@ -35,7 +35,7 @@ const MidiEditor = ({ onChange }: MidiEditorProps) => {
     <DatasetProvider datasetName={`${midiId}.ttl`}>
       <h2>MIDI Editor</h2>
       <p>MIDI ID: {midiId}</p>
-      {noteId && <p>highlighting note {noteId}</p>}
+      {eventId && <p>highlighting note {eventId}</p>}
 
       <Button onClick={toggleDrawer}>Settings</Button>
 
@@ -55,7 +55,10 @@ const MidiEditor = ({ onChange }: MidiEditorProps) => {
         noteHeight={noteHeight}
         selectedNote={selectedNote}
         setSelectedNote={setSelectedNote}
-        onChange={onChange}>
+        onChange={(attr) => {
+          console.log('attr:', attr)
+          onChange && onChange(attr)
+        }}>
         <Piece />
         <Details />
       </NoteProvider>

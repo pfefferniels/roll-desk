@@ -1,15 +1,19 @@
 import * as d3 from 'd3'
 import { useEffect, useRef, useState } from 'react';
+import { useNoteContext } from '../../providers/NoteContext';
 
 interface BoundaryProps {
     begin: number;
     end: number;
     pitch: number;
-    pixelsPerTick: number;
-    noteHeight: number;
+
+    onChangeBegin: (newBegin: number) => void;
+    onChangeEnd: (newBegin: number) => void;
 }
 
-export const Boundary = ({ begin, end, pitch, pixelsPerTick, noteHeight }: BoundaryProps) => {
+export const Boundary = ({ begin, end, pitch, onChangeBegin, onChangeEnd }: BoundaryProps) => {
+    const { pixelsPerTick, noteHeight } = useNoteContext()
+
     const bracketLength = 2.5; // Length of the horizontal lines for brackets
 
     const refStartBoundary = useRef<SVGGElement | null>(null);
@@ -19,23 +23,25 @@ export const Boundary = ({ begin, end, pitch, pixelsPerTick, noteHeight }: Bound
     const [endPos, setEndPos] = useState(end * pixelsPerTick);
 
     useEffect(() => {
+        setStartPos(begin * pixelsPerTick);
+        setEndPos(end * pixelsPerTick);
+    }, [begin, end, pixelsPerTick])
+
+    useEffect(() => {
         refStartBoundary.current && d3.select(refStartBoundary.current)
             .call(
                 (d3.drag()
                     .on("drag", (event: any) => setStartPos(event.x))
-                    .on("end", dragend)) as any
+                    .on("end", (event: any) => onChangeBegin(event.x / pixelsPerTick))) as any
             );
 
         refEndBoundary.current && d3.select(refEndBoundary.current)
             .call(
                 (d3.drag()
                     .on("drag", (event: any) => setEndPos(event.x))
-                    .on("end", dragend)) as any
+                    .on("end", (event: any) => onChangeEnd(event.x / pixelsPerTick))) as any
             );
-    }, []);
-
-    const dragend = (event: any) => {
-    };
+    }, [pixelsPerTick, onChangeBegin, onChangeEnd]);
 
     return (
         <>
