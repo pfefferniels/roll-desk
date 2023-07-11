@@ -1,12 +1,13 @@
 import React from 'react';
-import { Thing, getUrlAll } from '@inrupt/solid-client';
+import { Thing, getUrl, getUrlAll } from '@inrupt/solid-client';
 import { RDF } from '@inrupt/vocab-common-rdf';
-import { crm } from '../../helpers/namespaces';
+import { crm, mer } from '../../helpers/namespaces';
 import RecordingWorkDetails from './details/RecordingWorkDetails';
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import DigitizedRecordingDetails from './details/DigitizedRecordingDetails';
+import AnalysisDetails from './details/AnalysisDetails';
 
 interface NodeDetailsProps {
     node: Thing;
@@ -21,8 +22,12 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
 
         if (rdfTypes.includes(crm('F21_Recording_Work'))) {
             return <RecordingWorkDetails thing={node} />;
-        } else if (rdfTypes.includes(crm('F26_Recording'))) {
+        }
+        else if (rdfTypes.includes(crm('F26_Recording'))) {
             return <DigitizedRecordingDetails thing={node} />
+        }
+        else if (getUrl(node, crm('P2_has_type')) === mer('Analysis')) {
+            return <AnalysisDetails thing={node} />
         }
 
         return null;

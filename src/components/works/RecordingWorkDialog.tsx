@@ -13,7 +13,6 @@ import { getSourceUrl, buildThing, createThing, setThing, saveSolidDatasetAt, Th
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { crm } from '../../helpers/namespaces';
-import { createUrl } from '../../helpers/createUrl';
 
 interface RecordingWorkDialogProps {
     thing?: Thing;
@@ -46,9 +45,7 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
             return;
         }
 
-        const recordingWork = buildThing(thing || createThing({
-            url: createUrl()
-        }))
+        const recordingWork = buildThing(thing || createThing())
             .setUrl(RDF.type, crm('F21_Recording_Work'))
             .setStringNoLocale(RDFS.label, label)
 

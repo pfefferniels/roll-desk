@@ -59,9 +59,7 @@ export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedR
             return
         }
 
-        const recording = buildThing(createThing({
-            url: createUrl()
-        }))
+        const recording = buildThing(createThing())
             .addUrl(RDF.type, crm('F26_Recording'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
 

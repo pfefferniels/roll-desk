@@ -34,9 +34,7 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
             return
         }
 
-        const alignment = buildThing(createThing({
-            url: createUrl()
-        }))
+        const alignment = buildThing(createThing())
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(crm('P2_has_type'), mer('Alignment'))
 
