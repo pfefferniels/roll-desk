@@ -6,23 +6,23 @@ digraph G {
 
     Selection -> Event[label="P106 is composed of"]
 
-    TypeAssignment[label="E17 Type Assignment"]
+    TypeAssignment[label=<<FONT color="gray">I4 <B>Proposition Set</B></FONT><BR/>E17 <B>Type Assignment</B>>]
     TypeAssignment -> Selection[label="P41 classified"]
 
-    E13[label="E13 Attribute Assignment"]
+    E13[label=<<FONT color="gray">I4 <B>Proposition Set</B></FONT><BR/>E13 <B>Attribute Assignment</B>>]
     E13 -> Event[label="P140 assigned attribute to"]
 
-    Belief1[label="I2 Belief"]
-    Likely1[label="I6 Belief Value"]
-    Belief1 -> TypeAssignment[label="that"]
-    Belief1 -> Likely1[label="holds to be"]
+    Belief1[label=<I2 <B>Belief</B>>]
+    Likely1[label=<I6 <B>Belief Value</B>>]
+    Belief1 -> TypeAssignment[label=<J4 that>]
+    Belief1 -> Likely1[label=<J5 holds to be>]
 
-    Belief2[label="I2 Belief"]
-    Likely2[label="I6 Belief Value"]
-    Belief2 -> E13[label="that"]
-    Belief2 -> Likely2[label="holds to be"]
+    Belief2[label=<I2 <B>Belief</B>>]
+    Likely2[label=<I6 <B>Belief Value</B>>]
+    Belief2 -> E13[label=<J4 that>]
+    Belief2 -> Likely2[label=<J5 holds to be>]
 
-    Argumentation[label=<I1 <B>Argumentation</B>>]
-    Argumentation -> Belief1[label="used as premise"]
-    Argumentation -> Belief2[label="concluded that"]
+    Argumentation[label=<I7 <B>Belief Adoption</B>>]
+    Argumentation -> Belief1[label=<J6 adopted>]
+    Argumentation -> Belief2[label=<J2 concluded that>]
 }

@@ -13,7 +13,7 @@ digraph G {
     Event -> TimeSpan[label="P4 has time-span [E13 Attribute Assignment]"]
 
     # or: occured in the presence of
-    Region -> Event[label="P12i was present at"] 
+    Region -> Event[label="P12i was present at"]
  
     Zeitpunkt[label=<E61 <B>Time Primitive</B>>]
 
