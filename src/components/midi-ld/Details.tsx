@@ -1,22 +1,23 @@
 import { Drawer } from "@mui/material"
-import { useNoteContext } from "../../providers/NoteContext"
-import { getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
+import { Thing, getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { crm, midi } from "../../helpers/namespaces"
 import { NoteDetails } from "./NoteDetails"
 
-export const Details = () => {
-    const { selectedNote } = useNoteContext()
+interface DetailsProps {
+    thing: Thing
+}
 
+export const Details = ({ thing }: DetailsProps) => {
     const renderDetails = () => {
-        if (!selectedNote) {
+        if (!thing) {
             return <span>nothing selected</span>
         }
-        else if (getUrlAll(selectedNote, crm('P2_has_type')).includes(midi('NoteEvent'))) {
-            return <NoteDetails thing={selectedNote} />
+        else if (getUrlAll(thing, crm('P2_has_type')).includes(midi('NoteEvent'))) {
+            return <NoteDetails thing={thing} />
         }
         else {
-            return thingAsMarkdown(selectedNote)
+            return thingAsMarkdown(thing)
         }
     }
 

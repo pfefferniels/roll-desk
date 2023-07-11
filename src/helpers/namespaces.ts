@@ -7,6 +7,7 @@ export const frbroo = (name: string) => `http://iflastandards.info/ns/fr/frbr/fr
 export const nivers = (name: string) => `https://raw.githubusercontent.com/digimuwi/cadence-parfaite/main/ontologies/nivers1667.ttl#${name}`
 export const crminf = (name: string) => `http://www.cidoc-crm.org/cidoc-crm/CRMinf/${name}`
 export const midi = (name: string) => `http://purl.org/midi-ld/midi#${name}`
+export const mer = (name: string) => `https://measuring-early-records.org/${name}`
 
 // TODO: get rid of the following declarations
 export const OA = new (rdf.Namespace as any)('http://www.w3.org/ns/oa#');

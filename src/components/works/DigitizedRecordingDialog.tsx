@@ -69,7 +69,7 @@ export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedR
             const midi = await parseMidiInput(midiFile)
 
             if (midi) {
-                const midiLd = midi2ld(midi, { calculateImprecision: true });
+                const midiLd = midi2ld(midi, { calculateImprecision: false });
 
                 recording.addUrl(RDFS.label, `https://measuring-early-records.org/midi/${midiLd.name}`)
 
@@ -98,7 +98,7 @@ export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedR
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Add Recording Expression</DialogTitle>
+            <DialogTitle>Add/Edit Recording Expression</DialogTitle>
             <DialogContent>
                 <Button variant="contained" component="label" startIcon={< MusicNote />}>
                     Upload MIDI
@@ -119,7 +119,6 @@ export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedR
                     {loading ? <CircularProgress /> : 'Save'}</Button>
             </DialogActions>
         </Dialog>
-
     )
 }
 

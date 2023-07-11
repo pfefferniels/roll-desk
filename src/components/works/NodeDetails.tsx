@@ -2,11 +2,11 @@ import React from 'react';
 import { Thing, getUrlAll } from '@inrupt/solid-client';
 import { RDF } from '@inrupt/vocab-common-rdf';
 import { crm } from '../../helpers/namespaces';
-import RecordingWorkDetails from './RecordingWorkDetails';
+import RecordingWorkDetails from './details/RecordingWorkDetails';
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import DigitizedRecordingDetails from './DigitizedRecordingDetails';
+import DigitizedRecordingDetails from './details/DigitizedRecordingDetails';
 
 interface NodeDetailsProps {
     node: Thing;
@@ -16,6 +16,8 @@ interface NodeDetailsProps {
 export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
     const renderOptions = () => {
         const rdfTypes = getUrlAll(node, RDF.type);
+
+        console.log('rdf types=', rdfTypes)
 
         if (rdfTypes.includes(crm('F21_Recording_Work'))) {
             return <RecordingWorkDetails thing={node} />;

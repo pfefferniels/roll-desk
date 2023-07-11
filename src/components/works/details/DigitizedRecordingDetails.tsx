@@ -5,7 +5,9 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { Edit } from '@mui/icons-material';
-import { DigitizedRecordingDialog } from './DigitizedRecordingDialog';
+import { DigitizedRecordingDialog } from '../DigitizedRecordingDialog';
+import { AlignmentDialog } from '../AlignmentDialog';
+import { AnalysisDialog } from '../AnalysisDialog';
 
 interface DigitizedRecordingDetailsProps {
   thing: Thing;
@@ -14,10 +16,25 @@ interface DigitizedRecordingDetailsProps {
 const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ thing }) => {
   const navigate = useNavigate()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [alignmentDialogOpen, setAlignmentDialogOpen] = useState(false)
+  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false)
 
   const handleAlignToScore = () => {
-    // Implement the logic for aligning to the score
+    // This will open a dialog which allows selecting
+    // a stored score. Selecting one will create a 
+    // duplicate of that score (since we assume that 
+    // performing a score always means altering the score).
+    // It then opens a new window which allows editing
+    // an alignment.
+    setAlignmentDialogOpen(true)
   };
+
+  const handleCreateInterpretation = () => {
+    // This will open a dialog which allows creating
+    // an interpretation or analysis of this particular
+    // roll recording.
+    setAnalysisDialogOpen(true)
+  }
 
   return (
     <Box>
@@ -25,6 +42,16 @@ const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ t
       <IconButton onClick={() => setEditDialogOpen(true)}>
         <Edit />
       </IconButton>
+
+      <Box mt={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleCreateInterpretation}
+        >
+          Create Interpretation
+        </Button>
+      </Box>
 
       <Box mt={2}>
         <Button variant="contained" color="primary" onClick={handleAlignToScore}>
@@ -39,11 +66,13 @@ const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ t
           startIcon={<OpenInNewIcon />}
           onClick={() => navigate(new URL(getUrl(thing, RDFS.label) || '').pathname)}
         >
-          Open in Editor
+          View
         </Button>
       </Box>
 
       <DigitizedRecordingDialog thing={thing} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
+      <AlignmentDialog target={thing} open={alignmentDialogOpen} onClose={() => setAlignmentDialogOpen(false)} />
+      <AnalysisDialog open={analysisDialogOpen} onClose={() => setAnalysisDialogOpen(false)} />
     </Box>
   );
 };

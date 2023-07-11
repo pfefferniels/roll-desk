@@ -10,7 +10,7 @@ interface NoteProps {
 }
 
 export const Note = ({ note, color }: NoteProps) => {
-  const { pixelsPerTick, noteHeight, setSelectedNote, onChange } = useNoteContext()
+  const { pixelsPerTick, noteHeight, onSelect, onChange } = useNoteContext()
 
   const beginOfBegin = getInteger(note, crm('P82a_begin_of_the_begin')) || 0
   const endOfBegin = getInteger(note, crm('P81a_end_of_the_begin')) || 0
@@ -21,7 +21,7 @@ export const Note = ({ note, color }: NoteProps) => {
   const pitch = getInteger(note, midi('pitch')) || 0
 
   const handleClick = () => {
-    setSelectedNote(note)
+    onSelect(note)
   };
 
   const onChangeProperty = (property: string, newValue: number) => {

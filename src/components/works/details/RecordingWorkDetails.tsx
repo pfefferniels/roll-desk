@@ -3,12 +3,12 @@ import { Thing, getUrlAll } from '@inrupt/solid-client';
 import { getStringNoLocale } from '@inrupt/solid-client';
 import { OWL, RDFS } from '@inrupt/vocab-common-rdf';
 import { Typography, Box, Link, List, ListItem, ListItemText, IconButton } from '@mui/material';
-import { RecordingWorkDialog } from './RecordingWorkDialog';
+import { RecordingWorkDialog } from '../RecordingWorkDialog';
 import { SpeedDial, SpeedDialAction } from '@mui/material';
 import AddPerformanceIcon from '@mui/icons-material/Theaters';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import { DigitizedRecordingDialog } from './DigitizedRecordingDialog';
+import { DigitizedRecordingDialog } from '../DigitizedRecordingDialog';
 
 interface RecordingWorkDetailsProps {
     thing: Thing;
