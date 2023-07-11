@@ -22,8 +22,8 @@ interface RecordingWorkDialogProps {
 
 export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialogProps) => {
     const [label, setLabel] = useState((thing && getStringNoLocale(thing, RDFS.label)) || '');
-    const [memberOf, setMemberOf] = useState((thing && getUrl(thing, crm('R10i_is_member_of'))) || '')
-    const [derivedFrom, setDerivedFrom] = useState((thing && getUrl(thing, crm('R2_is_derivative_of'))) || '');
+    const [note, setNote] = useState((thing && getUrl(thing, crm('P3_has_note'))) || '')
+    const [seeAlso, setSeeAlso] = useState((thing && getUrl(thing, RDFS.seeAlso)) || '');
 
     const [loading, setLoading] = useState(false);
 
@@ -49,12 +49,12 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
             .setUrl(RDF.type, crm('F21_Recording_Work'))
             .setStringNoLocale(RDFS.label, label)
 
-        if (derivedFrom !== '') {
-            recordingWork.setStringNoLocale(crm('R2_is_derivative_of'), derivedFrom)
+        if (seeAlso !== '') {
+            recordingWork.setStringNoLocale(RDFS.seeAlso, seeAlso)
         }
 
-        if (memberOf !== '') {
-            recordingWork.setStringNoLocale(crm('R10i_is_member_of'), memberOf)
+        if (note !== '') {
+            recordingWork.setStringNoLocale(crm('P3_has_note'), note)
         }
 
         const updatedDataset = setThing(worksDataset, recordingWork.build())
@@ -80,17 +80,18 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
                 />
                 <TextField
                     margin="dense"
-                    label="Member Of"
+                    label="see also ..."
                     fullWidth
-                    value={memberOf}
-                    onChange={(e) => setMemberOf(e.target.value)}
+                    value={seeAlso}
+                    onChange={(e) => setSeeAlso(e.target.value)}
                 />
                 <TextField
                     margin="dense"
-                    label="Derived From"
+                    label="Note"
                     fullWidth
-                    value={derivedFrom}
-                    onChange={(e) => setDerivedFrom(e.target.value)}
+                    multiline
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
                 />
             </DialogContent>
             <DialogActions>

@@ -1,4 +1,4 @@
-import { Thing, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, asUrl, buildThing, createThing, getSourceUrl, getStringNoLocale, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
 import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material"
@@ -19,7 +19,8 @@ export const AnalysisDialog = ({ analysis, target, open, onClose }: AnalysisDial
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
 
     const [loading, setLoading] = useState(false)
-    const [note, setNote] = useState('')
+    const [note, setNote] = useState(
+        (analysis && getStringNoLocale(analysis, crm('P3_has_note'))) || '')
 
     const saveToPod = async () => {
         if (!worksDataset) {
@@ -33,20 +34,20 @@ export const AnalysisDialog = ({ analysis, target, open, onClose }: AnalysisDial
             return
         }
 
-        const analysis = buildThing(createThing())
+        const analysis_ = buildThing(analysis || createThing())
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(crm('P2_has_type'), mer('Analysis'))
 
         if (note) {
-            analysis.addStringNoLocale(crm('P3_has_note'), note)
+            analysis_.addStringNoLocale(crm('P3_has_note'), note)
         }
 
         if (target) {
             // How to use P67.1 has type?
-            analysis.addUrl(crm('P67_refers_to'), asUrl(target))
+            analysis_.addUrl(crm('P67_refers_to'), asUrl(target))
         }
 
-        let updatedDataset = setThing(worksDataset, analysis.build())
+        let updatedDataset = setThing(worksDataset, analysis_.build())
 
         setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }))
 

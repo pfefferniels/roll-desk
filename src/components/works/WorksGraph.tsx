@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState, useContext, useLayoutEffect } from 'react';
 import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
-import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl } from '@inrupt/solid-client';
+import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { crm } from '../../helpers/namespaces';
 import { NodeDetails } from './NodeDetails';
 import './WorksGraph.css';
+import { urlAsLabel } from '../../helpers/urlAsLabel';
 
 export interface Node extends d3.SimulationNodeDatum {
     thing: Thing
@@ -33,14 +34,16 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         const r2 = getUrlAll(source.thing, crm('R2_is_derivative_of'));
         const r12 = getUrlAll(source.thing, crm('R12_is_realized_in'));
         const r10 = getUrlAll(source.thing, crm('R10_has_member'));
+        const p67 = getUrlAll(source.thing, crm('P67_refers_to'));
 
-        const sourceLinks = r2.concat(r12, r10).reduce((sourceAcc, targetUrl) => {
+        const sourceLinks = r2.concat(r12, r10, p67).reduce((sourceAcc, targetUrl) => {
             const target = nodes.find(node => asUrl(node.thing) === targetUrl);
             if (!target) return sourceAcc;
             let relationship = ''
             if (r2.includes(targetUrl)) relationship = 'is derivative of'
             else if (r10.includes(targetUrl)) relationship = 'has member'
             else if (r12.includes(targetUrl)) relationship = 'is realized in'
+            else if (p67.includes(targetUrl)) relationship = 'refers to'
 
             sourceAcc.push({ source, target, relationship });
             return sourceAcc;
@@ -88,7 +91,12 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         node
             .append('text')
             .attr('class', 'node-label')
-            .text((node) => getStringNoLocale(node.thing, RDFS.label))
+            .text((node) => {
+                return getStringNoLocale(node.thing, RDFS.label) ||
+                    urlAsLabel(getUrl(node.thing, crm('P2_has_type'))) ||
+                    urlAsLabel(getUrl(node.thing, RDF.type)) ||
+                    '(unknown)'
+            })
             .attr('dx', -10)
             .attr('dy', 5)
             .style('font-size', '14px')

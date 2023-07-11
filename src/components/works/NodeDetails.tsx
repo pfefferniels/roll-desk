@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import DigitizedRecordingDetails from './details/DigitizedRecordingDetails';
 import AnalysisDetails from './details/AnalysisDetails';
+import AlignmentDetails from './details/AlignmentDetails';
 
 interface NodeDetailsProps {
     node: Thing;
@@ -17,8 +18,7 @@ interface NodeDetailsProps {
 export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
     const renderOptions = () => {
         const rdfTypes = getUrlAll(node, RDF.type);
-
-        console.log('rdf types=', rdfTypes)
+        const type = getUrl(node, crm('P2_has_type'));
 
         if (rdfTypes.includes(crm('F21_Recording_Work'))) {
             return <RecordingWorkDetails thing={node} />;
@@ -26,8 +26,11 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
         else if (rdfTypes.includes(crm('F26_Recording'))) {
             return <DigitizedRecordingDetails thing={node} />
         }
-        else if (getUrl(node, crm('P2_has_type')) === mer('Analysis')) {
+        else if (type === mer('Analysis')) {
             return <AnalysisDetails thing={node} />
+        }
+        else if (type === mer('Alignment')) {
+            return <AlignmentDetails thing={node} />
         }
 
         return null;

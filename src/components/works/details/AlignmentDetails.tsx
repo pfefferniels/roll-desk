@@ -4,19 +4,19 @@ import { Typography, Box, Button, IconButton } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { Edit } from '@mui/icons-material';
-import { AnalysisDialog } from '../AnalysisDialog';
+import { AlignmentDialog } from '../AlignmentDialog';
 
-interface AnalysisDetailsProps {
+interface AlignmentDetailsProps {
   thing: Thing;
 }
 
-const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({ thing }) => {
+const AlignmentDetails: React.FC<AlignmentDetailsProps> = ({ thing }) => {
   const navigate = useNavigate()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   return (
     <Box>
-      <Typography variant="h5">Analysis Details</Typography>
+      <Typography variant="h5">Alignment Details</Typography>
       <IconButton onClick={() => setEditDialogOpen(true)}>
         <Edit />
       </IconButton>
@@ -26,16 +26,15 @@ const AnalysisDetails: React.FC<AnalysisDetailsProps> = ({ thing }) => {
           variant="contained"
           color="primary"
           startIcon={<OpenInNewIcon />}
-          onClick={() => navigate(`/analysis?url=${encodeURIComponent(asUrl(thing))}`)}
+          onClick={() => navigate(`/alignment?url=${encodeURIComponent(asUrl(thing))}`)}
         >
           View
-
         </Button>
       </Box>
 
-      <AnalysisDialog analysis={thing} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
+      <AlignmentDialog alignment={thing} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
     </Box>
   );
 };
 
-export default AnalysisDetails;
+export default AlignmentDetails;

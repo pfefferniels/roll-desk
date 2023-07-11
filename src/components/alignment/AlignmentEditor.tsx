@@ -1,5 +1,8 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+
+interface AlignmentEditorProps {
+  url: string
+}
 
 /*
  * An alignment expresses the fact that a performance
@@ -8,14 +11,11 @@ import { useParams } from 'react-router-dom';
  * which score note is represented by which event
  * in the performance.
  */
-export const AlignmentEditor: React.FC = () => {
-  const { alignmentId } = useParams();
-
+export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   return (
     <div>
       <h1>Alignment</h1>
-      <p>Alignment ID: {alignmentId}</p>
-      {/* implementation goes here */}
+      <p>displaying alignment: {url}</p>
     </div>
   );
 };

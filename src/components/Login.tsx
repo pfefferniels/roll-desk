@@ -25,7 +25,7 @@ export function LoginForm() {
     const { session, sessionRequestInProgress } = useSession();
 
     return (
-        <div style={{ width: '100%' }}>
+        <div style={{ margin: '1rem', width: '15%' }}>
             <div style={{ right: '1rem' }}>
                 {session.info.isLoggedIn ?
                     <Paper>

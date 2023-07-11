@@ -1,13 +1,13 @@
-import { Thing, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setDate, setThing } from "@inrupt/solid-client";
+import { Thing, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
-import { TextField, Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
 import { useContext, useState } from "react";
-import { createUrl } from "../../helpers/createUrl";
 import { crm, crmdig } from "../../helpers/namespaces";
 import { midi2ld } from "../../lib/midi/midi2ld";
 import { MidiFile, read } from "midifile-ts";
+import { v4 } from "uuid";
 
 const parseMidiInput = (
     file: File
@@ -40,7 +40,7 @@ interface DigitizedRecordingDialogProps {
     onClose: () => void
 }
 
-export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedRecordingDialogProps) => {
+export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: DigitizedRecordingDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
     const [midiFile, setMidiFile] = useState<File | null>(null);
@@ -59,7 +59,7 @@ export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedR
             return
         }
 
-        const recording = buildThing(createThing())
+        const recording = buildThing(thing || createThing())
             .addUrl(RDF.type, crm('F26_Recording'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
 
@@ -67,12 +67,11 @@ export const DigitizedRecordingDialog = ({ attachTo, open, onClose }: DigitizedR
             const midi = await parseMidiInput(midiFile)
 
             if (midi) {
-                const midiLd = midi2ld(midi, { calculateImprecision: false });
-
-                recording.addUrl(RDFS.label, `https://measuring-early-records.org/midi/${midiLd.name}`)
+                const midiDatasetUrl = `https://pfefferniels.solidcommunity.net/early-recordings/${v4()}.ttl`
+                const midiLd = midi2ld(midi, midiDatasetUrl, { calculateImprecision: false });
 
                 // Save the RDF dataset in the pod
-                const midiDatasetUrl = `https://pfefferniels.solidcommunity.net/early-recordings/${midiLd.name}.ttl`
+                recording.addUrl(RDFS.label, `${midiDatasetUrl}#${midiLd.name}`)
 
                 setLoading('saving-midi')
                 await saveSolidDatasetAt(midiDatasetUrl, midiLd.dataset, { fetch: session.fetch as any })

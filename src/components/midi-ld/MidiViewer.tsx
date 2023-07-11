@@ -59,7 +59,7 @@ const MidiViewer = ({ url, onChange }: MidiViewerProps) => {
         onSelect={onSelect}
         onChange={(e13s) => onChange && onChange(e13s)} />
 
-      selectedNote && <Details thing={selectedNote!} />
+      {selectedNote && <Details thing={selectedNote!} />}
     </DatasetProvider>
   );
 };
