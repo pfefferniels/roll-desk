@@ -35,6 +35,7 @@ export const AnalysisDialog = ({ analysis, target, open, onClose }: AnalysisDial
         }
 
         const analysis_ = buildThing(analysis || createThing())
+            .addUrl(RDF.type, crm('E7_Activity'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(crm('P2_has_type'), mer('Analysis'))
 

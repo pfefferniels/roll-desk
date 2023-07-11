@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { useSession, useThing } from '@inrupt/solid-ui-react';
 import { Box, Button, Card, CardActions, CardContent, CircularProgress, Drawer, IconButton } from '@mui/material';
-import { SolidDataset, Thing, asUrl, getInteger, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm } from '../../helpers/namespaces';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
-import { Edit, SaveAltRounded } from '@mui/icons-material';
+import { Edit, SaveAltRounded, UpdateDisabled } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
 
 interface AnalysisEditorProps {
@@ -54,10 +54,16 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
 
   const saveE13 = async (e13: Thing) => {
     if (!dataset) return 
-    if (!analysis) return 
+    if (!analysis) return
 
+    setAnalysis(
+      buildThing(analysis)
+        .addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
+        .build()
+    ) 
     setSavingE13(true)
-    const updatedDataset = setThing(dataset, e13)
+    let updatedDataset = setThing(dataset, e13)
+    updatedDataset = setThing(updatedDataset, analysis)
     setDataset(
       await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
     )

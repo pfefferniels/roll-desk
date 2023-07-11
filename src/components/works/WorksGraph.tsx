@@ -35,8 +35,9 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         const r12 = getUrlAll(source.thing, crm('R12_is_realized_in'));
         const r10 = getUrlAll(source.thing, crm('R10_has_member'));
         const p67 = getUrlAll(source.thing, crm('P67_refers_to'));
+        const p9 = getUrlAll(source.thing, crm('P9_consists_of'));
 
-        const sourceLinks = r2.concat(r12, r10, p67).reduce((sourceAcc, targetUrl) => {
+        const sourceLinks = r2.concat(r12, r10, p67, p9).reduce((sourceAcc, targetUrl) => {
             const target = nodes.find(node => asUrl(node.thing) === targetUrl);
             if (!target) return sourceAcc;
             let relationship = ''
@@ -44,6 +45,7 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             else if (r10.includes(targetUrl)) relationship = 'has member'
             else if (r12.includes(targetUrl)) relationship = 'is realized in'
             else if (p67.includes(targetUrl)) relationship = 'refers to'
+            else if (p9.includes(targetUrl)) relationship = 'consists of'
 
             sourceAcc.push({ source, target, relationship });
             return sourceAcc;

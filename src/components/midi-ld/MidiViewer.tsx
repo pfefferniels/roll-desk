@@ -9,13 +9,14 @@ import { useDataset, useThing } from '@inrupt/solid-ui-react';
 interface MidiViewerProps {
   url: string
   onChange?: (newAttributes: Thing[]) => void
+  onSelect?: (note: Thing) => void
 }
 
-const MidiViewer = ({ url, onChange }: MidiViewerProps) => {
+const MidiViewer = ({ url, onChange, onSelect }: MidiViewerProps) => {
   const { dataset } = useDataset(url)
   const { thing: piece, error } = useThing(url, url)
 
-  const [selectedNote, onSelect] = useState<Thing>()
+  const [selectedNote, setSelectedNote] = useState<Thing>()
   const [pixelsPerTick, setPixelsPerTick] = useState(0.3);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -56,7 +57,10 @@ const MidiViewer = ({ url, onChange }: MidiViewerProps) => {
         piece={piece}
         dataset={dataset}
         pixelsPerTick={pixelsPerTick}
-        onSelect={onSelect}
+        onSelect={(note: Thing) => {
+          setSelectedNote(note)
+          onSelect && onSelect(note)
+        }}
         onChange={(e13s) => onChange && onChange(e13s)} />
 
       {selectedNote && <Details thing={selectedNote!} />}
