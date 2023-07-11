@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { useSession, useThing } from '@inrupt/solid-ui-react';
-import { Box, Card, CardContent, CircularProgress } from '@mui/material';
-import { SolidDataset, Thing, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl } from '@inrupt/solid-client';
+import { Box, Button, Card, CardActions, CardContent, CircularProgress, Drawer, IconButton } from '@mui/material';
+import { SolidDataset, Thing, asUrl, getInteger, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm } from '../../helpers/namespaces';
-import { RDFS } from '@inrupt/vocab-common-rdf';
+import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
+import { urlAsLabel } from '../../helpers/urlAsLabel';
+import { Edit, SaveAltRounded } from '@mui/icons-material';
+import { AnalysisDialog } from '../works/AnalysisDialog';
 
 interface AnalysisEditorProps {
   url: string
@@ -23,6 +26,9 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [error, setError] = useState<any>()
   const [dataset, setDataset] = useState<SolidDataset>()
   const [analysis, setAnalysis] = useState<Thing>()
+  const [newAttributes, setNewAttributes] = useState<Thing[]>()
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [savingE13, setSavingE13] = useState(false)
 
   useEffect(() => {
     const fetchThings = async () => {
@@ -46,26 +52,58 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     return <CircularProgress />
   }
 
+  const saveE13 = async (e13: Thing) => {
+    if (!dataset) return 
+    if (!analysis) return 
+
+    setSavingE13(true)
+    const updatedDataset = setThing(dataset, e13)
+    setDataset(
+      await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
+    )
+    setSavingE13(false)
+  }
+
   const recording = getUrl(analysis, crm('P67_refers_to'))
   const midi = recording && dataset && getThing(dataset, recording)
   const midiUrl = midi && getUrl(midi, RDFS.label)
-  const note = getStringNoLocale(analysis, crm('P3_has_note'))
 
   return (
     <div>
-      <h1>Interpretation</h1>
-      <Card sx={{ width: '40rem'}}>
-        <CardContent>
-          <Box mb={1}>
-            referring to: {midiUrl}
-          </Box>
-          <Box>
-            Note: {note}
-          </Box>
-        </CardContent>
-      </Card>
+      <div style={{ margin: '1rem' }}>
+        <span><b>Analysis</b> {asUrl(analysis)}</span>
+        <IconButton onClick={() => setEditDialogOpen(true)}>
+          <Edit />
+        </IconButton>
+      </div>
 
-      {midiUrl && <MidiViewer url={midiUrl || ''} />}
+      {midiUrl && (
+        <MidiViewer
+          url={midiUrl || ''}
+          onChange={(e13s) => setNewAttributes(e13s)} />
+      )}
+
+      <Drawer open={true} variant='permanent' anchor='left'>
+        <Box m={1}>
+          <Button variant='contained'>Add Argumentation</Button>
+        </Box>
+
+        {newAttributes?.map(attr => (
+          <Card key={`attr_${attr.url}`} sx={{ margin: '1rem' }}>
+            <CardContent>
+              {urlAsLabel(getUrl(attr, crm('P177_assigned_property_of_type')))}
+              = {getInteger(attr, crm('P141_assigned'))}
+            </CardContent>
+            <CardActions>
+              <IconButton onClick={() => saveE13(attr)}>
+                {savingE13 ? <CircularProgress /> : <SaveAltRounded />}
+              </IconButton>
+            </CardActions>
+          </Card>
+        ))}
+      </Drawer>
+
+      <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
     </div>
   );
 };

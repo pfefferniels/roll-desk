@@ -8,7 +8,7 @@ import { useDataset, useThing } from '@inrupt/solid-ui-react';
 
 interface MidiViewerProps {
   url: string
-  onChange?: (newAttributes: Thing[]) => {}
+  onChange?: (newAttributes: Thing[]) => void
 }
 
 const MidiViewer = ({ url, onChange }: MidiViewerProps) => {
