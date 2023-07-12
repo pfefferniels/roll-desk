@@ -30,29 +30,26 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
 
     const nodes = worksDataset ? getThingAll(worksDataset).map(thing => ({ thing } as Node)) : []
 
-    const links: Link[] = nodes.reduce((acc, source) => {
-        const r2 = getUrlAll(source.thing, crm('R2_is_derivative_of'));
-        const r12 = getUrlAll(source.thing, crm('R12_is_realized_in'));
-        const r10 = getUrlAll(source.thing, crm('R10_has_member'));
-        const p67 = getUrlAll(source.thing, crm('P67_refers_to'));
-        const p9 = getUrlAll(source.thing, crm('P9_consists_of'));
+    const linkingProperties =
+        [crm('R2_is_derivative_of'),
+        crm('R12_is_realized_in'),
+        crm('R10_has_member'),
+        crm('P67_refers_to'),
+        crm('P9_consists_of')]
 
-        const sourceLinks = r2.concat(r12, r10, p67, p9).reduce((sourceAcc, targetUrl) => {
-            const target = nodes.find(node => asUrl(node.thing) === targetUrl);
-            if (!target) return sourceAcc;
-            let relationship = ''
-            if (r2.includes(targetUrl)) relationship = 'is derivative of'
-            else if (r10.includes(targetUrl)) relationship = 'has member'
-            else if (r12.includes(targetUrl)) relationship = 'is realized in'
-            else if (p67.includes(targetUrl)) relationship = 'refers to'
-            else if (p9.includes(targetUrl)) relationship = 'consists of'
+    const links: Link[] = []
+    for (const source of nodes) {
+        for (const property of linkingProperties) {
+            const targetUrls = getUrlAll(source.thing, property)
+            for (const targetUrl of targetUrls) {
+                const target = nodes.find(node => asUrl(node.thing) === targetUrl);
+                if (target) {
+                    links.push({ source, target, relationship: urlAsLabel(property) || '(unknown)' })
+                }
+            }
 
-            sourceAcc.push({ source, target, relationship });
-            return sourceAcc;
-        }, [] as Link[]);
-
-        return acc.concat(sourceLinks);
-    }, [] as Link[]);
+        }
+    }
 
     useEffect(() => {
         if (!ref.current) return;
@@ -164,7 +161,7 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
     return (
         <div>
             <svg ref={ref} width={1000} height={600} />
-            
+
             {selectedNode && (
                 <NodeDetails
                     node={selectedNode.thing}
