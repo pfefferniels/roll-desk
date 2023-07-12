@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
-import { useSession, useThing } from '@inrupt/solid-ui-react';
-import { Box, Button, Card, CardActions, CardContent, CircularProgress, Drawer, IconButton } from '@mui/material';
-import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { useSession } from '@inrupt/solid-ui-react';
+import { Box, Button, Card, CircularProgress, Drawer, IconButton, Stack } from '@mui/material';
+import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm } from '../../helpers/namespaces';
-import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
+import { RDFS } from '@inrupt/vocab-common-rdf';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
-import { Edit, SaveAltRounded, UpdateDisabled } from '@mui/icons-material';
+import { Edit, SaveAltOutlined, SaveAltRounded } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
+import { E13Accordion } from './E13Accordion';
 
 interface AnalysisEditorProps {
   url: string
@@ -26,6 +27,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [error, setError] = useState<any>()
   const [dataset, setDataset] = useState<SolidDataset>()
   const [analysis, setAnalysis] = useState<Thing>()
+  const [e13s, setE13s] = useState<Thing[]>()
   const [newAttributes, setNewAttributes] = useState<Thing[]>()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [savingE13, setSavingE13] = useState(false)
@@ -47,20 +49,33 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     fetchThings();
   }, [url, session.fetch, session.info.isLoggedIn]);
 
+  useEffect(() => {
+    if (!dataset || !analysis) return
+    const e13Links = getUrlAll(analysis, crm('P9_consists_of'))
+    setE13s(
+      e13Links
+        .reduce((acc, link) => {
+          const e13 = getThing(dataset, link)
+          if (e13) acc.push(e13)
+          return acc
+        }, [] as Thing[])
+    )
+  }, [url, session.fetch, session.info.isLoggedIn, analysis, dataset])
+
   if (!analysis) {
     if (error) return <span>Failed loading analysis</span>
     return <CircularProgress />
   }
 
   const saveE13 = async (e13: Thing) => {
-    if (!dataset) return 
+    if (!dataset) return
     if (!analysis) return
 
     setAnalysis(
       buildThing(analysis)
         .addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
         .build()
-    ) 
+    )
     setSavingE13(true)
     let updatedDataset = setThing(dataset, e13)
     updatedDataset = setThing(updatedDataset, analysis)
@@ -94,19 +109,29 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           <Button variant='contained'>Add Argumentation</Button>
         </Box>
 
-        {newAttributes?.map(attr => (
-          <Card key={`attr_${attr.url}`} sx={{ margin: '1rem' }}>
-            <CardContent>
-              {urlAsLabel(getUrl(attr, crm('P177_assigned_property_of_type')))}
-              = {getInteger(attr, crm('P141_assigned'))}
-            </CardContent>
-            <CardActions>
-              <IconButton onClick={() => saveE13(attr)}>
-                {savingE13 ? <CircularProgress /> : <SaveAltRounded />}
-              </IconButton>
-            </CardActions>
-          </Card>
-        ))}
+        <Box m={1}>
+          <Stack spacing={1}>
+            {e13s?.map(e13 => (
+              <E13Accordion e13={e13} key={`e13_${asUrl(e13)}`} />
+            ))}
+          </Stack>
+
+          <hr />
+
+          <Stack spacing={1}>
+            {newAttributes?.map(attr => (
+              <Card key={`attr_${attr.url}`} sx={{ margin: '1rem' }}>
+                {urlAsLabel(getUrl(attr, crm('P177_assigned_property_of_type')))} → {getInteger(attr, crm('P141_assigned'))}
+
+                <div style={{ float: 'right' }}>
+                  <IconButton onClick={() => saveE13(attr)}>
+                    {savingE13 ? <CircularProgress /> : <SaveAltOutlined />}
+                  </IconButton>
+                </div>
+              </Card>
+            ))}
+          </Stack>
+        </Box>
       </Drawer>
 
       <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
