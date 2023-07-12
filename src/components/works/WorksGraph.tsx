@@ -55,6 +55,7 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         if (!ref.current) return;
 
         const svg = d3.select(ref.current);
+        svg.selectAll('*').remove();
 
         const g = svg.append('g');
 
