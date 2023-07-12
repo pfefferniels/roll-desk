@@ -12,5 +12,5 @@ export const urlAsLabel = (url?: string | null) => {
     if (!url.length) return ''
     if (url === RDF.type) return 'a'
 
-    return url.split(/(#|\/)/).at(-1)
+    return url.replaceAll('_', ' ').split(/(#|\/)/).at(-1)
 }
