@@ -3,7 +3,7 @@ import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material"
 import { useContext, useState } from "react"
-import { crmdig, crm, mer } from "../../helpers/namespaces"
+import { crmdig, crm, mer, frbroo } from "../../helpers/namespaces"
 
 interface AnalysisDialogProps {
     // either target (to create) or an existing
@@ -35,8 +35,10 @@ export const AnalysisDialog = ({ analysis, target, open, onClose }: AnalysisDial
         }
 
         const analysis_ = buildThing(analysis || createThing())
-            .addUrl(RDF.type, crm('E7_Activity'))
+            .addUrl(RDF.type, frbroo('F1_Work'))
+            .addUrl(RDF.type, frbroo('F23_Expression_Fragment'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
+            .addUrl(RDF.type, crm('E7_Activity'))
             .addUrl(crm('P2_has_type'), mer('Analysis'))
 
         if (note) {

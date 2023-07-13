@@ -6,7 +6,7 @@ import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, ge
 import { crm } from '../../helpers/namespaces';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
-import { Edit, SaveAltOutlined } from '@mui/icons-material';
+import { Edit, LinkOutlined, SaveAltOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
 import { E13Accordion } from './E13Accordion';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
@@ -127,10 +127,15 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
       </Grid2>
 
       <Grid2 xs={8}>
-        <span><b>Analysis</b> {asUrl(analysis)}</span>
-        <IconButton onClick={() => setEditDialogOpen(true)}>
-          <Edit />
-        </IconButton>
+        <h4 style={{ margin: 0 }}>
+          Analysis
+          <IconButton onClick={() => setEditDialogOpen(true)}>
+            <Edit />
+          </IconButton>
+          <IconButton onClick={() => window.open(asUrl(analysis))}>
+            <LinkOutlined />
+          </IconButton>
+        </h4>
 
         {midiUrl && (
           <MidiViewer

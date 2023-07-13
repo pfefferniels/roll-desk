@@ -1,9 +1,11 @@
-import { getUrlAll, getThing, Thing, SolidDataset } from "@inrupt/solid-client"
+import { getUrlAll, getThing, Thing, SolidDataset, getInteger, getThingAll } from "@inrupt/solid-client"
 import { useRef, useEffect } from "react"
 import { midi } from "../../helpers/namespaces"
 import { Track } from "./Track"
 import { NoteProvider } from "../../providers/NoteContext"
 import * as d3 from 'd3';
+import { MidiGrid } from "./MidiGrid"
+import { RDF } from "@inrupt/vocab-common-rdf"
 
 interface PieceProps {
   piece: Thing
@@ -45,6 +47,12 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
       return acc
     }, [] as Thing[])
 
+  const lastTick = Math.max(
+    ...(getThingAll(solidDataset)
+      .filter(thing => getUrlAll(thing, RDF.type).includes(midi('EndOfTrackEvent')))
+      .map(thing => getInteger(thing, midi('tick')) || 0))
+  )
+
   const trackColors = ["red", "blue", "green", "purple", "orange"];
 
   // since the MIDI data can be is deeply nested
@@ -53,6 +61,12 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
   return (
     <svg ref={ref} width={1000} height={128 * (noteHeight || 8)}>
       <g id='roll'>
+        <MidiGrid
+          lastTick={lastTick}
+          pixelsPerTick={pixelsPerTick || 0.5}
+          noteHeight={noteHeight || 9}
+        />
+
         <NoteProvider
           pixelsPerTick={pixelsPerTick || 0.5}
           noteHeight={noteHeight || 9}

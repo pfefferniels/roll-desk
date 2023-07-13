@@ -44,7 +44,8 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             for (const targetUrl of targetUrls) {
                 const target = nodes.find(node => asUrl(node.thing) === targetUrl);
                 if (target) {
-                    links.push({ source, target, relationship: urlAsLabel(property) || '(unknown)' })
+                    const relationship = urlAsLabel(property) || '(unknown)'
+                    links.push({ source, target, relationship  })
                 }
             }
 

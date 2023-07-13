@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { DatasetProvider } from '../DatasetProvider';
 import { Piece } from './Piece';
-import { CircularProgress, Slider, Button } from '@mui/material';
-import { Thing, getSourceUrl } from '@inrupt/solid-client';
+import { CircularProgress, Slider, Button, IconButton } from '@mui/material';
+import { Thing, asUrl, getSourceUrl } from '@inrupt/solid-client';
 import { Details } from './Details';
 import { useDataset, useThing } from '@inrupt/solid-ui-react';
+import { InfoOutlined, LinkOutlined } from '@mui/icons-material';
 
 interface MidiViewerProps {
   url: string
@@ -18,14 +19,9 @@ const MidiViewer = ({ url, onChange, onSelect }: MidiViewerProps) => {
 
   const [selectedNote, setSelectedNote] = useState<Thing>()
   const [pixelsPerTick, setPixelsPerTick] = useState(0.3);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handlePixelsPerTickChange = (event: any, newValue: number | number[]) => {
     setPixelsPerTick(newValue as number);
-  };
-
-  const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
   };
 
   if (!piece || !dataset) {
@@ -36,11 +32,13 @@ const MidiViewer = ({ url, onChange, onSelect }: MidiViewerProps) => {
   return (
     <DatasetProvider dataset={dataset} thing={piece}>
       <div style={{ marginLeft: '1rem' }}>
-        <b>Viewing MIDI file</b>
-        (<code>{getSourceUrl(dataset)}</code>)
+        <h4 style={{ margin: 0 }}>
+          Roll Editor
+          <IconButton onClick={() => window.open(asUrl(piece))}>
+            <LinkOutlined />
+          </IconButton>
+        </h4>
       </div>
-
-      <Button onClick={toggleDrawer}>Settings</Button>
 
       <div style={{ padding: '20px', width: '30vw' }}>
         <Slider

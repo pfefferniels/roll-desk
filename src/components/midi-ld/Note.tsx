@@ -2,7 +2,8 @@ import { Thing, buildThing, createThing, getInteger, thingAsMarkdown } from '@in
 import { crm, midi } from '../../helpers/namespaces';
 import { Boundary } from './Boundary';
 import { useNoteContext } from '../../providers/NoteContext';
-import { RDF } from '@inrupt/vocab-common-rdf';
+import { DCTERMS, RDF } from '@inrupt/vocab-common-rdf';
+import { useSession } from '@inrupt/solid-ui-react';
 
 interface NoteProps {
   note: Thing;
@@ -10,6 +11,7 @@ interface NoteProps {
 }
 
 export const Note = ({ note, color }: NoteProps) => {
+  const { session } = useSession()
   const { pixelsPerTick, noteHeight, onSelect, onChange } = useNoteContext()
 
   const beginOfBegin = getInteger(note, crm('P82a_begin_of_the_begin')) || 0
@@ -32,6 +34,8 @@ export const Note = ({ note, color }: NoteProps) => {
       .addUrl(crm('P140_assigned_attribute_to'), note)
       .addInteger(crm('P141_assigned'), newValue)
       .addUrl(crm('P177_assigned_property_of_type'), property)
+      .addDate(DCTERMS.created, new Date(Date.now()))
+      .addUrl(crm('P14_carried_out'), session.info.webId || 'unknown')
       .build()
     onChange(e13)
   }
