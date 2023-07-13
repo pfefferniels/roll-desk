@@ -27,14 +27,13 @@ export const Note = ({ note, color }: NoteProps) => {
   const onChangeProperty = (property: string, newValue: number) => {
     if (!onChange) return
 
-    const newThing = buildThing(createThing())
+    const e13 = buildThing(createThing())
       .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
       .addUrl(crm('P140_assigned_attribute_to'), note)
       .addInteger(crm('P141_assigned'), newValue)
       .addUrl(crm('P177_assigned_property_of_type'), property)
       .build()
-    console.log(thingAsMarkdown(newThing))
-    onChange([newThing])
+    onChange(e13)
   }
 
   return (

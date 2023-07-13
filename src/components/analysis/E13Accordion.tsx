@@ -12,7 +12,7 @@ export const E13Accordion = ({ e13 }: E13CardProps) => {
     const note = getStringNoLocale(e13, crm('P3_has_note')) || 'No note available.';
 
     return (
-        <Accordion key={`attr_${asUrl(e13)}`} sx={{ margin: '1rem' }}>
+        <Accordion sx={{ margin: '0' }}>
             <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 aria-controls="panel1a-content"

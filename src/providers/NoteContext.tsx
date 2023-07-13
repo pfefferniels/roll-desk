@@ -7,7 +7,7 @@ interface NoteContextProps {
 
   onSelect: (newSelection: Thing) => void
 
-  onChange?: (newAttributes: Thing[]) => void
+  onChange?: (e13: Thing) => void
 }
 
 export const NoteContext = createContext<NoteContextProps | undefined>(undefined);

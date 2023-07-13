@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { useSession } from '@inrupt/solid-ui-react';
-import { Box, Button, Card, CircularProgress, Drawer, IconButton, Stack } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Divider, Drawer, IconButton, Stack } from '@mui/material';
 import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm } from '../../helpers/namespaces';
 import { RDFS } from '@inrupt/vocab-common-rdf';
@@ -28,8 +28,9 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [dataset, setDataset] = useState<SolidDataset>()
   const [analysis, setAnalysis] = useState<Thing>()
   const [e13s, setE13s] = useState<Thing[]>()
-  const [newAttributes, setNewAttributes] = useState<Thing[]>()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  const [newE13, setNewE13] = useState<Thing>()
   const [savingE13, setSavingE13] = useState(false)
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const midiUrl = midi && getUrl(midi, RDFS.label)
 
   return (
-    <div>
+    <div style={{ marginLeft: '25vw' }}>
       <div style={{ margin: '1rem' }}>
         <span><b>Analysis</b> {asUrl(analysis)}</span>
         <IconButton onClick={() => setEditDialogOpen(true)}>
@@ -101,40 +102,40 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
       {midiUrl && (
         <MidiViewer
           url={midiUrl || ''}
-          onChange={(e13s) => setNewAttributes(e13s)} />
+          onChange={setNewE13} />
       )}
 
-      <Drawer open={true} variant='permanent' anchor='left'>
+      <Drawer variant='permanent' anchor='left' PaperProps={{ style: { width: '25vw' } }}>
         <Box m={1}>
           <Button variant='contained'>Add Argumentation</Button>
         </Box>
 
         <Box m={1}>
           <Stack spacing={1}>
+            <h4 style={{ margin: 0 }}>Attribute Assignments</h4>
             {e13s?.map(e13 => (
               <E13Accordion e13={e13} key={`e13_${asUrl(e13)}`} />
             ))}
-          </Stack>
 
-          <hr />
+            <Divider />
 
-          <Stack spacing={1}>
-            {newAttributes?.map(attr => (
-              <Card key={`attr_${attr.url}`} sx={{ margin: '1rem' }}>
-                {urlAsLabel(getUrl(attr, crm('P177_assigned_property_of_type')))} → {getInteger(attr, crm('P141_assigned'))}
+            <h4>New E13s</h4>
+            {newE13 && (
+              <Card style={{ marginTop: '1rem' }}>
+                {urlAsLabel(getUrl(newE13, crm('P177_assigned_property_of_type')))} → {getInteger(newE13, crm('P141_assigned'))}
 
                 <div style={{ float: 'right' }}>
-                  <IconButton onClick={() => saveE13(attr)}>
+                  <IconButton onClick={() => saveE13(newE13)}>
                     {savingE13 ? <CircularProgress /> : <SaveAltOutlined />}
                   </IconButton>
                 </div>
               </Card>
-            ))}
+            )}
           </Stack>
         </Box>
       </Drawer>
 
       <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
-    </div>
+    </div >
   );
 };

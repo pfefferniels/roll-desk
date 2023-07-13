@@ -15,10 +15,10 @@ interface PieceProps {
   onSelect: (note: Thing) => void
 
   /**
-   * gets called when the user shifts
-   * the boundaries of a note
+   * gets called when the user modifies
+   * anything inside the MIDI.
    */
-  onChange: (newAttributes: Thing[]) => void
+  onChange: (e13: Thing) => void
 }
 
 export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight, onSelect, onChange }: PieceProps) => {

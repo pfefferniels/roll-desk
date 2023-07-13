@@ -8,7 +8,7 @@ import { useDataset, useThing } from '@inrupt/solid-ui-react';
 
 interface MidiViewerProps {
   url: string
-  onChange?: (newAttributes: Thing[]) => void
+  onChange?: (e13: Thing) => void
   onSelect?: (note: Thing) => void
 }
 
@@ -61,9 +61,9 @@ const MidiViewer = ({ url, onChange, onSelect }: MidiViewerProps) => {
           setSelectedNote(note)
           onSelect && onSelect(note)
         }}
-        onChange={(e13s) => onChange && onChange(e13s)} />
+        onChange={(e13) => onChange && onChange(e13)} />
 
-      {selectedNote && <Details thing={selectedNote!} />}
+      {selectedNote && <Details onChange={(e13) => onChange && onChange(e13)} thing={selectedNote!} />}
     </DatasetProvider>
   );
 };

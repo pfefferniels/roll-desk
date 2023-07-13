@@ -6,15 +6,16 @@ import { NoteDetails } from "./NoteDetails"
 
 interface DetailsProps {
     thing: Thing
+    onChange: (e13: Thing) => void
 }
 
-export const Details = ({ thing }: DetailsProps) => {
+export const Details = ({ thing, onChange }: DetailsProps) => {
     const renderDetails = () => {
         if (!thing) {
             return <span>nothing selected</span>
         }
         else if (getUrlAll(thing, crm('P2_has_type')).includes(midi('NoteEvent'))) {
-            return <NoteDetails thing={thing} />
+            return <NoteDetails onChange={onChange} thing={thing} />
         }
         else {
             return thingAsMarkdown(thing)
