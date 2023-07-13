@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { useSession } from '@inrupt/solid-ui-react';
-import { Box, Button, Card, CardContent, CircularProgress, Divider, Drawer, IconButton, Stack } from '@mui/material';
+import { Box, Button, Card, CircularProgress, Divider, Drawer, IconButton, Stack } from '@mui/material';
 import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm } from '../../helpers/namespaces';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
-import { Edit, SaveAltOutlined, SaveAltRounded } from '@mui/icons-material';
+import { Edit, SaveAltOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
 import { E13Accordion } from './E13Accordion';
+import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 
 interface AnalysisEditorProps {
   url: string
@@ -78,11 +79,14 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
         .build()
     )
     setSavingE13(true)
+
     let updatedDataset = setThing(dataset, e13)
     updatedDataset = setThing(updatedDataset, analysis)
+
     setDataset(
       await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
     )
+
     setSavingE13(false)
   }
 
@@ -91,21 +95,8 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const midiUrl = midi && getUrl(midi, RDFS.label)
 
   return (
-    <div style={{ marginLeft: '25vw' }}>
-      <div style={{ margin: '1rem' }}>
-        <span><b>Analysis</b> {asUrl(analysis)}</span>
-        <IconButton onClick={() => setEditDialogOpen(true)}>
-          <Edit />
-        </IconButton>
-      </div>
-
-      {midiUrl && (
-        <MidiViewer
-          url={midiUrl || ''}
-          onChange={setNewE13} />
-      )}
-
-      <Drawer variant='permanent' anchor='left' PaperProps={{ style: { width: '25vw' } }}>
+    <Grid2 container spacing={1}>
+      <Grid2 xs={4}>
         <Box m={1}>
           <Button variant='contained'>Add Argumentation</Button>
         </Box>
@@ -133,9 +124,22 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
             )}
           </Stack>
         </Box>
-      </Drawer>
+      </Grid2>
+
+      <Grid2 xs={8}>
+        <span><b>Analysis</b> {asUrl(analysis)}</span>
+        <IconButton onClick={() => setEditDialogOpen(true)}>
+          <Edit />
+        </IconButton>
+
+        {midiUrl && (
+          <MidiViewer
+            url={midiUrl || ''}
+            onChange={setNewE13} />
+        )}
+      </Grid2>
 
       <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
-    </div >
+    </Grid2>
   );
 };
