@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { DatasetProvider } from '../DatasetProvider';
 import { Piece } from './Piece';
-import { CircularProgress, Slider, Button, IconButton } from '@mui/material';
-import { Thing, asUrl, getSourceUrl } from '@inrupt/solid-client';
+import { CircularProgress, Slider, IconButton } from '@mui/material';
+import { Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { Details } from './Details';
 import { useDataset, useThing } from '@inrupt/solid-ui-react';
-import { InfoOutlined, LinkOutlined } from '@mui/icons-material';
+import { LinkOutlined } from '@mui/icons-material';
+import { crm } from '../../helpers/namespaces';
 
 interface MidiViewerProps {
   url: string
@@ -64,7 +65,12 @@ const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
         e13s={e13s}
         onChange={(e13) => onChange && onChange(e13)} />
 
-      {selectedNote && <Details onChange={(e13) => onChange && onChange(e13)} thing={selectedNote!} />}
+      {selectedNote && (
+        <Details
+          e13s={e13s?.filter(e13 => getUrl(e13, crm('P140_assigned_attribute_to')) === asUrl(selectedNote))}
+          onChange={(e13) => onChange && onChange(e13)}
+          thing={selectedNote!} />
+      )}
     </DatasetProvider>
   );
 };

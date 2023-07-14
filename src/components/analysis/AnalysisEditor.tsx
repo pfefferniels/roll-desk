@@ -174,7 +174,12 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     const modifiedAnalysis = buildThing(analysis)
     e13s.forEach(e13 => {
       updatedDataset = setThing(updatedDataset, e13)
-      modifiedAnalysis.addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
+      const e13Url = asUrl(e13, getSourceUrl(dataset)!)
+
+      // attach the E13 to the analysis if has not been attached yet
+      if (!getUrlAll(analysis, crm('P9_consists_of')).includes(e13Url)) {
+        modifiedAnalysis.addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
+      }
     })
     updatedDataset = setThing(updatedDataset, modifiedAnalysis.build())
 
@@ -205,18 +210,17 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     <Grid2 container spacing={1}>
       <Grid2 xs={4}>
         <Box m={1}>
-          <Button variant='contained'>Add Argumentation</Button>
-        </Box>
-
-        <Box m={1}>
           <Stack spacing={1}>
             <h4 style={{ margin: 0 }}>Attribute Assignments</h4>
             {e13s?.map(e13 => (
               <E13Accordion e13={e13} key={`e13_${asUrl(e13)}`} />
             ))}
 
-            {selectedEvent && <AddE13Button options={addE13Options} />}
           </Stack>
+
+          <Box mt={2}>
+            {selectedEvent && <AddE13Button options={addE13Options} />}
+          </Box>
         </Box>
       </Grid2>
 

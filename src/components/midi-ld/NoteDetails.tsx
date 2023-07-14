@@ -1,50 +1,43 @@
-import { Thing, asUrl, buildThing, createThing, getInteger } from "@inrupt/solid-client"
+import { Thing, asUrl, buildThing, createThing, getInteger, getUrl } from "@inrupt/solid-client"
 import { Box, Stack, TextField } from "@mui/material"
 import { crm, midi } from "../../helpers/namespaces"
 import { useEffect, useState } from "react"
 import { RDF } from "@inrupt/vocab-common-rdf"
+import { Midi } from "tonal";
+import { E13Range } from "./E13Range"
 
 interface NoteDetailsProps {
     thing: Thing
+    e13s?: Thing[]
     onChange: (e13s: Thing) => void
 }
 
-export const NoteDetails = ({ thing, onChange }: NoteDetailsProps) => {
-    const [velocity, setVelocity] = useState(getInteger(thing, midi('velocity')))
-    const [pitch, setPitch] = useState(getInteger(thing, midi('pitch')))
+export const NoteDetails = ({ thing, e13s, onChange }: NoteDetailsProps) => {
+    const velocity = getInteger(thing, midi('velocity'))
+    const pitch = Midi.midiToNoteName(getInteger(thing, midi('pitch')) || 0)
 
-    useEffect(() => {
-        setVelocity(getInteger(thing, midi('velocity')))
-        setPitch(getInteger(thing, midi('pitch')))
-    }, [thing])
+    const velocityE13s = e13s?.filter(e13 =>
+        getUrl(e13, crm('P177_assigned_property_of_type')) === midi('velocity'))
 
-    const handleVelocityChange = (newVelocity: number) => {
-        setVelocity(newVelocity)
-
-        if (!onChange) return
-        const e13 = buildThing(createThing())
-            .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
-            .addUrl(crm('P140_assigned_attribute_to'), asUrl(thing))
-            .addInteger(crm('P141_assigned'), newVelocity)
-            .addUrl(crm('P177_assigned_property_of_type'), midi('velocity'))
-            .build()
-        onChange(e13)
-    }
+    const pitchE13s = e13s?.filter(e13 =>
+        getUrl(e13, crm('P177_assigned_property_of_type')) === midi('pitch'))
 
     return (
         <Box m={1}>
-            <h4>Note {getInteger(thing, midi('pitch'))}</h4>
+            <h4>Note {pitch}</h4>
             <Stack spacing={2}>
-                <TextField
-                    label='Pitch'
-                    type='number'
-                    value={pitch}
-                    onChange={e => setPitch(+e.target.value)} />
                 <TextField
                     label='velocity'
                     type='number'
-                    value={velocity}
-                    onChange={e => handleVelocityChange(+e.target.value)} />
+                    disabled
+                    value={velocity} />
+
+                {velocityE13s?.map((e13 => (
+                    <E13Range
+                        key={`e13_range_${asUrl(e13)}`}
+                        e13={e13}
+                        onChange={onChange} />
+                )))}
             </Stack>
         </Box>
     )
