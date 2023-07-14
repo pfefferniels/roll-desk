@@ -35,19 +35,15 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
 
   const [savingE13, setSavingE13] = useState(false)
 
-  const addE13 = (property: string, defaultValue: number) => {
-    if (!selectedEvent) return
-
-    const e13 = buildThing(createThing())
+  const buildE13 = (property: string, assignTo: Thing, defaultValue: number) => {
+    return buildThing(createThing())
       .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
-      .addUrl(crm('P140_assigned_attribute_to'), selectedEvent)
+      .addUrl(crm('P140_assigned_attribute_to'), assignTo)
       .addInteger(crm('P141_assigned'), defaultValue)
       .addUrl(crm('P177_assigned_property_of_type'), property)
       .addDate(DCTERMS.created, new Date(Date.now()))
       .addUrl(crm('P14_carried_out'), session.info.webId || 'unknown')
       .build()
-
-    saveE13(e13)
   }
 
   const addE13Options =
@@ -58,8 +54,10 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           if (!selectedEvent) return
 
           const currentTick = getInteger(selectedEvent, crm('P82a_begin_of_the_begin'))
-          addE13(crm('P82a_begin_of_the_begin'), currentTick || 0)
-          addE13(crm('P81a_end_of_the_begin'), currentTick || 0)
+          saveE13([
+            buildE13(crm('P82a_begin_of_the_begin'), selectedEvent, currentTick || 0),
+            buildE13(crm('P81a_end_of_the_begin'), selectedEvent, currentTick || 0)
+          ])
         },
       },
       {
@@ -68,8 +66,10 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           if (!selectedEvent) return
 
           const currentTick = getInteger(selectedEvent, crm('P81b_begin_of_the_end'))
-          addE13(crm('P81b_begin_of_the_end'), currentTick || 0)
-          addE13(crm('P82b_end_of_the_end'), currentTick || 0)
+          saveE13([
+            buildE13(crm('P81b_begin_of_the_end'), selectedEvent, currentTick || 0),
+            buildE13(crm('P82b_end_of_the_end'), selectedEvent, currentTick || 0)
+          ])
         }
       },
       {
@@ -78,7 +78,9 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           if (!selectedEvent) return
 
           const currentPitch = getInteger(selectedEvent, midiNs('pitch'))
-          addE13(midiNs('pitch'), currentPitch || 0)
+          saveE13(
+            buildE13(midiNs('pitch'), selectedEvent, currentPitch || 0)
+          )
         }
       },
       {
@@ -87,9 +89,11 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           if (!selectedEvent) return
 
           const currentPitch = getInteger(selectedEvent, midiNs('velocity'))
-          addE13(midiNs('min_velocity'), currentPitch || 0)
-          addE13(midiNs('max_velocity'), currentPitch || 0)
-          addE13(midiNs('best_velocity'), currentPitch || 0)
+          saveE13([
+            buildE13(midiNs('min_velocity'), selectedEvent, currentPitch || 0),
+            buildE13(midiNs('max_velocity'), selectedEvent, currentPitch || 0),
+            buildE13(midiNs('best_velocity'), selectedEvent, currentPitch || 0)
+          ])
         }
       }
     ]
@@ -129,19 +133,22 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     return <CircularProgress />
   }
 
-  const saveE13 = async (e13: Thing) => {
+  const saveE13 = async (e13_: Thing | Thing[]) => {
     if (!dataset) return
     if (!analysis) return
 
-    const modifiedAnalysis = buildThing(analysis)
-      .addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
-      .build()
-
-    setAnalysis(modifiedAnalysis)
     setSavingE13(true)
 
-    let updatedDataset = setThing(dataset, e13)
-    updatedDataset = setThing(updatedDataset, modifiedAnalysis)
+    const e13s = Array.isArray(e13_) ? e13_ : [e13_]
+    let updatedDataset = dataset
+    const modifiedAnalysis = buildThing(analysis)
+    e13s.forEach(e13 => {
+      updatedDataset = setThing(updatedDataset, e13)
+      modifiedAnalysis.addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
+    })
+    updatedDataset = setThing(updatedDataset, modifiedAnalysis.build())
+
+    setAnalysis(modifiedAnalysis.build())
 
     setDataset(
       await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
