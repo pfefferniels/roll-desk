@@ -1,5 +1,5 @@
 import React from 'react';
-import { Thing, getUrl, getUrlAll } from '@inrupt/solid-client';
+import { Thing, asUrl, getUrl, getUrlAll } from '@inrupt/solid-client';
 import { RDF } from '@inrupt/vocab-common-rdf';
 import { crm, mer } from '../../helpers/namespaces';
 import RecordingWorkDetails from './details/RecordingWorkDetails';
@@ -9,6 +9,8 @@ import Box from '@mui/material/Box';
 import DigitizedRecordingDetails from './details/DigitizedRecordingDetails';
 import AnalysisDetails from './details/AnalysisDetails';
 import AlignmentDetails from './details/AlignmentDetails';
+import { LinkOutlined } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 
 interface NodeDetailsProps {
     node: Thing;
@@ -40,6 +42,9 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
         <Drawer anchor="right" open={true} onClose={onClose}>
             <Box sx={{ width: 300, padding: 2 }}>
                 <Typography variant="h6" gutterBottom>
+                    <IconButton onClick={() => window.open(asUrl(node))}>
+                        <LinkOutlined />
+                    </IconButton>
                     Node Details
                 </Typography>
                 {renderOptions()}

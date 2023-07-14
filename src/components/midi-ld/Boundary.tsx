@@ -4,6 +4,7 @@ import { Thing, buildThing, getInteger, getUrl, setUrl } from '@inrupt/solid-cli
 import { crm } from '../../helpers/namespaces';
 import * as d3 from 'd3'
 import { DCTERMS } from '@inrupt/vocab-common-rdf';
+import './Boundary.css'
 
 interface BoundaryProps {
     e13: Thing
@@ -51,7 +52,8 @@ export const Boundary = ({ e13, pitch, onChange }: BoundaryProps) => {
                 x2={0}
                 y2={(128 - pitch) * noteHeight + noteHeight}
                 stroke='black'
-                strokeWidth={1}
+                strokeLinecap='round'
+                strokeWidth={1.5}
             />
             <line // Top horizontal line
                 x1={0}
@@ -59,7 +61,8 @@ export const Boundary = ({ e13, pitch, onChange }: BoundaryProps) => {
                 x2={bracket === 'open' ? bracketLength : -bracketLength}
                 y2={(128 - pitch) * noteHeight}
                 stroke='black'
-                strokeWidth={1}
+                strokeLinecap='round'
+                strokeWidth={1.5}
             />
             <line // Bottom horizontal line
                 x1={0}
@@ -67,7 +70,8 @@ export const Boundary = ({ e13, pitch, onChange }: BoundaryProps) => {
                 x2={bracket === 'open' ? bracketLength : -bracketLength}
                 y2={(128 - pitch) * noteHeight + noteHeight}
                 stroke='black'
-                strokeWidth={1}
+                strokeLinecap='round'
+                strokeWidth={1.5}
             />
         </g>
     );

@@ -21,7 +21,7 @@ export const NoteDetails = ({ thing, e13s, onChange }: NoteDetailsProps) => {
 
     const pitchE13s = e13s?.filter(e13 =>
         getUrl(e13, crm('P177_assigned_property_of_type')) === midi('pitch'))
-
+    
     return (
         <Box m={1}>
             <h4>Note {pitch}</h4>

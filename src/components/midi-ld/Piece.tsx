@@ -14,6 +14,8 @@ interface PieceProps {
   dataset: SolidDataset
   pixelsPerTick?: number
   noteHeight?: number
+
+  selectedEvent?: Thing
   onSelect: (event: Thing) => void
 
   /**
@@ -29,7 +31,7 @@ interface PieceProps {
   e13s?: Thing[]
 }
 
-export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight, onSelect, e13s, onChange }: PieceProps) => {
+export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight, onSelect, e13s, selectedEvent, onChange }: PieceProps) => {
   const ref = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -76,6 +78,7 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
         <NoteProvider
           pixelsPerTick={pixelsPerTick || 0.5}
           noteHeight={noteHeight || 9}
+          selectedEvent={selectedEvent}
           onSelect={onSelect}
           e13s={e13s}
           onChange={onChange}>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DatasetProvider } from '../DatasetProvider';
 import { Piece } from './Piece';
 import { CircularProgress, Slider, IconButton } from '@mui/material';
@@ -11,7 +11,7 @@ import { crm } from '../../helpers/namespaces';
 interface MidiViewerProps {
   url: string
   onChange?: (e13: Thing) => void
-  onSelect?: (note: Thing) => void
+  onSelect?: (event: Thing | null) => void
   e13s?: Thing[]
 }
 
@@ -25,6 +25,15 @@ const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
   const handlePixelsPerTickChange = (event: any, newValue: number | number[]) => {
     setPixelsPerTick(newValue as number);
   };
+  
+  useEffect(() => {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        setSelectedNote(undefined)
+        onSelect && onSelect(null)
+      }
+    })
+  })
 
   if (!piece || !dataset) {
     if (error) return <span>Failed fetching piece</span>
@@ -57,11 +66,11 @@ const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
         piece={piece}
         dataset={dataset}
         pixelsPerTick={pixelsPerTick}
+        selectedEvent={selectedNote}
         onSelect={(note: Thing) => {
           setSelectedNote(note)
           onSelect && onSelect(note)
         }}
-
         e13s={e13s}
         onChange={(e13) => onChange && onChange(e13)} />
 

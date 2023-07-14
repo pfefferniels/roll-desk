@@ -2,6 +2,7 @@ import { Thing, asUrl, getInteger, getUrl } from '@inrupt/solid-client';
 import { crm, midi } from '../../helpers/namespaces';
 import { Boundary } from './Boundary';
 import { useNoteContext } from '../../providers/NoteContext';
+import './Note.css'
 
 interface NoteProps {
   note: Thing;
@@ -9,7 +10,7 @@ interface NoteProps {
 }
 
 export const Note = ({ note, color }: NoteProps) => {
-  const { pixelsPerTick, noteHeight, onSelect, onChange, e13s } = useNoteContext()
+  const { pixelsPerTick, noteHeight, selectedEvent, onSelect, onChange, e13s } = useNoteContext()
 
   const beginOfBegin = getInteger(note, crm('P82a_begin_of_the_begin')) || 0
   const endOfBegin = getInteger(note, crm('P81a_end_of_the_begin')) || 0
@@ -35,13 +36,14 @@ export const Note = ({ note, color }: NoteProps) => {
 
   return (
     <>
-      <rect // The note
+      <rect
+        className='note'
         x={(beginOfBegin + endOfBegin) / 2 * pixelsPerTick}
         y={(128 - pitch) * noteHeight}
         width={((beginOfEnd + endOfEnd) / 2 - endOfBegin) * pixelsPerTick}
         height={noteHeight}
         fill={color}
-        fillOpacity={0.5}
+        fillOpacity={note === selectedEvent ? 1 : 0.5}
         onClick={handleClick}
       />
 

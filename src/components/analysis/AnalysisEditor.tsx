@@ -7,7 +7,7 @@ import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { Edit, LinkOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
-import { E13Accordion } from './E13Accordion';
+import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import AddE13Button from './AddE13Button';
 
@@ -68,14 +68,14 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [analysis, setAnalysis] = useState<Thing>()
   const [e13s, setE13s] = useState<Thing[]>()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState<Thing>()
+  const [selectedEvent, setSelectedEvent] = useState<Thing | null>()
 
   const [savingE13, setSavingE13] = useState(false)
 
   const addE13Options =
     [
       {
-        name: 'Modify Onset Boundaries',
+        name: 'Assign Onset Boundaries',
         handleClick: () => {
           if (!selectedEvent) return
 
@@ -87,7 +87,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
         },
       },
       {
-        name: 'Modify Offset Boundaries',
+        name: 'Assign Offset Boundaries',
         handleClick: () => {
           if (!selectedEvent) return
 
@@ -99,7 +99,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
         }
       },
       {
-        name: 'Modify Pitch',
+        name: 'Assign Pitch',
         handleClick: () => {
           if (!selectedEvent) return
 
@@ -110,7 +110,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
         }
       },
       {
-        name: 'Modify Velocity Boundaries',
+        name: 'Assign Velocity Boundaries',
         handleClick: () => {
           if (!selectedEvent) return
 
@@ -207,16 +207,40 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const midiUrl = midi && getUrl(midi, RDFS.label)
 
   return (
-    <Grid2 container spacing={1}>
+    <Grid2 container spacing={1} m={1}>
+      <Grid2 xs={12}>
+        <h3 style={{ margin: 0 }}>
+          Analysis
+          <IconButton onClick={() => setEditDialogOpen(true)}>
+            <Edit />
+          </IconButton>
+          <IconButton onClick={() => window.open(asUrl(analysis))}>
+            <LinkOutlined />
+          </IconButton>
+        </h3>
+      </Grid2>
       <Grid2 xs={4}>
         <Box m={1}>
-          <Stack spacing={1}>
-            <h4 style={{ margin: 0 }}>Attribute Assignments</h4>
-            {e13s?.map(e13 => (
-              <E13Accordion e13={e13} key={`e13_${asUrl(e13)}`} />
-            ))}
+          {e13s && (
+            <Stack spacing={1}>
+              <h4 style={{ margin: 0 }}>
+                {selectedEvent
+                  ? 'Attribute Assignments (Selection)'
+                  : 'All Attribute Assignments'}
+              </h4>
+              {e13s
+                .filter(e13 => {
+                  if (selectedEvent) {
+                    return getUrl(e13, crm('P140_assigned_attribute_to')) === selectedEvent.url
+                  }
+                  return true
+                })
+                .map(e13 => (
+                  <E13Card e13={e13} key={`e13_${asUrl(e13)}`} />
+                ))}
 
-          </Stack>
+            </Stack>
+          )}
 
           <Box mt={2}>
             {selectedEvent && <AddE13Button options={addE13Options} />}
@@ -225,16 +249,6 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
       </Grid2>
 
       <Grid2 xs={8}>
-        <h4 style={{ margin: 0 }}>
-          Analysis
-          <IconButton onClick={() => setEditDialogOpen(true)}>
-            <Edit />
-          </IconButton>
-          <IconButton onClick={() => window.open(asUrl(analysis))}>
-            <LinkOutlined />
-          </IconButton>
-        </h4>
-
         {midiUrl && (
           <MidiViewer
             e13s={e13s}
