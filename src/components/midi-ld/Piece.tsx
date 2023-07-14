@@ -14,16 +14,22 @@ interface PieceProps {
   dataset: SolidDataset
   pixelsPerTick?: number
   noteHeight?: number
-  onSelect: (note: Thing) => void
+  onSelect: (event: Thing) => void
 
   /**
    * gets called when the user modifies
    * anything inside the MIDI.
    */
   onChange: (e13: Thing) => void
+
+  /**
+   * Attribute Assignments which should be
+   * displayed along with the event itself.
+   */
+  e13s?: Thing[]
 }
 
-export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight, onSelect, onChange }: PieceProps) => {
+export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight, onSelect, e13s, onChange }: PieceProps) => {
   const ref = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -59,7 +65,7 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
   // we're using a provider to pass the settings 
   // and callbacks down to the single components.
   return (
-    <svg ref={ref} width={1000} height={128 * (noteHeight || 8)}>
+    <svg ref={ref} width={800} height={128 * (noteHeight || 8)}>
       <g id='roll'>
         <MidiGrid
           lastTick={lastTick}
@@ -71,6 +77,7 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
           pixelsPerTick={pixelsPerTick || 0.5}
           noteHeight={noteHeight || 9}
           onSelect={onSelect}
+          e13s={e13s}
           onChange={onChange}>
           {tracks.map((track, trackIndex) => (
             <Track

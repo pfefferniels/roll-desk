@@ -1,4 +1,4 @@
-import { Thing, buildThing, createThing, getInteger, thingAsMarkdown } from '@inrupt/solid-client';
+import { Thing, asUrl, buildThing, createThing, getInteger, getUrl, getUrlAll, thingAsMarkdown } from '@inrupt/solid-client';
 import { crm, midi } from '../../helpers/namespaces';
 import { Boundary } from './Boundary';
 import { useNoteContext } from '../../providers/NoteContext';
@@ -12,7 +12,7 @@ interface NoteProps {
 
 export const Note = ({ note, color }: NoteProps) => {
   const { session } = useSession()
-  const { pixelsPerTick, noteHeight, onSelect, onChange } = useNoteContext()
+  const { pixelsPerTick, noteHeight, onSelect, onChange, e13s } = useNoteContext()
 
   const beginOfBegin = getInteger(note, crm('P82a_begin_of_the_begin')) || 0
   const endOfBegin = getInteger(note, crm('P81a_end_of_the_begin')) || 0
@@ -26,19 +26,15 @@ export const Note = ({ note, color }: NoteProps) => {
     onSelect(note)
   };
 
-  const onChangeProperty = (property: string, newValue: number) => {
-    if (!onChange) return
-
-    const e13 = buildThing(createThing())
-      .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
-      .addUrl(crm('P140_assigned_attribute_to'), note)
-      .addInteger(crm('P141_assigned'), newValue)
-      .addUrl(crm('P177_assigned_property_of_type'), property)
-      .addDate(DCTERMS.created, new Date(Date.now()))
-      .addUrl(crm('P14_carried_out'), session.info.webId || 'unknown')
-      .build()
-    onChange(e13)
-  }
+  const boundaryAttrs = [
+    crm('P82a_begin_of_the_begin'),
+    crm('P81a_end_of_the_begin'),
+    crm('P81b_begin_of_the_end'),
+    crm('P82b_end_of_the_end')
+  ]
+  const boundaryE13s = e13s?.filter(e13 =>
+    getUrl(e13, crm('P140_assigned_attribute_to')) === asUrl(note)
+    && boundaryAttrs.includes(getUrl(e13, crm('P177_assigned_property_of_type')) || ''))
 
   return (
     <>
@@ -48,23 +44,17 @@ export const Note = ({ note, color }: NoteProps) => {
         width={((beginOfEnd + endOfEnd) / 2 - endOfBegin) * pixelsPerTick}
         height={noteHeight}
         fill={color}
-        opacity={0.5}
+        fillOpacity={0.5}
         onClick={handleClick}
       />
 
-      <Boundary
-        begin={beginOfBegin}
-        end={endOfBegin}
-        pitch={pitch}
-        onChangeBegin={n => onChangeProperty(crm('P82a_begin_of_the_begin'), n)}
-        onChangeEnd={n => onChangeProperty(crm('P81a_end_of_the_begin'), n)}/>
-
-      <Boundary
-        begin={beginOfEnd}
-        end={endOfEnd}
-        pitch={pitch}
-        onChangeBegin={n => onChangeProperty(crm('P81b_begin_of_the_end'), n)}
-        onChangeEnd={n => onChangeProperty(crm('P82b_end_of_the_end'), n)} />
+      {boundaryE13s?.map(e13 => (
+        <Boundary
+          key={`boundary_${asUrl(e13)}`}
+          e13={e13}
+          pitch={pitch}
+          onChange={(updatedE13) => onChange && onChange(updatedE13)} />
+      ))}
     </>
   );
 };

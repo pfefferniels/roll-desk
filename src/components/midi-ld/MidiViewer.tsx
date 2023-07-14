@@ -11,9 +11,10 @@ interface MidiViewerProps {
   url: string
   onChange?: (e13: Thing) => void
   onSelect?: (note: Thing) => void
+  e13s?: Thing[]
 }
 
-const MidiViewer = ({ url, onChange, onSelect }: MidiViewerProps) => {
+const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
   const { dataset } = useDataset(url)
   const { thing: piece, error } = useThing(url, url)
 
@@ -59,6 +60,8 @@ const MidiViewer = ({ url, onChange, onSelect }: MidiViewerProps) => {
           setSelectedNote(note)
           onSelect && onSelect(note)
         }}
+
+        e13s={e13s}
         onChange={(e13) => onChange && onChange(e13)} />
 
       {selectedNote && <Details onChange={(e13) => onChange && onChange(e13)} thing={selectedNote!} />}

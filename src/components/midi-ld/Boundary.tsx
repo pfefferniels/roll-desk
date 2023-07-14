@@ -1,107 +1,72 @@
-import * as d3 from 'd3'
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNoteContext } from '../../providers/NoteContext';
+import { Thing, buildThing, getInteger, getUrl, setUrl } from '@inrupt/solid-client';
+import { crm } from '../../helpers/namespaces';
+import * as d3 from 'd3'
 
 interface BoundaryProps {
-    begin: number;
-    end: number;
+    e13: Thing
     pitch: number;
-
-    onChangeBegin: (newBegin: number) => void;
-    onChangeEnd: (newBegin: number) => void;
+    onChange: (updatedE13: Thing) => void;
 }
 
-export const Boundary = ({ begin, end, pitch, onChangeBegin, onChangeEnd }: BoundaryProps) => {
+export const Boundary = ({ e13, pitch, onChange }: BoundaryProps) => {
     const { pixelsPerTick, noteHeight } = useNoteContext()
 
+    const propertyType = getUrl(e13, crm('P177_assigned_property_of_type'))
+    const bracket = propertyType?.includes('begin_of') ? 'open' : 'close'
+    const ticks = getInteger(e13, crm('P141_assigned')) || 0
     const bracketLength = 2.5; // Length of the horizontal lines for brackets
 
-    const refStartBoundary = useRef<SVGGElement | null>(null);
-    const refEndBoundary = useRef<SVGGElement | null>(null);
+    const handleChange = useCallback((updatedTicks: number) => {
+        const newThing = buildThing(e13)
+        newThing.setInteger(crm('P141_assigned'), updatedTicks)
+        onChange(newThing.build())
+    }, [e13, onChange])
 
-    const [startPos, setStartPos] = useState(begin * pixelsPerTick);
-    const [endPos, setEndPos] = useState(end * pixelsPerTick);
+    const ref = useRef<SVGGElement | null>(null);
+
+    const [position, setPosition] = useState(ticks * pixelsPerTick);
 
     useEffect(() => {
-        setStartPos(begin * pixelsPerTick);
-        setEndPos(end * pixelsPerTick);
-    }, [begin, end, pixelsPerTick])
+        setPosition(ticks * pixelsPerTick);
+    }, [ticks, pixelsPerTick])
 
     useEffect(() => {
-        refStartBoundary.current && d3.select(refStartBoundary.current)
+        ref.current && d3.select(ref.current)
             .call(
                 (d3.drag()
-                    .on("drag", (event: any) => setStartPos(event.x))
-                    .on("end", (event: any) => onChangeBegin(event.x / pixelsPerTick))) as any
+                    .on("drag", (event: any) => setPosition(event.x))
+                    .on("end", (event: any) => handleChange(event.x / pixelsPerTick))) as any
             );
-
-        refEndBoundary.current && d3.select(refEndBoundary.current)
-            .call(
-                (d3.drag()
-                    .on("drag", (event: any) => setEndPos(event.x))
-                    .on("end", (event: any) => onChangeEnd(event.x / pixelsPerTick))) as any
-            );
-    }, [pixelsPerTick, onChangeBegin, onChangeEnd]);
+    }, [pixelsPerTick, handleChange]);
 
     return (
-        <>
-            <g className='startBoundary' ref={refStartBoundary} transform={`translate(${startPos},0)`}>
-                <line // Vertical line for the beginning
-                    x1={0}
-                    y1={(128 - pitch) * noteHeight}
-                    x2={0}
-                    y2={(128 - pitch) * noteHeight + noteHeight}
-                    stroke='black'
-                    strokeWidth={1}
-                />
-
-                <line // Top horizontal line for the beginning bracket
-                    x1={0}
-                    y1={(128 - pitch) * noteHeight}
-                    x2={bracketLength}
-                    y2={(128 - pitch) * noteHeight}
-                    stroke='black'
-                    strokeWidth={1}
-                />
-
-                <line // Bottom horizontal line for the beginning bracket
-                    x1={0}
-                    y1={(128 - pitch) * noteHeight + noteHeight}
-                    x2={bracketLength}
-                    y2={(128 - pitch) * noteHeight + noteHeight}
-                    stroke='black'
-                    strokeWidth={1}
-                />
-            </g>
-
-            <g className='endBoundary' ref={refEndBoundary} transform={`translate(${endPos},0)`}>
-                <line // Vertical line for the end
-                    x1={0}
-                    y1={(128 - pitch) * noteHeight}
-                    x2={0}
-                    y2={(128 - pitch) * noteHeight + noteHeight}
-                    stroke='black'
-                    strokeWidth={1}
-                />
-
-                <line // Top horizontal line for the ending bracket
-                    x1={0}
-                    y1={(128 - pitch) * noteHeight}
-                    x2={-bracketLength}
-                    y2={(128 - pitch) * noteHeight}
-                    stroke='black'
-                    strokeWidth={1}
-                />
-
-                <line // Bottom horizontal line for the ending bracket
-                    x1={0}
-                    y1={(128 - pitch) * noteHeight + noteHeight}
-                    x2={-bracketLength}
-                    y2={(128 - pitch) * noteHeight + noteHeight}
-                    stroke='black'
-                    strokeWidth={1}
-                />
-            </g>
-        </>
+        <g className='boundary' ref={ref} transform={`translate(${position},0)`}>
+            <line // Vertical line for the beginning
+                x1={0}
+                y1={(128 - pitch) * noteHeight}
+                x2={0}
+                y2={(128 - pitch) * noteHeight + noteHeight}
+                stroke='black'
+                strokeWidth={1}
+            />
+            <line // Top horizontal line
+                x1={0}
+                y1={(128 - pitch) * noteHeight}
+                x2={bracket === 'open' ? bracketLength : -bracketLength}
+                y2={(128 - pitch) * noteHeight}
+                stroke='black'
+                strokeWidth={1}
+            />
+            <line // Bottom horizontal line
+                x1={0}
+                y1={(128 - pitch) * noteHeight + noteHeight}
+                x2={bracket === 'open' ? bracketLength : -bracketLength}
+                y2={(128 - pitch) * noteHeight + noteHeight}
+                stroke='black'
+                strokeWidth={1}
+            />
+        </g>
     );
 };

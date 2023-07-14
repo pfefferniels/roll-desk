@@ -5,9 +5,10 @@ interface NoteContextProps {
   pixelsPerTick: number;
   noteHeight: number;
 
-  onSelect: (newSelection: Thing) => void
+  onSelect: (event: Thing) => void
 
   onChange?: (e13: Thing) => void
+  e13s?: Thing[]
 }
 
 export const NoteContext = createContext<NoteContextProps | undefined>(undefined);
@@ -24,8 +25,8 @@ interface NoteProviderProps extends NoteContextProps {
   children: React.ReactNode;
 }
 
-export const NoteProvider: React.FC<NoteProviderProps> = ({ children, pixelsPerTick, noteHeight, onSelect, onChange }) => (
-  <NoteContext.Provider value={{ pixelsPerTick, noteHeight, onSelect, onChange }}>
+export const NoteProvider: React.FC<NoteProviderProps> = ({ children, pixelsPerTick, noteHeight, onSelect, e13s, onChange }) => (
+  <NoteContext.Provider value={{ pixelsPerTick, noteHeight, onSelect, e13s, onChange }}>
     {children}
   </NoteContext.Provider>
 );

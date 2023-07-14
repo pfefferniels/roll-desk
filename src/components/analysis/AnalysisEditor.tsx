@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { useSession } from '@inrupt/solid-ui-react';
 import { Box, Button, Card, CircularProgress, Divider, Drawer, IconButton, Stack } from '@mui/material';
-import { SolidDataset, Thing, asUrl, buildThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
-import { crm } from '../../helpers/namespaces';
-import { RDFS } from '@inrupt/vocab-common-rdf';
+import { SolidDataset, Thing, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
+import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { Edit, LinkOutlined, SaveAltOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
 import { E13Accordion } from './E13Accordion';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
+import AddE13Button from './AddE13Button';
 
 interface AnalysisEditorProps {
   url: string
@@ -30,9 +31,68 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [analysis, setAnalysis] = useState<Thing>()
   const [e13s, setE13s] = useState<Thing[]>()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<Thing>()
 
-  const [newE13, setNewE13] = useState<Thing>()
   const [savingE13, setSavingE13] = useState(false)
+
+  const addE13 = (property: string, defaultValue: number) => {
+    if (!selectedEvent) return
+
+    const e13 = buildThing(createThing())
+      .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
+      .addUrl(crm('P140_assigned_attribute_to'), selectedEvent)
+      .addInteger(crm('P141_assigned'), defaultValue)
+      .addUrl(crm('P177_assigned_property_of_type'), property)
+      .addDate(DCTERMS.created, new Date(Date.now()))
+      .addUrl(crm('P14_carried_out'), session.info.webId || 'unknown')
+      .build()
+
+    saveE13(e13)
+  }
+
+  const addE13Options =
+    [
+      {
+        name: 'Modify Onset Boundaries',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentTick = getInteger(selectedEvent, crm('P82a_begin_of_the_begin'))
+          addE13(crm('P82a_begin_of_the_begin'), currentTick || 0)
+          addE13(crm('P81a_end_of_the_begin'), currentTick || 0)
+        },
+      },
+      {
+        name: 'Modify Offset Boundaries',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentTick = getInteger(selectedEvent, crm('P81b_begin_of_the_end'))
+          addE13(crm('P81b_begin_of_the_end'), currentTick || 0)
+          addE13(crm('P82b_end_of_the_end'), currentTick || 0)
+        }
+      },
+      {
+        name: 'Modify Pitch',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentPitch = getInteger(selectedEvent, midiNs('pitch'))
+          addE13(midiNs('pitch'), currentPitch || 0)
+        }
+      },
+      {
+        name: 'Modify Velocity Boundaries',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentPitch = getInteger(selectedEvent, midiNs('velocity'))
+          addE13(midiNs('min_velocity'), currentPitch || 0)
+          addE13(midiNs('max_velocity'), currentPitch || 0)
+          addE13(midiNs('best_velocity'), currentPitch || 0)
+        }
+      }
+    ]
 
   useEffect(() => {
     const fetchThings = async () => {
@@ -73,15 +133,15 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     if (!dataset) return
     if (!analysis) return
 
-    setAnalysis(
-      buildThing(analysis)
-        .addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
-        .build()
-    )
+    const modifiedAnalysis = buildThing(analysis)
+      .addUrl(crm('P9_consists_of'), asUrl(e13, getSourceUrl(dataset)!))
+      .build()
+
+    setAnalysis(modifiedAnalysis)
     setSavingE13(true)
 
     let updatedDataset = setThing(dataset, e13)
-    updatedDataset = setThing(updatedDataset, analysis)
+    updatedDataset = setThing(updatedDataset, modifiedAnalysis)
 
     setDataset(
       await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
@@ -108,20 +168,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
               <E13Accordion e13={e13} key={`e13_${asUrl(e13)}`} />
             ))}
 
-            <Divider />
-
-            <h4>New E13s</h4>
-            {newE13 && (
-              <Card style={{ marginTop: '1rem' }}>
-                {urlAsLabel(getUrl(newE13, crm('P177_assigned_property_of_type')))} → {getInteger(newE13, crm('P141_assigned'))}
-
-                <div style={{ float: 'right' }}>
-                  <IconButton onClick={() => saveE13(newE13)}>
-                    {savingE13 ? <CircularProgress /> : <SaveAltOutlined />}
-                  </IconButton>
-                </div>
-              </Card>
-            )}
+            {selectedEvent && <AddE13Button options={addE13Options} />}
           </Stack>
         </Box>
       </Grid2>
@@ -139,8 +186,10 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
 
         {midiUrl && (
           <MidiViewer
+            e13s={e13s}
             url={midiUrl || ''}
-            onChange={setNewE13} />
+            onChange={saveE13}
+            onSelect={(event) => setSelectedEvent(event)} />
         )}
       </Grid2>
 
