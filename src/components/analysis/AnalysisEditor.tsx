@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
-import { useSession } from '@inrupt/solid-ui-react';
+import { DatasetContext, DatasetProvider, useSession } from '@inrupt/solid-ui-react';
 import { Box, Button, CircularProgress, IconButton, Stack } from '@mui/material';
 import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
@@ -207,58 +207,60 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const midiUrl = midi && getUrl(midi, RDFS.label)
 
   return (
-    <Grid2 container spacing={1} m={1}>
-      <Grid2 xs={12}>
-        <h3 style={{ margin: 0 }}>
-          Analysis
-          <IconButton onClick={() => setEditDialogOpen(true)}>
-            <Edit />
-          </IconButton>
-          <IconButton onClick={() => window.open(asUrl(analysis))}>
-            <LinkOutlined />
-          </IconButton>
-        </h3>
-      </Grid2>
-      <Grid2 xs={4}>
-        <Box m={1}>
-          {e13s && (
-            <Stack spacing={1}>
-              <h4 style={{ margin: 0 }}>
-                {selectedEvent
-                  ? 'Attribute Assignments (Selection)'
-                  : 'All Attribute Assignments'}
-              </h4>
-              {e13s
-                .filter(e13 => {
-                  if (selectedEvent) {
-                    return getUrl(e13, crm('P140_assigned_attribute_to')) === selectedEvent.url
-                  }
-                  return true
-                })
-                .map(e13 => (
-                  <E13Card e13={e13} key={`e13_${asUrl(e13)}`} />
-                ))}
+    <DatasetContext.Provider value={{ solidDataset: dataset, setDataset }}>
+      <Grid2 container spacing={1} m={1}>
+        <Grid2 xs={12}>
+          <h3 style={{ margin: 0 }}>
+            Analysis
+            <IconButton onClick={() => setEditDialogOpen(true)}>
+              <Edit />
+            </IconButton>
+            <IconButton onClick={() => window.open(asUrl(analysis))}>
+              <LinkOutlined />
+            </IconButton>
+          </h3>
+        </Grid2>
+        <Grid2 xs={4}>
+          <Box m={1}>
+            {e13s && (
+              <Stack spacing={1}>
+                <h4 style={{ margin: 0 }}>
+                  {selectedEvent
+                    ? 'Attribute Assignments (Selection)'
+                    : 'All Attribute Assignments'}
+                </h4>
+                {e13s
+                  .filter(e13 => {
+                    if (selectedEvent) {
+                      return getUrl(e13, crm('P140_assigned_attribute_to')) === selectedEvent.url
+                    }
+                    return true
+                  })
+                  .map(e13 => (
+                    <E13Card e13={e13} key={`e13_${asUrl(e13)}`} />
+                  ))}
 
-            </Stack>
-          )}
+              </Stack>
+            )}
 
-          <Box mt={2}>
-            {selectedEvent && <AddE13Button options={addE13Options} />}
+            <Box mt={2}>
+              {selectedEvent && <AddE13Button options={addE13Options} />}
+            </Box>
           </Box>
-        </Box>
-      </Grid2>
+        </Grid2>
 
-      <Grid2 xs={8}>
-        {midiUrl && (
-          <MidiViewer
-            e13s={e13s}
-            url={midiUrl || ''}
-            onChange={saveE13}
-            onSelect={(event) => setSelectedEvent(event)} />
-        )}
-      </Grid2>
+        <Grid2 xs={8}>
+          {midiUrl && (
+            <MidiViewer
+              e13s={e13s}
+              url={midiUrl || ''}
+              onChange={saveE13}
+              onSelect={(event) => setSelectedEvent(event)} />
+          )}
+        </Grid2>
 
-      <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
-    </Grid2>
+        <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
+      </Grid2>
+    </DatasetContext.Provider>
   );
 };

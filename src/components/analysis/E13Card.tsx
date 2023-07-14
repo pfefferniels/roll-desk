@@ -2,11 +2,13 @@ import { Card, CardContent, CardActions, Typography, IconButton, CardHeader } fr
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkOutlined from "@mui/icons-material/LinkOutlined";
-import { Thing, asUrl, getInteger, getSolidDataset, getStringNoLocale, getThing, getUrl, isThing } from "@inrupt/solid-client";
+import { SolidDataset, Thing, asUrl, getInteger, getSolidDataset, getStringNoLocale, getThing, getUrl, isThing } from "@inrupt/solid-client";
 import { useSession } from "@inrupt/solid-ui-react";
 import { useState, useEffect } from "react";
 import { crm, mer } from "../../helpers/namespaces";
 import { urlAsLabel } from "../../helpers/urlAsLabel";
+import { CommentOutlined } from "@mui/icons-material";
+import { CommentDialog } from "./CommentDialog";
 
 interface E13CardProps {
     e13: Thing;
@@ -15,11 +17,10 @@ interface E13CardProps {
 export const E13Card = ({ e13 }: E13CardProps) => {
     const { session } = useSession()
 
+    const [commentDialogOpen, setCommentDialogOpen] = useState(false)
     const [assigned, setAssigned] = useState<number | Thing>()
 
     const note = getStringNoLocale(e13, crm('P3_has_note')) || 'No note available.';
-
-    const [editDialogOpen, setEditDialogOpen] = useState(false)
 
     const remove = async () => {
 
@@ -49,30 +50,37 @@ export const E13Card = ({ e13 }: E13CardProps) => {
         : `${assigned}`
 
     return (
-        <Card sx={{ margin: '0' }}>
-            <CardContent style={{ float: 'left' }}>
-                <Typography>
-                    {urlAsLabel(getUrl(e13, crm('P177_assigned_property_of_type')))} → {assignedLabel}
-                </Typography>
-            </CardContent>
+        <>
+            <CommentDialog
+                thing={e13}
+                open={commentDialogOpen}
+                onClose={() => setCommentDialogOpen(false)} />
 
-            <CardActions style={{ float: 'right' }}>
-                <IconButton
-                    onClick={() => window.open(asUrl(e13))}
-                    style={{ padding: '2px' }}>
-                    <LinkOutlined />
-                </IconButton>
-                <IconButton
-                    onClick={() => setEditDialogOpen(true)}
-                    style={{ padding: '2px' }}>
-                    <EditIcon />
-                </IconButton>
-                <IconButton
-                    onClick={() => remove()}
-                    style={{ padding: '2px' }}>
-                    <DeleteIcon />
-                </IconButton>
-            </CardActions>
-        </Card>
+            <Card sx={{ margin: '0' }}>
+                <CardContent style={{ float: 'left' }}>
+                    <Typography>
+                        {urlAsLabel(getUrl(e13, crm('P177_assigned_property_of_type')))} → {assignedLabel}
+                    </Typography>
+                </CardContent>
+
+                <CardActions style={{ float: 'right' }}>
+                    <IconButton
+                        onClick={() => window.open(asUrl(e13))}
+                        style={{ padding: '2px' }}>
+                        <LinkOutlined />
+                    </IconButton>
+                    <IconButton
+                        onClick={() => setCommentDialogOpen(true)}
+                        style={{ padding: '2px' }}>
+                        <CommentOutlined />
+                    </IconButton>
+                    <IconButton
+                        onClick={() => remove()}
+                        style={{ padding: '2px' }}>
+                        <DeleteIcon />
+                    </IconButton>
+                </CardActions>
+            </Card>
+        </>
     );
 }
