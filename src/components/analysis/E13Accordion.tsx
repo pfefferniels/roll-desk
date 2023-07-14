@@ -19,7 +19,9 @@ export const E13Accordion = ({ e13 }: E13CardProps) => {
                 aria-controls="panel1a-content"
                 id="panel1a-header"
             >
-                <IconButton style={{ padding: 0, paddingRight: '0.5rem' }}>
+                <IconButton
+                    onClick={() => window.open(asUrl(e13))}
+                    style={{ padding: 0, paddingRight: '0.5rem' }}>
                     <LinkOutlined />
                 </IconButton>
 

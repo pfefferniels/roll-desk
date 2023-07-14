@@ -1,7 +1,7 @@
-import { Thing, asUrl, buildThing, createThing, getSourceUrl, getStringNoLocale, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, asUrl, buildThing, createThing, getDate, getSourceUrl, getStringNoLocale, getUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
 import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
-import { RDF } from "@inrupt/vocab-common-rdf"
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material"
+import { DCTERMS, RDF } from "@inrupt/vocab-common-rdf"
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material"
 import { useContext, useState } from "react"
 import { crmdig, crm, mer, frbroo } from "../../helpers/namespaces"
 
@@ -39,6 +39,8 @@ export const AnalysisDialog = ({ analysis, target, open, onClose }: AnalysisDial
             .addUrl(RDF.type, frbroo('F23_Expression_Fragment'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(RDF.type, crm('E7_Activity'))
+            .addUrl(crm('P14_carried_out_by'), session.info.webId || 'http://example.org')
+            .addDate(DCTERMS.created, new Date(Date.now()))
             .addUrl(crm('P2_has_type'), mer('Analysis'))
 
         if (note) {
@@ -61,19 +63,38 @@ export const AnalysisDialog = ({ analysis, target, open, onClose }: AnalysisDial
         return null
     }
 
+    const carriedOutBy = analysis
+        ? getUrl(analysis, crm('P14_carried_out_by'))
+        : session?.info.webId
+
+    const created = analysis
+        ? getDate(analysis, DCTERMS.created)
+        : new Date(Date.now())
+
     return (
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>
                 Create/Edit Interpretation
             </DialogTitle>
             <DialogContent>
-                <Box mb={1}>
-                    <TextField
-                        fullWidth
-                        multiline
-                        value={note}
-                        onChange={e => setNote(e.target.value)}
-                        placeholder="Notes on this interpretation" />
+                <Box mb={1} p={1}>
+                    <Stack spacing={1}>
+                        <TextField
+                            label='carried out by'
+                            disabled
+                            value={carriedOutBy} />
+                        <TextField
+                            label='created'
+                            disabled
+                            value={created?.toISOString()} />
+                        <TextField
+                            fullWidth
+                            multiline
+                            label='Notes'
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            placeholder="Notes on this interpretation" />
+                    </Stack>
                 </Box>
             </DialogContent>
             <DialogActions>

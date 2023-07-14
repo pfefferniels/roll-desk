@@ -1,16 +1,53 @@
 import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { useSession } from '@inrupt/solid-ui-react';
-import { Box, Button, Card, CircularProgress, Divider, Drawer, IconButton, Stack } from '@mui/material';
-import { SolidDataset, Thing, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { Box, Button, CircularProgress, IconButton, Stack } from '@mui/material';
+import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { urlAsLabel } from '../../helpers/urlAsLabel';
-import { Edit, LinkOutlined, SaveAltOutlined } from '@mui/icons-material';
+import { Edit, LinkOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
 import { E13Accordion } from './E13Accordion';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import AddE13Button from './AddE13Button';
+
+const buildE13 = (
+  property: string,
+  assignTo: Thing,
+  defaultValue: number | Thing,
+  carriedOutBy?: UrlString) => {
+  const thing = buildThing(createThing())
+    .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
+    .addUrl(crm('P140_assigned_attribute_to'), assignTo)
+    .addUrl(crm('P177_assigned_property_of_type'), property)
+    .addDate(DCTERMS.created, new Date(Date.now()))
+
+  if (carriedOutBy) {
+    thing.addUrl(crm('P14_carried_out'), carriedOutBy)
+  }
+
+  if (typeof defaultValue === 'number') {
+    thing.addInteger(crm('P141_assigned'), defaultValue)
+  }
+  else if (isThing(defaultValue)) {
+    thing.addUrl(crm('P141_assigned'), defaultValue)
+  }
+
+  return thing.build()
+}
+
+const buildRange = (min: number, max: number, mean?: number) => {
+  const thing = buildThing(createThing())
+    .addUrl(RDF.type, mer('Range'))
+    .addInteger(mer('min'), min)
+    .addInteger(mer('max'), max)
+
+  if (mean) {
+    thing.addInteger(mer('mean'), mean)
+  }
+
+  return thing.build()
+}
 
 interface AnalysisEditorProps {
   url: string
@@ -34,17 +71,6 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [selectedEvent, setSelectedEvent] = useState<Thing>()
 
   const [savingE13, setSavingE13] = useState(false)
-
-  const buildE13 = (property: string, assignTo: Thing, defaultValue: number) => {
-    return buildThing(createThing())
-      .addUrl(RDF.type, crm('E13_Attribute_Assignment'))
-      .addUrl(crm('P140_assigned_attribute_to'), assignTo)
-      .addInteger(crm('P141_assigned'), defaultValue)
-      .addUrl(crm('P177_assigned_property_of_type'), property)
-      .addDate(DCTERMS.created, new Date(Date.now()))
-      .addUrl(crm('P14_carried_out'), session.info.webId || 'unknown')
-      .build()
-  }
 
   const addE13Options =
     [
@@ -88,11 +114,15 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
         handleClick: () => {
           if (!selectedEvent) return
 
-          const currentPitch = getInteger(selectedEvent, midiNs('velocity'))
+          const currentVelocity = getInteger(selectedEvent, midiNs('velocity')) || 0
+          const range = buildRange(
+            currentVelocity,
+            currentVelocity,
+            currentVelocity)
+          saveRange(range)
+
           saveE13([
-            buildE13(midiNs('min_velocity'), selectedEvent, currentPitch || 0),
-            buildE13(midiNs('max_velocity'), selectedEvent, currentPitch || 0),
-            buildE13(midiNs('best_velocity'), selectedEvent, currentPitch || 0)
+            buildE13(midiNs('velocity'), selectedEvent, range, session.info.webId)
           ])
         }
       }
@@ -155,6 +185,16 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     )
 
     setSavingE13(false)
+  }
+
+  const saveRange = async (range: Thing) => {
+    if (!dataset) return
+    if (!analysis) return
+
+    const updatedDataset = setThing(dataset, range)
+    setDataset(
+      await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
+    )
   }
 
   const recording = getUrl(analysis, crm('P67_refers_to'))

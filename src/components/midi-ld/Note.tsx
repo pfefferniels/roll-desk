@@ -1,9 +1,7 @@
-import { Thing, asUrl, buildThing, createThing, getInteger, getUrl, getUrlAll, thingAsMarkdown } from '@inrupt/solid-client';
+import { Thing, asUrl, getInteger, getUrl } from '@inrupt/solid-client';
 import { crm, midi } from '../../helpers/namespaces';
 import { Boundary } from './Boundary';
 import { useNoteContext } from '../../providers/NoteContext';
-import { DCTERMS, RDF } from '@inrupt/vocab-common-rdf';
-import { useSession } from '@inrupt/solid-ui-react';
 
 interface NoteProps {
   note: Thing;
@@ -11,7 +9,6 @@ interface NoteProps {
 }
 
 export const Note = ({ note, color }: NoteProps) => {
-  const { session } = useSession()
   const { pixelsPerTick, noteHeight, onSelect, onChange, e13s } = useNoteContext()
 
   const beginOfBegin = getInteger(note, crm('P82a_begin_of_the_begin')) || 0

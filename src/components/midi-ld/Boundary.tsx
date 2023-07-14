@@ -3,6 +3,7 @@ import { useNoteContext } from '../../providers/NoteContext';
 import { Thing, buildThing, getInteger, getUrl, setUrl } from '@inrupt/solid-client';
 import { crm } from '../../helpers/namespaces';
 import * as d3 from 'd3'
+import { DCTERMS } from '@inrupt/vocab-common-rdf';
 
 interface BoundaryProps {
     e13: Thing
@@ -20,7 +21,8 @@ export const Boundary = ({ e13, pitch, onChange }: BoundaryProps) => {
 
     const handleChange = useCallback((updatedTicks: number) => {
         const newThing = buildThing(e13)
-        newThing.setInteger(crm('P141_assigned'), updatedTicks)
+        newThing.setInteger(crm('P141_assigned'), Math.round(updatedTicks))
+        newThing.setDate(DCTERMS.modified, new Date(Date.now()))
         onChange(newThing.build())
     }, [e13, onChange])
 
