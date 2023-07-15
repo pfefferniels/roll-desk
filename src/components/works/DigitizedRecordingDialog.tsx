@@ -4,7 +4,7 @@ import { RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
 import { useContext, useState } from "react";
-import { crm, crmdig } from "../../helpers/namespaces";
+import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces";
 import { midi2ld } from "../../lib/midi/midi2ld";
 import { MidiFile, read } from "midifile-ts";
 import { v4 } from "uuid";
@@ -60,8 +60,9 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
         }
 
         const recording = buildThing(thing || createThing())
-            .addUrl(RDF.type, crm('F26_Recording'))
+            .addUrl(RDF.type, frbroo('F26_Recording'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
+            .addUrl(crm('P2_has_type'), mer('DigitalRecording'))
 
         if (midiFile) {
             const midi = await parseMidiInput(midiFile)

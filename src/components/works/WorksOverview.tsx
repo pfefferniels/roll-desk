@@ -3,10 +3,10 @@ import WorksGraph from './WorksGraph';
 import { SolidDataset, getSolidDataset } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import RecordingWorkDialog from './RecordingWorkDialog';
-import ScoreDialog from './ScoreDialog';
 import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material';
 import { MusicNote, RecordVoiceOver } from '@mui/icons-material';
 import { datasetUrl } from '../../helpers/datasetUrl';
+import { ScoreWorkDialog } from './ScoreWorkDialog';
 
 const WorksOverview: React.FC = () => {
   const { session } = useSession()
@@ -64,7 +64,7 @@ const WorksOverview: React.FC = () => {
 
       <WorksGraph />
 
-      <ScoreDialog
+      <ScoreWorkDialog
         open={openScoreDialog}
         onClose={() => setOpenScoreDialog(false)} />
 

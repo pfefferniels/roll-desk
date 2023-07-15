@@ -12,15 +12,15 @@ import {
 import { getSourceUrl, buildThing, createThing, setThing, saveSolidDatasetAt, Thing, getStringNoLocale, getUrl, setUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { crm, frbroo, mer } from '../../helpers/namespaces';
+import { crm, mer } from '../../helpers/namespaces';
 
-interface RecordingWorkDialogProps {
+interface ScoreWorkDialogProps {
     thing?: Thing;
     open: boolean;
     onClose: () => void;
 }
 
-export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialogProps) => {
+export const ScoreWorkDialog = ({ thing, open, onClose }: ScoreWorkDialogProps) => {
     const [label, setLabel] = useState((thing && getStringNoLocale(thing, RDFS.label)) || '');
     const [note, setNote] = useState((thing && getUrl(thing, crm('P3_has_note'))) || '')
     const [seeAlso, setSeeAlso] = useState((thing && getUrl(thing, RDFS.seeAlso)) || '');
@@ -45,20 +45,20 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
             return;
         }
 
-        const recordingWork = buildThing(thing || createThing())
-            .setUrl(RDF.type, frbroo('F21_Recording_Work'))
-            .setUrl(crm('P2_has_type'), mer('RecordingWork'))
+        const scoreWork = buildThing(thing || createThing())
+            .setUrl(RDF.type, crm('F1_Work'))
+            .setUrl(crm('P2_has_type'), mer('ScoreWork'))
             .setStringNoLocale(RDFS.label, label)
 
         if (seeAlso !== '') {
-            recordingWork.setStringNoLocale(RDFS.seeAlso, seeAlso)
+            scoreWork.setStringNoLocale(RDFS.seeAlso, seeAlso)
         }
 
         if (note !== '') {
-            recordingWork.setStringNoLocale(crm('P3_has_note'), note)
+            scoreWork.setStringNoLocale(crm('P3_has_note'), note)
         }
 
-        const updatedDataset = setThing(worksDataset, recordingWork.build())
+        const updatedDataset = setThing(worksDataset, scoreWork.build())
 
         setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }));
         setLoading(false);
@@ -68,9 +68,9 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Add Recording Work</DialogTitle>
+            <DialogTitle>Add Score Work</DialogTitle>
             <DialogContent>
-                <DialogContentText>Enter the details of the performance.</DialogContentText>
+                <DialogContentText>Enter the details of the score.</DialogContentText>
                 <TextField
                     autoFocus
                     margin="dense"
@@ -98,11 +98,10 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button onClick={saveToPod} disabled={loading}>
-                    {loading ? <CircularProgress size={24} /> : 'Add Performance'}
+                    {loading ? <CircularProgress size={24} /> : 'Add Score'}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 };
 
-export default RecordingWorkDialog;

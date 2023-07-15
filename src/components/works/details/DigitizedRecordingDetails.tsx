@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Thing, getUrl } from '@inrupt/solid-client';
-import { Typography, Box, Button, IconButton, Dialog } from '@mui/material';
+import { Thing, asUrl, getUrl } from '@inrupt/solid-client';
+import { Typography, Box, Button, IconButton } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { RDFS } from '@inrupt/vocab-common-rdf';
@@ -64,7 +64,7 @@ const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ t
           variant="contained"
           color="primary"
           startIcon={<OpenInNewIcon />}
-          onClick={() => navigate(new URL(getUrl(thing, RDFS.label) || '').pathname)}
+          onClick={() => navigate(`/midi?url=${encodeURIComponent(getUrl(thing, RDFS.label) || '')}`)}
         >
           View
         </Button>

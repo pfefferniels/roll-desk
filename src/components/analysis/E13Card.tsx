@@ -1,12 +1,11 @@
 import { Card, CardContent, CardActions, Typography, IconButton } from "@mui/material";
-import DeleteIcon from '@mui/icons-material/Delete';
 import LinkOutlined from "@mui/icons-material/LinkOutlined";
 import { Thing, asUrl, getInteger, getSolidDataset, getStringNoLocale, getThing, getUrl, isThing } from "@inrupt/solid-client";
 import { useSession } from "@inrupt/solid-ui-react";
 import { useState, useEffect } from "react";
 import { crm, mer } from "../../helpers/namespaces";
 import { urlAsLabel } from "../../helpers/urlAsLabel";
-import { CommentOutlined } from "@mui/icons-material";
+import { CommentOutlined, DeleteOutlined } from "@mui/icons-material";
 import { CommentDialog } from "./CommentDialog";
 
 interface E13CardProps {
@@ -76,7 +75,7 @@ export const E13Card = ({ e13 }: E13CardProps) => {
                     <IconButton
                         onClick={() => remove()}
                         style={{ padding: '2px' }}>
-                        <DeleteIcon />
+                        <DeleteOutlined />
                     </IconButton>
                 </CardActions>
             </Card>
