@@ -3,6 +3,8 @@ import { Thing, getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { crm, midi } from "../../helpers/namespaces"
 import { NoteDetails } from "./NoteDetails"
+import { PedalDetails } from "./PedalDetails"
+import { typeOf } from "../../helpers/typeOfEvent"
 
 interface DetailsProps {
     thing: Thing
@@ -15,8 +17,11 @@ export const Details = ({ thing, e13s, onChange }: DetailsProps) => {
         if (!thing) {
             return <span>nothing selected</span>
         }
-        else if (getUrlAll(thing, crm('P2_has_type')).includes(midi('NoteEvent'))) {
+        else if (typeOf(thing) === 'note') {
             return <NoteDetails onChange={onChange} thing={thing} e13s={e13s} />
+        }
+        else if (typeOf(thing) === 'pedal') {
+            return <PedalDetails onChange={onChange} thing={thing} e13s={e13s} />
         }
         else {
             return thingAsMarkdown(thing)

@@ -10,6 +10,7 @@ import { AnalysisDialog } from '../works/AnalysisDialog';
 import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import AddE13Button from './AddE13Button';
+import { typeOf } from '../../helpers/typeOfEvent';
 
 const buildE13 = (
   property: string,
@@ -73,60 +74,75 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [savingE13, setSavingE13] = useState(false)
 
   const addE13Options =
-    [
-      {
-        name: 'Assign Onset Boundaries',
-        handleClick: () => {
-          if (!selectedEvent) return
+    (selectedEvent && typeOf(selectedEvent) === 'note')
+      ? [
+        {
+          name: 'Assign Onset Boundaries',
+          handleClick: () => {
+            if (!selectedEvent) return
 
-          const currentTick = getInteger(selectedEvent, crm('P82a_begin_of_the_begin'))
-          saveE13([
-            buildE13(crm('P82a_begin_of_the_begin'), selectedEvent, currentTick || 0),
-            buildE13(crm('P81a_end_of_the_begin'), selectedEvent, currentTick || 0)
-          ])
+            const currentTick = getInteger(selectedEvent, crm('P82a_begin_of_the_begin'))
+            saveE13([
+              buildE13(crm('P82a_begin_of_the_begin'), selectedEvent, currentTick || 0),
+              buildE13(crm('P81a_end_of_the_begin'), selectedEvent, currentTick || 0)
+            ])
+          },
         },
-      },
-      {
-        name: 'Assign Offset Boundaries',
-        handleClick: () => {
-          if (!selectedEvent) return
+        {
+          name: 'Assign Offset Boundaries',
+          handleClick: () => {
+            if (!selectedEvent) return
 
-          const currentTick = getInteger(selectedEvent, crm('P81b_begin_of_the_end'))
-          saveE13([
-            buildE13(crm('P81b_begin_of_the_end'), selectedEvent, currentTick || 0),
-            buildE13(crm('P82b_end_of_the_end'), selectedEvent, currentTick || 0)
-          ])
+            const currentTick = getInteger(selectedEvent, crm('P81b_begin_of_the_end'))
+            saveE13([
+              buildE13(crm('P81b_begin_of_the_end'), selectedEvent, currentTick || 0),
+              buildE13(crm('P82b_end_of_the_end'), selectedEvent, currentTick || 0)
+            ])
+          }
+        },
+        {
+          name: 'Assign Pitch',
+          handleClick: () => {
+            if (!selectedEvent) return
+
+            const currentPitch = getInteger(selectedEvent, midiNs('pitch'))
+            saveE13(
+              buildE13(midiNs('pitch'), selectedEvent, currentPitch || 0)
+            )
+          }
+        },
+        {
+          name: 'Assign Velocity Boundaries',
+          handleClick: () => {
+            if (!selectedEvent) return
+
+            const currentVelocity = getInteger(selectedEvent, midiNs('velocity')) || 0
+            const range = buildRange(
+              currentVelocity,
+              currentVelocity,
+              currentVelocity)
+            saveRange(range)
+
+            saveE13([
+              buildE13(midiNs('velocity'), selectedEvent, range, session.info.webId)
+            ])
+          }
         }
-      },
-      {
-        name: 'Assign Pitch',
-        handleClick: () => {
-          if (!selectedEvent) return
+      ]
+      : [
+        {
+          name: 'Assign Pedal Position',
+          handleClick: () => {
+            if (!selectedEvent) return
 
-          const currentPitch = getInteger(selectedEvent, midiNs('pitch'))
-          saveE13(
-            buildE13(midiNs('pitch'), selectedEvent, currentPitch || 0)
-          )
+            const currentValue = getInteger(selectedEvent, midiNs('value')) || 0
+
+            saveE13([
+              buildE13(midiNs('value'), selectedEvent, currentValue, session.info.webId)
+            ])
+          }
         }
-      },
-      {
-        name: 'Assign Velocity Boundaries',
-        handleClick: () => {
-          if (!selectedEvent) return
-
-          const currentVelocity = getInteger(selectedEvent, midiNs('velocity')) || 0
-          const range = buildRange(
-            currentVelocity,
-            currentVelocity,
-            currentVelocity)
-          saveRange(range)
-
-          saveE13([
-            buildE13(midiNs('velocity'), selectedEvent, range, session.info.webId)
-          ])
-        }
-      }
-    ]
+      ]
 
   useEffect(() => {
     const fetchThings = async () => {
@@ -218,7 +234,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
             <IconButton onClick={() => window.open(asUrl(analysis))}>
               <LinkOutlined />
             </IconButton>
-            <IconButton onClick={() => {}}>
+            <IconButton onClick={() => { }}>
               <DownloadOutlined />
             </IconButton>
           </h3>

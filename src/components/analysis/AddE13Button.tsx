@@ -16,7 +16,7 @@ interface AddE13ButtonProps {
 export default function AddE13Button({ options }: AddE13ButtonProps) {
     const [open, setOpen] = React.useState(false);
     const anchorRef = React.useRef<HTMLDivElement>(null);
-    const [selectedIndex, setSelectedIndex] = React.useState(1);
+    const [selectedIndex, setSelectedIndex] = React.useState(0);
 
     const handleClick = options[selectedIndex].handleClick
 

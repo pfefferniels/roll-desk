@@ -21,13 +21,13 @@ export const Pedal = ({ pedal }: PedalProps) => {
         && getUrl(e13, crm('P177_assigned_property_of_type')) || midi('value'))
 
     return (
-        <>
+        <g onClick={handleClick}>
             <line
                 x1={tick * pixelsPerTick}
                 x2={tick * pixelsPerTick}
                 y1={10 * noteHeight}
                 y2={120 * noteHeight}
-                strokeWidth={1}
+                strokeWidth={selectedEvent === pedal ? 2 : 1}
                 stroke='black'
             />
             <text
@@ -35,11 +35,10 @@ export const Pedal = ({ pedal }: PedalProps) => {
                 x={tick * pixelsPerTick}
                 y={10 * noteHeight}
                 fill='black'
-                fillOpacity={selectedEvent === pedal ? 1 : 0.5}
-                onClick={handleClick}>
+                fillOpacity={selectedEvent === pedal ? 1 : 0.2}>
                 {velocity === 0 ? '← off' : 'on →'}
             </text>
-        </>
+        </g>
     );
 };
 

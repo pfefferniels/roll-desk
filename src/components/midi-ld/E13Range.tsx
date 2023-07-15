@@ -46,7 +46,7 @@ export const E13Range = ({ e13, onChange }: E13RangeProps) => {
     }, [rangeUrl, session.fetch])
 
     const min = (range && getInteger(range, mer('min'))) || 0
-    const max = range && getInteger(range, mer('max')) || 0
+    const max = (range && getInteger(range, mer('max'))) || 0
     const mean = (range && getInteger(range, mer('mean'))) || 0
 
     return (

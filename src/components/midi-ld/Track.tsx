@@ -5,6 +5,7 @@ import { crm, midi } from "../../helpers/namespaces";
 import { Note } from "./Note";
 import { RDF } from "@inrupt/vocab-common-rdf";
 import { Pedal } from "./Pedal";
+import { typeOf } from "../../helpers/typeOfEvent";
 
 interface TrackProps {
   track: Thing,
@@ -24,12 +25,8 @@ export const Track: React.FC<TrackProps> = ({ track, color }) => {
         return acc
       }, [] as Thing[]);
 
-  const notes = events.filter(event =>
-    getUrl(event, crm('P2_has_type')) === midi('NoteEvent'))
-
-  const pedals = events.filter(event =>
-    getUrlAll(event, RDF.type).includes(midi('ControllerEvent')) &&
-    getInteger(event, midi('controllerType')) === 64)
+  const notes = events.filter(event => typeOf(event) === 'note')
+  const pedals = events.filter(event => typeOf(event) === 'pedal')
   
   return (
     <>
