@@ -5,7 +5,7 @@ import { Box, CircularProgress, IconButton, Stack } from '@mui/material';
 import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { Edit, LinkOutlined } from '@mui/icons-material';
+import { DownloadOutlined, EditOutlined, LinkOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
 import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
@@ -213,10 +213,13 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           <h3 style={{ margin: 0 }}>
             Analysis
             <IconButton onClick={() => setEditDialogOpen(true)}>
-              <Edit />
+              <EditOutlined />
             </IconButton>
             <IconButton onClick={() => window.open(asUrl(analysis))}>
               <LinkOutlined />
+            </IconButton>
+            <IconButton onClick={() => {}}>
+              <DownloadOutlined />
             </IconButton>
           </h3>
         </Grid2>
