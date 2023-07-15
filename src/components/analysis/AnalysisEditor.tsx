@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
-import { DatasetContext, DatasetProvider, useSession } from '@inrupt/solid-ui-react';
-import { Box, Button, CircularProgress, IconButton, Stack } from '@mui/material';
+import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
+import { Box, CircularProgress, IconButton, Stack } from '@mui/material';
 import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';

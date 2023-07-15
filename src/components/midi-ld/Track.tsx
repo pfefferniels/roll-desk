@@ -1,8 +1,10 @@
-import { Thing, getUrlAll, getThing, getUrl } from "@inrupt/solid-client";
+import { Thing, getUrlAll, getThing, getUrl, getInteger } from "@inrupt/solid-client";
 import { DatasetContext } from "@inrupt/solid-ui-react";
 import { useContext } from "react";
 import { crm, midi } from "../../helpers/namespaces";
 import { Note } from "./Note";
+import { RDF } from "@inrupt/vocab-common-rdf";
+import { Pedal } from "./Pedal";
 
 interface TrackProps {
   track: Thing,
@@ -22,21 +24,32 @@ export const Track: React.FC<TrackProps> = ({ track, color }) => {
         return acc
       }, [] as Thing[]);
 
+  const notes = events.filter(event =>
+    getUrl(event, crm('P2_has_type')) === midi('NoteEvent'))
 
+  const pedals = events.filter(event =>
+    getUrlAll(event, RDF.type).includes(midi('ControllerEvent')) &&
+    getInteger(event, midi('controllerType')) === 64)
+  
   return (
-    <g>
-      {events.map((event, index) => {
-        if (getUrl(event, crm('P2_has_type')) === midi('NoteEvent')) {
-          return (
-            <Note
-              key={index}
-              note={event}
-              color={color}
-            />
-          )
-        }
-      })}
-    </g>
+    <>
+      <g>
+        {notes.map((note, index) => (
+          <Note
+            key={`note_${index}`}
+            note={note}
+            color={color}
+          />
+        ))}
+      </g>
+      <g>
+        {pedals.map((pedal, index) => (
+          <Pedal
+            key={`pedal_${index}`}
+            pedal={pedal} />
+        ))}
+      </g>
+    </>
   )
 }
 

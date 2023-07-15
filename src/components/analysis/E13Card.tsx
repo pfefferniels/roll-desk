@@ -1,8 +1,7 @@
-import { Card, CardContent, CardActions, Typography, IconButton, CardHeader } from "@mui/material";
+import { Card, CardContent, CardActions, Typography, IconButton } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import LinkOutlined from "@mui/icons-material/LinkOutlined";
-import { SolidDataset, Thing, asUrl, getInteger, getSolidDataset, getStringNoLocale, getThing, getUrl, isThing } from "@inrupt/solid-client";
+import { Thing, asUrl, getInteger, getSolidDataset, getStringNoLocale, getThing, getUrl, isThing } from "@inrupt/solid-client";
 import { useSession } from "@inrupt/solid-ui-react";
 import { useState, useEffect } from "react";
 import { crm, mer } from "../../helpers/namespaces";
