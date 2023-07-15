@@ -51,7 +51,7 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
 
         if (pr.events.length === 0 || hmm.events.length === 0) return
 
-        const follower = new ScoreFollower(hmm, 1)
+        const follower = new ScoreFollower(hmm, 4)
         const matches = follower.getMatchResult(pr)
 
         const errorDetector = new ErrorDetector(hmm, matches)

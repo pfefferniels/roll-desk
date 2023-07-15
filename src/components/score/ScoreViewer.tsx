@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { loadVerovio } from '../../lib/globals';
 import { useSession } from '@inrupt/solid-ui-react';
-import { getFile, getUrl } from '@inrupt/solid-client';
-import { RDFS } from '@inrupt/vocab-common-rdf';
+import { getFile } from '@inrupt/solid-client';
+import { LinkOutlined } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 
 interface ScoreViewerProps {
   url: string
+  landscape?: boolean
 }
 
-export const ScoreViewer = ({ url }: ScoreViewerProps) => {
+export const ScoreViewer = ({ url, landscape }: ScoreViewerProps) => {
   const { session } = useSession()
   const [mei, setMei] = useState<string>()
   const [vrvToolkit, setVrvToolkit] = useState<any>()
@@ -33,13 +35,31 @@ export const ScoreViewer = ({ url }: ScoreViewerProps) => {
   useEffect(() => {
     if (!vrvToolkit || !mei) return
 
+    if (landscape) {
+      vrvToolkit.setOptions({
+        pageWidth: 60000,
+        adjustPageHeight: true,
+        svgHtml5: true,
+        svgViewBox: true,
+        adjustPageWidth: true
+      })
+    }
     vrvToolkit.loadData(mei)
     setSvg(vrvToolkit.renderToSVG(1))
-  }, [svg, vrvToolkit])
+  }, [mei, vrvToolkit])
 
   return (
     <div>
-      {svg && <div dangerouslySetInnerHTML={{ __html: svg }} />}
+      <div style={{ marginLeft: '1rem' }}>
+        <h4 style={{ margin: 0 }}>
+          Score Viewer
+          <IconButton onClick={() => window.open(url)}>
+            <LinkOutlined />
+          </IconButton>
+        </h4>
+      </div>
+
+      {svg && <div className='verovioCanvas' dangerouslySetInnerHTML={{ __html: svg }} />}
     </div>
   );
 };

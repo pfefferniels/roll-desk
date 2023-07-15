@@ -1,13 +1,18 @@
-import { SolidDataset, Thing, UrlString, asUrl, getFile, getSolidDataset, getThing, getUrl } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, asUrl, getSolidDataset, getThing, getUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import React, { useEffect, useState } from 'react';
 import { mer } from '../../helpers/namespaces';
-import { IconButton } from '@mui/material';
-import { LinkOutlined } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
+import { LinkOutlined, PlayArrowOutlined } from '@mui/icons-material';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
+import './AlignmentEditor.css'
+import { AlignedPerformance } from '../../lib/AlignedPerformance';
+import { Mei } from '../../lib/mei';
+import { loadVerovio } from '../../lib/globals';
+import { RawPerformance } from '../../lib/midi';
 
 interface AlignmentEditorProps {
   url: string
@@ -26,6 +31,20 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const [alignment, setAlignment] = useState<Thing>()
   const [meiUrl, setMeiUrl] = useState<UrlString>()
   const [midiUrl, setMidiUrl] = useState<UrlString>()
+
+  const [renderedMei, setRenderedMei] = useState<Mei>()
+  const [renderedMidi, setRenderedMidi] = useState<RawPerformance>()
+
+  const performAlignment = () => {
+    if (!renderedMei || !renderedMidi) return
+
+    const perf = new AlignedPerformance(
+      renderedMei,
+      renderedMidi
+    )
+    perf.performAlignment()
+    console.log(perf.getSemanticPairs())
+  }
 
   useEffect(() => {
     const fetchThings = async () => {
@@ -75,10 +94,19 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
             <IconButton onClick={() => window.open(asUrl(alignment))}>
               <LinkOutlined />
             </IconButton>
+            <Tooltip title='Align Score to MIDI'>
+              <IconButton onClick={performAlignment}>
+                <PlayArrowOutlined />
+              </IconButton>
+            </Tooltip>
           </h4>
         </Grid2>
         <Grid2 xs={12}>
-          {meiUrl && <ScoreViewer url={meiUrl} />}
+          {meiUrl && (
+            <div>
+              <ScoreViewer url={meiUrl} landscape />
+            </div>
+          )}
         </Grid2>
         <Grid2 xs={12}>
           {midiUrl && <MidiViewer url={midiUrl} />}

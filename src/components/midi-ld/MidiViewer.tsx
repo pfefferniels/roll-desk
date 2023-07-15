@@ -44,7 +44,7 @@ const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
     <DatasetProvider dataset={dataset} thing={piece}>
       <div style={{ marginLeft: '1rem' }}>
         <h4 style={{ margin: 0 }}>
-          Roll Editor
+          Roll Viewer
           <IconButton onClick={() => window.open(asUrl(piece))}>
             <LinkOutlined />
           </IconButton>
