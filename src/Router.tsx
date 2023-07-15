@@ -4,6 +4,7 @@ import WorksOverview from './components/works/WorksOverview';
 import MidiViewer from './components/midi-ld/MidiViewer';
 import { AnalysisEditor } from './components/analysis/AnalysisEditor';
 import { datasetUrl } from './helpers/datasetUrl';
+import { AlignmentEditor } from './components/alignment/AlignmentEditor';
 
 const ErrorBoundary = () => {
   return (
@@ -39,6 +40,19 @@ const AnalysisRoute = () => {
   return <AnalysisEditor url={url} />
 }
 
+const AlignmentRoute = () => {
+  const { alignmentId } = useParams()
+  const [search] = useSearchParams()
+
+  const url =
+    alignmentId
+      ? `${datasetUrl}/works.ttl#${alignmentId}`
+      : search.get('url')
+  if (!url) throw new Error('no proper URL passed')
+
+  return <AlignmentEditor url={url} />
+}
+
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -52,6 +66,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/analysis/:analysisId?"
           element={<AnalysisRoute />}
+          errorElement={<ErrorBoundary />}
+        />
+        <Route
+          path="/alignment/:alignmentId?"
+          element={<AlignmentRoute />}
           errorElement={<ErrorBoundary />}
         />
       </Routes>

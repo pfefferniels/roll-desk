@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { crm } from '../../helpers/namespaces';
+import { crm, mer } from '../../helpers/namespaces';
 import { NodeDetails } from './NodeDetails';
 import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
@@ -35,7 +35,9 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         crm('R12_is_realized_in'),
         crm('R10_has_member'),
         crm('P67_refers_to'),
-        crm('P9_consists_of')]
+        crm('P9_consists_of'),
+        mer('has_score'),
+        mer('has_recording')]
 
     const links: Link[] = []
     for (const source of nodes) {

@@ -1,9 +1,10 @@
-import { Thing, asUrl, buildThing, createThing, getSourceUrl, getStringNoLocale, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, getStringNoLocale, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material"
 import { useContext, useState } from "react"
 import { crm, crmdig, mer } from "../../helpers/namespaces"
 import { RDF } from "@inrupt/vocab-common-rdf"
+import { SelectScore } from "./SelectScore"
 
 interface AlignmentDialogProps {
     // either target (to create) or an existing
@@ -21,6 +22,7 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
     const [loading, setLoading] = useState(false)
     const [note, setNote] = useState(
         (alignment && getStringNoLocale(alignment, crm('P3_has_note'))) || '')
+    const [scoreUrl, setScoreUrl] = useState<UrlString>()
 
     const saveToPod = async () => {
         if (!worksDataset) {
@@ -44,7 +46,11 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
 
         if (target) {
             // How to use P67.1 has type?
-            alignment_.addUrl(crm('P67_refers_to'), asUrl(target))
+            alignment_.addUrl(mer('has_recording'), asUrl(target))
+        }
+
+        if (scoreUrl) {
+            alignment_.addUrl(mer('has_score'), scoreUrl)
         }
 
         let updatedDataset = setThing(worksDataset, alignment_.build())
@@ -72,7 +78,7 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
                     </i>
                 </Box>
                 <Box mb={2}>
-                    <Button variant='contained'>Select Score</Button>
+                    <SelectScore onSelect={setScoreUrl} />
                 </Box>
                 <Box>
                     <TextField
