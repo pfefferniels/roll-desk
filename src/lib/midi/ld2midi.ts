@@ -1,4 +1,4 @@
-import { SolidDataset, Thing, buildThing, createThing, getInteger, getPropertyAll, getThing, getUrl, getUrlAll } from "@inrupt/solid-client"
+import { SolidDataset, Thing, buildThing, createThing, getInteger, getPropertyAll, getStringNoLocale, getThing, getUrl, getUrlAll } from "@inrupt/solid-client"
 import { AnyEvent, MidiFile, MidiHeader } from "midifile-ts"
 import { crm, midi } from "../../helpers/namespaces"
 import { RDF } from "@inrupt/vocab-common-rdf"
@@ -36,23 +36,28 @@ export const ld2midi = (piece: Thing, midiDataset: SolidDataset): MidiFile | nul
             // note events are a special case:
             // split up note events into a note on and note off event
             if (getUrl(eventThing, crm('P2_has_type')) === midi('NoteEvent')) {
+                const channel = getInteger(eventThing, midi('channel')) || 0
                 const onset = getInteger(eventThing, crm('P82a_begin_of_the_begin')) || 0
                 const offset = getInteger(eventThing, crm('P82b_end_of_the_end')) || 0
                 const pitch = getInteger(eventThing, midi('pitch')) || 0
-                const velocity = getInteger(eventThing, midi('pitch')) || 0
+                const velocity = getInteger(eventThing, midi('velocity')) || 0
 
                 transformedEvents.push(buildThing(createThing())
-                    .addUrl(RDF.type, 'NoteOnEvent')
+                    .addUrl(RDF.type, midi('NoteOnEvent'))
+                    .addUrl(RDF.type, midi('ChannelEvent'))
+                    .addInteger(midi('channel'), channel)
                     .addInteger(midi('tick'), onset)
                     .addInteger(midi('pitch'), pitch)
                     .addInteger(midi('velocity'), velocity)
                     .build())
 
                 transformedEvents.push(buildThing(createThing())
-                    .addUrl(RDF.type, 'NoteOffEvent')
+                    .addUrl(RDF.type, midi('NoteOffEvent'))
+                    .addUrl(RDF.type, midi('ChannelEvent'))
+                    .addInteger(midi('channel'), channel)
                     .addInteger(midi('tick'), offset)
                     .addInteger(midi('pitch'), pitch)
-                    .addInteger(midi('velocity'), velocity)
+                    .addInteger(midi('velocity'), 0)
                     .build())
             }
             else {
@@ -78,16 +83,18 @@ export const ld2midi = (piece: Thing, midiDataset: SolidDataset): MidiFile | nul
 
             const properties = getPropertyAll(eventThing)
             for (const property of properties) {
+                if (property === midi('type') || property === midi('subtype')) continue
                 if (property === RDF.type) {
                     const types = getUrlAll(eventThing, property)
                     for (const type of types) {
                         const typeName = normalizeEventType(type.split('#').at(-1) || '')
 
                         if (['channel', 'meta'].includes(typeName)) {
-                            event['type'] = typeName as 'meta' | 'channel'
+                            event['type'] = typeName
                         }
-                        if (['noteOn', 'noteOff', 'controller'].includes(typeName)) {
-                            event['subtype'] = typeName as 'noteOn' | 'noteOff' | 'controller'
+
+                        if (['noteOn', 'noteOff', 'controller', 'timeSignature', 'keySignature', 'endOfTrack', 'setTempo', 'programChange', 'trackName'].includes(typeName)) {
+                            event['subtype'] = typeName
                         }
                     }
                     continue
@@ -103,7 +110,12 @@ export const ld2midi = (piece: Thing, midiDataset: SolidDataset): MidiFile | nul
                 // MIDI-LD and midifile-ts.
                 if (name === 'pitch') name = 'noteNumber'
 
-                event[name] = getInteger(eventThing, property)
+                if (name === 'text') {
+                    event[name] = getStringNoLocale(eventThing, property)
+                }
+                else {
+                    event[name] = getInteger(eventThing, property)
+                }
             }
 
             return event as AnyEvent

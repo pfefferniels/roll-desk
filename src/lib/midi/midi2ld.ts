@@ -30,14 +30,14 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
     const isNoteOff = (event: AnyEvent) => (event as NoteOffEvent).subtype === "noteOff"
 
     const pieceName = v4()
-    const piece = buildThing({ name: pieceName })
+    const piece = buildThing({ url: `${datasetUrl}#${pieceName}` })
         .addUrl(RDF.type, mid('Piece'))
         .addInteger(mid('resolution'), midi.header.ticksPerBeat)
         .addInteger(mid('format'), midi.header.formatType)
 
     for (const midiTrack of midi.tracks) {
         const trackName = v4()
-        const track = buildThing({ name: trackName })
+        const track = buildThing({ url: `${datasetUrl}#${trackName}` })
             .addUrl(RDF.type, 'http://purl.org/midi-ld/midi#Track')
 
         let currentTick = 0
@@ -46,7 +46,7 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
             currentTick += midiEvent.deltaTime
 
             const eventName = v4()
-            const event = buildThing({ name: eventName })
+            const event = buildThing({ url: `${datasetUrl}#${eventName}` })
 
             if (isNoteOn(midiEvent)) {
                 noteEvents.push(
@@ -100,7 +100,12 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
                     value = currentTick
                 }
 
-                event.addInteger(mid(property), value)
+                if (typeof value === 'number') {
+                    event.addInteger(mid(property), value)
+                }
+                else {
+                    event.addStringNoLocale(mid(property), value)
+                }
             })
 
             event.addUrl(RDF.type, crmdig('D35_Area'))
