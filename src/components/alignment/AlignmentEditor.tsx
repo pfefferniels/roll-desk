@@ -1,18 +1,17 @@
-import { SolidDataset, Thing, UrlString, asUrl, buildThing, getSolidDataset, getThing, getUrl } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
-import React, { useEffect, useState } from 'react';
-import { oa, mer } from '../../helpers/namespaces';
-import { Card, IconButton, Tooltip } from '@mui/material';
-import { LinkOutlined, PlayArrowOutlined } from '@mui/icons-material';
+import { useEffect, useState } from 'react';
+import { oa, mer, crm } from '../../helpers/namespaces';
+import { Card, CardContent, CircularProgress, IconButton, Tooltip } from '@mui/material';
+import { LinkOutlined, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
 import './AlignmentEditor.css'
-import { AlignedPerformance, SemanticAlignmentPair } from '../../lib/AlignedPerformance';
 import { Mei } from '../../lib/mei';
-import { RawPerformance } from '../../lib/midi';
 import { PianoRoll, ScoreFollower } from 'alignmenttool';
+import { urlAsLabel } from '../../helpers/urlAsLabel';
 
 interface AlignmentEditorProps {
   url: string
@@ -32,6 +31,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const [meiUrl, setMeiUrl] = useState<UrlString>()
   const [midiUrl, setMidiUrl] = useState<UrlString>()
   const [pairs, setPairs] = useState<Thing[]>([])
+  const [saving, setSaving] = useState(false)
 
   const [renderedMei, setRenderedMei] = useState<Mei>()
   const [renderedMidi, setRenderedMidi] = useState<PianoRoll>()
@@ -55,6 +55,24 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
         return annotation.build()
       })
     )
+  }
+
+  const savePairs = async () => {
+    if (!alignment || !dataset) return
+
+    setSaving(true)
+    let modifiedDataset = dataset
+    for (const pair of pairs) {
+      modifiedDataset = setThing(modifiedDataset, pair)
+      addUrl(alignment, crm('P9_consists_of'), asUrl(pair, url))
+    }
+    modifiedDataset = setThing(modifiedDataset, alignment)
+    console.log('modifiedDataset=', modifiedDataset)
+
+    setDataset(
+      await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+    )
+    setSaving(false)
   }
 
   useEffect(() => {
@@ -110,16 +128,26 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
                 <PlayArrowOutlined />
               </IconButton>
             </Tooltip>
+            {pairs.length > 0 && (
+              <IconButton onClick={savePairs}>
+                {saving ? <CircularProgress /> : <SaveOutlined />}
+              </IconButton>
+            )}
           </h4>
         </Grid2>
         <Grid2 xs={4}>
-          {pairs.length === 0 && 'No alignments yet'} 
-          {pairs.map((pair, i) => (
-            <Card key={`pair${i}`} style={{ marginBottom: 2 }}>
-              {getUrl(pair, oa('hasTarget')) || 'unknown'}–
-              {getUrl(pair, oa('hasBody'))}
-            </Card>
-          ))}
+          {pairs.length === 0
+            ? 'No alignments yet'
+            : pairs.map((pair, i) => (
+              <Card key={`pair${i}`} style={{ marginBottom: 2 }}>
+                <CardContent>
+                  <div style={{ float: 'left' }}>{urlAsLabel(getUrl(pair, oa('hasTarget'))) || 'unknown'}</div>
+                  <div style={{ float: 'right' }}>
+                    {urlAsLabel(getUrl(pair, oa('hasBody')))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </Grid2>
         <Grid2 xs={8}>
           <Grid2>
