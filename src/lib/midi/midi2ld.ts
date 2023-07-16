@@ -46,7 +46,7 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
             currentTick += midiEvent.deltaTime
 
             const eventName = v4()
-            const event = buildThing({ name: eventName})
+            const event = buildThing({ name: eventName })
 
             if (isNoteOn(midiEvent)) {
                 noteEvents.push(
@@ -108,7 +108,7 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
             track.addUrl(mid('hasEvent'), asUrl(event.build(), datasetUrl))
         }
         dataset = setThing(dataset, track.build())
-        piece.addUrl(mid('hasTrack'),asUrl(track.build(), datasetUrl))
+        piece.addUrl(mid('hasTrack'), asUrl(track.build(), datasetUrl))
     }
     dataset = setThing(dataset, piece.build())
 
