@@ -4,13 +4,15 @@ import { useSession } from '@inrupt/solid-ui-react';
 import { getFile } from '@inrupt/solid-client';
 import { LinkOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
+import { Mei } from '../../lib/mei';
 
 interface ScoreViewerProps {
   url: string
   landscape?: boolean
+  onDone?: (mei: Mei) => void
 }
 
-export const ScoreViewer = ({ url, landscape }: ScoreViewerProps) => {
+export const ScoreViewer = ({ url, landscape, onDone }: ScoreViewerProps) => {
   const { session } = useSession()
   const [mei, setMei] = useState<string>()
   const [vrvToolkit, setVrvToolkit] = useState<any>()
@@ -34,6 +36,8 @@ export const ScoreViewer = ({ url, landscape }: ScoreViewerProps) => {
 
   useEffect(() => {
     if (!vrvToolkit || !mei) return
+
+    onDone && onDone(new Mei(mei, vrvToolkit, new DOMParser()))
 
     if (landscape) {
       vrvToolkit.setOptions({

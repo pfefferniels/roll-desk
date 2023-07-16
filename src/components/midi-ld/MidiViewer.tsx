@@ -7,15 +7,18 @@ import { Details } from './Details';
 import { useDataset, useThing } from '@inrupt/solid-ui-react';
 import { LinkOutlined } from '@mui/icons-material';
 import { crm } from '../../helpers/namespaces';
+import { ld2midi } from '../../lib/midi/ld2midi';
+import { MidiFile } from 'midifile-ts';
 
 interface MidiViewerProps {
   url: string
   onChange?: (e13: Thing) => void
   onSelect?: (event: Thing | null) => void
+  onDone?: (midi: MidiFile) => void
   e13s?: Thing[]
 }
 
-const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
+const MidiViewer = ({ url, onChange, onSelect, onDone, e13s }: MidiViewerProps) => {
   const { dataset } = useDataset(url)
   const { thing: piece, error } = useThing(url, url)
 
@@ -25,7 +28,16 @@ const MidiViewer = ({ url, onChange, onSelect, e13s }: MidiViewerProps) => {
   const handlePixelsPerTickChange = (event: any, newValue: number | number[]) => {
     setPixelsPerTick(newValue as number);
   };
-  
+
+  useEffect(() => {
+    if (!piece || !dataset) return
+
+    if (onDone) {
+      const midiFile = ld2midi(piece, dataset)
+      midiFile && onDone(midiFile)
+    }
+  }, [piece, dataset])
+
   useEffect(() => {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {

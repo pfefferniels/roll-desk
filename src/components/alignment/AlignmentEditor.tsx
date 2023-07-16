@@ -11,7 +11,6 @@ import { ScoreViewer } from '../score/ScoreViewer';
 import './AlignmentEditor.css'
 import { AlignedPerformance } from '../../lib/AlignedPerformance';
 import { Mei } from '../../lib/mei';
-import { loadVerovio } from '../../lib/globals';
 import { RawPerformance } from '../../lib/midi';
 
 interface AlignmentEditorProps {
@@ -104,12 +103,12 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
         <Grid2 xs={12}>
           {meiUrl && (
             <div>
-              <ScoreViewer url={meiUrl} landscape />
+              <ScoreViewer url={meiUrl} landscape onDone={mei => setRenderedMei(mei)} />
             </div>
           )}
         </Grid2>
         <Grid2 xs={12}>
-          {midiUrl && <MidiViewer url={midiUrl} />}
+          {midiUrl && <MidiViewer url={midiUrl} onDone={midi => setRenderedMidi(new RawPerformance(midi))} />}
         </Grid2>
       </Grid2>
     </DatasetContext.Provider>

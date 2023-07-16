@@ -6,6 +6,7 @@ import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProg
 import { useContext, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces";
 import { v4 } from "uuid";
+import { datasetUrl } from "../../helpers/datasetUrl";
 
 interface DigitizedScoreDialogProps {
     // the F22 Expression
@@ -44,7 +45,7 @@ export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: Digitiz
             .addUrl(crm('P2_has_type'), mer('DigitalScore'))
 
         if (meiFile) {
-            const meiUrl = `https://pfefferniels.solidcommunity.net/early-recordings/${v4()}.mei`
+            const meiUrl = `${datasetUrl}/${v4()}.mei`
 
             setLoading('saving-mei')
             const savedFile = await overwriteFile(meiUrl, meiFile, { fetch: session.fetch as any })

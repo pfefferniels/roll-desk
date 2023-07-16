@@ -8,6 +8,7 @@ import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces";
 import { midi2ld } from "../../lib/midi/midi2ld";
 import { MidiFile, read } from "midifile-ts";
 import { v4 } from "uuid";
+import { datasetUrl } from "../../helpers/datasetUrl";
 
 const parseMidiInput = (
     file: File
@@ -68,7 +69,7 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
             const midi = await parseMidiInput(midiFile)
 
             if (midi) {
-                const midiDatasetUrl = `https://pfefferniels.solidcommunity.net/early-recordings/${v4()}.ttl`
+                const midiDatasetUrl = `${datasetUrl}/${v4()}.ttl`
                 const midiLd = midi2ld(midi, midiDatasetUrl, { calculateImprecision: false });
 
                 // Save the RDF dataset in the pod

@@ -42,7 +42,7 @@ export function LoginForm() {
                     </Paper> :
                     <>
                         <LoginButton
-                            oidcIssuer='https://solidcommunity.net'
+                            oidcIssuer='https://login.inrupt.com'
                             redirectUrl={window.location.href}
                             authOptions={{ clientName: 'Early Recordings Annotator' }}>
                             <Tooltip title='Login'>
