@@ -1,8 +1,6 @@
 import { PianoRoll, pitchToSitch } from 'alignmenttool';
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent, SetTempoEvent, TextEvent } from 'midifile-ts';
 import { RdfEntity } from '../rdf';
-import { Visitable } from '../visitors/Visitable';
-import { Visitor } from '../visitors/Visitor';
 
 export type MidiNote = {
     id: string,
@@ -15,12 +13,11 @@ export type MidiNote = {
 /**
  * wrapper for a raw MIDI performance
  */
-export class RawPerformance extends RdfEntity implements Visitable {
+export class RawPerformance {
     midi: MidiFile | null
     metadata: TextEvent[]
 
     constructor(performance: MidiFile) {
-        super()
         this.midi = performance
         this.metadata = []
         if (performance.tracks.length > 0) {
@@ -140,10 +137,6 @@ export class RawPerformance extends RdfEntity implements Visitable {
 
     public getMetadata() {
         return this.metadata
-    }
-
-    public accept(visitor: Visitor) {
-        return visitor.visitPerformance(this)
     }
 }
 

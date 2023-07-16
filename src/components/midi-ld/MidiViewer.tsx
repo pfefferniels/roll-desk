@@ -9,12 +9,14 @@ import { LinkOutlined } from '@mui/icons-material';
 import { crm } from '../../helpers/namespaces';
 import { ld2midi } from '../../lib/midi/ld2midi';
 import { MidiFile } from 'midifile-ts';
+import { asPianoRoll } from '../../lib/midi/asPianoRoll';
+import { PianoRoll } from 'alignmenttool';
 
 interface MidiViewerProps {
   url: string
   onChange?: (e13: Thing) => void
   onSelect?: (event: Thing | null) => void
-  onDone?: (midi: MidiFile) => void
+  onDone?: (pr: PianoRoll) => void
   e13s?: Thing[]
 }
 
@@ -33,8 +35,8 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s }: MidiViewerProps) 
     if (!piece || !dataset) return
 
     if (onDone) {
-      const midiFile = ld2midi(piece, dataset)
-      midiFile && onDone(midiFile)
+      const pianoRoll = asPianoRoll(piece, dataset)
+      pianoRoll && onDone(pianoRoll)
     }
   }, [piece, dataset])
 

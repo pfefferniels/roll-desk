@@ -1,17 +1,18 @@
-import { SolidDataset, Thing, UrlString, asUrl, getSolidDataset, getThing, getUrl } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, asUrl, buildThing, getSolidDataset, getThing, getUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import React, { useEffect, useState } from 'react';
-import { mer } from '../../helpers/namespaces';
-import { IconButton, Tooltip } from '@mui/material';
+import { oa, mer } from '../../helpers/namespaces';
+import { Card, IconButton, Tooltip } from '@mui/material';
 import { LinkOutlined, PlayArrowOutlined } from '@mui/icons-material';
-import { RDFS } from '@inrupt/vocab-common-rdf';
+import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
 import './AlignmentEditor.css'
-import { AlignedPerformance } from '../../lib/AlignedPerformance';
+import { AlignedPerformance, SemanticAlignmentPair } from '../../lib/AlignedPerformance';
 import { Mei } from '../../lib/mei';
 import { RawPerformance } from '../../lib/midi';
+import { PianoRoll, ScoreFollower } from 'alignmenttool';
 
 interface AlignmentEditorProps {
   url: string
@@ -30,19 +31,30 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const [alignment, setAlignment] = useState<Thing>()
   const [meiUrl, setMeiUrl] = useState<UrlString>()
   const [midiUrl, setMidiUrl] = useState<UrlString>()
+  const [pairs, setPairs] = useState<Thing[]>([])
 
   const [renderedMei, setRenderedMei] = useState<Mei>()
-  const [renderedMidi, setRenderedMidi] = useState<RawPerformance>()
+  const [renderedMidi, setRenderedMidi] = useState<PianoRoll>()
 
   const performAlignment = () => {
     if (!renderedMei || !renderedMidi) return
 
-    const perf = new AlignedPerformance(
-      renderedMei,
-      renderedMidi
+    const hmm = renderedMei.asHMM()
+
+    const follower = new ScoreFollower(hmm, 4)
+    const matches = follower.getMatchResult(renderedMidi)
+
+    setPairs(
+      matches.events.map(match => {
+        const annotation = buildThing()
+          .addUrl(RDF.type, oa('Annotation'))
+          .addUrl(oa('hasBody'), match.id)
+        if (match.meiId) {
+          annotation.addUrl(oa('hasTarget'), `${meiUrl}#${match.meiId}`)
+        }
+        return annotation.build()
+      })
     )
-    perf.performAlignment()
-    console.log(perf.getSemanticPairs())
   }
 
   useEffect(() => {
@@ -100,15 +112,26 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
             </Tooltip>
           </h4>
         </Grid2>
-        <Grid2 xs={12}>
-          {meiUrl && (
-            <div>
-              <ScoreViewer url={meiUrl} landscape onDone={mei => setRenderedMei(mei)} />
-            </div>
-          )}
+        <Grid2 xs={4}>
+          {pairs.length === 0 && 'No alignments yet'} 
+          {pairs.map((pair, i) => (
+            <Card key={`pair${i}`} style={{ marginBottom: 2 }}>
+              {getUrl(pair, oa('hasTarget')) || 'unknown'}–
+              {getUrl(pair, oa('hasBody'))}
+            </Card>
+          ))}
         </Grid2>
-        <Grid2 xs={12}>
-          {midiUrl && <MidiViewer url={midiUrl} onDone={midi => setRenderedMidi(new RawPerformance(midi))} />}
+        <Grid2 xs={8}>
+          <Grid2>
+            {meiUrl && (
+              <div>
+                <ScoreViewer url={meiUrl} landscape onDone={mei => setRenderedMei(mei)} />
+              </div>
+            )}
+          </Grid2>
+          <Grid2>
+            {midiUrl && <MidiViewer url={midiUrl} onDone={midi => setRenderedMidi(midi)} />}
+          </Grid2>
         </Grid2>
       </Grid2>
     </DatasetContext.Provider>

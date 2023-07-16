@@ -2,3 +2,11 @@
     height: 20vh;
 }
 
+#alignmentCanvas {
+    left: 0px;
+    top: 0px;
+    position: absolute;
+    z-index: -1;
+    margin: 0;
+    pointer-events: none;
+}

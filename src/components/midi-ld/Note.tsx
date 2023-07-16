@@ -38,6 +38,7 @@ export const Note = ({ note, color }: NoteProps) => {
     <>
       <rect
         className='note'
+        data-id={asUrl(note)}
         x={(beginOfBegin + endOfBegin) / 2 * pixelsPerTick}
         y={(128 - pitch) * noteHeight}
         width={((beginOfEnd + endOfEnd) / 2 - endOfBegin) * pixelsPerTick}

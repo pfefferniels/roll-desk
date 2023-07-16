@@ -2,10 +2,7 @@ import { MidiNote, RawPerformance } from "./midi/RawPerformance"
 import { MeiNote, Mei } from "./mei"
 import { ScoreFollower, ErrorDetector } from "alignmenttool/dist/index"
 import { ErrorIndex } from "alignmenttool/dist/Match"
-import { Visitable } from "./visitors/Visitable"
-import { Visitor } from "./visitors/Visitor"
 import { graph, parse, Query, Store } from "rdflib"
-import { RdfEntity } from "./rdf"
 import { LA } from "../helpers/namespaces"
 
 export enum Motivation {
@@ -29,7 +26,7 @@ export type SemanticAlignmentPair = {
  * Stores a performance aligned to a score and 
  * information about the alignment.
  */
-export class AlignedPerformance extends RdfEntity implements Visitable {
+export class AlignedPerformance {
     score?: Mei
     rawPerformance?: RawPerformance
     semanticPairs: SemanticAlignmentPair[]
@@ -37,7 +34,6 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
     constructor(
         score?: Mei,
         rawPerformance?: RawPerformance) {
-        super()
         this.score = score
         this.rawPerformance = rawPerformance
         this.semanticPairs = []
@@ -232,10 +228,6 @@ export class AlignedPerformance extends RdfEntity implements Visitable {
             midiNote,
             motivation
         })
-    }
-
-    public accept(visitor: Visitor) {
-        visitor.visitAlignment(this)
     }
 
     /**
