@@ -67,7 +67,6 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
       addUrl(alignment, crm('P9_consists_of'), asUrl(pair, url))
     }
     modifiedDataset = setThing(modifiedDataset, alignment)
-    console.log('modifiedDataset=', modifiedDataset)
 
     setDataset(
       await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })

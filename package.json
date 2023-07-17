@@ -45,7 +45,7 @@
     "sigma": "^2.4.0",
     "slate": "^0.82.1",
     "slate-history": "^0.66.0",
-    "slate-react": "^0.83.1",
+    "slate-react": "^0.83.2",
     "tonal": "^4.14.2",
     "ts-node": "^10.9.1",
     "typescript": "^4.5.4",

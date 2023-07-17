@@ -11,6 +11,7 @@ import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import AddE13Button from './AddE13Button';
 import { typeOf } from '../../helpers/typeOfEvent';
+import { AnnotationDialog } from './AnnotationDialog';
 
 const buildE13 = (
   property: string,
@@ -70,12 +71,20 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [e13s, setE13s] = useState<Thing[]>()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Thing | null>()
-
   const [savingE13, setSavingE13] = useState(false)
+  const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false)
 
   const addE13Options =
     (selectedEvent && typeOf(selectedEvent) === 'note')
       ? [
+        {
+          name: 'Annotate',
+          handleClick: () => {
+            if (!selectedEvent) return
+
+            setAnnotationDialogOpen(true)
+          }
+        },
         {
           name: 'Assign Onset Boundaries',
           handleClick: () => {
@@ -278,7 +287,20 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           )}
         </Grid2>
 
-        <AnalysisDialog analysis={analysis} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
+        <AnalysisDialog
+          analysis={analysis}
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)} />
+
+        {selectedEvent && (
+          <AnnotationDialog
+            analysis={analysis}
+            object={selectedEvent}
+            open={annotationDialogOpen}
+            onClose={() => setAnnotationDialogOpen(false)}
+          />
+        )}
+
       </Grid2>
     </DatasetContext.Provider>
   );
