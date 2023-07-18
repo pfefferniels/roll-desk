@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { crm, mer } from '../../helpers/namespaces';
+import { crm, mer, oa } from '../../helpers/namespaces';
 import { NodeDetails } from './NodeDetails';
 import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
@@ -28,7 +28,11 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
 
     const [width, height] = [800, 800]
 
-    const nodes = worksDataset ? getThingAll(worksDataset).map(thing => ({ thing } as Node)) : []
+    // be default, do not display certain nodes
+    const nodes = worksDataset ? getThingAll(worksDataset)
+        .filter(thing => 
+            !getUrlAll(thing, RDF.type).includes(oa('Annotation')))
+        .map(thing => ({ thing } as Node)) : []
 
     const linkingProperties =
         [crm('R2_is_derivative_of'),
