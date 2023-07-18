@@ -4,11 +4,11 @@ import { RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
 import { useContext, useState } from "react";
-import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces";
-import { midi2ld } from "../../lib/midi/midi2ld";
+import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
+import { midi2ld } from "../../../lib/midi/midi2ld";
 import { MidiFile, read } from "midifile-ts";
 import { v4 } from "uuid";
-import { datasetUrl } from "../../helpers/datasetUrl";
+import { datasetUrl } from "../../../helpers/datasetUrl";
 
 const parseMidiInput = (
     file: File
@@ -69,6 +69,7 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
             const midi = await parseMidiInput(midiFile)
 
             if (midi) {
+                // TODO: use private pod instead
                 const midiDatasetUrl = `${datasetUrl}/${v4()}.ttl`
                 const midiLd = midi2ld(midi, midiDatasetUrl, { calculateImprecision: false });
 

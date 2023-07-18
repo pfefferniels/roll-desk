@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import WorksGraph from './WorksGraph';
 import { SolidDataset, getSolidDataset } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
-import RecordingWorkDialog from './RecordingWorkDialog';
+import RecordingWorkDialog from './dialogs/RecordingWorkDialog';
 import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material';
 import { MusicNote, RecordVoiceOver } from '@mui/icons-material';
 import { datasetUrl } from '../../helpers/datasetUrl';
-import { ScoreWorkDialog } from './ScoreWorkDialog';
+import { ScoreWorkDialog } from './dialogs/ScoreWorkDialog';
 
 const WorksOverview: React.FC = () => {
   const { session } = useSession()

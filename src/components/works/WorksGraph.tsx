@@ -4,7 +4,7 @@ import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { crm, mer, oa } from '../../helpers/namespaces';
-import { NodeDetails } from './NodeDetails';
+import { NodeDetails } from './details/NodeDetails';
 import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 

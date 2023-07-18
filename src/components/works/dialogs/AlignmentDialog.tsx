@@ -2,9 +2,9 @@ import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, getStri
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material"
 import { useContext, useState } from "react"
-import { crm, crmdig, mer } from "../../helpers/namespaces"
+import { crm, crmdig, mer } from "../../../helpers/namespaces"
 import { RDF } from "@inrupt/vocab-common-rdf"
-import { SelectScore } from "./SelectScore"
+import { SelectScore } from "../SelectScore"
 
 interface AlignmentDialogProps {
     // either target (to create) or an existing

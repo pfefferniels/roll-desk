@@ -3,12 +3,12 @@ import { Thing } from '@inrupt/solid-client';
 import { getStringNoLocale } from '@inrupt/solid-client';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { Typography, Box, IconButton } from '@mui/material';
-import { ScoreWorkDialog } from '../ScoreWorkDialog';
+import { ScoreWorkDialog } from '../dialogs/ScoreWorkDialog';
 import { SpeedDial, SpeedDialAction } from '@mui/material';
 import AddPerformanceIcon from '@mui/icons-material/Theaters';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import { DigitizedScoreDialog } from '../DigitizedScoreDialog';
+import { DigitizedScoreDialog } from '../dialogs/DigitizedScoreDialog';
 
 interface ScoreWorkDetailsProps {
     thing: Thing;

@@ -1,18 +1,18 @@
 import React from 'react';
 import { Thing, asUrl, getUrl, getUrlAll } from '@inrupt/solid-client';
 import { RDF } from '@inrupt/vocab-common-rdf';
-import { crm, mer } from '../../helpers/namespaces';
-import RecordingWorkDetails from './details/RecordingWorkDetails';
+import { crm, mer } from '../../../helpers/namespaces';
+import RecordingWorkDetails from './RecordingWorkDetails';
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import DigitizedRecordingDetails from './details/DigitizedRecordingDetails';
-import AnalysisDetails from './details/AnalysisDetails';
-import AlignmentDetails from './details/AlignmentDetails';
+import DigitizedRecordingDetails from './DigitizedRecordingDetails';
+import AnalysisDetails from './AnalysisDetails';
+import AlignmentDetails from './AlignmentDetails';
 import { LinkOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import ScoreWorkDetails from './details/ScoreWorkDetails';
-import { DigitizedScoreDetails } from './details/DigitizedScoreDetails';
+import ScoreWorkDetails from './ScoreWorkDetails';
+import { DigitizedScoreDetails } from './DigitizedScoreDetails';
 
 interface NodeDetailsProps {
     node: Thing;

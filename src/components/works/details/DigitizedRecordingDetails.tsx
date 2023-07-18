@@ -5,9 +5,9 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { Edit } from '@mui/icons-material';
-import { DigitizedRecordingDialog } from '../DigitizedRecordingDialog';
-import { AlignmentDialog } from '../AlignmentDialog';
-import { AnalysisDialog } from '../AnalysisDialog';
+import { DigitizedRecordingDialog } from '../dialogs/DigitizedRecordingDialog';
+import { AlignmentDialog } from '../dialogs/AlignmentDialog';
+import { AnalysisDialog } from '../dialogs/AnalysisDialog';
 
 interface DigitizedRecordingDetailsProps {
   thing: Thing;

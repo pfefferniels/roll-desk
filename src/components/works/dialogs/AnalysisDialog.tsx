@@ -3,7 +3,7 @@ import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
 import { DCTERMS, RDF } from "@inrupt/vocab-common-rdf"
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material"
 import { useContext, useState } from "react"
-import { crmdig, crm, mer, frbroo } from "../../helpers/namespaces"
+import { crmdig, crm, mer, frbroo } from "../../../helpers/namespaces"
 
 interface AnalysisDialogProps {
     // either target (to create) or an existing

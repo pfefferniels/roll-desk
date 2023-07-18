@@ -4,7 +4,7 @@ import { Typography, Box, Button, IconButton } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { Edit } from '@mui/icons-material';
-import { DigitizedScoreDialog } from '../DigitizedScoreDialog';
+import { DigitizedScoreDialog } from '../dialogs/DigitizedScoreDialog';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 
 interface DigitizedScoreDetailsProps {

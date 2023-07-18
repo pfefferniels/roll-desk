@@ -4,9 +4,9 @@ import { RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
 import { useContext, useState } from "react";
-import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces";
+import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
 import { v4 } from "uuid";
-import { datasetUrl } from "../../helpers/datasetUrl";
+import { datasetUrl } from "../../../helpers/datasetUrl";
 
 interface DigitizedScoreDialogProps {
     // the F22 Expression
@@ -45,6 +45,7 @@ export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: Digitiz
             .addUrl(crm('P2_has_type'), mer('DigitalScore'))
 
         if (meiFile) {
+            // TODO: use private pod instead
             const meiUrl = `${datasetUrl}/${v4()}.mei`
 
             setLoading('saving-mei')

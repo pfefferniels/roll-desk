@@ -6,7 +6,7 @@ import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInte
 import { crm, mer, midi as midiNs, oa } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { DownloadOutlined, EditOutlined, LinkOutlined } from '@mui/icons-material';
-import { AnalysisDialog } from '../works/AnalysisDialog';
+import { AnalysisDialog } from '../works/dialogs/AnalysisDialog';
 import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import AddE13Button from './AddE13Button';
