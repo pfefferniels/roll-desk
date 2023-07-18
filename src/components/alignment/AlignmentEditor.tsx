@@ -2,7 +2,7 @@ import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidData
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { useEffect, useState } from 'react';
-import { oa, mer, crm } from '../../helpers/namespaces';
+import { oa, mer, crm, crmdig } from '../../helpers/namespaces';
 import { Card, CardContent, CircularProgress, IconButton, Tooltip } from '@mui/material';
 import { LinkOutlined, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
@@ -48,6 +48,8 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
       matches.events.map(match => {
         const annotation = buildThing()
           .addUrl(RDF.type, oa('Annotation'))
+          .addUrl(RDF.type, crmdig('D29_Annotation_Object'))
+          .addUrl(crm('P2_has_type'), mer('AlignmentPair'))
           .addUrl(oa('hasBody'), match.id)
         if (match.meiId) {
           annotation.addUrl(oa('hasTarget'), `${meiUrl}#${match.meiId}`)
@@ -62,11 +64,13 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
 
     setSaving(true)
     let modifiedDataset = dataset
+    let modifiedAlignment = alignment
     for (const pair of pairs) {
       modifiedDataset = setThing(modifiedDataset, pair)
-      addUrl(alignment, crm('P9_consists_of'), asUrl(pair, url))
+      modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), pair)
     }
-    modifiedDataset = setThing(modifiedDataset, alignment)
+    modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+    setAlignment(modifiedAlignment)
 
     setDataset(
       await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
