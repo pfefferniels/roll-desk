@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import { Box, CircularProgress, IconButton, Stack } from '@mui/material';
-import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
-import { crm, mer, midi as midiNs } from '../../helpers/namespaces';
+import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing, thingAsMarkdown } from '@inrupt/solid-client';
+import { crm, mer, midi as midiNs, oa } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { DownloadOutlined, EditOutlined, LinkOutlined } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/AnalysisDialog';
@@ -12,6 +12,7 @@ import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import AddE13Button from './AddE13Button';
 import { typeOf } from '../../helpers/typeOfEvent';
 import { AnnotationDialog } from './AnnotationDialog';
+import { AnnotationCard } from './AnnotationCard';
 
 const buildE13 = (
   property: string,
@@ -69,6 +70,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [dataset, setDataset] = useState<SolidDataset>()
   const [analysis, setAnalysis] = useState<Thing>()
   const [e13s, setE13s] = useState<Thing[]>()
+  const [annotations, setAnnotations] = useState<Thing[]>()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Thing | null>()
   const [savingE13, setSavingE13] = useState(false)
@@ -158,9 +160,9 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
       try {
         const solidDataset = await getSolidDataset(url, { fetch: session.fetch as any });
         setDataset(solidDataset)
-        if (solidDataset) {
-          setAnalysis(getThing(solidDataset, url) || undefined)
-        }
+        // if (solidDataset) {
+        //   setAnalysis(getThing(solidDataset, url) || undefined)
+        // }
       } catch (e) {
         console.error('Error fetching Things:', e);
         setError(e)
@@ -171,15 +173,33 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   }, [url, session.fetch, session.info.isLoggedIn]);
 
   useEffect(() => {
+    if (!dataset) return
+
+    console.log('changed', getThing(dataset, url))
+
+    setAnalysis(getThing(dataset, url) || undefined)
+  }, [dataset, url])
+
+  useEffect(() => {
     if (!dataset || !analysis) return
-    const e13Links = getUrlAll(analysis, crm('P9_consists_of'))
+
+    const componentUrls = getUrlAll(analysis, crm('P9_consists_of'))
+    const components = componentUrls
+      .reduce((acc, link) => {
+        const component = getThing(dataset, link)
+        if (component) acc.push(component)
+
+        return acc
+      }, [] as Thing[])
+
     setE13s(
-      e13Links
-        .reduce((acc, link) => {
-          const e13 = getThing(dataset, link)
-          if (e13) acc.push(e13)
-          return acc
-        }, [] as Thing[])
+      components.filter(component =>
+        getUrlAll(component, RDF.type).includes(crm('E13_Attribute_Assignment'))
+      ))
+
+    setAnnotations(
+      components.filter(component =>
+        getUrlAll(component, RDF.type).includes(oa('Annotation')))
     )
   }, [url, session.fetch, session.info.isLoggedIn, analysis, dataset])
 
@@ -250,7 +270,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
         </Grid2>
         <Grid2 xs={4}>
           <Box m={1}>
-            {e13s && (
+            {e13s && e13s.length > 0 && (
               <Stack spacing={1}>
                 <h4 style={{ margin: 0 }}>
                   {selectedEvent
@@ -267,7 +287,28 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
                   .map(e13 => (
                     <E13Card e13={e13} key={`e13_${asUrl(e13)}`} />
                   ))}
+              </Stack>
+            )}
 
+            {annotations && annotations.length > 0 && (
+              <Stack spacing={1}>
+                <h4 style={{ margin: 0 }}>
+                  {selectedEvent
+                    ? 'Annotations (Selection)'
+                    : 'All Annotations'}
+                </h4>
+                {annotations
+                  .filter(annotation => {
+                    if (selectedEvent) {
+                      return getUrl(annotation, oa('hasTarget')) === selectedEvent.url
+                    }
+                    return true
+                  })
+                  .map((annotation, i) => (
+                    <AnnotationCard
+                      key={`annotation_card_${i}`}
+                      annotation={annotation} />
+                  ))}
               </Stack>
             )}
 

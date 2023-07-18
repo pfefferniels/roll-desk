@@ -47,7 +47,7 @@ export const AnnotationDialog = ({ analysis, object, open, onClose }: Annotation
             .addUrl(oa('hasTarget'), asUrl(object))
 
         let modifiedDataset = setThing(solidDataset, annotation.build())
-        modifiedDataset = setThing(solidDataset,
+        modifiedDataset = setThing(modifiedDataset,
             addUrl(analysis, crm('P9_consists_of'), annotation.build()))
 
         setDataset(
