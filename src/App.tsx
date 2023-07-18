@@ -2,7 +2,7 @@ import React, { } from 'react';
 import './App.css';
 import AppRouter from './Router';
 import { SessionProvider } from '@inrupt/solid-ui-react';
-import { LoginForm } from './components/Login';
+import { LoginForm } from './components/login/Login';
 
 const App: React.FC = () => {
   return (
