@@ -1,70 +1,70 @@
 import { useState } from 'react';
-import { Thing, getUrlAll } from '@inrupt/solid-client';
+import { Thing } from '@inrupt/solid-client';
 import { getStringNoLocale } from '@inrupt/solid-client';
-import { OWL, RDFS } from '@inrupt/vocab-common-rdf';
-import { Typography, Box, Link, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import { RDFS } from '@inrupt/vocab-common-rdf';
+import { Typography, Box, IconButton, Stack, Button } from '@mui/material';
 import { RecordingWorkDialog } from '../dialogs/RecordingWorkDialog';
-import { SpeedDial, SpeedDialAction } from '@mui/material';
-import AddPerformanceIcon from '@mui/icons-material/Theaters';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import { DigitizedRecordingDialog } from '../dialogs/DigitizedRecordingDialog';
+import { MpmDialog } from '../dialogs/MpmDialog';
 
 interface RecordingWorkDetailsProps {
     thing: Thing;
 }
 
-const RecordingWorkDetails = ({ thing }: RecordingWorkDetailsProps) => {
-    const label = getStringNoLocale(thing, RDFS.label);
+const RecordingWorkDetails = ({ thing: work }: RecordingWorkDetailsProps) => {
+    const label = getStringNoLocale(work, RDFS.label);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [performanceDialogOpen, setPerformanceDialogOpen] = useState(false);
-    const [speedDialOpen, setSpeedDialOpen] = useState(false);
-
-    const actions = [
-        { icon: <AddPerformanceIcon />, name: 'Add Digitized Recording', onClick: () => setPerformanceDialogOpen(true) },
-    ];
+    const [mpmDialogOpen, setMpmDialogOpen] = useState(false);
 
     return (
         <Box>
             <Box>
-                <Typography variant="h5" display="inline">
-                    {label}
-                </Typography>
                 <IconButton onClick={() => setEditDialogOpen(true)} size="small" sx={{ ml: 1 }}>
                     <EditIcon />
                 </IconButton>
+                <Typography variant="h5" display="inline">
+                    {label}
+                </Typography>
             </Box>
 
-            <SpeedDial
-                ariaLabel="Add Actions"
-                open={speedDialOpen}
-                onOpen={() => setSpeedDialOpen(true)}
-                onClose={() => setSpeedDialOpen(false)}
-                sx={{ position: 'absolute', bottom: 16, right: 16 }}
-                icon={<AddIcon />}
-            >
-                {actions.map((action) => (
-                    <SpeedDialAction
-                        key={action.name}
-                        icon={action.icon}
-                        tooltipTitle={action.name}
-                        onClick={action.onClick}
-                    />
-                ))}
-            </SpeedDial>
+            <Stack spacing={1}>
+                <Box>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setMpmDialogOpen(true)}>
+                        Add MPM
+                    </Button>
+                </Box>
+                <Box>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setPerformanceDialogOpen(true)}>
+                        Add Digitized Recording
+                    </Button>
+                </Box>
+            </Stack>
+
+            <MpmDialog
+                open={mpmDialogOpen}
+                onClose={() => setMpmDialogOpen(false)}
+                attachTo={work} />
 
             <RecordingWorkDialog
                 open={editDialogOpen}
                 onClose={() => setEditDialogOpen(false)}
-                thing={thing}
+                thing={work}
             />
 
             <DigitizedRecordingDialog
-                attachTo={thing}
+                attachTo={work}
                 open={performanceDialogOpen}
                 onClose={() => setPerformanceDialogOpen(false)}
             />
-        </Box>
+        </Box >
     );
 };
 

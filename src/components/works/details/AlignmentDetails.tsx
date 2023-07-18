@@ -32,16 +32,6 @@ const AlignmentDetails: React.FC<AlignmentDetailsProps> = ({ thing }) => {
         </Button>
       </Box>
 
-      <Box mt={2}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => { }}
-        >
-          Create MPM
-        </Button>
-      </Box>
-
       <AlignmentDialog alignment={thing} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
     </Box>
   );

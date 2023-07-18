@@ -9,7 +9,7 @@ import { v4 } from "uuid";
 import { datasetUrl } from "../../../helpers/datasetUrl";
 
 interface DigitizedScoreDialogProps {
-    // the F22 Expression
+    // the F26 Expression
     thing?: Thing
 
     // the F1 Work to which attach the
