@@ -47,20 +47,22 @@ const WorksOverview: React.FC = () => {
     }}>
       <h1>Works Overview</h1>
 
-      <SpeedDial
-        ariaLabel="Add Entities"
-        sx={{ position: 'fixed', bottom: 16, left: 16 }}
-        icon={<SpeedDialIcon />}
-      >
-        {actions.map((action) => (
-          <SpeedDialAction
-            key={action.name}
-            icon={action.icon}
-            tooltipTitle={action.name}
-            onClick={action.onClick}
-          />
-        ))}
-      </SpeedDial>
+      {session.info.isLoggedIn && (
+        <SpeedDial
+          ariaLabel="Add Entities"
+          sx={{ position: 'fixed', bottom: 16, left: 16 }}
+          icon={<SpeedDialIcon />}
+        >
+          {actions.map((action) => (
+            <SpeedDialAction
+              key={action.name}
+              icon={action.icon}
+              tooltipTitle={action.name}
+              onClick={action.onClick}
+            />
+          ))}
+        </SpeedDial>
+      )}
 
       <WorksGraph />
 
