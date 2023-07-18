@@ -12,6 +12,7 @@ import './AlignmentEditor.css'
 import { Mei } from '../../lib/mei';
 import { PianoRoll, ScoreFollower } from 'alignmenttool';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
+import { Pair } from './Pair';
 
 interface AlignmentEditorProps {
   url: string
@@ -142,14 +143,9 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
           {pairs.length === 0
             ? 'No alignments yet'
             : pairs.map((pair, i) => (
-              <Card key={`pair${i}`} style={{ marginBottom: 2 }}>
-                <CardContent>
-                  <div style={{ float: 'left' }}>{urlAsLabel(getUrl(pair, oa('hasTarget'))) || 'unknown'}</div>
-                  <div style={{ float: 'right' }}>
-                    {urlAsLabel(getUrl(pair, oa('hasBody')))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Pair
+                key={`alignment_card_${i}`}
+                pair={pair} />
             ))}
         </Grid2>
         <Grid2 xs={8}>
