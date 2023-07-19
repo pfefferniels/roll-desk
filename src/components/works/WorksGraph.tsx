@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { crm, mer, oa } from '../../helpers/namespaces';
+import { crm, frbroo, mer, oa } from '../../helpers/namespaces';
 import { NodeDetails } from './details/NodeDetails';
 import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
@@ -38,6 +38,9 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         [crm('R2_is_derivative_of'),
         crm('R12_is_realized_in'),
         crm('R10_has_member'),
+        frbroo('R17_created'),
+        frbroo('R19_created_a_realisation_of'),
+        crm('P16_used_specific_object'),
         crm('P67_refers_to'),
         crm('P9_consists_of'),
         mer('has_score'),
@@ -127,8 +130,6 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             .append("text")
             .attr("class", "link-label")
             .text((link) => link.relationship)
-            .style("font-size", "12px")
-            .style("fill", "black");
 
         // Define the zoom behavior
         const zoom = d3.zoom()

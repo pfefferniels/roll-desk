@@ -5,6 +5,7 @@ import MidiViewer from './components/midi-ld/MidiViewer';
 import { AnalysisEditor } from './components/analysis/AnalysisEditor';
 import { datasetUrl } from './helpers/datasetUrl';
 import { AlignmentEditor } from './components/alignment/AlignmentEditor';
+import { MpmEditor } from './components/mpm/MpmEditor';
 
 const ErrorBoundary = () => {
   return (
@@ -53,6 +54,19 @@ const AlignmentRoute = () => {
   return <AlignmentEditor url={url} />
 }
 
+const MpmRoute = () => {
+  const { mpmId } = useParams()
+  const [search] = useSearchParams()
+
+  const url =
+    mpmId
+      ? `${datasetUrl}/works.ttl#${mpmId}`
+      : search.get('url')
+  if (!url) throw new Error('no proper URL passed')
+
+  return <MpmEditor url={url} />
+}
+
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -71,6 +85,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/alignment/:alignmentId?"
           element={<AlignmentRoute />}
+          errorElement={<ErrorBoundary />}
+        />
+        <Route
+          path="/mpm/:mpmId?"
+          element={<MpmRoute />}
           errorElement={<ErrorBoundary />}
         />
       </Routes>

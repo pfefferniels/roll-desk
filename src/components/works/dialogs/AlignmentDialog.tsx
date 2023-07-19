@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, Di
 import { useContext, useState } from "react"
 import { crm, crmdig, mer } from "../../../helpers/namespaces"
 import { RDF } from "@inrupt/vocab-common-rdf"
-import { SelectScore } from "../SelectScore"
+import { SelectEntity } from "../SelectEntity"
 
 interface AlignmentDialogProps {
     // either target (to create) or an existing
@@ -78,7 +78,11 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
                     </i>
                 </Box>
                 <Box mb={2}>
-                    <SelectScore onSelect={setScoreUrl} />
+                    <SelectEntity
+                        title='Select Score'
+                        type={mer('Score')}
+                        secondaryType={crm('R12_is_realized_in')}
+                        onSelect={setScoreUrl} />
                 </Box>
                 <Box>
                     <TextField

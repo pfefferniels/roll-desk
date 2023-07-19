@@ -13,6 +13,7 @@ import { LinkOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import ScoreWorkDetails from './ScoreWorkDetails';
 import { DigitizedScoreDetails } from './DigitizedScoreDetails';
+import MpmDetails from './MpmDetails';
 
 interface NodeDetailsProps {
     node: Thing;
@@ -21,7 +22,6 @@ interface NodeDetailsProps {
 
 export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
     const renderOptions = () => {
-        const rdfTypes = getUrlAll(node, RDF.type);
         const type = getUrl(node, crm('P2_has_type'));
 
         if (type === mer('RecordingWork')) {
@@ -42,6 +42,10 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
         else if (type === mer('Alignment')) {
             return <AlignmentDetails thing={node} />
         }
+        else if (type === mer('MPM')) {
+            return <MpmDetails thing={node} />;
+        }
+
 
         return null;
     };

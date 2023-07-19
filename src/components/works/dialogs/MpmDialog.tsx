@@ -1,9 +1,10 @@
-import { Thing, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
+import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
 import { RDF } from "@inrupt/vocab-common-rdf";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, TextField, Box, FormControl, Typography, Select, MenuItem } from "@mui/material";
 import { useContext, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
+import { SelectEntity } from "../SelectEntity";
 
 interface MpmDialogProps {
     // the expression
@@ -20,6 +21,8 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
 
+    const [alignmentUrl, setAlignmentUrl] = useState<UrlString>()
+    const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
     const [loading, setLoading] = useState(false)
 
     const saveToPod = async () => {
@@ -39,14 +42,26 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(crm('P2_has_type'), mer('MPM'))
 
+        const creationEvent = buildThing()
+            .addUrl(RDF.type, frbroo('F28_Expression_Creation'))
+            .addUrl(frbroo('R17_created'), mpmThing.build())
+
+        if (alignmentUrl) {
+            creationEvent.addUrl(crm('P16_used_specific_object'), alignmentUrl)
+        }
+
         let updatedDataset = setThing(worksDataset, mpmThing.build())
 
         if (attachTo) {
+            creationEvent.addUrl(frbroo('R19_created_a_realisation_of'), attachTo)
+
             const updatedWork = buildThing(attachTo)
                 .addUrl(crm('R12_is_realized_in'), asUrl(mpmThing.build(), containerUrl))
                 .build()
+
             updatedDataset = setThing(updatedDataset, updatedWork)
         }
+        updatedDataset = setThing(updatedDataset, creationEvent.build())
 
         setLoading(true)
         setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }))
@@ -59,9 +74,17 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
             <DialogContent>
                 <Box>
                     <Typography>On which alignment should the MPM be based on?</Typography>
-                    <Select>
-                        <MenuItem>123</MenuItem>
-                    </Select>
+                    <SelectEntity
+                        title='Select Alignment'
+                        type={mer('Alignment')}
+                        onSelect={setAlignmentUrl} />
+                </Box>
+                <Box>
+                    <Typography>Is there an analysis which should be taken into account?</Typography>
+                    <SelectEntity
+                        title='Select Analysis'
+                        type={mer('Analysis')}
+                        onSelect={setAnalysisUrl} />
                 </Box>
             </DialogContent>
             <DialogActions>

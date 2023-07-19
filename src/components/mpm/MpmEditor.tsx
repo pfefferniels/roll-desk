@@ -4,7 +4,6 @@ import Grid2 from '@mui/material/Unstable_Grid2';
 import { useEffect, useState } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import { LinkOutlined, PlayArrowOutlined } from '@mui/icons-material';
-import './MpmEditor.css'
 
 interface MpmEditorProps {
   url: string

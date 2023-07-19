@@ -12,3 +12,8 @@
     cursor: pointer;
 }
 
+.link-label {
+    font-size: 8px;
+    fill-opacity: 0.8;
+    fill: black;
+}
