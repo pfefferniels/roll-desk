@@ -1,18 +1,18 @@
-import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { oa, mer, crm, crmdig } from '../../helpers/namespaces';
-import { Card, CardContent, CircularProgress, IconButton, Tooltip } from '@mui/material';
-import { LinkOutlined, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
+import { CircularProgress, IconButton, Tooltip } from '@mui/material';
+import { ArrowBack, LinkOutlined, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
 import './AlignmentEditor.css'
 import { Mei } from '../../lib/mei';
 import { PianoRoll, ScoreFollower } from 'alignmenttool';
-import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { Pair } from './Pair';
+import { useNavigate } from 'react-router-dom';
 
 interface AlignmentEditorProps {
   url: string
@@ -27,6 +27,8 @@ interface AlignmentEditorProps {
  */
 export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const { session } = useSession()
+  const navigate = useNavigate()
+
   const [dataset, setDataset] = useState<SolidDataset>()
   const [alignment, setAlignment] = useState<Thing>()
   const [meiUrl, setMeiUrl] = useState<UrlString>()
@@ -34,16 +36,16 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const [pairs, setPairs] = useState<Thing[]>([])
   const [saving, setSaving] = useState(false)
 
-  const [renderedMei, setRenderedMei] = useState<Mei>()
-  const [renderedMidi, setRenderedMidi] = useState<PianoRoll>()
+  const renderedMei = useRef<Mei>()
+  const renderedMidi = useRef<PianoRoll>()
 
   const performAlignment = () => {
-    if (!renderedMei || !renderedMidi) return
+    if (!renderedMei.current || !renderedMidi.current) return
 
-    const hmm = renderedMei.asHMM()
+    const hmm = renderedMei.current.asHMM()
 
     const follower = new ScoreFollower(hmm, 4)
-    const matches = follower.getMatchResult(renderedMidi)
+    const matches = follower.getMatchResult(renderedMidi.current)
 
     setPairs(
       matches.events.map(match => {
@@ -66,6 +68,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
     setSaving(true)
     let modifiedDataset = dataset
     let modifiedAlignment = alignment
+    modifiedAlignment = removeAll(modifiedAlignment, crm('P9_consists_of'))
     for (const pair of pairs) {
       modifiedDataset = setThing(modifiedDataset, pair)
       modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), pair)
@@ -106,6 +109,11 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
 
             setMeiUrl(getUrl(scoreExpression, RDFS.label) || undefined)
             setMidiUrl(getUrl(recordingExpression, RDFS.label) || undefined)
+
+            const pairUrls = getUrlAll(alignment_, crm('P9_consists_of'))
+            setPairs(pairUrls
+              .map(pairUrl => getThing(solidDataset, pairUrl))
+              .filter(pair => pair !== null) as Thing[])
           }
         }
       } catch (e) {
@@ -120,14 +128,17 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
 
   return (
     <DatasetContext.Provider value={{ solidDataset: dataset, setDataset }}>
-      <Grid2 container spacing={1} m={1}>
+      <Grid2 container spacing={1} m={1} className='alignment-editor'>
         <Grid2 xs={12}>
           <h4>
+            <IconButton onClick={() => navigate('/works')}>
+              <ArrowBack />
+            </IconButton>
             Alignment
             <IconButton onClick={() => window.open(asUrl(alignment))}>
               <LinkOutlined />
             </IconButton>
-            <Tooltip title='Align Score to MIDI'>
+            <Tooltip title='Align score to MIDI. Be careful: this operation will overwrite existing pairs.'>
               <IconButton onClick={performAlignment}>
                 <PlayArrowOutlined />
               </IconButton>
@@ -152,12 +163,12 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
           <Grid2>
             {meiUrl && (
               <div>
-                <ScoreViewer url={meiUrl} landscape onDone={mei => setRenderedMei(mei)} />
+                <ScoreViewer url={meiUrl} landscape onDone={mei => renderedMei.current = mei} />
               </div>
             )}
           </Grid2>
           <Grid2>
-            {midiUrl && <MidiViewer url={midiUrl} onDone={midi => setRenderedMidi(midi)} />}
+            {midiUrl && <MidiViewer url={midiUrl} onDone={midi => renderedMidi.current = midi} />}
           </Grid2>
         </Grid2>
       </Grid2>
