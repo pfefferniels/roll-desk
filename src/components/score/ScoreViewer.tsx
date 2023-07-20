@@ -41,16 +41,16 @@ export const ScoreViewer = ({ url, landscape, onDone }: ScoreViewerProps) => {
 
     if (landscape) {
       vrvToolkit.setOptions({
-        pageWidth: 60000,
+        pageWidth: landscape ? 60000 : 2100,
         adjustPageHeight: true,
+        adjustPageWidth: true,
         svgHtml5: true,
         svgViewBox: true,
-        adjustPageWidth: true
       })
     }
     vrvToolkit.loadData(mei)
     setSvg(vrvToolkit.renderToSVG(1))
-  }, [mei, vrvToolkit])
+  }, [mei, landscape, onDone, vrvToolkit])
 
   return (
     <div>

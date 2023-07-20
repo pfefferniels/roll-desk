@@ -6,6 +6,7 @@ import { AnalysisEditor } from './components/analysis/AnalysisEditor';
 import { datasetUrl } from './helpers/datasetUrl';
 import { AlignmentEditor } from './components/alignment/AlignmentEditor';
 import { MpmEditor } from './components/mpm/MpmEditor';
+import { ScoreViewer } from './components/score/ScoreViewer';
 
 const ErrorBoundary = () => {
   return (
@@ -21,11 +22,24 @@ const MidiViewerRoute = () => {
 
   const url =
     midiId
-      ? `${datasetUrl}/${midiId}.ttl#${noteId ? noteId : midiId}`
+      ? `${datasetUrl}/${midiId}.mei#${noteId ? noteId : midiId}`
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
   return <MidiViewer url={url} />
+}
+
+const ScoreViewerRoute = () => {
+  const { scoreId } = useParams()
+  const [search] = useSearchParams()
+
+  const url =
+    scoreId
+      ? `${datasetUrl}/${scoreId}.mei`
+      : search.get('url')
+  if (!url) throw new Error('no proper URL passed')
+
+  return <ScoreViewer url={url} />
 }
 
 const AnalysisRoute = () => {
@@ -90,6 +104,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/mpm/:mpmId?"
           element={<MpmRoute />}
+          errorElement={<ErrorBoundary />}
+        />
+        <Route
+          path="/score/:scoreId?"
+          element={<ScoreViewerRoute />}
           errorElement={<ErrorBoundary />}
         />
       </Routes>

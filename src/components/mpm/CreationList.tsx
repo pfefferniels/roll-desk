@@ -48,15 +48,17 @@ export const CreationList = ({ expressionCreation, onChange }: CreationListProps
                 )}
             </Stack>
 
-            <Button
-                variant="contained"
-                onClick={() => setInterpolationDialogOpen(true)}>
-                Perform Interpolation
-            </Button>
+            <Box mt={1}>
+                <Button
+                    variant="contained"
+                    onClick={() => setInterpolationDialogOpen(true)}>
+                    Perform Interpolation
+                </Button>
 
-            <Button>
-                Add Manual Event
-            </Button>
+                <Button>
+                    Add Manual Event
+                </Button>
+            </Box>
 
             <CreateInterpolationDialog
                 open={interpolationDialogOpen}
