@@ -80,7 +80,7 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
                 <Box mb={2}>
                     <SelectEntity
                         title='Select Score'
-                        type={mer('Score')}
+                        type={mer('ScoreWork')}
                         secondaryType={crm('R12_is_realized_in')}
                         onSelect={setScoreUrl} />
                 </Box>

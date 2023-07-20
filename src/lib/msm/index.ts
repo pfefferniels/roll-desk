@@ -58,33 +58,12 @@ export class MSM {
      * 
      * @param alignedPerformance 
      */
-    constructor(alignedPerformance: AlignedPerformance) {
-        this.allNotes = alignedPerformance.getSemanticPairs()
-            .filter(pair => pair.midiNote && pair.scoreNote)
-            .map(pair => {
-                let duration = Mei.qstampToTstamp(pair.scoreNote!.duration)
+    constructor(notes?: MsmNote[], timeSignature?: TimeSignature) {
+        this.allNotes = notes ? notes.sort((a, b) => a['date'] - b['date']) : []
 
-                // in case of a duration of 0 we are probably dealing with a grace note
-                if (duration === 0) {
-                    duration = 180
-                }
-                
-                return {
-                    'part': pair.scoreNote!.part,
-                    'xml:id': pair.scoreNote!.id,
-                    'date': Mei.qstampToTstamp(pair.scoreNote!.qstamp),
-                    'duration': Mei.qstampToTstamp(pair.scoreNote!.duration),
-                    'pitchname': pair.scoreNote!.pname!,
-                    'octave': pair.scoreNote!.octave!,
-                    'accidentals': pair.scoreNote!.accid!,
-                    'midi.pitch': pair.midiNote!.pitch,
-                    'midi.onset': pair.midiNote!.onsetTime,
-                    'midi.duration': pair.midiNote!.duration,
-                    'midi.velocity': pair.midiNote!.velocity
-                }
-            })
-            .sort((a, b) => a['date'] - b['date'])
-        this.timeSignature = alignedPerformance.score?.timeSignature()
+        if (timeSignature) {
+            this.timeSignature = timeSignature
+        }
     }
 
     public serialize() {
@@ -182,7 +161,7 @@ export class MSM {
      * @returns 
      */
     public asChords(part: Part = 'global'): Chords {
-        const notes = part === 'global' ? this.allNotes : this.allNotes.filter(n => n.part-1 === part)
+        const notes = part === 'global' ? this.allNotes : this.allNotes.filter(n => n.part - 1 === part)
         return notes.reduce((prev: any, curr) => {
             if (prev[curr.date]) {
                 prev[curr.date].push(curr)
@@ -206,7 +185,7 @@ export class MSM {
      * Returns the last note
      * @returns MSM note
      */
-     public lastNote(): MsmNote | undefined {
+    public lastNote(): MsmNote | undefined {
         return this.allNotes.find(n => n.date === this.lastDate())
     }
 }
@@ -235,5 +214,5 @@ export const prepareMSM = async (mei: string, midi: ArrayLike<number>, alignment
         // if no alignment is given, perform an automatic alignment
         alignedPerformance.performAlignment();
     }
-    return new MSM(alignedPerformance);
+    return new MSM();
 };

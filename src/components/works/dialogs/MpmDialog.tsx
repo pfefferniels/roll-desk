@@ -50,6 +50,8 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
             creationEvent.addUrl(crm('P16_used_specific_object'), alignmentUrl)
         }
 
+        mpmThing.addUrl(frbroo('R17i_was_created_by'), creationEvent.build())
+
         let updatedDataset = setThing(worksDataset, mpmThing.build())
 
         if (attachTo) {
