@@ -1,10 +1,9 @@
 import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
-import { RDF } from "@inrupt/vocab-common-rdf";
+import { DCTERMS, RDF } from "@inrupt/vocab-common-rdf";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, TextField, Box, FormControl, Typography, Select, MenuItem } from "@mui/material";
 import { useContext, useState } from "react";
-import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
-import { SelectEntity } from "../SelectEntity";
+import { crm, crmdig, dcterms, frbroo, mer } from "../../../helpers/namespaces";
 
 interface MpmDialogProps {
     // the expression
@@ -21,8 +20,6 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
 
-    const [alignmentUrl, setAlignmentUrl] = useState<UrlString>()
-    const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
     const [loading, setLoading] = useState(false)
 
     const saveToPod = async () => {
@@ -44,11 +41,9 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
 
         const creationEvent = buildThing()
             .addUrl(RDF.type, frbroo('F28_Expression_Creation'))
+            .addUrl(crm('P14_carried_out_by'), session.info.webId!)
+            .addDatetime(DCTERMS.created, new Date(Date.now()))
             .addUrl(frbroo('R17_created'), mpmThing.build())
-
-        if (alignmentUrl) {
-            creationEvent.addUrl(crm('P16_used_specific_object'), alignmentUrl)
-        }
 
         mpmThing.addUrl(frbroo('R17i_was_created_by'), creationEvent.build())
 
@@ -74,27 +69,16 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Add/Edit MPM</DialogTitle>
             <DialogContent>
-                <Box>
-                    <Typography>On which alignment should the MPM be based on?</Typography>
-                    <SelectEntity
-                        title='Select Alignment'
-                        type={mer('Alignment')}
-                        onSelect={setAlignmentUrl} />
-                </Box>
-                <Box>
-                    <Typography>Is there an analysis which should be taken into account?</Typography>
-                    <SelectEntity
-                        title='Select Analysis'
-                        type={mer('Analysis')}
-                        onSelect={setAnalysisUrl} />
-                </Box>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={async () => {
-                    await saveToPod()
-                    onClose()
-                }}>
+                <Button
+                    variant='contained'
+                    disabled={loading}
+                    onClick={async () => {
+                        await saveToPod()
+                        onClose()
+                    }}>
                     {loading ? <CircularProgress /> : 'Save'}</Button>
             </DialogActions>
         </Dialog>

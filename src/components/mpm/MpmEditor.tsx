@@ -1,4 +1,4 @@
-import { SolidDataset, Thing, asUrl, getFile, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setThing, setUrl } from '@inrupt/solid-client';
+import { SolidDataset, Thing, asUrl, getFile, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setThing, setUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { useEffect, useState } from 'react';
@@ -8,15 +8,15 @@ import { RDFS } from '@inrupt/vocab-common-rdf';
 import CodeMirror from '@uiw/react-codemirror';
 import { datasetUrl } from '../../helpers/datasetUrl';
 import { v4 } from 'uuid';
-import { crm, frbroo, mer, oa, midi as mid } from '../../helpers/namespaces';
+import { crm, frbroo, mer, oa } from '../../helpers/namespaces';
 import { MPM } from '../../lib/mpm';
-import { MidiFile } from 'midifile-ts';
 import { Mei } from '../../lib/mei';
 import { loadDomParser, loadVerovio } from '../../lib/globals';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { asPianoRoll } from '../../lib/midi/asPianoRoll';
 import { MSM, MsmNote } from '../../lib/msm';
 import { defaultPipelines } from '../../lib/transformers';
+import { CreationList } from './CreationList';
 
 const minimalMpm = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,90 +41,7 @@ export const MpmEditor = ({ url }: MpmEditorProps) => {
   const [mpmExpression, setMpmExpression] = useState<Thing>()
   const [creation, setCreation] = useState<Thing>()
   const [mpm, setMpm] = useState<string>('')
-  // const [midi, setMidi] = useState<MidiFile>()
   const [saving, setSaving] = useState(false)
-  const [interpolationState, setInterpolationState] = useState<'fetching-mei' | 'fetching-midi' | 'transforming' | 'interpolating' | 'done'>()
-  const [pipeline, setPipeline] = useState(defaultPipelines['chordal-texture'])
-
-  const performInterpolation = async () => {
-    if (!dataset || !creation) return
-
-    const alignmentUrl = getUrl(creation, crm('P16_used_specific_object'))
-    if (!alignmentUrl) return
-
-    const alignment = getThing(dataset, alignmentUrl)
-    if (!alignment) return
-
-    const meiUrl = getUrl(alignment, mer('has_score'))
-    const midiUrl = getUrl(alignment, mer('has_recording'))
-    if (!meiUrl || !midiUrl) return
-
-    const meiExpression = getThing(dataset, meiUrl)
-    const midiExpression = getThing(dataset, midiUrl)
-    if (!meiExpression || !midiExpression) return
-
-    setInterpolationState('fetching-mei')
-    const mei = await getFile(
-      getUrl(meiExpression, RDFS.label) || '', { fetch: session.fetch as any })
-    if (!mei) return
-
-    setInterpolationState('fetching-midi')
-    const pieceUrl = getUrl(midiExpression, RDFS.label)
-    const midiDataset = await getSolidDataset(
-      getUrl(midiExpression, RDFS.label) || '', { fetch: session.fetch as any }
-    )
-    if (!pieceUrl || !midiDataset) return
-
-    const piece = getThing(midiDataset, pieceUrl)
-    if (!piece) return
-
-    const mei_ = new Mei(await mei.text(), await loadVerovio(), await loadDomParser())
-    const pr_ = asPianoRoll(piece, midiDataset)
-    if (!pr_) return
-
-    setInterpolationState('transforming')
-    // convert alignment to MSM which then can be fed into the pipeline
-    const msmNotes: MsmNote[] =
-      getUrlAll(alignment, crm('P9_consists_of'))
-        .map(pairUrl => getThing(dataset, pairUrl))
-        .filter(pair => pair !== null)
-        .reduce((acc, pair) => {
-          const scoreNoteId = urlAsLabel(getUrl(pair!, oa('hasTarget')))
-          const midiNoteUrl = getUrl(pair!, oa('hasBody'))
-
-          if (!scoreNoteId || !midiNoteUrl) return acc
-
-          const scoreNote = mei_.getById(scoreNoteId)
-          const midiNote = pr_.events.find(event => event.id === midiNoteUrl)
-
-          if (!scoreNote || !midiNote) return acc
-
-          acc.push({
-            'part': scoreNote.part,
-            'xml:id': scoreNote.id,
-            'date': Mei.qstampToTstamp(scoreNote.qstamp),
-            'duration': Mei.qstampToTstamp(scoreNote.duration),
-            'pitchname': scoreNote.pname!,
-            'octave': scoreNote.octave!,
-            'accidentals': scoreNote.accid!,
-            'midi.pitch': midiNote.pitch,
-            'midi.onset': midiNote.ontime,
-            'midi.duration': midiNote.offtime - midiNote.ontime,
-            'midi.velocity': midiNote.onvel
-          })
-          return acc
-        }, [] as MsmNote[])
-
-    setInterpolationState('interpolating')
-    const msm = new MSM(msmNotes, mei_.timeSignature())
-    const newMPM = new MPM(2)
-
-    // kick-off pipeline
-    pipeline.head?.transform(msm, newMPM)
-
-    setMpm(newMPM.serialize())
-    setInterpolationState('done')
-  }
 
   const saveMPM = async () => {
     if (!dataset || !mpmExpression) return
@@ -196,17 +113,16 @@ export const MpmEditor = ({ url }: MpmEditorProps) => {
             <IconButton onClick={() => window.open(asUrl(mpmExpression))}>
               <LinkOutlined />
             </IconButton>
-            <Tooltip title='Perform MPM Interpolation'>
-              <IconButton onClick={performInterpolation}>
-                <PlayArrowOutlined />
-              </IconButton>
-            </Tooltip>
           </h4>
         </Grid2>
         <Grid2 xs={4}>
-          {interpolationState}
+          {creation && (
+            <CreationList
+              expressionCreation={creation}
+              onChange={setMpm} />
+          )}
         </Grid2>
-        <Grid2>
+        <Grid2 xs={8}>
           <CodeMirror value={mpm} onChange={newMpm => setMpm(newMpm)} />
         </Grid2>
       </Grid2>
