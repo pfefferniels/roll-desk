@@ -23,7 +23,7 @@ function Profile() {
 
 export function LoginForm() {
     const { session, sessionRequestInProgress } = useSession();
-    const [oidcIssuer, setOidcIssuer] = useState('https://inrupt.net')
+    const [oidcIssuer, setOidcIssuer] = useState('https://solidcommunity.net')
     const [podProviderDialogOpen, setPodProviderDialogOpen] = useState(false)
 
     return (
