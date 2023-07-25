@@ -1,10 +1,12 @@
-import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, getStringNoLocale, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, UrlString, asUrl, buildThing, createThing, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl, overwriteFile, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material"
 import { useContext, useState } from "react"
-import { crm, crmdig, mer } from "../../../helpers/namespaces"
-import { RDF } from "@inrupt/vocab-common-rdf"
+import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces"
+import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { SelectEntity } from "../SelectEntity"
+import { datasetUrl } from "../../../helpers/datasetUrl"
+import { v4 } from "uuid"
 
 interface AlignmentDialogProps {
     // either target (to create) or an existing
@@ -49,13 +51,51 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
             alignment_.addUrl(mer('has_recording'), asUrl(target))
         }
 
+        let modifiedDataset = worksDataset
         if (scoreUrl) {
-            alignment_.addUrl(mer('has_score'), scoreUrl)
+            // retrieve the score expression from its source dataset
+            const scoreDataset = await getSolidDataset(scoreUrl, { fetch: session.fetch as any })
+            if (!scoreDataset) return
+
+            const scoreThing = getThing(scoreDataset, scoreUrl)
+            if (!scoreThing) return
+
+            const mei = await getFile(getUrl(scoreThing, RDFS.label) || '', { fetch: session.fetch as any })
+            if (!mei) return
+
+            const newMeiUrl = `${datasetUrl}/${v4()}.mei`
+            await overwriteFile(newMeiUrl, mei, { fetch: session.fetch as any })
+
+            // create a new score which is derived from the given score
+            const newScore = buildThing()
+                .addUrl(RDF.type, frbroo('F22_Self_Contained_Expression'))
+                .addUrl(RDF.type, crmdig('D1_Digital_Object'))
+                .addUrl(crm('P2_has_type'), mer('DigitalScore'))
+                .addUrl(RDFS.label, newMeiUrl)
+
+            const scoreWork = getUrl(scoreThing, frbroo('R12i_realises'))
+            console.log('scoreWork=', scoreWork)
+            if (scoreWork) {
+                newScore.addUrl(frbroo('R12i_realises'), scoreWork)
+            }
+
+            // in its creation event document the provenance the score
+            const creation = buildThing()
+                .addUrl(RDF.type, frbroo('F28_Expression_Creation'))
+                .addUrl(crm('P31_has_modified'), scoreUrl)
+                .addUrl(frbroo('R17_created'), newScore.build())
+
+            newScore.addUrl(frbroo('R17i_was_created_by'), creation.build())
+
+            modifiedDataset = setThing(modifiedDataset, newScore.build())
+            modifiedDataset = setThing(modifiedDataset, creation.build())
+
+            alignment_.addUrl(mer('has_score'), newScore.build())
         }
 
-        let updatedDataset = setThing(worksDataset, alignment_.build())
+        modifiedDataset = setThing(modifiedDataset, alignment_.build())
 
-        setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }))
+        setWorksDataset(await saveSolidDatasetAt(containerUrl, modifiedDataset, { fetch: session.fetch as any }))
 
         setLoading(false)
     }
@@ -81,7 +121,7 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
                     <SelectEntity
                         title='Select Score'
                         type={mer('ScoreWork')}
-                        secondaryType={crm('R12_is_realized_in')}
+                        secondaryType={frbroo('R12_is_realised_in')}
                         onSelect={setScoreUrl} />
                 </Box>
                 <Box>

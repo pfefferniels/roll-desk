@@ -85,7 +85,7 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
 
         if (attachTo) {
             const updatedWork = buildThing(attachTo)
-                .addUrl(crm('R12_is_realized_in'), asUrl(recording.build(), containerUrl))
+                .addUrl(frbroo('R12_is_realised_in'), asUrl(recording.build(), containerUrl))
                 .build()
             updatedDataset = setThing(updatedDataset, updatedWork)
         }

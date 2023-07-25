@@ -55,14 +55,18 @@ export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: Digitiz
                 score.addUrl(RDFS.label, meiUrl)
             }
         }
-        let updatedDataset = setThing(worksDataset, score.build())
 
+        let updatedDataset = worksDataset
         if (attachTo) {
+            score.addUrl(frbroo('R12i_realises'), attachTo)
+
             const updatedWork = buildThing(attachTo)
-                .addUrl(crm('R12_is_realized_in'), asUrl(score.build(), containerUrl))
+                .addUrl(frbroo('R12_is_realised_in'), asUrl(score.build(), containerUrl))
                 .build()
             updatedDataset = setThing(updatedDataset, updatedWork)
         }
+
+        updatedDataset = setThing(updatedDataset, score.build())
 
         setLoading('saving-expression')
         setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }))

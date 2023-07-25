@@ -7,8 +7,6 @@ import { Details } from './Details';
 import { useDataset, useThing } from '@inrupt/solid-ui-react';
 import { LinkOutlined } from '@mui/icons-material';
 import { crm } from '../../helpers/namespaces';
-import { ld2midi } from '../../lib/midi/ld2midi';
-import { MidiFile } from 'midifile-ts';
 import { asPianoRoll } from '../../lib/midi/asPianoRoll';
 import { PianoRoll } from 'alignmenttool';
 
@@ -38,7 +36,7 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s }: MidiViewerProps) 
       const pianoRoll = asPianoRoll(piece, dataset)
       pianoRoll && onDone(pianoRoll)
     }
-  }, [piece, dataset])
+  }, [piece, dataset, onDone])
 
   useEffect(() => {
     document.addEventListener('keydown', (e) => {

@@ -53,7 +53,7 @@ export const MpmDialog = ({ mpm, attachTo, open, onClose }: MpmDialogProps) => {
             creationEvent.addUrl(frbroo('R19_created_a_realisation_of'), attachTo)
 
             const updatedWork = buildThing(attachTo)
-                .addUrl(crm('R12_is_realized_in'), asUrl(mpmThing.build(), containerUrl))
+                .addUrl(frbroo('R12_is_realised_in'), asUrl(mpmThing.build(), containerUrl))
                 .build()
 
             updatedDataset = setThing(updatedDataset, updatedWork)

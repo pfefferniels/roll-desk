@@ -43,7 +43,7 @@ export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll 
         let currentTickTime = 0
 
         for (const event of eventThings) {
-            console.log(event)
+            // console.log(event)
             if (!event) continue
 
             if (getUrlAll(event, RDF.type).includes(midi('SetTempoEvent'))) {

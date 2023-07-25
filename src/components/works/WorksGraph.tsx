@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useLayoutEffect } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
@@ -36,13 +36,15 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
 
     const linkingProperties =
         [crm('R2_is_derivative_of'),
-        crm('R12_is_realized_in'),
+        frbroo('R12_is_realised_in'),
+        frbroo('R12i_realises'),
         crm('R10_has_member'),
         frbroo('R17_created'),
         frbroo('R19_created_a_realisation_of'),
         crm('P16_used_specific_object'),
         crm('P67_refers_to'),
         crm('P9_consists_of'),
+        crm('P31_has_modified'),
         mer('has_score'),
         mer('has_recording')]
 

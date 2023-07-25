@@ -56,7 +56,9 @@ export class MSM {
      * Constructs an MSM representation from a done
      * score-to-performance alignment. 
      * 
-     * @param alignedPerformance 
+     * @param notes (usually constructed from an alignment)
+     * containing information about symbolic time and the
+     * real (physical) time.
      */
     constructor(notes?: MsmNote[], timeSignature?: TimeSignature) {
         this.allNotes = notes ? notes.sort((a, b) => a['date'] - b['date']) : []
