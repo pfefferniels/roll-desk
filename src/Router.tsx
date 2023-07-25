@@ -7,6 +7,7 @@ import { datasetUrl } from './helpers/datasetUrl';
 import { AlignmentEditor } from './components/alignment/AlignmentEditor';
 import { MpmEditor } from './components/mpm/MpmEditor';
 import { ScoreViewer } from './components/score/ScoreViewer';
+import { Work } from './components/work/Work';
 
 const ErrorBoundary = () => {
   return (
@@ -81,6 +82,20 @@ const MpmRoute = () => {
   return <MpmEditor url={url} />
 }
 
+const WorkRoute = () => {
+  const { workId } = useParams()
+  const [search] = useSearchParams()
+
+  const url =
+    workId
+      ? `${datasetUrl}/works.ttl${workId}`
+      : search.get('url')
+  if (!url) throw new Error('no proper URL passed')
+
+  return <Work url={url} />
+}
+
+
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -111,6 +126,12 @@ const AppRouter: React.FC = () => {
           element={<ScoreViewerRoute />}
           errorElement={<ErrorBoundary />}
         />
+        <Route
+          path="/work/:workId?"
+          element={<WorkRoute />}
+          errorElement={<ErrorBoundary />}
+        />
+
       </Routes>
     </BrowserRouter>
   );

@@ -73,7 +73,7 @@ const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ t
       <DigitizedRecordingDialog thing={thing} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
       <AlignmentDialog target={thing} open={alignmentDialogOpen} onClose={() => setAlignmentDialogOpen(false)} />
       <AnalysisDialog target={thing} open={analysisDialogOpen} onClose={() => setAnalysisDialogOpen(false)} />
-    </Box>
+    </Box >
   );
 };
 
