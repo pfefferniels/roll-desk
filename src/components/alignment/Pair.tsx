@@ -1,42 +1,48 @@
-import { Thing, getUrl } from "@inrupt/solid-client"
-import { Card, CardContent } from "@mui/material"
-import { oa } from "../../helpers/namespaces"
-import { urlAsLabel } from "../../helpers/urlAsLabel"
+import React from 'react'
 
-interface PairCardProps {
-    pair: Thing
+interface PairProps {
+    parent: Element
+    to: Element
+    from: Element
+    color: string
+    onAltShiftClick: () => void
+    onClick: () => void
 }
 
-export const Pair = ({ pair }: PairCardProps) => {
-    const scoreId = urlAsLabel(getUrl(pair, oa('hasTarget'))) || 'unknown'
-    const midiId = urlAsLabel(getUrl(pair, oa('hasBody'))) || 'unknown'
-
-    const highlight = (id: string) => {
-        const el = document.querySelector(`*[data-id="${id}"]`)
-
-        console.log(el)
-
-        if (!el) return
-        el.setAttribute('fill', 'red')
-        el.querySelector('path')?.setAttribute('fill', 'red')
-    }
+export const Pair = ({ parent, to, from, color, onAltShiftClick, onClick }: PairProps) => {
+    const parentBox = parent.getBoundingClientRect()
+    const parentX = parentBox.x
+    const parentY = parentBox.y
 
     return (
-        <Card style={{ marginBottom: 2 }}>
-            <CardContent>
-                <div onMouseOver={() => {
-                    highlight(scoreId)
-                    highlight(midiId)
-                }}>
-                    <div style={{ float: 'left' }}>
-                        {scoreId}
-                    </div>
-                    <div style={{ float: 'right' }}>
-                        {midiId}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+        <g>
+            <path
+                className='innerConnectionLine'
+                d={`M ${to.getBoundingClientRect().x - parentX},${to.getBoundingClientRect().y - parentY}
+                    C ${to.getBoundingClientRect().x - parentX},${to.getBoundingClientRect().y + 90 - parentY}
+                      ${from.getBoundingClientRect().x - parentX},${from.getBoundingClientRect().y - 90 - parentY}
+                      ${from.getBoundingClientRect().x - parentX},${from.getBoundingClientRect().y - parentY}`}
+                stroke='black'
+                fill='none'
+                strokeWidth={0.7}/>
+            <path
+                data-original-id={to.getAttribute('id')}
+                className='connectionLine'
+                d={`M ${to.getBoundingClientRect().x - parentX},${to.getBoundingClientRect().y - parentY}
+                    C ${to.getBoundingClientRect().x - parentX},${to.getBoundingClientRect().y + 90 - parentY}
+                      ${from.getBoundingClientRect().x - parentX},${from.getBoundingClientRect().y - 90 - parentY}
+                      ${from.getBoundingClientRect().x - parentX},${from.getBoundingClientRect().y - parentY}`}
+                fill='none'
+                strokeWidth={0.7}
+                stroke={color}
+                onClick={(e) => {
+                    if (e.altKey && e.shiftKey) {
+                        onAltShiftClick()
+                    }
+                    else {
+                        onClick()
+                    }
+                }} />
+        </g>
     )
 }
-

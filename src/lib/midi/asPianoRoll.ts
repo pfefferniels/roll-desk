@@ -35,29 +35,36 @@ export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll 
             .map(url => getThing(midiDataset, url))
             .filter(event => event !== null)
             .sort((a, b) => {
-                const tickA = getInteger(a!, crm('P82a_begin_of_the_begin')) || 0
-                const tickB = getInteger(b!, crm('P82a_begin_of_the_begin')) || 0
+                const tickA =
+                    getInteger(a!, crm('P82a_begin_of_the_begin')) ||
+                    getInteger(a!, midi('tick')) ||
+                    0
+                const tickB =
+                    getInteger(b!, crm('P82a_begin_of_the_begin')) ||
+                    getInteger(b!, midi('tick')) ||
+                    0
                 return tickA - tickB
             })
 
         let currentTickTime = 0
 
         for (const event of eventThings) {
-            // console.log(event)
             if (!event) continue
 
             if (getUrlAll(event, RDF.type).includes(midi('SetTempoEvent'))) {
                 currentTickTime = tempoToTickTime(event, ticksPerBeat)
             }
             else if (getUrlAll(event, crm('P2_has_type')).includes(midi('NoteEvent'))) {
+                // TODO something is going wrong here, as currentTickTime seems
+                // to be 0 permanently.
                 const onset = getInteger(event, crm('P82a_begin_of_the_begin')) || 0
                 const offset = getInteger(event, crm('P82b_end_of_the_end')) || 0
                 const pitch = getInteger(event, midi('pitch')) || 0
                 const velocity = getInteger(event, midi('velocity')) || 0
 
                 allEvents.push({
-                    ontime: currentTickTime * onset,
-                    offtime: currentTickTime * offset,
+                    ontime: (currentTickTime || 0.001) * onset,
+                    offtime: (currentTickTime || 0.001) * offset,
                     id: asUrl(event),
                     pitch: pitch,
                     sitch: pitchToSitch(pitch),

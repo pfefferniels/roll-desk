@@ -1,18 +1,53 @@
 import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { oa, mer, crm, crmdig } from '../../helpers/namespaces';
-import { CircularProgress, IconButton, Tooltip } from '@mui/material';
-import { ArrowBack, LinkOutlined, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
+import { CircularProgress, IconButton, Link, Tooltip } from '@mui/material';
+import { ArrowBack, FastForward, LinkOutlined, PlayArrow, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
 import './AlignmentEditor.css'
 import { Mei } from '../../lib/mei';
-import { PianoRoll, ScoreFollower } from 'alignmenttool';
-import { Pair } from './Pair';
+import { HMM, PianoRoll, ScoreFollower } from 'alignmenttool';
 import { useNavigate } from 'react-router-dom';
+import { PairContainer } from './PairContainer';
+import { urlAsLabel } from '../../helpers/urlAsLabel';
+
+const findScoreTimeOfNote = (hmm: HMM, meiId: string) => {
+  const result = hmm.events.find(
+    event => event.clusters.findIndex(
+      cluster => cluster.findIndex(note => note.meiID === meiId) !== -1)
+      !== -1)?.scoreTime
+  if (result === undefined) return -1
+  return result
+}
+
+const buildPair = (midiEvent: Thing | UrlString | null, meiId: UrlString | null) => {
+  const annotation = buildThing()
+    .addUrl(RDF.type, oa('Annotation'))
+    .addUrl(RDF.type, crmdig('D29_Annotation_Object'))
+    .addUrl(crm('P2_has_type'), mer('AlignmentPair'))
+
+  if (midiEvent) {
+    annotation.addUrl(oa('hasBody'), midiEvent)
+  }
+
+  if (meiId) {
+    annotation.addUrl(oa('hasTarget'), meiId)
+  }
+
+  return annotation.build()
+}
+
+type MatchType = 'exact' | 'alteration' | 'omission' | 'addition'
+
+export interface PairT {
+  midiEventUrl: UrlString | null
+  meiId: UrlString | null
+  type: MatchType
+}
 
 interface AlignmentEditorProps {
   url: string
@@ -33,52 +68,99 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const [alignment, setAlignment] = useState<Thing>()
   const [meiUrl, setMeiUrl] = useState<UrlString>()
   const [midiUrl, setMidiUrl] = useState<UrlString>()
-  const [pairs, setPairs] = useState<Thing[]>([])
+
+  const [pairs, setPairs] = useState<PairT[]>([])
+
   const [saving, setSaving] = useState(false)
 
   const renderedMei = useRef<Mei>()
   const renderedMidi = useRef<PianoRoll>()
 
-  const performAlignment = () => {
+  const handleMEIReady = useCallback((mei: Mei) => {
+    renderedMei.current = mei
+  }, [])
+
+  const handleMidiReady = useCallback((midi: PianoRoll) => {
+    renderedMidi.current = midi
+  }, [])
+
+  const parentRef = useRef<SVGSVGElement>(null)
+
+  const [selectedMidiEvent, setSelectedMidiEvent] = useState<Thing>()
+  const [selectedNote, setSelectedNote] = useState<UrlString>()
+  const [selectedPair, setSelectedPair] = useState<PairT>()
+
+  useEffect(() => {
+    if (!selectedMidiEvent || !selectedNote) return
+
+    setPairs(prevPairs => [...prevPairs, {
+      midiEventUrl: asUrl(selectedMidiEvent),
+      meiId: selectedNote,
+      type: 'exact'
+    }])
+    setSelectedMidiEvent(undefined)
+    setSelectedNote(undefined)
+  }, [selectedMidiEvent, selectedNote])
+
+  const performAlignment = (from?: PairT) => {
     if (!renderedMei.current || !renderedMidi.current) return
 
     const hmm = renderedMei.current.asHMM()
+    const pr = new PianoRoll()
+    pr.events = renderedMidi.current.events
+
+    if (from) {
+      if (!from.meiId || !from.midiEventUrl) return
+
+      const scoreBegin = findScoreTimeOfNote(hmm, from.meiId) || 0
+      hmm.events = hmm.events.filter(event => event.scoreTime > scoreBegin)
+
+      const midiBegin = pr.events.find(event => event.id === from.midiEventUrl)?.ontime || 0
+      pr.events = pr.events.filter(event => event.ontime > midiBegin)
+    }
 
     const follower = new ScoreFollower(hmm, 4)
-    const matches = follower.getMatchResult(renderedMidi.current)
+    const matches = follower.getMatchResult(pr).events.map(match => {
+      let type: MatchType = 'exact'
+      if (!match.meiId) type = 'addition'
+      // TODO determine if 'alteration' or 'omission'
 
-    setPairs(
-      matches.events.map(match => {
-        const annotation = buildThing()
-          .addUrl(RDF.type, oa('Annotation'))
-          .addUrl(RDF.type, crmdig('D29_Annotation_Object'))
-          .addUrl(crm('P2_has_type'), mer('AlignmentPair'))
-          .addUrl(oa('hasBody'), match.id)
-        if (match.meiId) {
-          annotation.addUrl(oa('hasTarget'), `${meiUrl}#${match.meiId}`)
-        }
-        return annotation.build()
-      })
-    )
+      return {
+        midiEventUrl: match.id,
+        meiId: `${meiUrl}#${match.meiId}`,
+        type
+      }
+    })
+
+    if (from) {
+      setPairs([...pairs.slice(0, pairs.indexOf(from)), ...matches])
+    }
+    else {
+      setPairs(matches)
+    }
   }
 
   const savePairs = async () => {
     if (!alignment || !dataset) return
 
     setSaving(true)
+    const chunkSize = 100;
     let modifiedDataset = dataset
-    let modifiedAlignment = alignment
-    modifiedAlignment = removeAll(modifiedAlignment, crm('P9_consists_of'))
-    for (const pair of pairs) {
-      modifiedDataset = setThing(modifiedDataset, pair)
-      modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), pair)
-    }
-    modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
-    setAlignment(modifiedAlignment)
+    let modifiedAlignment = removeAll(alignment, crm('P9_consists_of'))
+    for (let i = 0; i < pairs.length; i += chunkSize) {
+      const chunk = pairs.slice(i, i + chunkSize);
 
-    setDataset(
-      await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
-    )
+      for (const pair of chunk) {
+        const pairThing = buildPair(pair.midiEventUrl, `${meiUrl}/${pair.meiId}`)
+        modifiedDataset = setThing(modifiedDataset, pairThing)
+        modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), pairThing)
+      }
+      modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+      modifiedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+    }
+    setAlignment(modifiedAlignment)
+    setDataset(modifiedDataset)
+
     setSaving(false)
   }
 
@@ -113,7 +195,12 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
             const pairUrls = getUrlAll(alignment_, crm('P9_consists_of'))
             setPairs(pairUrls
               .map(pairUrl => getThing(solidDataset, pairUrl))
-              .filter(pair => pair !== null) as Thing[])
+              .filter(pair => pair !== null)
+              .map(pairThing => ({
+                midiEventUrl: getUrl(pairThing!, oa('hasBody')) || null,
+                meiId: urlAsLabel(getUrl(pairThing!, oa('hasTarget'))) || null,
+                type: 'exact'
+              })))
           }
         }
       } catch (e) {
@@ -136,11 +223,16 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
             </IconButton>
             Alignment
             <IconButton onClick={() => window.open(asUrl(alignment))}>
-              <LinkOutlined />
+              <Link />
             </IconButton>
             <Tooltip title='Align score to MIDI. Be careful: this operation will overwrite existing pairs.'>
-              <IconButton onClick={performAlignment}>
-                <PlayArrowOutlined />
+              <IconButton onClick={() => performAlignment()}>
+                <PlayArrow />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='Aligns the following pairs'>
+              <IconButton disabled={!selectedPair} onClick={() => performAlignment(selectedPair)}>
+                <FastForward />
               </IconButton>
             </Tooltip>
             {pairs.length > 0 && (
@@ -150,26 +242,39 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
             )}
           </h4>
         </Grid2>
-        <Grid2 xs={4}>
-          {pairs.length === 0
-            ? 'No alignments yet'
-            : pairs.map((pair, i) => (
-              <Pair
-                key={`alignment_card_${i}`}
-                pair={pair} />
-            ))}
-        </Grid2>
         <Grid2 xs={8}>
-          <Grid2>
-            {meiUrl && (
-              <div>
-                <ScoreViewer url={meiUrl} landscape onDone={mei => renderedMei.current = mei} />
-              </div>
+          <svg ref={parentRef} width={1000} height={900}>
+            {midiUrl && (
+              <MidiViewer
+                asSvg
+                url={midiUrl}
+                onDone={handleMidiReady}
+                onSelect={(event) => {
+                  console.log('selected event=', event)
+                  event && setSelectedMidiEvent(event)
+                }} />
             )}
-          </Grid2>
-          <Grid2>
-            {midiUrl && <MidiViewer url={midiUrl} onDone={midi => renderedMidi.current = midi} />}
-          </Grid2>
+
+            <g transform='translate(0, -3500) scale(8 8)'>
+              {meiUrl && (
+                <ScoreViewer
+                  asSvg
+                  url={meiUrl}
+                  landscape
+                  onSelect={(noteId) => {
+                    console.log('selected note=', noteId)
+                    setSelectedNote(noteId)
+                  }}
+                  onDone={handleMEIReady} />
+              )}
+            </g>
+
+            <PairContainer
+              parentRef={parentRef.current}
+              pairs={pairs} color='black'
+              onSelect={(pair) => setSelectedPair(pair)}
+              onRemove={(pair) => setPairs(prev => [...prev.slice(0, prev.indexOf(pair)), ...prev.slice(prev.indexOf(pair) + 1)])} />
+          </svg>
         </Grid2>
       </Grid2>
     </DatasetContext.Provider>

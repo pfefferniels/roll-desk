@@ -16,9 +16,10 @@ interface MidiViewerProps {
   onSelect?: (event: Thing | null) => void
   onDone?: (pr: PianoRoll) => void
   e13s?: Thing[]
+  asSvg?: boolean
 }
 
-const MidiViewer = ({ url, onChange, onSelect, onDone, e13s }: MidiViewerProps) => {
+const MidiViewer = ({ url, onChange, onSelect, onDone, e13s, asSvg }: MidiViewerProps) => {
   const { dataset } = useDataset(url)
   const { thing: piece, error } = useThing(url, url)
 
@@ -50,6 +51,24 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s }: MidiViewerProps) 
   if (!piece || !dataset) {
     if (error) return <span>Failed fetching piece</span>
     else return <CircularProgress />
+  }
+
+  if (asSvg) {
+    return (
+      <DatasetProvider dataset={dataset} thing={piece}>
+        <Piece
+          piece={piece}
+          dataset={dataset}
+          pixelsPerTick={pixelsPerTick}
+          selectedEvent={selectedNote}
+          onSelect={(note: Thing) => {
+            setSelectedNote(note)
+            onSelect && onSelect(note)
+          }}
+          e13s={e13s}
+          onChange={(e13) => onChange && onChange(e13)} />
+      </DatasetProvider>
+    )
   }
 
   return (

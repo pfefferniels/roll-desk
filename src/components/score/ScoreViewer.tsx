@@ -9,10 +9,12 @@ import { Mei } from '../../lib/mei';
 interface ScoreViewerProps {
   url: string
   landscape?: boolean
+  onSelect?: (noteId: string) => void
   onDone?: (mei: Mei) => void
+  asSvg?: boolean
 }
 
-export const ScoreViewer = ({ url, landscape, onDone }: ScoreViewerProps) => {
+export const ScoreViewer = ({ url, landscape, onSelect, onDone, asSvg }: ScoreViewerProps) => {
   const { session } = useSession()
   const [mei, setMei] = useState<string>()
   const [vrvToolkit, setVrvToolkit] = useState<any>()
@@ -23,6 +25,7 @@ export const ScoreViewer = ({ url, landscape, onDone }: ScoreViewerProps) => {
   }, [])
 
   useEffect(() => {
+    console.log('useEffect 1')
     const fetchMei = async () => {
       const meiBlob = await getFile(
         url,
@@ -35,6 +38,7 @@ export const ScoreViewer = ({ url, landscape, onDone }: ScoreViewerProps) => {
   }, [url, session.fetch])
 
   useEffect(() => {
+    console.log('useEffect 2')
     if (!vrvToolkit || !mei) return
 
     onDone && onDone(new Mei(mei, vrvToolkit, new DOMParser()))
@@ -51,6 +55,29 @@ export const ScoreViewer = ({ url, landscape, onDone }: ScoreViewerProps) => {
     vrvToolkit.loadData(mei)
     setSvg(vrvToolkit.renderToSVG(1))
   }, [mei, landscape, onDone, vrvToolkit])
+
+  useEffect(() => console.log('ondone changed'), [vrvToolkit])
+
+  useEffect(() => {
+    console.log('useEffect 3')
+
+    const timer = setTimeout(() => {
+      document.querySelectorAll('.verovioCanvas .note').forEach(el => {
+        el.addEventListener('click', () => {
+          // console.log('attaching stuff to', el)
+          onSelect && onSelect(el.getAttribute('data-id') || 'unknown')
+        })
+      })
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [svg, onSelect])
+
+  if (asSvg) {
+    return (
+      svg ? <svg className='verovioCanvas' dangerouslySetInnerHTML={{ __html: svg }} />
+          : <svg><text>loading ...</text></svg>
+    )
+  }
 
   return (
     <div>
