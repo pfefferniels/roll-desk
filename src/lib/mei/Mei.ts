@@ -1,19 +1,18 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { MeiNote } from "."
 import { TimeSignature } from "../msm"
-import { RdfEntity } from "../rdf"
 
-export class Mei extends RdfEntity {
+export class Mei {
     private scoreDOM: Document
+    private domParser: DOMParser
     notes: MeiNote[]
     timemap: any[]  // TODO define type. 
     vrvToolkit: any
 
     // score encoding can be anything that Verovio can parse
     constructor(scoreEncoding: string, vrvToolkit: any, domParser: DOMParser) {
-        super()
-        this.id = 'score.mei'
         this.vrvToolkit = vrvToolkit
+        this.domParser = domParser
 
         console.log('new score object created using Verovio version', this.vrvToolkit.getVersion())
 
@@ -25,6 +24,52 @@ export class Mei extends RdfEntity {
 
         // using getMEI() here since it adds `xml:id` to all elements
         this.scoreDOM = domParser.parseFromString(this.vrvToolkit.getMEI(), 'text/xml')
+        this.timemap = this.vrvToolkit.renderToTimemap()
+        this.notes = this.getNotesFromTimemap()
+    }
+
+    insertReading(on: string, alternative: MeiNote[], encapsulation?: string) {
+        const noteEl = Array.from(this.scoreDOM.querySelectorAll('note')).find(el => el.getAttribute('xml:id') === on)
+        const parent = noteEl?.parentElement
+
+        if (!noteEl || !parent) return
+
+        const app = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'app')
+        parent.insertBefore(app, noteEl)
+
+        const rdg1 = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'rdg')
+        const rdg2 = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'rdg')
+
+        app.appendChild(rdg1)
+        app.appendChild(rdg2)
+
+        // move note into first <rdg>
+        rdg1.appendChild(noteEl)
+
+        let newContent: Element
+        if (encapsulation) {
+            newContent = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', encapsulation)
+            rdg2.appendChild(newContent)
+        }
+        else {
+            newContent = rdg2
+        }
+
+        alternative.forEach(note => {
+            const newNote = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'note')
+            newNote.setAttribute('pname', note.pname || '')
+            newNote.setAttribute('oct', note.octave?.toString() || '')
+            newContent.appendChild(newNote)
+        })
+
+        this.update()
+    }
+
+    update() {
+        // using getMEI() here since it adds `xml:id` to all elements
+        const scoreEncoding = new XMLSerializer().serializeToString(this.scoreDOM)
+        this.vrvToolkit.loadData(scoreEncoding)
+        this.scoreDOM = this.domParser.parseFromString(this.vrvToolkit.getMEI(), 'text/xml')
         this.timemap = this.vrvToolkit.renderToTimemap()
         this.notes = this.getNotesFromTimemap()
     }
@@ -157,7 +202,7 @@ export class Mei extends RdfEntity {
                 })
             }
 
-            result.push(new HMMEvent(event.qstamp, event.qstamp+0.5, [notesAtTime]))
+            result.push(new HMMEvent(event.qstamp, event.qstamp + 0.5, [notesAtTime]))
         }
         const hmm = new HMM()
         hmm.events = result 
@@ -198,16 +243,6 @@ export class Mei extends RdfEntity {
      */
     public getById(id: string): MeiNote | undefined {
         return this.allNotes().find((value: MeiNote) => value.id === id)
-    }
-
-    /**
-     * This function generates RDF triples from the score
-     * as RDFized MEI.
-     * 
-     * @returns string of RDF triples in Turtle format.
-     */
-    public serializeToRDF(): string {
-        return ''
     }
 
     /**

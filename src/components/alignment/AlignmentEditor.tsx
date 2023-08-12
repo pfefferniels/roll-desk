@@ -4,7 +4,7 @@ import Grid2 from '@mui/material/Unstable_Grid2';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { oa, mer, crm, crmdig } from '../../helpers/namespaces';
 import { CircularProgress, IconButton, Link, Tooltip } from '@mui/material';
-import { ArrowBack, FastForward, LinkOutlined, PlayArrow, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
+import { ArrowBack, FastForward, PlayArrow, SaveOutlined } from '@mui/icons-material';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
@@ -14,6 +14,8 @@ import { HMM, PianoRoll, ScoreFollower } from 'alignmenttool';
 import { useNavigate } from 'react-router-dom';
 import { PairContainer } from './PairContainer';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
+import { PairDataContext } from '../../providers/PairData';
+import { MeiContext } from '../../providers/MeiContext';
 
 const findScoreTimeOfNote = (hmm: HMM, meiId: string) => {
   const result = hmm.events.find(
@@ -87,7 +89,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   const parentRef = useRef<SVGSVGElement>(null)
 
   const [selectedMidiEvent, setSelectedMidiEvent] = useState<Thing>()
-  const [selectedNote, setSelectedNote] = useState<UrlString>()
+  const [selectedNote, setSelectedNote] = useState<string>()
   const [selectedPair, setSelectedPair] = useState<PairT>()
 
   useEffect(() => {
@@ -123,11 +125,19 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
     const matches = follower.getMatchResult(pr).events.map(match => {
       let type: MatchType = 'exact'
       if (!match.meiId) type = 'addition'
-      // TODO determine if 'alteration' or 'omission'
+      else {
+        const midiEvent = renderedMidi.current?.events.find(event => event.id === match.id)
+        const scoreEvent = renderedMei.current?.getById(match.meiId)
+
+        if (scoreEvent?.pnum !== midiEvent?.pitch) {
+          type = 'alteration'
+        }
+      }
+      // TODO determine omissions
 
       return {
         midiEventUrl: match.id,
-        meiId: `${meiUrl}#${match.meiId}`,
+        meiId: match.meiId || null,
         type
       }
     })
@@ -249,10 +259,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
                 asSvg
                 url={midiUrl}
                 onDone={handleMidiReady}
-                onSelect={(event) => {
-                  console.log('selected event=', event)
-                  event && setSelectedMidiEvent(event)
-                }} />
+                onSelect={(event) => event && setSelectedMidiEvent(event)} />
             )}
 
             <g transform='translate(0, -3500) scale(8 8)'>
@@ -261,19 +268,30 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
                   asSvg
                   url={meiUrl}
                   landscape
-                  onSelect={(noteId) => {
-                    console.log('selected note=', noteId)
-                    setSelectedNote(noteId)
-                  }}
+                  onSelect={(noteId) => setSelectedNote(noteId)}
                   onDone={handleMEIReady} />
               )}
             </g>
 
-            <PairContainer
-              parentRef={parentRef.current}
-              pairs={pairs} color='black'
-              onSelect={(pair) => setSelectedPair(pair)}
-              onRemove={(pair) => setPairs(prev => [...prev.slice(0, prev.indexOf(pair)), ...prev.slice(prev.indexOf(pair) + 1)])} />
+            <MeiContext.Provider value={renderedMei.current}>
+              <PairDataContext.Provider value={(meiId) => {
+                const affectedPairs = pairs.filter(pair => pair.meiId === meiId)
+                return {
+                  note: renderedMei.current?.getById(meiId),
+                  midiEvents: affectedPairs.map(pair => {
+                    const eventUrl = pair.midiEventUrl
+                    return renderedMidi.current?.events.find(event => event.id === eventUrl)
+                  })
+                }
+              }}>
+                <PairContainer
+                  parentRef={parentRef.current}
+                  pairs={pairs}
+                  color='black'
+                  onSelect={(pair) => setSelectedPair(pair)}
+                  onRemove={(pair) => setPairs(prev => [...prev.slice(0, prev.indexOf(pair)), ...prev.slice(prev.indexOf(pair) + 1)])} />
+              </PairDataContext.Provider>
+            </MeiContext.Provider>
           </svg>
         </Grid2>
       </Grid2>

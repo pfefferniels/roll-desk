@@ -1,10 +1,11 @@
 import { UrlString } from "@inrupt/solid-client"
 import { Pair } from "./Pair"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { PairT } from "./AlignmentEditor"
+import { InsertReadingOverlay } from "./InsertReadingOverlay"
 
-const findDOMElementFor = (url: UrlString) => {
+export const findDOMElementFor = (url: UrlString) => {
     const id = urlAsLabel(url)
     if (!id) return null
     return document.querySelector(`*[data-id="${id}"]`)
@@ -24,15 +25,11 @@ export const PairContainer = ({ pairs, parentRef, color, onRemove, onSelect }: P
     useEffect(() => {
         if (!parentRef) return
 
-        const roll = parentRef.querySelector('#roll')
+        const roll = document.querySelector('#roll')
         const score = parentRef.querySelector('.verovioCanvas svg')
         if (!roll || !score) return
 
-        const observer = new MutationObserver((mutations, observer_) => {
-            console.log('changed')
-            setRerender(prev => prev + 1)
-        })
-
+        const observer = new MutationObserver(() => setRerender(prev => prev + 1))
         observer.observe(roll, {
             attributes: true
         })
@@ -52,16 +49,27 @@ export const PairContainer = ({ pairs, parentRef, color, onRemove, onSelect }: P
 
                 if (!midiEl || !noteEl) return null
 
+                let action: JSX.Element | null = null
+                if (pair.type === 'alteration') {
+                    action = (
+                        <InsertReadingOverlay
+                            parent={parentRef}
+                            attachTo={pair.meiId} />
+                    )
+                }
+
                 return (
-                    <Pair
-                        key={`connection_${pair.midiEventUrl}_${pair.meiId}`}
-                        parent={parentRef}
-                        from={midiEl}
-                        to={noteEl}
-                        color={color || 'gray'}
-                        onAltShiftClick={() => onRemove && onRemove(pair)}
-                        onClick={() => onSelect && onSelect(pair)}
-                    />
+                    <g key={`connection_${pair.midiEventUrl}_${pair.meiId}`}>
+                        {action}
+                        <Pair
+                            parent={parentRef}
+                            from={midiEl}
+                            to={noteEl}
+                            color={color || 'gray'}
+                            onAltShiftClick={() => onRemove && onRemove(pair)}
+                            onClick={() => onSelect && onSelect(pair)}
+                        />
+                    </g>
                 )
             }
             )}
