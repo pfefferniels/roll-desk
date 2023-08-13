@@ -4,8 +4,10 @@ import { readFileSync } from "fs"
 import { InterpolateDynamicsMap } from "../src/lib/transformers"
 import { jest } from '@jest/globals'
 
+jest.useFakeTimers()
+
 describe('InterpolateDynamics', () => {
-    jest.setTimeout(60000)
+    // jest.setTimeout(60000)
 
     it(`Interpolates dynamics in a real-world test case (WM 198)`, async () => {
         // Arrange

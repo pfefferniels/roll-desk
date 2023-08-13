@@ -1,4 +1,4 @@
-import { uuid } from "../globals"
+import { v4 } from "uuid"
 import { Asynchrony, MPM, Part } from "../mpm"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
@@ -85,7 +85,7 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
 
             asynchronies.push({
                 'type': 'asynchrony',
-                'xml:id': 'asynchrony_' + uuid(),
+                'xml:id': 'asynchrony_' + v4(),
                 'date': +date,
                 'milliseconds.offset': +offset.toFixed(this.options?.precision || 0)
             })

@@ -1,7 +1,7 @@
 import { MPM, Part, Rubato } from "../mpm"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
-import { uuid } from "../globals"
+import { v4 } from "uuid"
 
 export interface InterpolateRubatoOptions extends TransformationOptions {
     /**
@@ -100,7 +100,7 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
 
                 return {
                     'type': 'rubato',
-                    'xml:id': `rubato${uuid()}`,
+                    'xml:id': `rubato${v4()}`,
                     'date': chunk.events[0].date,
                     'frameLength': chunk.frameLength,
                     'intensity': +avgIntensity.toFixed(2),

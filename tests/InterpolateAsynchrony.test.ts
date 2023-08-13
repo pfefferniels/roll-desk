@@ -4,8 +4,10 @@ import { readFileSync } from "fs"
 import { InterpolateAsynchrony } from "../src/lib/transformers"
 import { jest } from '@jest/globals'
 
+jest.useFakeTimers()
+
 describe('InterpolateAsynchrony', () => {
-    jest.setTimeout(60000)
+    // jest.setTimeout(60000)
 
     it(`Interpolates asynchrony in a real-world test case (WM 879)`, async () => {
         // Arrange

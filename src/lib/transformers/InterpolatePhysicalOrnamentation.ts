@@ -1,7 +1,7 @@
 import { DynamicsGradient, MPM, Ornament, Part } from "../mpm"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
-import { uuid } from '../globals'
+import { v4 } from "uuid"
 
 export type ArpeggioPlacement = 'on-beat' | 'before-beat' | 'estimate'
 
@@ -145,7 +145,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
 
             ornaments.push({
                 'type': 'ornament',
-                'xml:id': 'ornament_' + uuid(),
+                'xml:id': 'ornament_' + v4(),
                 'date': +date,
                 'name.ref': 'neutralArpeggio',
                 'noteoff.shift': noteOffShift,

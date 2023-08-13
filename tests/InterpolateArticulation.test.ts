@@ -4,8 +4,10 @@ import { readFileSync } from "fs"
 import { InterpolateArticulation, InterpolateTempoMap } from "../src/lib/transformers"
 import { jest } from '@jest/globals'
 
+jest.useFakeTimers()
+
 describe('Interpolate articulation', () => {
-    jest.setTimeout(60000)
+    // jest.setTimeout(60000)
 
     it(`Interpolates articulation in a real-world test case (WM 767)`, async () => {
         // Arrange

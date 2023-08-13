@@ -1,8 +1,8 @@
 import { BeatLengthBasis } from "./BeatLengthBasis"
-import { uuid } from "../globals"
 import { Dynamics, MPM, Part } from "../mpm"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
+import { v4 } from "uuid"
 
 export interface InterpolateDynamicsMapOptions extends TransformationOptions {
     /**
@@ -107,7 +107,7 @@ export class InterpolateDynamicsMap extends AbstractTransformer<InterpolateDynam
                 type: 'dynamics',
                 date: curr.date,
                 volume: curr.volume,
-                'xml:id': 'dynamics_' + uuid()
+                'xml:id': 'dynamics_' + v4()
             })
             return acc
         }, new Array<Dynamics>())

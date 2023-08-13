@@ -4,8 +4,10 @@ import { prepareMSM } from "../src/lib/msm"
 import { readFileSync } from "fs"
 import { jest } from '@jest/globals'
 
+jest.useFakeTimers()
+
 describe('InterpolatePhysicalOrnamentation', () => {
-    jest.setTimeout(60000)
+    // jest.setTimeout(60000)
 
     it(`does not interpolate anything when no arpeggiation is given`, async () => {
         // Arrange

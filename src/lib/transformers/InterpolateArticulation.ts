@@ -1,7 +1,7 @@
 import { Articulation, MPM, Part } from "../mpm/index"
 import { MSM } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
-import { uuid } from '../globals'
+import { v4 } from "uuid"
 
 export interface InterpolateArticulationOptions extends TransformationOptions {
     /**
@@ -83,7 +83,7 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
 
                 chordArticulations.push({
                     type: 'articulation',
-                    'xml:id': `articulation_${uuid()}`,
+                    'xml:id': `articulation_${v4()}`,
                     date: +date,
                     noteid: '#' + note['xml:id'],
                     relativeDuration: +relativeDuration.toFixed(1)

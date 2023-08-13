@@ -1,5 +1,4 @@
 import { parse } from "js2xmlparser"
-import { uuid } from "../globals"
 import { v4 } from "uuid"
 
 interface WithXmlId {

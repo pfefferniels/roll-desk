@@ -1,4 +1,4 @@
-import { uuid } from "../globals";
+import { v4 } from "uuid";
 import { MPM, Tempo } from "../mpm";
 import { MSM } from "../msm";
 import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
@@ -155,7 +155,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         // otherwise create a new instruction
                         tempos.push({
                             'type': 'tempo',
-                            'xml:id': 'tempo_' + uuid(),
+                            'xml:id': 'tempo_' + v4(),
                             'date': start.tstamp,
                             'bpm': +powFunction(start.tstamp).toFixed(precision),
                             'transition.to': +powFunction(end.tstamp).toFixed(precision),
@@ -175,7 +175,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     // add <tempo> at the target date of the transition
                     tempos.push({
                         'type': 'tempo',
-                        'xml:id': 'tempo_' + uuid(),
+                        'xml:id': 'tempo_' + v4(),
                         'date': end.tstamp,
                         'bpm': +powFunction(end.tstamp).toFixed(precision),
                         'beatLength': end.beatLength / 720 / 4
@@ -197,7 +197,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 if (!lastTempoInstruction || lastTempoInstruction.date !== start.tstamp) {
                     tempos.push({
                         'type': 'tempo',
-                        'xml:id': 'tempo_' + uuid(),
+                        'xml:id': 'tempo_' + v4(),
                         'date': start.tstamp,
                         'bpm': +start.bpm.toFixed(precision),
                         'beatLength': start.beatLength / 720 / 4
