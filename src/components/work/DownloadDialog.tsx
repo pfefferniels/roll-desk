@@ -16,7 +16,7 @@ export const DownloadDialog = ({ open, onClose, analysis }: DownloadDialogProps)
                 <List>
                     <ListItem>
                         <ListItemButton onClick={() => {
-                            downloadFile('performance.mpm', analysis.mpm, 'application/xml')
+                            downloadFile('performance.mpm', analysis.mpm.serialize(), 'application/xml')
                         }}>
                             <ListItemAvatar><Download /></ListItemAvatar>
                             <ListItemText

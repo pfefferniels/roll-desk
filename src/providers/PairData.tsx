@@ -1,8 +1,8 @@
 import React, { createContext, useContext } from 'react';
-import { MeiNote } from '../lib/mei';
+import { MEINote } from '../lib/mei';
 
 type PairData = {
-    note?: MeiNote;
+    note?: MEINote;
     midiEvents: any[]; // PianoRollEvent
 };
 

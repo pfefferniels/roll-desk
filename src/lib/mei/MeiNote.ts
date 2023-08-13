@@ -1,5 +1,5 @@
 
-export type MeiNote = {
+export type MEINote = {
     index: number;
     id: string;
     qstamp: number;

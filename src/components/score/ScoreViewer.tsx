@@ -4,7 +4,7 @@ import { useSession } from '@inrupt/solid-ui-react';
 import { getFile } from '@inrupt/solid-client';
 import { LinkOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { Mei } from '../../lib/mei';
+import { MEI } from '../../lib/mei';
 import './ScoreViewer.css'
 
 interface ScoreViewerProps {
@@ -14,17 +14,17 @@ interface ScoreViewerProps {
 
   landscape?: boolean
   onSelect?: (noteId: string) => void
-  onDone?: (mei: Mei) => void
+  onDone?: (mei: MEI) => void
   asSvg?: boolean
 }
 
 export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, asSvg }: ScoreViewerProps) => {
   const { session } = useSession()
-  const [mei, setMei] = useState<string | undefined>(meiProp)
+  const [mei, setMEI] = useState<string | undefined>(meiProp)
   const [vrvToolkit, setVrvToolkit] = useState<any>()
   const [svg, setSvg] = useState<string>()
 
-  useEffect(() => setMei(meiProp), [meiProp])
+  useEffect(() => setMEI(meiProp), [meiProp])
 
   useEffect(() => {
     loadVerovio().then(toolkit => setVrvToolkit(toolkit))
@@ -33,21 +33,21 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
   useEffect(() => {
     if (!url) return
 
-    const fetchMei = async () => {
+    const fetchMEI = async () => {
       const meiBlob = await getFile(
         url,
         { fetch: session.fetch as any }
       )
-      setMei(await meiBlob.text() || undefined)
+      setMEI(await meiBlob.text() || undefined)
     }
 
-    fetchMei()
+    fetchMEI()
   }, [url, session.fetch])
 
   useEffect(() => {
     if (!vrvToolkit || !mei) return
 
-    onDone && onDone(new Mei(mei, vrvToolkit, new DOMParser()))
+    onDone && onDone(new MEI(mei, vrvToolkit, new DOMParser()))
 
     if (landscape) {
       vrvToolkit.setOptions({

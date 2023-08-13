@@ -1,11 +1,11 @@
-import { Mei } from "../../lib/mei"
+import { MEI } from "../../lib/mei"
 import { Dialog, DialogContent, MenuItem, MenuList, Typography } from "@mui/material"
 import { useState } from "react"
 
 interface InsertReadingDialogProps {
     open: boolean
     onClose: () => void
-    mei: Mei
+    mei: MEI
     meiId: string
     midiEvents: any[] // PianoRollEvent
 }

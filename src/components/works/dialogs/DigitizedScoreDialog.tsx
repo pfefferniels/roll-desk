@@ -23,7 +23,7 @@ interface DigitizedScoreDialogProps {
 export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: DigitizedScoreDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
-    const [meiFile, setMeiFile] = useState<File | null>(null);
+    const [meiFile, setMEIFile] = useState<File | null>(null);
 
     const [loading, setLoading] = useState<'saving-mei' | 'saving-expression' | false>(false)
 
@@ -84,7 +84,7 @@ export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: Digitiz
                         type="file"
                         hidden
                         accept=".mei"
-                        onChange={(e) => setMeiFile(e.target.files ? e.target.files[0] : null)}
+                        onChange={(e) => setMEIFile(e.target.files ? e.target.files[0] : null)}
                     />
                 </Button>
             </DialogContent>

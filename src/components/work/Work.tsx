@@ -6,10 +6,11 @@ import { Thing, UrlString, asUrl, getFile, getSolidDataset, getStringNoLocale, g
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
-import { Mei } from "../../lib/mei"
+import { MEI } from "../../lib/mei"
 import { loadDomParser, loadVerovio } from "../../lib/globals"
 import { Download } from "@mui/icons-material"
 import { DownloadDialog } from "./DownloadDialog"
+import { MPM, parseMPM } from "../../lib/mpm"
 
 interface WorkProps {
     url: string
@@ -20,8 +21,8 @@ export interface Analysis {
     title: string
     annotations: Thing[]
     alignments: Thing[]
-    mpm: string
-    mei: Mei
+    mpm: MPM
+    mei: MEI
 }
 
 export const Work = ({ url }: WorkProps) => {
@@ -49,8 +50,8 @@ export const Work = ({ url }: WorkProps) => {
             })
             .filter(thing => thing !== null) as Thing[]
 
-        let mpm: string | null = null
-        let mei: Mei | null = null
+        let mpm: MPM | null = null
+        let mei: MEI | null = null
         let alignments: Thing[] = []
 
         setLoading('mpm')
@@ -58,7 +59,7 @@ export const Work = ({ url }: WorkProps) => {
             const mpmContents = await getFile(getUrl(availableMPM, RDFS.label) || '', { fetch: session.fetch as any })
             if (!mpmContents) continue
 
-            mpm = await mpmContents.text()
+            mpm = parseMPM(await mpmContents.text())
 
             const creationUrl = getUrl(availableMPM, frbroo('R17i_was_created_by'))
             if (!creationUrl) return null
@@ -99,7 +100,7 @@ export const Work = ({ url }: WorkProps) => {
                     const meiContents = await getFile(label, { fetch: session.fetch as any })
                     if (!meiContents) continue
 
-                    mei = new Mei(await meiContents.text(), await loadVerovio(), await loadDomParser())
+                    mei = new MEI(await meiContents.text(), await loadVerovio(), await loadDomParser())
                     break;
                 }
             }

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { usePair } from "../../providers/PairData"
 import { findDOMElementFor } from "./PairContainer"
 import { InsertReadingDialog } from "./InsertReadingDialog"
-import { useMEI } from "../../providers/MeiContext"
+import { useMEI } from "../../providers/MEIContext"
 
 interface InsertReadingProps {
     parent: Element

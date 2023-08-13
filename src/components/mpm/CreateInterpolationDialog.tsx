@@ -6,7 +6,7 @@ import { useContext, useState } from "react"
 import { crm, mer, oa, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
 import { loadVerovio, loadDomParser } from "../../lib/globals"
-import { Mei } from "../../lib/mei"
+import { MEI } from "../../lib/mei"
 import { asPianoRoll } from "../../lib/midi/asPianoRoll"
 import { MPM } from "../../lib/mpm"
 import { MsmNote, MSM } from "../../lib/msm"
@@ -60,7 +60,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         const piece = getThing(midiDataset, pieceUrl)
         if (!piece) return
 
-        const mei_ = new Mei(await mei.text(), await loadVerovio(), await loadDomParser())
+        const mei_ = new MEI(await mei.text(), await loadVerovio(), await loadDomParser())
         const pr_ = asPianoRoll(piece, midiDataset)
         if (!pr_) return
 
@@ -85,8 +85,8 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
                     acc.push({
                         'part': scoreNote.part,
                         'xml:id': scoreNote.id,
-                        'date': Mei.qstampToTstamp(scoreNote.qstamp),
-                        'duration': Mei.qstampToTstamp(scoreNote.duration),
+                        'date': MEI.qstampToTstamp(scoreNote.qstamp),
+                        'duration': MEI.qstampToTstamp(scoreNote.duration),
                         'pitchname': scoreNote.pname!,
                         'octave': scoreNote.octave!,
                         'accidentals': scoreNote.accid!,

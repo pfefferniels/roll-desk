@@ -9,13 +9,13 @@ import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { ScoreViewer } from '../score/ScoreViewer';
 import './AlignmentEditor.css'
-import { Mei } from '../../lib/mei';
+import { MEI } from '../../lib/mei';
 import { HMM, PianoRoll, ScoreFollower } from 'alignmenttool';
 import { useNavigate } from 'react-router-dom';
 import { PairContainer } from './PairContainer';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { PairDataContext } from '../../providers/PairData';
-import { MeiContext } from '../../providers/MeiContext';
+import { MEIContext } from '../../providers/MEIContext';
 
 const findScoreTimeOfNote = (hmm: HMM, meiId: string) => {
   const result = hmm.events.find(
@@ -68,18 +68,18 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
 
   const [dataset, setDataset] = useState<SolidDataset>()
   const [alignment, setAlignment] = useState<Thing>()
-  const [meiUrl, setMeiUrl] = useState<UrlString>()
+  const [meiUrl, setMEIUrl] = useState<UrlString>()
   const [midiUrl, setMidiUrl] = useState<UrlString>()
 
   const [pairs, setPairs] = useState<PairT[]>([])
 
   const [saving, setSaving] = useState(false)
 
-  const renderedMei = useRef<Mei>()
+  const renderedMEI = useRef<MEI>()
   const renderedMidi = useRef<PianoRoll>()
 
-  const handleMEIReady = useCallback((mei: Mei) => {
-    renderedMei.current = mei
+  const handleMEIReady = useCallback((mei: MEI) => {
+    renderedMEI.current = mei
   }, [])
 
   const handleMidiReady = useCallback((midi: PianoRoll) => {
@@ -105,9 +105,9 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
   }, [selectedMidiEvent, selectedNote])
 
   const performAlignment = (from?: PairT) => {
-    if (!renderedMei.current || !renderedMidi.current) return
+    if (!renderedMEI.current || !renderedMidi.current) return
 
-    const hmm = renderedMei.current.asHMM()
+    const hmm = renderedMEI.current.asHMM()
     const pr = new PianoRoll()
     pr.events = renderedMidi.current.events
 
@@ -127,7 +127,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
       if (!match.meiId) type = 'addition'
       else {
         const midiEvent = renderedMidi.current?.events.find(event => event.id === match.id)
-        const scoreEvent = renderedMei.current?.getById(match.meiId)
+        const scoreEvent = renderedMEI.current?.getById(match.meiId)
 
         if (scoreEvent?.pnum !== midiEvent?.pitch) {
           type = 'alteration'
@@ -199,7 +199,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
               return
             }
 
-            setMeiUrl(getUrl(scoreExpression, RDFS.label) || undefined)
+            setMEIUrl(getUrl(scoreExpression, RDFS.label) || undefined)
             setMidiUrl(getUrl(recordingExpression, RDFS.label) || undefined)
 
             const pairUrls = getUrlAll(alignment_, crm('P9_consists_of'))
@@ -273,11 +273,11 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
               )}
             </g>
 
-            <MeiContext.Provider value={renderedMei.current}>
+            <MEIContext.Provider value={renderedMEI.current}>
               <PairDataContext.Provider value={(meiId) => {
                 const affectedPairs = pairs.filter(pair => pair.meiId === meiId)
                 return {
-                  note: renderedMei.current?.getById(meiId),
+                  note: renderedMEI.current?.getById(meiId),
                   midiEvents: affectedPairs.map(pair => {
                     const eventUrl = pair.midiEventUrl
                     return renderedMidi.current?.events.find(event => event.id === eventUrl)
@@ -291,7 +291,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
                   onSelect={(pair) => setSelectedPair(pair)}
                   onRemove={(pair) => setPairs(prev => [...prev.slice(0, prev.indexOf(pair)), ...prev.slice(prev.indexOf(pair) + 1)])} />
               </PairDataContext.Provider>
-            </MeiContext.Provider>
+            </MEIContext.Provider>
           </svg>
         </Grid2>
       </Grid2>

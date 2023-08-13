@@ -438,3 +438,36 @@ export class MPM {
         }[instructionType]
     }
 }
+
+export const parseMPM = (xml: string) => {
+    const dom = new DOMParser().parseFromString(xml, 'application/xml')
+    const nParts = dom.querySelectorAll('performance part').length
+    const mpm = new MPM(nParts)
+
+    const parts = new Map<Part, Element | null>([
+        [0, dom.querySelector('part[number="1"]')],
+        [1, dom.querySelector('part[number="2"]')],
+        ['global', dom.querySelector('global')]
+    ])
+
+    for (const [part, domPart] of parts) {
+        if (!domPart) continue
+
+        const articulations = [...domPart.querySelectorAll('ornament')].map(el => {
+            const result: Articulation = {
+                type: 'articulation' as 'articulation',
+                date: +(el.getAttribute('date') || 0),
+                relativeDuration: +(el.getAttribute('relativeDuration') || ''),
+                'xml:id': el.getAttribute('xml:id') || `articulation_${v4()}`
+            }
+
+            const noteId = el.getAttribute('noteid')
+            if (noteId) result.noteid = noteId
+            return result
+        })
+        
+        mpm.insertInstructions(articulations, part)
+    }
+
+    return mpm
+} 

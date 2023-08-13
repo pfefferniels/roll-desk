@@ -1,5 +1,5 @@
 import { MidiNote, RawPerformance } from "./midi/RawPerformance"
-import { MeiNote, Mei } from "./mei"
+import { MEINote, MEI } from "./mei"
 import { ScoreFollower, ErrorDetector } from "alignmenttool/dist/index"
 import { ErrorIndex } from "alignmenttool/dist/Match"
 import { graph, parse, Query, Store } from "rdflib"
@@ -17,7 +17,7 @@ export enum Motivation {
 }
 
 export type SemanticAlignmentPair = {
-    scoreNote?: MeiNote,
+    scoreNote?: MEINote,
     midiNote?: MidiNote,
     motivation: Motivation
 }
@@ -27,12 +27,12 @@ export type SemanticAlignmentPair = {
  * information about the alignment.
  */
 export class AlignedPerformance {
-    score?: Mei
+    score?: MEI
     rawPerformance?: RawPerformance
     semanticPairs: SemanticAlignmentPair[]
 
     constructor(
-        score?: Mei,
+        score?: MEI,
         rawPerformance?: RawPerformance) {
         this.score = score
         this.rawPerformance = rawPerformance
@@ -79,7 +79,7 @@ export class AlignedPerformance {
         })]
     }
 
-    public setScore(score: Mei) {
+    public setScore(score: MEI) {
         this.score = score
     }
 
@@ -207,7 +207,7 @@ export class AlignedPerformance {
      * @param midiNote 
      * @param scoreNote 
      */
-    public align(midiNote: MidiNote, scoreNote: MeiNote, motivation: Motivation = Motivation.Uncertain) {
+    public align(midiNote: MidiNote, scoreNote: MEINote, motivation: Motivation = Motivation.Uncertain) {
         // remove orphanes
         const orphanMidiNoteIndex = this.semanticPairs.findIndex(pair => pair.midiNote?.id === midiNote.id && pair.motivation === Motivation.Addition)
         if (orphanMidiNoteIndex !== -1) this.semanticPairs.splice(orphanMidiNoteIndex, 1)

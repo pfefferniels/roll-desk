@@ -1,4 +1,3 @@
-export type { MeiNote } from './MeiNote'
-export { basePitchOfNote } from './MeiNote'
-export { Mei } from './Mei'
-
+export type { MEINote } from './MEINote'
+export { basePitchOfNote } from './MEINote'
+export { MEI } from './MEI'

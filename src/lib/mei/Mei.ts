@@ -1,11 +1,11 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
-import { MeiNote } from "."
+import { MEINote } from "."
 import { TimeSignature } from "../msm"
 
-export class Mei {
+export class MEI {
     private scoreDOM: Document
     private domParser: DOMParser
-    notes: MeiNote[]
+    notes: MEINote[]
     timemap: any[]  // TODO define type. 
     vrvToolkit: any
 
@@ -28,7 +28,7 @@ export class Mei {
         this.notes = this.getNotesFromTimemap()
     }
 
-    insertReading(on: string, alternative: MeiNote[], encapsulation?: string) {
+    insertReading(on: string, alternative: MEINote[], encapsulation?: string) {
         const noteEl = Array.from(this.scoreDOM.querySelectorAll('note')).find(el => el.getAttribute('xml:id') === on)
         const parent = noteEl?.parentElement
 
@@ -75,10 +75,10 @@ export class Mei {
     }
 
     // transform timemap to notes array
-    private getNotesFromTimemap(): MeiNote[] {
+    private getNotesFromTimemap(): MEINote[] {
         const timemap = this.timemap
 
-        let result: MeiNote[] = []
+        let result: MEINote[] = []
         let index = 0
         for (const event of timemap) {
             if (!event.on) continue
@@ -156,17 +156,17 @@ export class Mei {
         return lastNote.qstamp + lastNote.duration
     }
 
-    public notesInRange(start: number, end: number): MeiNote[] {
-        const lowerIndex = this.notes.findIndex((note: MeiNote) => note.qstamp >= start)
+    public notesInRange(start: number, end: number): MEINote[] {
+        const lowerIndex = this.notes.findIndex((note: MEINote) => note.qstamp >= start)
         if (lowerIndex === -1) return []
 
-        const upperIndex = this.notes.length - this.notes.slice().reverse().findIndex((note: MeiNote) => note.qstamp <= end)
+        const upperIndex = this.notes.length - this.notes.slice().reverse().findIndex((note: MEINote) => note.qstamp <= end)
         if (lowerIndex > upperIndex) return []
 
         return this.notes.slice(lowerIndex, upperIndex)
     }
 
-    public allNotes(): MeiNote[] {
+    public allNotes(): MEINote[] {
         return this.notes
     }
 
@@ -226,7 +226,7 @@ export class Mei {
             const note = measure.querySelector("note") // what about rests?
             if (note) {
                 const id = note.getAttribute("xml:id")
-                const corresp = this.allNotes().find((note: MeiNote) => {
+                const corresp = this.allNotes().find((note: MEINote) => {
                     return note.id === id
                 })
                 if (corresp) qstamps.push(corresp?.qstamp)
@@ -235,8 +235,8 @@ export class Mei {
         return qstamps
     }
 
-    public notesAtTime(qstamp: number): MeiNote[] {
-        return this.allNotes().filter((note: MeiNote) => note.qstamp === qstamp)
+    public notesAtTime(qstamp: number): MEINote[] {
+        return this.allNotes().filter((note: MEINote) => note.qstamp === qstamp)
     }
 
     /**
@@ -245,8 +245,8 @@ export class Mei {
      * @param id as specified in the in the MEI with the @xml:id attribute.
      * @returns 
      */
-    public getById(id: string): MeiNote | undefined {
-        return this.allNotes().find((value: MeiNote) => value.id === id)
+    public getById(id: string): MEINote | undefined {
+        return this.allNotes().find((value: MEINote) => value.id === id)
     }
 
     /**

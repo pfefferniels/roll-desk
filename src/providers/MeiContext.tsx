@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
-import { Mei } from '../lib/mei';
+import { MEI } from '../lib/mei';
 
-export const MeiContext = createContext<Mei | undefined>(undefined);
+export const MEIContext = createContext<MEI | undefined>(undefined);
 
-export const useMEI = () => useContext(MeiContext)
+export const useMEI = () => useContext(MEIContext)

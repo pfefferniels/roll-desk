@@ -1,4 +1,4 @@
-import { Mei } from "../mei";
+import { MEI } from "../mei";
 import { AlignedPerformance } from "../AlignedPerformance";
 import { Part } from "../mpm";
 import { parse } from "js2xmlparser";
@@ -206,7 +206,7 @@ export const prepareMSM = async (mei: string, midi: ArrayLike<number>, alignment
 
     const arr = Uint8Array.from(midi);
 
-    const score = new Mei(mei, await loadVerovio(), await loadDomParser());
+    const score = new MEI(mei, await loadVerovio(), await loadDomParser());
     const performance = new RawPerformance(read(arr));
     const alignedPerformance = new AlignedPerformance(score, performance);
     if (alignment) {

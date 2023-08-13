@@ -63,15 +63,15 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
             const mei = await getFile(getUrl(scoreThing, RDFS.label) || '', { fetch: session.fetch as any })
             if (!mei) return
 
-            const newMeiUrl = `${datasetUrl}/${v4()}.mei`
-            await overwriteFile(newMeiUrl, mei, { fetch: session.fetch as any })
+            const newMEIUrl = `${datasetUrl}/${v4()}.mei`
+            await overwriteFile(newMEIUrl, mei, { fetch: session.fetch as any })
 
             // create a new score which is derived from the given score
             const newScore = buildThing()
                 .addUrl(RDF.type, frbroo('F22_Self_Contained_Expression'))
                 .addUrl(RDF.type, crmdig('D1_Digital_Object'))
                 .addUrl(crm('P2_has_type'), mer('DigitalScore'))
-                .addUrl(RDFS.label, newMeiUrl)
+                .addUrl(RDFS.label, newMEIUrl)
 
             const scoreWork = getUrl(scoreThing, frbroo('R12i_realises'))
             console.log('scoreWork=', scoreWork)
