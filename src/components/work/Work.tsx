@@ -1,4 +1,4 @@
-import { Checkbox, CircularProgress, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack } from "@mui/material"
+import { Checkbox, CircularProgress, IconButton, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Stack } from "@mui/material"
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2"
 import { useEffect, useState } from "react"
 import { ScoreViewer } from "../score/ScoreViewer"
@@ -8,12 +8,14 @@ import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { Mei } from "../../lib/mei"
 import { loadDomParser, loadVerovio } from "../../lib/globals"
+import { Download } from "@mui/icons-material"
+import { DownloadDialog } from "./DownloadDialog"
 
 interface WorkProps {
     url: string
 }
 
-interface Analysis {
+export interface Analysis {
     url: UrlString
     title: string
     annotations: Thing[]
@@ -32,87 +34,97 @@ export const Work = ({ url }: WorkProps) => {
     const [availableAnalyses, setAvailableAnalyses] = useState<Thing[]>([])
 
     const [selectedAnalyses, setSelectedAnalyses] = useState<Analysis[]>([]);
+    const [selectedForDownload, setSelectedForDownload] = useState<Analysis | null>()
+    const [loading, setLoading] = useState<false | 'annotations' | 'mpm' | 'alignment' | 'score'>()
+
+    const loadAnalysis = async (analysis: Thing): Promise<Analysis | null> => {
+        const url = analysis.url
+        const title = getStringNoLocale(analysis, crm('P3_has_note')) || 'no title'
+
+        setLoading('annotations')
+        const analysisDataset = await getSolidDataset(url, { fetch: session.fetch as any })
+        const annotations = getUrlAll(analysis, crm('P9_consists_of'))
+            .map(annotationUrl => {
+                return getThing(analysisDataset, annotationUrl)
+            })
+            .filter(thing => thing !== null) as Thing[]
+
+        let mpm: string | null = null
+        let mei: Mei | null = null
+        let alignments: Thing[] = []
+
+        setLoading('mpm')
+        for (const availableMPM of availableMPMs) {
+            const mpmContents = await getFile(getUrl(availableMPM, RDFS.label) || '', { fetch: session.fetch as any })
+            if (!mpmContents) continue
+
+            mpm = await mpmContents.text()
+
+            const creationUrl = getUrl(availableMPM, frbroo('R17i_was_created_by'))
+            if (!creationUrl) return null
+
+            const mpmDataset = await getSolidDataset(creationUrl, { fetch: session.fetch as any })
+            const creation = getThing(mpmDataset, creationUrl)
+            if (!creation) return null
+
+            const componentUrls = getUrlAll(creation, crm('P9_consists_of'))
+            for (const componentUrl of componentUrls) {
+                const component = getThing(mpmDataset, componentUrl)
+                if (!component) continue
+
+                const alignmentUrl = getUrl(component, crmdig('L10_had_input'))
+                if (!alignmentUrl) continue
+
+                setLoading('alignment')
+                const alignmentDataset = await getSolidDataset(alignmentUrl, { fetch: session.fetch as any })
+                const alignment = getThing(alignmentDataset, alignmentUrl)
+                if (!alignment) continue
+
+                alignments = getUrlAll(alignment, crm('P9_consists_of'))
+                    .map(pairUrl => {
+                        return getThing(alignmentDataset, pairUrl)
+                    })
+                    .filter(thing => thing !== null) as Thing[]
+
+                const scoreUrl_ = getUrl(alignment, mer('has_score'))
+                if (!scoreUrl_) continue
+
+                setLoading('score')
+                const scoreDataset = await getSolidDataset(scoreUrl_, { fetch: session.fetch as any })
+                const score = getThing(scoreDataset, scoreUrl_)
+                if (!score) continue
+
+                const label = getUrl(score, RDFS.label)
+                if (label) {
+                    const meiContents = await getFile(label, { fetch: session.fetch as any })
+                    if (!meiContents) continue
+
+                    mei = new Mei(await meiContents.text(), await loadVerovio(), await loadDomParser())
+                    break;
+                }
+            }
+            setLoading(false)
+        }
+
+        if (!mpm || !mei || !alignments.length) return null
+
+        return {
+            url,
+            title,
+            annotations,
+            alignments,
+            mpm,
+            mei,
+        }
+    }
 
     const handleToggleAnalysis = (analysis: Thing) => async () => {
         const currentIndex = selectedAnalyses.findIndex(a => a.url === asUrl(analysis))
         const newChecked = [...selectedAnalyses];
 
         if (currentIndex === -1) {
-            const url = analysis.url
-            const title = getStringNoLocale(analysis, crm('P3_has_note')) || 'no title'
-
-            const analysisDataset = await getSolidDataset(url, { fetch: session.fetch as any })
-            const annotations = getUrlAll(analysis, crm('P9_consists_of'))
-                .map(annotationUrl => {
-                    return getThing(analysisDataset, annotationUrl)
-                })
-                .filter(thing => thing !== null) as Thing[]
-
-            let mpm: string | null = null
-            let mei: Mei | null = null
-            let alignments: Thing[] = []
-
-            for (const availableMPM of availableMPMs) {
-                const mpmContents = await getFile(getUrl(availableMPM, RDFS.label) || '', { fetch: session.fetch as any })
-                if (!mpmContents) continue
-
-                mpm = await mpmContents.text()
-
-                const creationUrl = getUrl(availableMPM, frbroo('R17i_was_created_by'))
-                if (!creationUrl) return
-
-                const mpmDataset = await getSolidDataset(creationUrl, { fetch: session.fetch as any })
-                const creation = getThing(mpmDataset, creationUrl)
-                if (!creation) return
-
-                const componentUrls = getUrlAll(creation, crm('P9_consists_of'))
-                for (const componentUrl of componentUrls) {
-                    const component = getThing(mpmDataset, componentUrl)
-                    if (!component) continue
-
-                    const alignmentUrl = getUrl(component, crmdig('L10_had_input'))
-                    if (!alignmentUrl) continue
-
-                    const alignmentDataset = await getSolidDataset(alignmentUrl, { fetch: session.fetch as any })
-                    const alignment = getThing(alignmentDataset, alignmentUrl)
-                    if (!alignment) continue
-
-                    alignments = getUrlAll(alignment, crm('P9_consists_of'))
-                        .map(pairUrl => {
-                            return getThing(alignmentDataset, pairUrl)
-                        })
-                        .filter(thing => thing !== null) as Thing[]
-
-                    const scoreUrl_ = getUrl(alignment, mer('has_score'))
-                    if (!scoreUrl_) continue
-
-                    const scoreDataset = await getSolidDataset(scoreUrl_, { fetch: session.fetch as any })
-                    const score = getThing(scoreDataset, scoreUrl_)
-                    if (!score) continue
-
-                    const label = getUrl(score, RDFS.label)
-                    if (label) {
-                        const meiContents = await getFile(label, { fetch: session.fetch as any })
-                        if (!meiContents) continue
-
-                        mei = new Mei(await meiContents.text(), await loadVerovio(), await loadDomParser())
-
-                        break;
-                    }
-                }
-            }
-
-            if (mpm && mei && alignments.length) {
-                newChecked.push({
-                    url,
-                    title,
-                    annotations,
-                    alignments,
-                    mpm,
-                    mei,
-                })
-
-            }
+            const newAnalysis = await loadAnalysis(analysis)
+            if (newAnalysis) newChecked.push(newAnalysis)
         }
         else {
             newChecked.splice(currentIndex, 1);
@@ -178,11 +190,6 @@ export const Work = ({ url }: WorkProps) => {
         fetchAnalyses()
     }, [session.fetch, work, workDataset])
 
-    useEffect(() => {
-        // find fitting MPM
-
-    }, [selectedAnalyses])
-
     return (
         <Grid2 container>
             <Grid2 xs={12}>
@@ -190,22 +197,43 @@ export const Work = ({ url }: WorkProps) => {
             </Grid2>
             <Grid2 xs={12}>
                 <Stack direction='row' spacing={2}>
-                    {availableAnalyses?.map((analysis, i) => (
+                    {availableAnalyses.map((analysis, i) => (
                         <ListItem key={`analysis_${asUrl(analysis)}`}>
-                            <ListItemButton role={undefined} onClick={handleToggleAnalysis(analysis)} dense>
+                            <ListItemButton dense>
                                 <ListItemIcon>
-                                    <Checkbox
-                                        edge="start"
-                                        checked={selectedAnalyses.findIndex(a => a.url === asUrl(analysis)) !== -1}
-                                        tabIndex={-1}
-                                        disableRipple
-                                        inputProps={{ 'aria-labelledby': `checkbox_${i}` }}
-                                    />
+                                    {loading ? <CircularProgress /> : (
+                                        <IconButton onClick={handleToggleAnalysis(analysis)} >
+                                            <Checkbox
+                                                edge="start"
+                                                checked={selectedAnalyses.findIndex(a => a.url === asUrl(analysis)) !== -1}
+                                                tabIndex={-1}
+                                                disableRipple
+                                                inputProps={{ 'aria-labelledby': `checkbox_${i}` }}
+                                            />
+                                        </IconButton>
+                                    )}
+                                    {loading ? <CircularProgress /> : (
+                                        <IconButton
+                                            onClick={async () => {
+                                                const loadedAnalysis = selectedAnalyses.find(a => a.url === asUrl(analysis))
+                                                if (loadedAnalysis) setSelectedForDownload(loadedAnalysis)
+                                                else setSelectedForDownload(await loadAnalysis(analysis))
+                                            }}>
+                                            <Download />
+                                        </IconButton>
+                                    )}
                                 </ListItemIcon>
                                 <ListItemText id={`checkbox_${i}`}
                                     secondary={getStringNoLocale(analysis, crm('P3_has_note')) || '[no note]'}>
                                     Analysis {i + 1}
                                 </ListItemText>
+                                <ListItemSecondaryAction>
+                                    {selectedForDownload && <DownloadDialog
+                                        open={!!selectedForDownload}
+                                        onClose={() => setSelectedForDownload(null)}
+                                        analysis={selectedForDownload} />
+                                    }
+                                </ListItemSecondaryAction>
                             </ListItemButton>
                         </ListItem>
                     ))}

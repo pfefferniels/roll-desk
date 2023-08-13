@@ -5,6 +5,7 @@ import { getFile } from '@inrupt/solid-client';
 import { LinkOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { Mei } from '../../lib/mei';
+import './ScoreViewer.css'
 
 interface ScoreViewerProps {
   // you should either pass url or mei
@@ -65,7 +66,6 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
     const timer = setTimeout(() => {
       document.querySelectorAll('.verovioCanvas .note').forEach(el => {
         el.addEventListener('click', () => {
-          // console.log('attaching stuff to', el)
           onSelect && onSelect(el.getAttribute('data-id') || 'unknown')
         })
       })
@@ -91,7 +91,7 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
         </h4>
       </div>
 
-      {svg && <div className='verovioCanvas' dangerouslySetInnerHTML={{ __html: svg }} />}
+      {svg && <div className={`verovioCanvas ${landscape ? 'landscape' : ''}`} dangerouslySetInnerHTML={{ __html: svg }} />}
     </div>
   );
 };
