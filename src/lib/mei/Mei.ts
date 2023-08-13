@@ -1,6 +1,7 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { MEINote } from "."
 import { TimeSignature } from "../msm"
+import { parse } from "js2xmlparser"
 
 export class MEI {
     private scoreDOM: Document
@@ -65,10 +66,33 @@ export class MEI {
         this.update()
     }
 
+    insertMark(on: string, name: string, obj: Object) {
+        const note = Array.from(this.scoreDOM.querySelectorAll('note')).find(el => el.getAttribute('xml:id') === on.slice(1))
+        if (!note) return
+
+        if (name === 'artic') {
+            note.insertAdjacentHTML('beforeend', parse(name, obj, {
+                declaration: {
+                    include: false
+                }
+            }))
+        }
+        else {
+            const measure = note.closest('measure')
+            if (!measure) return
+
+            measure.insertAdjacentHTML('beforeend', parse(name, obj, {
+                declaration: {
+                    include: false
+                }
+            }))
+        }
+    }
+
     update() {
         // using getMEI() here since it adds `xml:id` to all elements
         const scoreEncoding = new XMLSerializer().serializeToString(this.scoreDOM)
-        this.vrvToolkit.loadData(scoreEncoding)
+        console.log(this.vrvToolkit.loadData(scoreEncoding))
         this.scoreDOM = this.domParser.parseFromString(this.vrvToolkit.getMEI(), 'text/xml')
         this.timemap = this.vrvToolkit.renderToTimemap()
         this.notes = this.getNotesFromTimemap()
@@ -106,8 +130,8 @@ export class MEI {
                     octave: Number(noteEl?.getAttribute('oct') || 0),
                     pname: noteEl?.getAttribute('pname') || '',
                     accid: Array.from(noteEl?.getAttribute('accid.ges') || noteEl?.getAttribute('accid') || '').reduce((acc, curr) => {
-                        if (curr === 'f') return acc-1
-                        else if (curr === 's') return acc+1
+                        if (curr === 'f') return acc - 1
+                        else if (curr === 's') return acc + 1
                         return acc
                     }, 0),
                     pnum: midiValues.pitch,
@@ -193,14 +217,14 @@ export class MEI {
                 const layer = note.closest('layer')
                 if (!staff || !layer) continue
 
-                const voice = (Number(staff.getAttribute('n'))-1) + Number(layer.getAttribute('n'))
+                const voice = (Number(staff.getAttribute('n')) - 1) + Number(layer.getAttribute('n'))
 
                 // ignore the note if its tied
                 if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
                     continue
                 }
                 notesAtTime.push({
-                    meiID: on, 
+                    meiID: on,
                     voice: voice,
                     sitch: pitchToSitch(midiValues.pitch)
                 })
@@ -209,7 +233,7 @@ export class MEI {
             result.push(new HMMEvent(event.qstamp, event.qstamp + 0.5, [notesAtTime]))
         }
         const hmm = new HMM()
-        hmm.events = result 
+        hmm.events = result
 
         return hmm
     }

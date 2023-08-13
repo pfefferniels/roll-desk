@@ -28,7 +28,7 @@ export interface OrnamentDef extends Definition<'ornament'> {
 type AnyDefinition =
     | OrnamentDef
 
-type DatedInstruction<T extends string> = {
+export type DatedInstruction<T extends string> = {
     readonly type: T
     date: number
 
@@ -453,7 +453,7 @@ export const parseMPM = (xml: string) => {
     for (const [part, domPart] of parts) {
         if (!domPart) continue
 
-        const articulations = [...domPart.querySelectorAll('ornament')].map(el => {
+        const articulations = [...domPart.querySelectorAll('articulation')].map(el => {
             const result: Articulation = {
                 type: 'articulation' as 'articulation',
                 date: +(el.getAttribute('date') || 0),
@@ -465,7 +465,21 @@ export const parseMPM = (xml: string) => {
             if (noteId) result.noteid = noteId
             return result
         })
-        
+
+        const asynchronies = [...domPart.querySelectorAll('asynchrony')].map(el => {
+            const result: Asynchrony = {
+                type: 'asynchrony' as 'asynchrony',
+                date: +(el.getAttribute('date') || 0),
+                'milliseconds.offset': +(el.getAttribute('milliseconds.offset') || ''),
+                'xml:id': el.getAttribute('xml:id') || `asynchrony_${v4()}`
+            }
+
+            const noteId = el.getAttribute('noteid')
+            if (noteId) result.noteid = noteId
+            return result
+        })
+
+        mpm.insertInstructions(asynchronies, part)
         mpm.insertInstructions(articulations, part)
     }
 

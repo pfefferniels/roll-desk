@@ -3,13 +3,14 @@ import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { useEffect, useState } from 'react';
 import { CircularProgress, IconButton } from '@mui/material';
-import { LinkOutlined, SaveOutlined } from '@mui/icons-material';
+import { ArrowBack, Link, Save } from '@mui/icons-material';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import CodeMirror from '@uiw/react-codemirror';
 import { datasetUrl } from '../../helpers/datasetUrl';
 import { v4 } from 'uuid';
 import { frbroo } from '../../helpers/namespaces';
 import { CreationList } from './CreationList';
+import { useNavigate } from 'react-router-dom';
 
 const minimalMpm = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -30,6 +31,8 @@ interface MpmEditorProps {
 
 export const MpmEditor = ({ url }: MpmEditorProps) => {
   const { session } = useSession()
+  const navigate = useNavigate()
+
   const [dataset, setDataset] = useState<SolidDataset>()
   const [mpmExpression, setMpmExpression] = useState<Thing>()
   const [creation, setCreation] = useState<Thing>()
@@ -99,12 +102,15 @@ export const MpmEditor = ({ url }: MpmEditorProps) => {
       <Grid2 container spacing={1} m={1}>
         <Grid2 xs={12}>
           <h4>
+            <IconButton onClick={() => navigate('/works')}>
+              <ArrowBack />
+            </IconButton>
             MPM
             <IconButton onClick={saveMPM}>
-              {saving ? <CircularProgress /> : <SaveOutlined />}
+              {saving ? <CircularProgress /> : <Save />}
             </IconButton>
             <IconButton onClick={() => window.open(asUrl(mpmExpression))}>
-              <LinkOutlined />
+              <Link />
             </IconButton>
           </h4>
         </Grid2>

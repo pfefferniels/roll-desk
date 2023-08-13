@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
-import { Box, CircularProgress, IconButton, Stack } from '@mui/material';
+import { Box, Card, CircularProgress, IconButton, Paper, Stack } from '@mui/material';
 import { SolidDataset, Thing, ThingLocal, UrlString, addUrl, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getThingAll, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { crm, frbroo, mer, midi as midiNs, oa } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { DownloadOutlined, EditOutlined, LinkOutlined, Publish } from '@mui/icons-material';
+import { ArrowBack, Download, Edit, Link, Public } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/dialogs/AnalysisDialog';
 import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
@@ -14,6 +14,7 @@ import { typeOf } from '../../helpers/typeOfEvent';
 import { AnnotationDialog } from './AnnotationDialog';
 import { AnnotationCard } from './AnnotationCard';
 import { datasetUrl } from '../../helpers/datasetUrl';
+import { useNavigate } from 'react-router-dom';
 
 const buildE13 = (
   property: string,
@@ -67,6 +68,8 @@ interface AnalysisEditorProps {
  */
 export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const { session } = useSession()
+  const navigate = useNavigate()
+
   const [error, setError] = useState<any>()
   const [dataset, setDataset] = useState<SolidDataset>()
   const [analysis, setAnalysis] = useState<Thing>()
@@ -285,19 +288,24 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
       <Grid2 container spacing={1} m={1}>
         <Grid2 xs={12}>
           <h3 style={{ margin: 0 }}>
+            <IconButton onClick={() => navigate('/works')}>
+              <ArrowBack />
+            </IconButton>
             Analysis
-            <IconButton onClick={() => setEditDialogOpen(true)}>
-              <EditOutlined />
-            </IconButton>
-            <IconButton onClick={() => window.open(asUrl(analysis))}>
-              <LinkOutlined />
-            </IconButton>
-            <IconButton onClick={() => { }}>
-              <DownloadOutlined />
-            </IconButton>
-            <IconButton onClick={() => publish()}>
-              {publishing ? <CircularProgress /> : <Publish />}
-            </IconButton>
+            <Paper style={{ display: 'inline', marginLeft: '1rem', padding: '10px' }}>
+              <IconButton onClick={() => setEditDialogOpen(true)}>
+                <Edit />
+              </IconButton>
+              <IconButton onClick={() => window.open(asUrl(analysis))}>
+                <Link />
+              </IconButton>
+              <IconButton onClick={() => { }}>
+                <Download />
+              </IconButton>
+              <IconButton onClick={() => publish()}>
+                {publishing ? <CircularProgress /> : <Public />}
+              </IconButton>
+            </Paper>
           </h3>
         </Grid2>
         <Grid2 xs={4}>

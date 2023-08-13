@@ -1,16 +1,19 @@
-import { Checkbox, CircularProgress, IconButton, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Stack } from "@mui/material"
+import { Card, Checkbox, CircularProgress, IconButton, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Stack } from "@mui/material"
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { ScoreViewer } from "../score/ScoreViewer"
 import { Thing, UrlString, asUrl, getFile, getSolidDataset, getStringNoLocale, getThing, getThingAll, getUrl, getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
-import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces"
+import { crm, crmdig, frbroo, mer, oa } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { MEI } from "../../lib/mei"
 import { loadDomParser, loadVerovio } from "../../lib/globals"
-import { Download } from "@mui/icons-material"
+import { ArrowBack, Download } from "@mui/icons-material"
 import { DownloadDialog } from "./DownloadDialog"
 import { MPM, parseMPM } from "../../lib/mpm"
+import { enrichMEI } from "../../lib/mpm/enrichMEI"
+import { useNavigate } from "react-router-dom"
+import * as d3 from 'd3';
 
 interface WorkProps {
     url: string
@@ -27,6 +30,7 @@ export interface Analysis {
 
 export const Work = ({ url }: WorkProps) => {
     const { session } = useSession()
+    const navigate = useNavigate()
 
     const { dataset: workDataset } = useDataset(url, { fetch: session.fetch as any })
     const { thing: work } = useThing(url, url, { fetch: session.fetch as any })
@@ -100,7 +104,10 @@ export const Work = ({ url }: WorkProps) => {
                     const meiContents = await getFile(label, { fetch: session.fetch as any })
                     if (!meiContents) continue
 
-                    mei = new MEI(await meiContents.text(), await loadVerovio(), await loadDomParser())
+                    mei = enrichMEI(
+                        mpm,
+                        new MEI(await meiContents.text(), await loadVerovio(), await loadDomParser()))
+                    console.log(mei.asString())
                     break;
                 }
             }
@@ -118,6 +125,29 @@ export const Work = ({ url }: WorkProps) => {
             mei,
         }
     }
+
+    const addGlow = useCallback(() => {
+        //Container for the gradients
+        const svg = d3.select('.verovioCanvas svg')
+        var defs = svg.append("defs");
+
+        //Filter for the outside glow
+        const filter = defs.append("filter")
+            .attr("id", "glow");
+        filter.append("feGaussianBlur")
+            .attr("stdDeviation", "20")
+            .attr("result", "coloredBlur");
+        const feMerge = filter.append("feMerge");
+        feMerge.append("feMergeNode")
+            .attr("in", "coloredBlur");
+        feMerge.append("feMergeNode")
+            .attr("in", "SourceGraphic");
+
+        d3.selectAll("[data-resp]")
+            .style('fill', 'orange')
+            .style("filter", "url(#glow)");
+    }, [])
+
 
     const handleToggleAnalysis = (analysis: Thing) => async () => {
         const currentIndex = selectedAnalyses.findIndex(a => a.url === asUrl(analysis))
@@ -191,9 +221,13 @@ export const Work = ({ url }: WorkProps) => {
         fetchAnalyses()
     }, [session.fetch, work, workDataset])
 
+
     return (
         <Grid2 container>
             <Grid2 xs={12}>
+                <IconButton onClick={() => navigate('/works')}>
+                    <ArrowBack />
+                </IconButton>
                 <b>{title || <CircularProgress />}</b>
             </Grid2>
             <Grid2 xs={12}>
@@ -244,14 +278,19 @@ export const Work = ({ url }: WorkProps) => {
             <Grid2 xs={12}>
                 {selectedAnalyses.length > 0 && (
                     <>
-                        <ScoreViewer mei={selectedAnalyses[0].mei.asString()} landscape />
-                        {selectedAnalyses.map((analysis) => analysis.annotations).flat().map(annotation => {
-                            return (
-                                <div key={`annotation_${asUrl(annotation)}`}>
-                                    {thingAsMarkdown(annotation)}
-                                </div>
-                            )
-                        })}
+                        <div style={{ width: '90vw', overflow: 'scroll' }}>
+                            <ScoreViewer mei={selectedAnalyses[0].mei.asString()} landscape onDone={addGlow} />
+                        </div>
+
+                        <Stack spacing={1} width={200} m={1}>
+                            {selectedAnalyses.map((analysis) => analysis.annotations).flat().map(annotation => {
+                                return (
+                                    <Card key={`annotation_${asUrl(annotation)}`}>
+                                        {getStringNoLocale(annotation, crm('P3_has_note')) || getStringNoLocale(annotation, oa('hasBody')) || 'no text'}
+                                    </Card>
+                                )
+                            })}
+                        </Stack>
                     </>
                 )}
             </Grid2>

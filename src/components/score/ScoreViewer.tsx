@@ -47,8 +47,6 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
   useEffect(() => {
     if (!vrvToolkit || !mei) return
 
-    onDone && onDone(new MEI(mei, vrvToolkit, new DOMParser()))
-
     if (landscape) {
       vrvToolkit.setOptions({
         pageWidth: landscape ? 60000 : 2100,
@@ -56,6 +54,10 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
         adjustPageWidth: true,
         svgHtml5: true,
         svgViewBox: true,
+        svgAdditionalAttribute: [
+          'artic@resp', 'dir@resp',
+          'artic@corresp', 'dir@corresp'
+        ]
       })
     }
     vrvToolkit.loadData(mei)
@@ -64,6 +66,9 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (!mei) return
+      onDone && onDone(new MEI(mei, vrvToolkit, new DOMParser()))
+
       document.querySelectorAll('.verovioCanvas .note').forEach(el => {
         el.addEventListener('click', () => {
           onSelect && onSelect(el.getAttribute('data-id') || 'unknown')
@@ -71,7 +76,7 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
       })
     }, 1000)
     return () => clearTimeout(timer)
-  }, [svg, onSelect])
+  }, [svg, onSelect, mei, onDone, vrvToolkit])
 
   if (asSvg) {
     return (

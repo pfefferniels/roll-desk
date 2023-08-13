@@ -27,7 +27,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     const [interpolationState, setInterpolationState] = useState<'fetching-mei' | 'fetching-midi' | 'transforming' | 'interpolating' | 'done'>()
     const [alignmentUrl, setAlignmentUrl] = useState<UrlString>()
     const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
-    const [pipeline, setPipeline] = useState(defaultPipelines['chordal-texture'])
+    const [pipeline, setPipeline] = useState(defaultPipelines['melodic-texture'])
 
     const performInterpolation = async () => {
         if (!dataset || !alignmentUrl) return
