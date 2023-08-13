@@ -1,9 +1,9 @@
-import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
+import { Thing, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
 import { DCTERMS, RDF } from "@inrupt/vocab-common-rdf";
-import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, TextField, Box, FormControl, Typography, Select, MenuItem } from "@mui/material";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
 import { useContext, useState } from "react";
-import { crm, crmdig, dcterms, frbroo, mer } from "../../../helpers/namespaces";
+import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
 
 interface MpmDialogProps {
     // the expression

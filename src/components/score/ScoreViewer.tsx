@@ -7,25 +7,31 @@ import { IconButton } from '@mui/material';
 import { Mei } from '../../lib/mei';
 
 interface ScoreViewerProps {
-  url: string
+  // you should either pass url or mei
+  url?: string
+  mei?: string
+
   landscape?: boolean
   onSelect?: (noteId: string) => void
   onDone?: (mei: Mei) => void
   asSvg?: boolean
 }
 
-export const ScoreViewer = ({ url, landscape, onSelect, onDone, asSvg }: ScoreViewerProps) => {
+export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, asSvg }: ScoreViewerProps) => {
   const { session } = useSession()
-  const [mei, setMei] = useState<string>()
+  const [mei, setMei] = useState<string | undefined>(meiProp)
   const [vrvToolkit, setVrvToolkit] = useState<any>()
   const [svg, setSvg] = useState<string>()
+
+  useEffect(() => setMei(meiProp), [meiProp])
 
   useEffect(() => {
     loadVerovio().then(toolkit => setVrvToolkit(toolkit))
   }, [])
 
   useEffect(() => {
-    console.log('useEffect 1')
+    if (!url) return
+
     const fetchMei = async () => {
       const meiBlob = await getFile(
         url,
@@ -38,7 +44,6 @@ export const ScoreViewer = ({ url, landscape, onSelect, onDone, asSvg }: ScoreVi
   }, [url, session.fetch])
 
   useEffect(() => {
-    console.log('useEffect 2')
     if (!vrvToolkit || !mei) return
 
     onDone && onDone(new Mei(mei, vrvToolkit, new DOMParser()))
@@ -56,11 +61,7 @@ export const ScoreViewer = ({ url, landscape, onSelect, onDone, asSvg }: ScoreVi
     setSvg(vrvToolkit.renderToSVG(1))
   }, [mei, landscape, onDone, vrvToolkit])
 
-  useEffect(() => console.log('ondone changed'), [vrvToolkit])
-
   useEffect(() => {
-    console.log('useEffect 3')
-
     const timer = setTimeout(() => {
       document.querySelectorAll('.verovioCanvas .note').forEach(el => {
         el.addEventListener('click', () => {

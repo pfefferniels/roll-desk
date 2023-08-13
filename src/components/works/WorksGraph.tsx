@@ -35,10 +35,11 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         .map(thing => ({ thing } as Node)) : []
 
     const linkingProperties =
-        [crm('R2_is_derivative_of'),
+        [frbroo('R2_is_derivative_of'),
+        frbroo('R3_is_realised_in'),
         frbroo('R12_is_realised_in'),
         frbroo('R12i_realises'),
-        crm('R10_has_member'),
+        frbroo('R10_has_member'),
         frbroo('R17_created'),
         frbroo('R19_created_a_realisation_of'),
         crm('P16_used_specific_object'),

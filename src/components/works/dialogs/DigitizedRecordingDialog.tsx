@@ -81,14 +81,18 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
             }
         }
 
-        let updatedDataset = setThing(worksDataset, recording.build())
+        let updatedDataset = worksDataset
 
         if (attachTo) {
+            recording.addUrl(frbroo('R12i_realises'), attachTo)
             const updatedWork = buildThing(attachTo)
                 .addUrl(frbroo('R12_is_realised_in'), asUrl(recording.build(), containerUrl))
                 .build()
             updatedDataset = setThing(updatedDataset, updatedWork)
         }
+
+        updatedDataset = setThing(worksDataset, recording.build())
+
 
         setLoading('saving-expression')
         setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }))

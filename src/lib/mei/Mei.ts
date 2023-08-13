@@ -170,6 +170,10 @@ export class Mei {
         return this.notes
     }
 
+    public asString(): string {
+        return this.vrvToolkit.getMEI()
+    }
+
     public asHMM(): HMM {
         const timemap = this.timemap
         let result: HMMEvent[] = []

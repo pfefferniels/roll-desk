@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import MidiViewer from '../midi-ld/MidiViewer';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import { Box, CircularProgress, IconButton, Stack } from '@mui/material';
-import { SolidDataset, Thing, UrlString, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing, thingAsMarkdown } from '@inrupt/solid-client';
-import { crm, mer, midi as midiNs, oa } from '../../helpers/namespaces';
+import { SolidDataset, Thing, ThingLocal, UrlString, addUrl, asUrl, buildThing, createThing, getInteger, getSolidDataset, getSourceUrl, getThing, getThingAll, getUrl, getUrlAll, isThing, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { crm, frbroo, mer, midi as midiNs, oa } from '../../helpers/namespaces';
 import { DCTERMS, RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { DownloadOutlined, EditOutlined, LinkOutlined } from '@mui/icons-material';
+import { DownloadOutlined, EditOutlined, LinkOutlined, Publish } from '@mui/icons-material';
 import { AnalysisDialog } from '../works/dialogs/AnalysisDialog';
 import { E13Card } from './E13Card';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
@@ -13,6 +13,7 @@ import AddE13Button from './AddE13Button';
 import { typeOf } from '../../helpers/typeOfEvent';
 import { AnnotationDialog } from './AnnotationDialog';
 import { AnnotationCard } from './AnnotationCard';
+import { datasetUrl } from '../../helpers/datasetUrl';
 
 const buildE13 = (
   property: string,
@@ -75,6 +76,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [selectedEvent, setSelectedEvent] = useState<Thing | null>()
   const [savingE13, setSavingE13] = useState(false)
   const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false)
+  const [publishing, setPublishing] = useState(false)
 
   const addE13Options =
     (selectedEvent && typeOf(selectedEvent) === 'note')
@@ -203,6 +205,34 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     )
   }, [url, session.fetch, session.info.isLoggedIn, analysis, dataset])
 
+  const recordingUrl = analysis && getUrl(analysis, crm('P67_refers_to'))
+
+  const publish = useCallback(async () => {
+    if (!analysis || !recordingUrl) return
+
+    const recordingDataset = await getSolidDataset(recordingUrl, { fetch: session.fetch as any })
+    const recording = getThing(recordingDataset, recordingUrl)
+    if (!recording) return
+
+    setPublishing(true)
+    const publicDataset = await getSolidDataset(`${datasetUrl}/works.ttl`, { fetch: session.fetch as any })
+    if (!publicDataset) return
+
+    let publicAggregationWork: Thing | ThingLocal = getThingAll(publicDataset).filter(thing =>
+      getUrlAll(thing, RDF.type).includes(frbroo('F17_Aggregation_Work')) &&
+      recordingUrl && getUrlAll(thing, crm('P67_refers_to')).includes(recordingUrl)).at(0) ||
+      buildThing()
+        .addUrl(RDF.type, frbroo('F17_Aggregation_Work'))
+        .addUrl(frbroo('R2_is_derivative_of'), getUrl(recording, frbroo('R12i_realises')) || 'https://unknown')
+        .build()
+
+    publicAggregationWork = addUrl(publicAggregationWork, frbroo('R3_is_realised_in'), analysis)
+    const modifiedDataset = setThing(publicDataset, publicAggregationWork)
+    saveSolidDatasetAt(`${datasetUrl}/works.ttl`, modifiedDataset, { fetch: session.fetch as any })
+    setPublishing(false)
+  }, [session.fetch, analysis, recordingUrl])
+
+
   if (!analysis) {
     if (error) return <span>Failed loading analysis</span>
     return <CircularProgress />
@@ -247,8 +277,7 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
     )
   }
 
-  const recording = getUrl(analysis, crm('P67_refers_to'))
-  const midi = recording && dataset && getThing(dataset, recording)
+  const midi = recordingUrl && dataset && getThing(dataset, recordingUrl)
   const midiUrl = midi && getUrl(midi, RDFS.label)
 
   return (
@@ -265,6 +294,9 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
             </IconButton>
             <IconButton onClick={() => { }}>
               <DownloadOutlined />
+            </IconButton>
+            <IconButton onClick={() => publish()}>
+              {publishing ? <CircularProgress /> : <Publish />}
             </IconButton>
           </h3>
         </Grid2>

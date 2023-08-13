@@ -1,6 +1,5 @@
 import { PianoRoll, pitchToSitch } from 'alignmenttool';
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent, SetTempoEvent, TextEvent } from 'midifile-ts';
-import { RdfEntity } from '../rdf';
 
 export type MidiNote = {
     id: string,

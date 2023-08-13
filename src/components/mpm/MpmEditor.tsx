@@ -1,21 +1,14 @@
-import { SolidDataset, Thing, asUrl, getFile, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setThing, setUrl } from '@inrupt/solid-client';
+import { SolidDataset, Thing, asUrl, getFile, getSolidDataset, getSourceUrl, getThing, getUrl, overwriteFile, saveSolidDatasetAt, setThing, setUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { useEffect, useState } from 'react';
-import { CircularProgress, IconButton, Tooltip } from '@mui/material';
-import { LinkOutlined, PlayArrowOutlined, SaveOutlined } from '@mui/icons-material';
+import { CircularProgress, IconButton } from '@mui/material';
+import { LinkOutlined, SaveOutlined } from '@mui/icons-material';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import CodeMirror from '@uiw/react-codemirror';
 import { datasetUrl } from '../../helpers/datasetUrl';
 import { v4 } from 'uuid';
-import { crm, frbroo, mer, oa } from '../../helpers/namespaces';
-import { MPM } from '../../lib/mpm';
-import { Mei } from '../../lib/mei';
-import { loadDomParser, loadVerovio } from '../../lib/globals';
-import { urlAsLabel } from '../../helpers/urlAsLabel';
-import { asPianoRoll } from '../../lib/midi/asPianoRoll';
-import { MSM, MsmNote } from '../../lib/msm';
-import { defaultPipelines } from '../../lib/transformers';
+import { frbroo } from '../../helpers/namespaces';
 import { CreationList } from './CreationList';
 
 const minimalMpm = `
