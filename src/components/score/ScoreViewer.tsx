@@ -55,9 +55,10 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
         svgHtml5: true,
         svgViewBox: true,
         svgAdditionalAttribute: [
-          'artic@resp', 'dir@resp',
-          'artic@corresp', 'dir@corresp'
-        ]
+          'artic@resp', 'dir@resp', 'tempo@resp', 'arpeg@resp', 'hairpin@resp', 'dynam@resp', 'app@resp',
+          'artic@corresp', 'dir@corresp', 'tempo@corresp', 'arpeg@corresp', 'hairpin@corresp', 'dynam@corresp', 'app@corresp'
+        ],
+        appXPathQuery: []
       })
     }
     vrvToolkit.loadData(mei)

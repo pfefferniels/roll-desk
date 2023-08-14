@@ -41,6 +41,9 @@ export class MEI {
         const rdg1 = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'rdg')
         const rdg2 = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'rdg')
 
+        app.setAttribute('resp', 'alignment-editor')
+        app.setAttribute('corresp', '')
+
         app.appendChild(rdg1)
         app.appendChild(rdg2)
 
@@ -58,6 +61,7 @@ export class MEI {
 
         alternative.forEach(note => {
             const newNote = this.scoreDOM.createElementNS('http://www.music-encoding.org/ns/mei', 'note')
+            newNote.setAttribute('pnum', note.pnum.toString())
             newNote.setAttribute('pname', note.pname || '')
             newNote.setAttribute('oct', note.octave?.toString() || '')
             newContent.appendChild(newNote)
@@ -203,7 +207,7 @@ export class MEI {
         let result: HMMEvent[] = []
 
         for (const event of timemap) {
-            if (!event.on) continue
+            if (!event.on || !event.on.length) continue
 
             const notesAtTime = []
             for (const on of event.on) {
@@ -230,7 +234,9 @@ export class MEI {
                 })
             }
 
-            result.push(new HMMEvent(event.qstamp, event.qstamp + 0.5, [notesAtTime]))
+            if (notesAtTime.length > 0) {
+                result.push(new HMMEvent(event.qstamp, event.qstamp + 0.5, [notesAtTime]))
+            }
         }
         const hmm = new HMM()
         hmm.events = result
