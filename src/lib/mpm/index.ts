@@ -453,6 +453,64 @@ export const parseMPM = (xml: string) => {
     for (const [part, domPart] of parts) {
         if (!domPart) continue
 
+        const dynamics = [...domPart.querySelectorAll('dynamics')].map(el => {
+            const result: Dynamics = {
+                type: 'dynamics' as 'dynamics',
+                date: +(el.getAttribute('date') || 0),
+                volume: +(el.getAttribute('volume') || 0),
+                'xml:id': el.getAttribute('xml:id') || `ornament_${v4()}`
+            }
+
+            const trans = el.getAttribute('transition.to')
+            if (trans) result['transition.to'] = +trans
+
+            const protraction = el.getAttribute('protraction')
+            if (protraction) result.protraction = +protraction
+
+            const noteId = el.getAttribute('noteid')
+            if (noteId) result.noteid = noteId
+            return result
+        })
+
+        const ornaments = [...domPart.querySelectorAll('ornament')].map(el => {
+            const result: Ornament = {
+                type: 'ornament' as 'ornament',
+                date: +(el.getAttribute('date') || 0),
+                "name.ref": el.getAttribute('name.ref') || '',
+                'note.order': el.getAttribute('name.ref') || '',
+                scale: +(el.getAttribute('name.ref') || ''),
+                'xml:id': el.getAttribute('xml:id') || `ornament_${v4()}`
+            }
+
+            const noteId = el.getAttribute('noteid')
+            if (noteId) result.noteid = noteId
+            return result
+        })
+
+        const tempos = [...domPart.querySelectorAll('tempo')].map(el => {
+            const result: Tempo = {
+                type: 'tempo' as 'tempo',
+                date: +(el.getAttribute('date') || 0),
+                bpm: +(el.getAttribute('bpm') || ''),
+                beatLength: +(el.getAttribute('beatLength') || ''),
+                'xml:id': el.getAttribute('xml:id') || `tempo_${v4()}`
+            }
+
+            const meanTempoAt = el.getAttribute('meanTempoAt')
+            if (meanTempoAt) {
+                result.meanTempoAt = +meanTempoAt
+            }
+
+            const transitionTo = el.getAttribute('transition.to')
+            if (transitionTo) {
+                result["transition.to"] = +transitionTo
+            }
+            
+            const noteId = el.getAttribute('noteid')
+            if (noteId) result.noteid = noteId
+            return result
+        })
+
         const articulations = [...domPart.querySelectorAll('articulation')].map(el => {
             const result: Articulation = {
                 type: 'articulation' as 'articulation',
@@ -479,6 +537,9 @@ export const parseMPM = (xml: string) => {
             return result
         })
 
+        mpm.insertInstructions(dynamics, part)
+        mpm.insertInstructions(ornaments, part)
+        mpm.insertInstructions(tempos, part)
         mpm.insertInstructions(asynchronies, part)
         mpm.insertInstructions(articulations, part)
     }
