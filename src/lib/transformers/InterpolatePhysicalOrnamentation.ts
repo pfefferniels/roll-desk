@@ -163,7 +163,7 @@ export class InterpolatePhysicalOrnamentation extends AbstractTransformer<Interp
             })
         }
 
-        mpm.insertInstructions(ornaments, this.options ? this.options.part : 'global')
+        mpm.insertInstructions(ornaments, this.options?.part !== undefined ? this.options.part : 'global')
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)

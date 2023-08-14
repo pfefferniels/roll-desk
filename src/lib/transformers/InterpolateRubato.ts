@@ -123,7 +123,7 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
                 return all
             }, new Array<Rubato>())
 
-        mpm.insertInstructions(instructions, this.options?.part || 'global')
+        mpm.insertInstructions(instructions, this.options?.part !== undefined ? this.options.part : 'global')
 
         // at this point, we assume different onsets inside
         // chords to be handled by a previous transformer already

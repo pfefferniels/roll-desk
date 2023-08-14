@@ -100,7 +100,7 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
             articulations.push(...chordArticulations)
         })
 
-        mpm.insertInstructions(articulations, this.options?.part || 'global')
+        mpm.insertInstructions(articulations, this.options?.part !== undefined ? this.options.part : 'global')
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)
