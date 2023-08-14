@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, getStringNoLocale, Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
-import { crm, frbroo, mer, oa } from '../../helpers/namespaces';
+import { crm, crmdig, frbroo, mer, oa } from '../../helpers/namespaces';
 import { NodeDetails } from './details/NodeDetails';
 import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
@@ -30,8 +30,16 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
 
     // be default, do not display certain nodes
     const nodes = worksDataset ? getThingAll(worksDataset)
-        .filter(thing => 
-            !getUrlAll(thing, RDF.type).includes(oa('Annotation')))
+        .filter(thing => {
+            const types = getUrlAll(thing, RDF.type)
+
+            return (
+                !types.includes(oa('Annotation')) &&
+                !types.includes(frbroo('F28_Expression_Creation')) &&
+                !types.includes(crmdig('D10_Software_Execution')) &&
+                !types.includes(frbroo('F17_Aggregation_Work'))
+            )
+        })
         .map(thing => ({ thing } as Node)) : []
 
     const linkingProperties =
@@ -57,7 +65,7 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                 const target = nodes.find(node => asUrl(node.thing) === targetUrl);
                 if (target) {
                     const relationship = urlAsLabel(property) || '(unknown)'
-                    links.push({ source, target, relationship  })
+                    links.push({ source, target, relationship })
                 }
             }
 
@@ -88,18 +96,26 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             .append('g');
 
         node
-            .append('path')
+            .append('circle')
             .attr('class', 'node-symbol')
-            .attr('d', (node) => {
+            .attr('r', (node) => {
                 const rdfTypes = getUrlAll(node.thing, RDF.type)
+                const crmTypes = getUrlAll(node.thing, crm('P2_has_type'))
 
-                if (rdfTypes.includes('Work')) {
-                    return d3.symbol().type(d3.symbolSquare).size(400)();
-                } else {
-                    return d3.symbol().type(d3.symbolCircle).size(400)();
-                }
+                if (rdfTypes.includes(frbroo('F21_Recording_Work')) ||
+                    crmTypes.includes(mer('ScoreWork')))
+                    return 30
+                return 15
             })
-            .style('fill', '#69b3a2');
+            .style('fill', (node) => {
+                const rdfTypes = getUrlAll(node.thing, RDF.type)
+                const crmTypes = getUrlAll(node.thing, crm('P2_has_type'))
+
+                if (rdfTypes.includes(frbroo('F21_Recording_Work'))) return '#69b3a2'
+                else if (crmTypes.includes(mer('ScoreWork'))) return 'orange'
+                return 'lightgray'
+            })
+            .style('fill-opacity', '1');
 
         node
             .append('text')
