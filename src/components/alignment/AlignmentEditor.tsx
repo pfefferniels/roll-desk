@@ -1,4 +1,4 @@
-import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, removeAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -108,6 +108,8 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
     if (!renderedMEI.current || !renderedMidi.current) return
 
     const hmm = renderedMEI.current.asHMM()
+    console.log(hmm.events.at(-1)?.scoreTime)
+
     const pr = new PianoRoll()
     pr.events = renderedMidi.current.events
 
@@ -167,6 +169,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
       }
       modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
       modifiedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
     setAlignment(modifiedAlignment)
     setDataset(modifiedDataset)
@@ -221,6 +224,15 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
     fetchThings();
   }, [url, session.fetch, session.info.isLoggedIn]);
 
+  const overwriteMEI = async (newMEI: MEI) => {
+    if (!meiUrl) return
+
+    await overwriteFile(
+      meiUrl,
+      new Blob([newMEI.asString()], { type: 'application/xml' }),
+      { fetch: session.fetch as any })
+  }
+
   if (!alignment) return <div>not yet ready</div>
 
   return (
@@ -273,7 +285,10 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
               )}
             </g>
 
-            <MEIContext.Provider value={renderedMEI.current}>
+            <MEIContext.Provider value={{
+              mei: renderedMEI.current,
+              updateMEI: overwriteMEI
+            }}>
               <PairDataContext.Provider value={(meiId) => {
                 const affectedPairs = pairs.filter(pair => pair.meiId === meiId)
                 return {
