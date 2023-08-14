@@ -1,3 +1,11 @@
 .verovioCanvas.landscape svg {
     height: 45vh;
 }
+
+g.lem {
+    fill: darkcyan;
+}
+
+g.rdg {
+    fill: crimson;
+}

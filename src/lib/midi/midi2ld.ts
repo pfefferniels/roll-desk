@@ -94,7 +94,7 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
                 }
                 else if (property === 'noteNumber') property = 'pitch'
                 else if (property === 'deltaTime') {
-                    property = 'tick'
+                    property = 'absoluteTick'
 
                     // store the absolute time instead of the delta time
                     value = currentTick

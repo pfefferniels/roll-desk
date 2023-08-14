@@ -46,7 +46,7 @@ export const ld2midi = (piece: Thing, midiDataset: SolidDataset): MidiFile | nul
                     .addUrl(RDF.type, midi('NoteOnEvent'))
                     .addUrl(RDF.type, midi('ChannelEvent'))
                     .addInteger(midi('channel'), channel)
-                    .addInteger(midi('tick'), onset)
+                    .addInteger(midi('absoluteTick'), onset)
                     .addInteger(midi('pitch'), pitch)
                     .addInteger(midi('velocity'), velocity)
                     .build())
@@ -55,7 +55,7 @@ export const ld2midi = (piece: Thing, midiDataset: SolidDataset): MidiFile | nul
                     .addUrl(RDF.type, midi('NoteOffEvent'))
                     .addUrl(RDF.type, midi('ChannelEvent'))
                     .addInteger(midi('channel'), channel)
-                    .addInteger(midi('tick'), offset)
+                    .addInteger(midi('absoluteTick'), offset)
                     .addInteger(midi('pitch'), pitch)
                     .addInteger(midi('velocity'), 0)
                     .build())
@@ -68,14 +68,14 @@ export const ld2midi = (piece: Thing, midiDataset: SolidDataset): MidiFile | nul
 
         // make sure that events are in the right order by sorting by tick
         transformedEvents.sort((a, b) => {
-            const tickA = getInteger(a, midi('tick')) || 0
-            const tickB = getInteger(b, midi('tick')) || 0
+            const tickA = getInteger(a, midi('absoluteTick')) || 0
+            const tickB = getInteger(b, midi('absoluteTick')) || 0
             return tickA - tickB
         })
 
         const events: AnyEvent[] = transformedEvents.map((eventThing, index, array) => {
-            const tick = getInteger(eventThing, midi('tick')) || 0
-            const prevTick = index > 0 ? getInteger(array[index - 1], midi('tick')) || 0 : 0
+            const tick = getInteger(eventThing, midi('absoluteTick')) || 0
+            const prevTick = index > 0 ? getInteger(array[index - 1], midi('absoluteTick')) || 0 : 0
 
             const event: any = {
                 deltaTime: tick - prevTick

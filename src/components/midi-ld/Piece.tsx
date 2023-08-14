@@ -58,7 +58,7 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
   const lastTick = Math.max(
     ...(getThingAll(solidDataset)
       .filter(thing => getUrlAll(thing, RDF.type).includes(midi('EndOfTrackEvent')))
-      .map(thing => getInteger(thing, midi('tick')) || 0))
+      .map(thing => getInteger(thing, midi('absoluteTick')) || 0))
   )
 
   const trackColors = ["red", "blue", "green", "purple", "orange"];

@@ -37,11 +37,11 @@ export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll 
             .sort((a, b) => {
                 const tickA =
                     getInteger(a!, crm('P82a_begin_of_the_begin')) ||
-                    getInteger(a!, midi('tick')) ||
+                    getInteger(a!, midi('absoluteTick')) ||
                     0
                 const tickB =
                     getInteger(b!, crm('P82a_begin_of_the_begin')) ||
-                    getInteger(b!, midi('tick')) ||
+                    getInteger(b!, midi('absoluteTick')) ||
                     0
                 return tickA - tickB
             })

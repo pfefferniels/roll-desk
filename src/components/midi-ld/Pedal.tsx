@@ -9,7 +9,7 @@ interface PedalProps {
 export const Pedal = ({ pedal }: PedalProps) => {
     const { pixelsPerTick, noteHeight, selectedEvent, onSelect, onChange, e13s } = useNoteContext()
 
-    const tick = getInteger(pedal, midi('tick')) || 0
+    const tick = getInteger(pedal, midi('absoluteTick')) || 0
     const velocity = getInteger(pedal, midi('value')) || 0
 
     const handleClick = () => {
