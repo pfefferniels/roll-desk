@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNoteContext } from '../../providers/NoteContext';
-import { Thing, buildThing, getInteger, getUrl, setUrl } from '@inrupt/solid-client';
-import { crm } from '../../helpers/namespaces';
-import * as d3 from 'd3'
-import { DCTERMS } from '@inrupt/vocab-common-rdf';
+import { useEffect, useState } from 'react';
+import { Thing, getInteger, getSolidDataset, getThing, getUrl, saveSolidDatasetAt, setInteger, setThing } from '@inrupt/solid-client';
+import { crm, mer } from '../../helpers/namespaces';
 import './Boundary.css'
+import { Bracket } from './Bracket';
+import { useSession } from '@inrupt/solid-ui-react';
 
 interface BoundaryProps {
     e13: Thing
@@ -12,67 +11,75 @@ interface BoundaryProps {
     onChange: (updatedE13: Thing) => void;
 }
 
+/** 
+ * Represents a boundary range (min, mean, max) for a specific 
+ * point in time (e.g. the onset or the offset of a note)
+ */
 export const Boundary = ({ e13, pitch, onChange }: BoundaryProps) => {
-    const { pixelsPerTick, noteHeight } = useNoteContext()
+    const { session } = useSession()
 
-    const propertyType = getUrl(e13, crm('P177_assigned_property_of_type'))
-    const bracket = propertyType?.includes('begin_of') ? 'open' : 'close'
-    const ticks = getInteger(e13, crm('P141_assigned')) || 0
-    const bracketLength = 2.5; // Length of the horizontal lines for brackets
+    const [range, setRange] = useState<Thing | null>()
+    const [min, setMin] = useState(0)
+    const [mean, setMean] = useState(0)
+    const [max, setMax] = useState(0)
 
-    const handleChange = useCallback((updatedTicks: number) => {
-        const newThing = buildThing(e13)
-        newThing.setInteger(crm('P141_assigned'), Math.round(updatedTicks))
-        newThing.setDate(DCTERMS.modified, new Date(Date.now()))
-        onChange(newThing.build())
-    }, [e13, onChange])
-
-    const ref = useRef<SVGGElement | null>(null);
-
-    const [position, setPosition] = useState(ticks * pixelsPerTick);
+    const rangeUrl = getUrl(e13, crm('P141_assigned'))
 
     useEffect(() => {
-        setPosition(ticks * pixelsPerTick);
-    }, [ticks, pixelsPerTick])
+        const fetchRange = async () => {
+            if (!rangeUrl) return
 
-    useEffect(() => {
-        ref.current && d3.select(ref.current)
-            .call(
-                (d3.drag()
-                    .on("drag", (event: any) => setPosition(event.x))
-                    .on("end", (event: any) => handleChange(event.x / pixelsPerTick))) as any
-            );
-    }, [pixelsPerTick, handleChange]);
+            const dataset = await getSolidDataset(rangeUrl, { fetch: session.fetch as any })
+            if (dataset) {
+                const rangeThing = getThing(dataset, rangeUrl)
+                if (!rangeThing) return
+
+                setMin(getInteger(rangeThing, mer('min')) || 0)
+                setMean(getInteger(rangeThing, mer('mean')) || 0)
+                setMax(getInteger(rangeThing, mer('max')) || 0)
+                setRange(rangeThing)
+            }
+        }
+
+        fetchRange()
+    }, [rangeUrl, session.fetch])
+
+    const changeRange = (prop: 'min' | 'mean' | 'max') => {
+        return async (newValue: number) => {
+            if (!range || !rangeUrl) return
+
+            const updatedRange = setInteger(range, mer(prop), Math.round(newValue))
+            setRange(updatedRange)
+
+            const dataset = await getSolidDataset(rangeUrl, { fetch: session.fetch as any })
+            const updatedDataset = setThing(dataset, updatedRange)
+            saveSolidDatasetAt(rangeUrl, updatedDataset, { fetch: session.fetch as any })
+            onChange(e13)
+        }
+    }
 
     return (
-        <g className='boundary' ref={ref} transform={`translate(${position},0)`}>
-            <line // Vertical line for the beginning
-                x1={0}
-                y1={(128 - pitch) * noteHeight}
-                x2={0}
-                y2={(128 - pitch) * noteHeight + noteHeight}
-                stroke='black'
-                strokeLinecap='round'
-                strokeWidth={1.5}
-            />
-            <line // Top horizontal line
-                x1={0}
-                y1={(128 - pitch) * noteHeight}
-                x2={bracket === 'open' ? bracketLength : -bracketLength}
-                y2={(128 - pitch) * noteHeight}
-                stroke='black'
-                strokeLinecap='round'
-                strokeWidth={1.5}
-            />
-            <line // Bottom horizontal line
-                x1={0}
-                y1={(128 - pitch) * noteHeight + noteHeight}
-                x2={bracket === 'open' ? bracketLength : -bracketLength}
-                y2={(128 - pitch) * noteHeight + noteHeight}
-                stroke='black'
-                strokeLinecap='round'
-                strokeWidth={1.5}
-            />
-        </g>
+        <>
+            <Bracket
+                pitch={pitch}
+                direction='open'
+                position={min}
+                onChange={setMin}
+                onEnd={changeRange('min')} />
+
+            <Bracket
+                pitch={pitch}
+                direction='straight'
+                position={mean}
+                onChange={setMean}
+                onEnd={changeRange('mean')} />
+
+            <Bracket
+                pitch={pitch}
+                direction='close'
+                position={max}
+                onChange={setMax}
+                onEnd={changeRange('max')} />
+        </>
     );
 };

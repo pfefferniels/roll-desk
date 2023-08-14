@@ -1,9 +1,8 @@
-import { Thing, getUrlAll, getThing, getUrl, getInteger } from "@inrupt/solid-client";
+import { Thing, getUrlAll, getThing } from "@inrupt/solid-client";
 import { DatasetContext } from "@inrupt/solid-ui-react";
 import { useContext } from "react";
-import { crm, midi } from "../../helpers/namespaces";
+import { midi } from "../../helpers/namespaces";
 import { Note } from "./Note";
-import { RDF } from "@inrupt/vocab-common-rdf";
 import { Pedal } from "./Pedal";
 import { typeOf } from "../../helpers/typeOfEvent";
 

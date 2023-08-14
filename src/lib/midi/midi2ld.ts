@@ -2,7 +2,7 @@ import { SolidDataset, createSolidDataset, buildThing, setThing, asUrl, Thing, g
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent } from "midifile-ts"
 import { v4 } from "uuid"
-import { crm, crmdig, midi as mid } from "../../helpers/namespaces"
+import { crmdig, mer, midi as mid } from "../../helpers/namespaces"
 
 /**
  * Capitalizes the event type and append 'event' to it
@@ -13,17 +13,13 @@ const normalizeEventType = (eventType: string) => {
     return eventType[0].toUpperCase() + eventType.slice(1) + 'Event'
 }
 
-interface MidiLdOptions {
-    calculateImprecision: boolean
-}
-
 /**
  * This function generates RDF triples from a MIDI file
  * using the MIDI-LD vocabulary.
  * 
  * @returns a `SolidDataset` containing the `Thing`s representing the MIDI file
  */
-export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptions): { dataset: SolidDataset, name: string } => {
+export const midi2ld = (midi: MidiFile, datasetUrl: string): { dataset: SolidDataset, name: string } => {
     let dataset = createSolidDataset()
 
     const isNoteOn = (event: AnyEvent) => (event as NoteOnEvent).subtype === "noteOn"
@@ -50,38 +46,36 @@ export const midi2ld = (midi: MidiFile, datasetUrl: string, options: MidiLdOptio
 
             if (isNoteOn(midiEvent)) {
                 noteEvents.push(
-                    event
-                        .addUrl(RDF.type, crm('E5_Event'))
-                        .addUrl(RDF.type, crmdig('D35_Area'))
-                        .addUrl(RDF.type, crm('E52_Time_Span')) // TODO: use has time-span
-                        .addUrl(crm('P2_has_type'), mid('NoteEvent'))
-                        .addInteger(crm('P82a_begin_of_the_begin'), currentTick - (options.calculateImprecision ? 10 : 0))
-                        .addInteger(crm('P81a_end_of_the_begin'), currentTick + (options.calculateImprecision ? 10 : 0))
-                        .addInteger(mid('pitch'), (midiEvent as NoteOnEvent).noteNumber)
-                        .addInteger(mid('velocity'), (midiEvent as NoteOnEvent).velocity)
+                    buildThing({ url: `${datasetUrl}#${v4()}` })
+                        .addUrl(RDF.type, mer('NoteEvent'))
+                        .addUrl(mer('has_onset'), asUrl(event.build()))
+                        // this is just temporary so that when encountering
+                        // the corresponding note off event we can easily 
+                        // associate the two with each other.
+                        .addInteger(mer('pitch'), (midiEvent as NoteOnEvent).noteNumber)
                         .build()
                 )
-                continue
             }
 
             else if (isNoteOff(midiEvent)) {
+                const pitch = (midiEvent as NoteOffEvent).noteNumber
+
                 const noteEvent = noteEvents
                     .slice()
                     .reverse()
-                    .find(event =>
-                        getInteger(event, mid('pitch')) === (midiEvent as NoteOffEvent).noteNumber)
+                    .find(event => getInteger(event, mer('pitch')) === pitch)
+
                 if (!noteEvent) {
                     console.log('no corresponding note on event found for', midiEvent)
                     continue
                 }
 
                 const finalizedEvent = buildThing(noteEvent)
-                    .addInteger(crm('P81b_begin_of_the_end'), currentTick - (options.calculateImprecision ? 10 : 0))
-                    .addInteger(crm('P82b_end_of_the_end'), currentTick + (options.calculateImprecision ? 10 : 0))
+                    .addUrl(mer('has_offset'), asUrl(event.build()))
+                    .removeInteger(mer('pitch'), pitch)
 
                 dataset = setThing(dataset, finalizedEvent.build())
                 track.addUrl(mid('hasEvent'), asUrl(finalizedEvent.build(), datasetUrl))
-                continue
             }
 
             // eslint-disable-next-line no-loop-func

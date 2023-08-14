@@ -2,7 +2,7 @@ import { Drawer } from "@mui/material"
 import { Thing, getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { crm, midi } from "../../helpers/namespaces"
-import { NoteDetails } from "./NoteDetails"
+import { NoteOnOffDetails } from "./NoteOnOffDetails"
 import { PedalDetails } from "./PedalDetails"
 import { typeOf } from "../../helpers/typeOfEvent"
 
@@ -17,8 +17,8 @@ export const Details = ({ thing, e13s, onChange }: DetailsProps) => {
         if (!thing) {
             return <span>nothing selected</span>
         }
-        else if (typeOf(thing) === 'note') {
-            return <NoteDetails onChange={onChange} thing={thing} e13s={e13s} />
+        else if (typeOf(thing) === 'noteOn' || typeOf(thing) === 'noteOff') {
+            return <NoteOnOffDetails onChange={onChange} thing={thing} e13s={e13s} />
         }
         else if (typeOf(thing) === 'pedal') {
             return <PedalDetails onChange={onChange} thing={thing} e13s={e13s} />

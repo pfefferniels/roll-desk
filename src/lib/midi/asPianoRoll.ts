@@ -1,5 +1,5 @@
-import { SolidDataset, Thing, asUrl, getInteger, getThing, getUrlAll } from "@inrupt/solid-client"
-import { crm, midi } from "../../helpers/namespaces"
+import { SolidDataset, Thing, asUrl, getInteger, getThing, getUrl, getUrlAll } from "@inrupt/solid-client"
+import { crm, mer, midi } from "../../helpers/namespaces"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { PianoRoll, pitchToSitch } from "alignmenttool"
 
@@ -35,14 +35,28 @@ export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll 
             .map(url => getThing(midiDataset, url))
             .filter(event => event !== null)
             .sort((a, b) => {
-                const tickA =
-                    getInteger(a!, crm('P82a_begin_of_the_begin')) ||
-                    getInteger(a!, midi('absoluteTick')) ||
-                    0
-                const tickB =
-                    getInteger(b!, crm('P82a_begin_of_the_begin')) ||
-                    getInteger(b!, midi('absoluteTick')) ||
-                    0
+                if (!a || !b) return 0
+
+                let tickA = getInteger(a, midi('absoluteTick')) || 0
+                let tickB = getInteger(b, midi('absoluteTick')) || 0
+
+                if (getUrlAll(a, RDF.type).includes(mer('NoteEvent')) && !tickA) {
+                    const onsetUrl = getUrl(a, mer('has_onset'))
+                    if (onsetUrl) {
+                        const onset = getThing(midiDataset, onsetUrl)
+                        tickA = (onset && getInteger(onset, midi('absoluteTick'))) || 0
+                    }
+                }
+
+                if (getUrlAll(b, RDF.type).includes(mer('NoteEvent')) && !tickB) {
+                    const onsetUrl = getUrl(b, mer('has_onset'))
+                    if (onsetUrl) {
+                        const onset = getThing(midiDataset, onsetUrl)
+                        tickB = (onset && getInteger(onset, midi('absoluteTick'))) || 0
+                    }
+                }
+
+
                 return tickA - tickB
             })
 
@@ -54,24 +68,36 @@ export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll 
             if (getUrlAll(event, RDF.type).includes(midi('SetTempoEvent'))) {
                 currentTickTime = tempoToTickTime(event, ticksPerBeat)
             }
-            else if (getUrlAll(event, crm('P2_has_type')).includes(midi('NoteEvent'))) {
+            else if (getUrlAll(event, RDF.type).includes(mer('NoteEvent'))) {
                 // TODO something is going wrong here, as currentTickTime seems
                 // to be 0 permanently.
-                const onset = getInteger(event, crm('P82a_begin_of_the_begin')) || 0
-                const offset = getInteger(event, crm('P82b_end_of_the_end')) || 0
-                const pitch = getInteger(event, midi('pitch')) || 0
-                const velocity = getInteger(event, midi('velocity')) || 0
+
+                const onsetUrl = getUrl(event, mer('has_onset'))
+                const offsetUrl = getUrl(event, mer('has_offset'))
+                if (!onsetUrl || !offsetUrl) continue
+
+                const onset = getThing(midiDataset, onsetUrl)
+                const offset = getThing(midiDataset, offsetUrl)
+                if (!onset || !offset) continue
+
+                const onsetTime = getInteger(onset, midi('absoluteTick')) || 0
+                const offsetTime = getInteger(offset, midi('absoluteTick')) || 0
+
+                const pitch = getInteger(onset, midi('pitch')) || 0
+
+                const onsetVelocity = getInteger(onset, midi('velocity')) || 0
+                const offsetVelocity = getInteger(onset, midi('velocity')) || 0
 
                 allEvents.push({
-                    ontime: (currentTickTime || 0.001) * onset,
-                    offtime: (currentTickTime || 0.001) * offset,
+                    ontime: (currentTickTime || 0.001) * onsetTime,
+                    offtime: (currentTickTime || 0.001) * offsetTime,
                     id: asUrl(event),
                     pitch: pitch,
                     sitch: pitchToSitch(pitch),
-                    onvel: velocity,
-                    offvel: 0,
+                    onvel: onsetVelocity,
+                    offvel: offsetVelocity,
                     channel: 0,
-                    endtime: currentTickTime * offset,
+                    endtime: (currentTickTime || 0.001) * offsetTime,
                     label: asUrl(event)
                 })
             }

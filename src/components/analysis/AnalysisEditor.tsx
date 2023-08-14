@@ -81,71 +81,70 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
   const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false)
   const [publishing, setPublishing] = useState(false)
 
-  const addE13Options =
-    (selectedEvent && typeOf(selectedEvent) === 'note')
-      ? [
-        {
-          name: 'Annotate',
-          handleClick: () => {
-            if (!selectedEvent) return
+  let addE13Options: {name: string, handleClick: () => void }[] = []
 
-            setAnnotationDialogOpen(true)
-          }
-        },
-        {
-          name: 'Assign Onset Boundaries',
-          handleClick: () => {
-            if (!selectedEvent) return
+  if (selectedEvent) {
+    addE13Options = [
+      {
+        name: 'Annotate',
+        handleClick: () => {
+          if (!selectedEvent) return
 
-            const currentTick = getInteger(selectedEvent, crm('P82a_begin_of_the_begin'))
-            saveE13([
-              buildE13(crm('P82a_begin_of_the_begin'), selectedEvent, currentTick || 0),
-              buildE13(crm('P81a_end_of_the_begin'), selectedEvent, currentTick || 0)
-            ])
-          },
-        },
-        {
-          name: 'Assign Offset Boundaries',
-          handleClick: () => {
-            if (!selectedEvent) return
-
-            const currentTick = getInteger(selectedEvent, crm('P81b_begin_of_the_end'))
-            saveE13([
-              buildE13(crm('P81b_begin_of_the_end'), selectedEvent, currentTick || 0),
-              buildE13(crm('P82b_end_of_the_end'), selectedEvent, currentTick || 0)
-            ])
-          }
-        },
-        {
-          name: 'Assign Pitch',
-          handleClick: () => {
-            if (!selectedEvent) return
-
-            const currentPitch = getInteger(selectedEvent, midiNs('pitch'))
-            saveE13(
-              buildE13(midiNs('pitch'), selectedEvent, currentPitch || 0)
-            )
-          }
-        },
-        {
-          name: 'Assign Velocity Boundaries',
-          handleClick: () => {
-            if (!selectedEvent) return
-
-            const currentVelocity = getInteger(selectedEvent, midiNs('velocity')) || 0
-            const range = buildRange(
-              currentVelocity,
-              currentVelocity,
-              currentVelocity)
-            saveRange(range)
-
-            saveE13([
-              buildE13(midiNs('velocity'), selectedEvent, range, session.info.webId)
-            ])
-          }
+          setAnnotationDialogOpen(true)
         }
-      ]
-      : [
+      },
+    ]
+
+    if (getUrlAll(selectedEvent, RDF.type).includes(midiNs('NoteOnEvent')) ||
+      getUrlAll(selectedEvent, RDF.type).includes(midiNs('NoteOffEvent'))) {
+      addE13Options = [{
+        name: 'Assign Boundaries',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentTick = getInteger(selectedEvent, midiNs('absoluteTick')) || 0
+          const range = buildRange(
+            currentTick - 10,
+            currentTick,
+            currentTick + 10)
+          saveRange(range)
+
+          saveE13([
+            buildE13(midiNs('absoluteTick'), selectedEvent, range, session.info.webId)
+          ])
+        },
+      },
+      {
+        name: 'Assign Pitch',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentPitch = getInteger(selectedEvent, midiNs('pitch'))
+          saveE13(
+            buildE13(midiNs('pitch'), selectedEvent, currentPitch || 0)
+          )
+        }
+      },
+      {
+        name: 'Assign Velocity Boundaries',
+        handleClick: () => {
+          if (!selectedEvent) return
+
+          const currentVelocity = getInteger(selectedEvent, midiNs('velocity')) || 0
+          const range = buildRange(
+            currentVelocity,
+            currentVelocity,
+            currentVelocity)
+          saveRange(range)
+
+          saveE13([
+            buildE13(midiNs('velocity'), selectedEvent, range, session.info.webId)
+          ])
+        }
+      }]
+    }
+    else if (typeOf(selectedEvent) === 'pedal') {
+      addE13Options = [
         {
           name: 'Assign Pedal Position',
           handleClick: () => {
@@ -159,6 +158,8 @@ export const AnalysisEditor = ({ url }: AnalysisEditorProps) => {
           }
         }
       ]
+    }
+  }
 
   useEffect(() => {
     const fetchThings = async () => {

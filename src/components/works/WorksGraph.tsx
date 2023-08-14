@@ -37,7 +37,8 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                 !types.includes(oa('Annotation')) &&
                 !types.includes(frbroo('F28_Expression_Creation')) &&
                 !types.includes(crmdig('D10_Software_Execution')) &&
-                !types.includes(frbroo('F17_Aggregation_Work'))
+                !types.includes(frbroo('F17_Aggregation_Work')) &&
+                !types.includes(mer('Range'))
             )
         })
         .map(thing => ({ thing } as Node)) : []
@@ -105,6 +106,9 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                 if (rdfTypes.includes(frbroo('F21_Recording_Work')) ||
                     crmTypes.includes(mer('ScoreWork')))
                     return 30
+                else if (rdfTypes.includes(crm('E13_Attribute_Assignment'))) {
+                    return 5
+                }
                 return 15
             })
             .style('fill', (node) => {
@@ -121,6 +125,8 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             .append('text')
             .attr('class', 'node-label')
             .text((node) => {
+                if (getUrlAll(node.thing, RDF.type).includes(crm('E13_Attribute_Assignment')))
+                    return ''
                 return getStringNoLocale(node.thing, RDFS.label) ||
                     urlAsLabel(getUrl(node.thing, crm('P2_has_type'))) ||
                     urlAsLabel(getUrl(node.thing, RDF.type)) ||

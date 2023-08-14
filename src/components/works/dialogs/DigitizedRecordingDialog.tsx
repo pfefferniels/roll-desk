@@ -71,7 +71,7 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
             if (midi) {
                 // TODO: use private pod instead
                 const midiDatasetUrl = `${datasetUrl}/${v4()}.ttl`
-                const midiLd = midi2ld(midi, midiDatasetUrl, { calculateImprecision: false });
+                const midiLd = midi2ld(midi, midiDatasetUrl);
 
                 // Save the RDF dataset in the pod
                 recording.addUrl(RDFS.label, `${midiDatasetUrl}#${midiLd.name}`)

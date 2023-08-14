@@ -12,7 +12,7 @@ interface NoteDetailsProps {
     onChange: (e13s: Thing) => void
 }
 
-export const NoteDetails = ({ thing, e13s, onChange }: NoteDetailsProps) => {
+export const NoteOnOffDetails = ({ thing, e13s, onChange }: NoteDetailsProps) => {
     const velocity = getInteger(thing, midi('velocity'))
     const pitch = Midi.midiToNoteName(getInteger(thing, midi('pitch')) || 0)
 
