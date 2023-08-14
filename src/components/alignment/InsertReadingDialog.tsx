@@ -1,11 +1,13 @@
 import { MEI } from "../../lib/mei"
 import { Dialog, DialogContent, MenuItem, MenuList, Typography } from "@mui/material"
 import { useState } from "react"
+import { Midi, Note } from "tonal"
 
 interface InsertReadingDialogProps {
     open: boolean
     onClose: () => void
     mei: MEI
+    updateMEI: (newMEI: MEI) => void
     meiId: string
     midiEvents: any[] // PianoRollEvent
 }
@@ -26,7 +28,7 @@ const oneToZeroOptions = {
     'remove': 'Remove Note'
 }
 
-export const InsertReadingDialog = ({ open: dialogOpen, onClose, mei, meiId, midiEvents }: InsertReadingDialogProps) => {
+export const InsertReadingDialog = ({ open: dialogOpen, onClose, mei, updateMEI, meiId, midiEvents }: InsertReadingDialogProps) => {
     const [selectedKey, setSelectedKey] = useState<string>();
 
     const scoreNote = mei.getById(meiId)
@@ -34,17 +36,22 @@ export const InsertReadingDialog = ({ open: dialogOpen, onClose, mei, meiId, mid
     const handleMenuItemClick = (key: string) => {
         setSelectedKey(key);
 
-        console.log('events=', midiEvents)
+        mei.insertReading(meiId, midiEvents.map(event => {
+            const note = Note.get(Midi.midiToNoteName(event.pitch))
 
-        mei.insertReading(meiId, midiEvents.map(event => ({
-            index: -1,
-            id: '',
-            qstamp: 0,
-            pnum: event.pitch,
-            duration: 0,
-            part: 0
-        })), selectedKey === 'alternative' ? undefined : selectedKey!)
-        // console.log('insert <rdg> into', mei, ': ', meiId, 'will be replaced with', midiEvents)
+            return {
+                index: -1,
+                id: '',
+                qstamp: 0,
+                pnum: event.pitch,
+                duration: 0,
+                part: 0,
+                pname: note.name,
+                oct: note.oct
+            }
+        }), selectedKey === 'alternative' ? undefined : selectedKey!)
+        // mei.update()
+        updateMEI(mei)
     };
 
     let options

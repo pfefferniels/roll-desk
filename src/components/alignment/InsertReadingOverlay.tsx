@@ -11,7 +11,7 @@ interface InsertReadingProps {
 
 export const InsertReadingOverlay = ({ parent, attachTo }: InsertReadingProps) => {
     const { midiEvents } = usePair(attachTo)
-    const mei = useMEI()
+    const { mei, updateMEI } = useMEI()
 
     const [insertReadingDialogOpen, setInsertReadingDialogOpen] = useState(false)
 
@@ -47,7 +47,8 @@ export const InsertReadingOverlay = ({ parent, attachTo }: InsertReadingProps) =
                     onClose={() => setInsertReadingDialogOpen(false)}
                     meiId={attachTo}
                     midiEvents={midiEvents}
-                    mei={mei} />}
+                    mei={mei}
+                    updateMEI={updateMEI} />}
             </foreignObject>
 
         </>
