@@ -135,7 +135,7 @@ export const Work = ({ url }: WorkProps) => {
         const filter = defs.append("filter")
             .attr("id", "glow");
         filter.append("feGaussianBlur")
-            .attr("stdDeviation", "20")
+            .attr("stdDeviation", "10")
             .attr("result", "coloredBlur");
         const feMerge = filter.append("feMerge");
         feMerge.append("feMergeNode")
