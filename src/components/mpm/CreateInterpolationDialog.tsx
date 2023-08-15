@@ -1,7 +1,7 @@
 import { Thing, UrlString, getUrl, getThing, getFile, getSolidDataset, getUrlAll, buildThing } from "@inrupt/solid-client"
 import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
 import { RDFS, RDF } from "@inrupt/vocab-common-rdf"
-import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem, Stack, Divider } from "@mui/material"
 import { useContext, useState } from "react"
 import { crm, mer, oa, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
@@ -31,7 +31,8 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
     const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
     const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
-        minimumArpeggioSize: 2
+        minimumArpeggioSize: 2,
+        beatLength: 'denominator'
     })
 
     const performInterpolation = async () => {
@@ -134,42 +135,49 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Perform MPM Interpolation</DialogTitle>
             <DialogContent>
-                <Box>
-                    <Typography>On which alignment should the MPM be based on?</Typography>
-                    <SelectEntity
-                        title='Select Alignment'
-                        type={mer('Alignment')}
-                        onSelect={setAlignmentUrl} />
-                </Box>
-                <Box>
-                    <Typography>Is there an analysis which should be taken into account?</Typography>
-                    <SelectEntity
-                        title='Select Analysis'
-                        type={mer('Analysis')}
-                        onSelect={setAnalysisUrl} />
-                </Box>
-                <Box>
-                    <Typography>Texture of the music:</Typography>
-                    <Select
-                        value={defaultPipeline}
-                        onChange={e => setDefaultPipeline(e.target.value as 'melodic-texture' | 'chordal-texture')}>
-                        <MenuItem value='chordal-texture'>chordal</MenuItem>
-                        <MenuItem value='melodic-texture'>melodic</MenuItem>
-                    </Select>
-                </Box>
-                <TransformerSettingsBox onChange={(settings) => setTransformerSettings(settings)} />
+                <Stack spacing={1}>
+                    <Box>
+                        <Typography>On which alignment should the MPM be based on?</Typography>
+                        <SelectEntity
+                            title='Select Alignment'
+                            type={mer('Alignment')}
+                            onSelect={setAlignmentUrl} />
+                    </Box>
+                    <Box>
+                        <Typography>Is there an analysis which should be taken into account?</Typography>
+                        <SelectEntity
+                            title='Select Analysis'
+                            type={mer('Analysis')}
+                            onSelect={setAnalysisUrl} />
+                    </Box>
+                    <Divider />
+                    <Box>
+                        <Typography>Which texture does the music have?</Typography>
+                        <Select
+                            sx={{ m: 1 }}
+                            size="small"
+                            value={defaultPipeline}
+                            onChange={e => setDefaultPipeline(e.target.value as 'melodic-texture' | 'chordal-texture')}>
+                            <MenuItem value='chordal-texture'>chordal</MenuItem>
+                            <MenuItem value='melodic-texture'>melodic</MenuItem>
+                        </Select>
+                    </Box>
+                    <TransformerSettingsBox onChange={(settings) => setTransformerSettings(settings)} />
+                </Stack>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button
-                    disabled={interpolationState !== undefined}
-                    startIcon={interpolationState ? <CircularProgress /> : <Save/>}
+                    disabled={interpolationState !== undefined && interpolationState !== 'done'}
+                    startIcon={(interpolationState !== undefined && interpolationState !== 'done')
+                        ? <CircularProgress />
+                        : <Save />}
                     onClick={async () => {
                         await save()
                         onClose()
                     }}
                 >
-                    {interpolationState ? interpolationState : 'Save'}
+                    {(interpolationState !== undefined && interpolationState !== 'done') ? interpolationState : 'Save'}
                 </Button>
             </DialogActions>
         </Dialog>
