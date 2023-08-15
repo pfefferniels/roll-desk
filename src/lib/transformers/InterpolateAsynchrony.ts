@@ -22,7 +22,14 @@ export interface InterpolateAsynchronyOptions extends TransformationOptions {
 
 /**
  * This transformer interpolates asynchrony instructions. It maybe applied only 
- * to a part, not globally. Under certain circumstances it should not be applied
+ * to a part, not globally.
+ * 
+ * Since it only modifies physical attributes it should
+ * be applied before interpolating the tempo map. If neither global physical
+ * ornamentation map nor asynchrony map are calculated, the tempo map transformer can
+ * not know, which note of a chord to use for its calculations.
+ * 
+ * Under certain circumstances it should not be applied
  * after a global ornamentationMap has been interpolated. A subsequent interpolation
  * of dynamics map should be partwise.
  */

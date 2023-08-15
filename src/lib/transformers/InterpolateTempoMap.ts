@@ -253,7 +253,14 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     return
                 }
 
-                onsets.push(chord[0]['midi.onset'])
+                const firstOnset = chord[0]['midi.onset']
+                if (chord.some(note => note["midi.onset"] !== firstOnset)) {
+                    console.log(`Not all notes in the chord at ${chord[0].date}
+                    occur at the same physical time. Make sure that a global physical
+                    ornamentation map and/or asynchrony map are calculated before
+                    applying this transformer.`)
+                }
+                onsets.push(firstOnset)
                 tstamps.push(+date)
                 if (i === chords.length - 1) {
                     // in case of the last chord use its duration as the beat length
