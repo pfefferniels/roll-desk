@@ -1,7 +1,7 @@
 import { Thing, UrlString, getUrl, getThing, getFile, getSolidDataset, getUrlAll, buildThing } from "@inrupt/solid-client"
 import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
 import { RDFS, RDF } from "@inrupt/vocab-common-rdf"
-import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem } from "@mui/material"
 import { useContext, useState } from "react"
 import { crm, mer, oa, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
@@ -12,6 +12,7 @@ import { MPM } from "../../lib/mpm"
 import { MsmNote, MSM } from "../../lib/msm"
 import { defaultPipelines } from "../../lib/transformers"
 import { SelectEntity } from "../works/SelectEntity"
+import { Save } from "@mui/icons-material"
 
 
 interface CreateInterpolationDialogProps {
@@ -22,12 +23,12 @@ interface CreateInterpolationDialogProps {
 
 export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInterpolationDialogProps) => {
     const { session } = useSession()
-    const { solidDataset: dataset, setDataset: setDataset } = useContext(DatasetContext)
+    const { solidDataset: dataset } = useContext(DatasetContext)
 
     const [interpolationState, setInterpolationState] = useState<'fetching-mei' | 'fetching-midi' | 'transforming' | 'interpolating' | 'done'>()
     const [alignmentUrl, setAlignmentUrl] = useState<UrlString>()
     const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
-    const [pipeline, setPipeline] = useState(defaultPipelines['melodic-texture'])
+    const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
 
     const performInterpolation = async () => {
         if (!dataset || !alignmentUrl) return
@@ -103,7 +104,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         const newMPM = new MPM(2)
 
         // kick-off pipeline
-        pipeline.head?.transform(msm, newMPM)
+        defaultPipelines[defaultPipeline].head?.transform(msm, newMPM)
 
         setInterpolationState('done')
         return newMPM.serialize()
@@ -120,7 +121,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         }
 
         const mpm = await performInterpolation()
-        if (!mpm) return 
+        if (!mpm) return
 
         onCreate(creationEvent.build(), mpm)
     }
@@ -146,14 +147,28 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
                 <Box>
                     {interpolationState}
                 </Box>
+                <Box>
+                    <Typography>Texture of the music:</Typography>
+                    <Select
+                        value={defaultPipeline}
+                        onChange={e => setDefaultPipeline(e.target.value as 'melodic-texture' | 'chordal-texture')}>
+                        <MenuItem value='chordal-texture'>chordal</MenuItem>
+                        <MenuItem value='melodic-texture'>melodic</MenuItem>
+                    </Select>
+                </Box>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={async () => {
-                    await save()
-                    onClose()
-                }}>
-                    Save</Button>
+                <Button
+                    disabled={interpolationState !== undefined}
+                    startIcon={interpolationState ? <CircularProgress /> : <Save/>}
+                    onClick={async () => {
+                        await save()
+                        onClose()
+                    }}
+                >
+                    {interpolationState ? interpolationState : 'Save'}
+                </Button>
             </DialogActions>
         </Dialog>
     )
