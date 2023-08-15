@@ -1,4 +1,4 @@
-import { Articulation, Asynchrony, DatedInstruction, Dynamics, MPM, Ornament, Part, Tempo } from ".";
+import { Articulation, Asynchrony, DatedInstruction, Dynamics, MPM, Ornament, OrnamentDef, Part, Tempo } from ".";
 import { MEI } from "../mei";
 
 const determinePlist = <T extends string>(instruction: DatedInstruction<T>, mei: MEI, part: Part) => {
@@ -72,11 +72,22 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
         ornaments.forEach(ornament => {
             const plist = determinePlist(ornament, mei, part)
 
+            let order
+            if (ornament["note.order"] === 'ascending pitch') order = 'up'
+            else if (ornament['note.order'] === 'descending pitch') order = 'down'
+            else return
+
+            const definition = mpm.getDefinition('ornamentDef', ornament["name.ref"]) as OrnamentDef | null
+            const frameLength = (definition && definition.frameLength) || 0
+
+            if (frameLength < 20) return
+
             mei.insertMark(plist[0], 'arpeg', {
                 '@': {
                     resp: '#enrich-from-mpm',
                     corresp: '#' + ornament["xml:id"],
-                    plist: plist.join(' ')
+                    plist: plist.join(' '),
+                    order
                 }
             })
         })

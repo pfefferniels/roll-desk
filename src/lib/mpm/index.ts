@@ -17,6 +17,7 @@ type Definition<T extends string> = {
 }
 
 export interface OrnamentDef extends Definition<'ornament'> {
+    'name'?: string
     'frameLength'?: number
     'frame.start'?: number
     'noteoff.shift'?: string,
@@ -27,6 +28,13 @@ export interface OrnamentDef extends Definition<'ornament'> {
 
 type AnyDefinition =
     | OrnamentDef
+
+export const definitionTypes =
+    [
+        'ornamentDef'
+    ] as const
+
+type DefinitionType = typeof definitionTypes[number]
 
 export type DatedInstruction<T extends string> = {
     readonly type: T
@@ -225,7 +233,7 @@ export class MPM {
             this.setMap(this.correspondingMapNameFor(type), part, sortedMap)
         }
 
-        const name = `def_${v4()}`
+        const name = definition.name || `def_${v4()}`
 
         if (type === 'ornament') {
             if (!styles.styleDef.ornamentDef) {
@@ -260,6 +268,40 @@ export class MPM {
         }
 
         return name;
+    }
+
+    /**
+     * Calls `insertDefinition` for each element in the given array.
+     * @param definitions 
+     * @param part 
+     */
+    insertDefinitions(definitions: AnyDefinition[], part: Part) {
+        definitions.forEach(definition => {
+            this.insertDefinition(definition, part)
+        })
+    }
+
+    getDefinition(definitionType: DefinitionType, name: string): AnyDefinition | null {
+        const styles = this.getStyles(this.correspondingStyleNameFor(definitionType))
+        const defs = styles.styleDef[definitionType]
+        if (!Array.isArray(defs)) return null
+
+        const definition = defs.find(def => def['name'] === name)
+        if (definitionType === 'ornamentDef') {
+            const dynamicsGradient = definition.dynamicsGradient 
+            const temporalSpread = definition.temporalSpread
+            return {
+                'frame.start': temporalSpread['frame.start'] || 0,
+                'frameLength': temporalSpread['frameLength'] || 0,
+                'name': definition['@'].name || '',
+                'noteoff.shift': temporalSpread['noteoff.shift'] || 0,
+                'time.unit': temporalSpread['time.unit'] || 0,
+                'transition.from': dynamicsGradient['transition.from'] || 0,
+                'transition.to': dynamicsGradient['transition.to'] || 0,
+                'type': 'ornament'
+            } as OrnamentDef
+        }
+        return definition
     }
 
     /**
@@ -437,6 +479,12 @@ export class MPM {
             rubato: 'rubatoMap'
         }[instructionType]
     }
+
+    private correspondingStyleNameFor(definitionType: DefinitionType) {
+        return {
+            ornamentDef: 'ornamentationStyles'
+        }[definitionType]
+    }
 }
 
 export const parseMPM = (xml: string) => {
@@ -452,6 +500,22 @@ export const parseMPM = (xml: string) => {
 
     for (const [part, domPart] of parts) {
         if (!domPart) continue
+
+        const ornamentDefs = [...domPart.querySelectorAll('ornamentDef')].map(el => {
+            const name = el.getAttribute('name')
+            const temporalSpread = el.querySelector('temporalSpread')
+            const dynamicsGradient = el.querySelector('dynamicsGradient')
+            return {
+                'name': name,
+                'frame.start': temporalSpread?.getAttribute('frame.start'),
+                'frameLength': temporalSpread?.getAttribute('frameLength'),
+                'noteoff.shift': temporalSpread?.getAttribute('noteoff.shift'),
+                'time.unit': temporalSpread?.getAttribute('time.unit'),
+                'transition.from': dynamicsGradient?.getAttribute('transition.from'),
+                'transition.to': dynamicsGradient?.getAttribute('transition.to'),
+                'type': 'ornament'
+            } as OrnamentDef
+        })
 
         const dynamics = [...domPart.querySelectorAll('dynamics')].map(el => {
             const result: Dynamics = {
@@ -505,7 +569,8 @@ export const parseMPM = (xml: string) => {
             if (transitionTo) {
                 result["transition.to"] = +transitionTo
             }
-            
+
+
             const noteId = el.getAttribute('noteid')
             if (noteId) result.noteid = noteId
             return result
@@ -542,6 +607,7 @@ export const parseMPM = (xml: string) => {
         mpm.insertInstructions(tempos, part)
         mpm.insertInstructions(asynchronies, part)
         mpm.insertInstructions(articulations, part)
+        mpm.insertDefinitions(ornamentDefs, part)
     }
 
     return mpm

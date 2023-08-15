@@ -57,7 +57,7 @@ export class InterpolateAsynchrony extends AbstractTransformer<InterpolateAsynch
             // If not, take the first note and print a warning.
             const firstNote = chord[0]
             const onset = firstNote['midi.onset']
-            if (!chord.every(note => note['midi.onset'] === onset)) {
+            if (chord.some(note => note['midi.onset'] !== onset)) {
                 console.log(`Multiple notes inside a chord of part should be 
                     synchronized before applying the InterpolateAsynchrony transformer.`)
             }
