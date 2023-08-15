@@ -10,9 +10,10 @@ import { MEI } from "../../lib/mei"
 import { asPianoRoll } from "../../lib/midi/asPianoRoll"
 import { MPM } from "../../lib/mpm"
 import { MsmNote, MSM } from "../../lib/msm"
-import { defaultPipelines } from "../../lib/transformers"
+import { getDefaultPipeline } from "../../lib/transformers"
 import { SelectEntity } from "../works/SelectEntity"
 import { Save } from "@mui/icons-material"
+import { TransformerSettings } from "./TransformerSettings"
 
 
 interface CreateInterpolationDialogProps {
@@ -29,6 +30,9 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     const [alignmentUrl, setAlignmentUrl] = useState<UrlString>()
     const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
     const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
+    const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
+        minimumArpeggioSize: 2
+    })
 
     const performInterpolation = async () => {
         if (!dataset || !alignmentUrl) return
@@ -104,7 +108,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         const newMPM = new MPM(2)
 
         // kick-off pipeline
-        defaultPipelines[defaultPipeline].head?.transform(msm, newMPM)
+        getDefaultPipeline(defaultPipeline, transformerSettings).head?.transform(msm, newMPM)
 
         setInterpolationState('done')
         return newMPM.serialize()
@@ -145,9 +149,6 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
                         onSelect={setAnalysisUrl} />
                 </Box>
                 <Box>
-                    {interpolationState}
-                </Box>
-                <Box>
                     <Typography>Texture of the music:</Typography>
                     <Select
                         value={defaultPipeline}
@@ -156,6 +157,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
                         <MenuItem value='melodic-texture'>melodic</MenuItem>
                     </Select>
                 </Box>
+                <TransformerSettings onChange={(settings) => setTransformerSettings(settings)} />
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
