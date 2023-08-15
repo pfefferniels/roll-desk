@@ -8,7 +8,7 @@ interface TickEventProps {
     event: Thing // can be anything with midi:absoluteTick
 }
 
-export const TickEvent = ({ event }: TickEventProps) => {
+export const NoteOnOff = ({ event }: TickEventProps) => {
     const { pixelsPerTick, noteHeight, selectedEvent, onSelect, e13s, onChange } = useNoteContext()
 
     const [hovered, setHovered] = useState(false)

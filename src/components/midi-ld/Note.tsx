@@ -1,12 +1,11 @@
 import { Thing, asUrl, getInteger, getThing, getUrl } from '@inrupt/solid-client';
-import { crm, mer, midi } from '../../helpers/namespaces';
-import { Boundary } from './Boundary';
+import { mer, midi } from '../../helpers/namespaces';
 import { useNoteContext } from '../../providers/NoteContext';
-import './Note.css'
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { useContext } from 'react';
-import { TickEvent } from './TickEvent';
+import { NoteOnOff } from './NoteOnOff';
+import './Note.css'
 
 interface NoteProps {
   note: Thing;
@@ -49,8 +48,8 @@ export const Note = ({ note, color }: NoteProps) => {
         onClick={() => onSelect(note)}
       />
 
-      <TickEvent event={onsetThing} />
-      <TickEvent event={offsetThing} />
+      <NoteOnOff event={onsetThing} />
+      <NoteOnOff event={offsetThing} />
     </>
   );
 };
