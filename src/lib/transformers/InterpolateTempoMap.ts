@@ -4,6 +4,50 @@ import { MSM } from "../msm";
 import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
 
+type InterpolationPoint = {
+    tstamp: number,
+    bpm: number,
+    beatLength: number
+}
+
+/*
+non-iterative method. TODO: test it
+const generatePowFunction = (start: InterpolationPoint, end: InterpolationPoint, meanTempoAt: number): ((x: number) => number) => {
+  const B = Math.log(0.5) / Math.log(meanTempoAt);
+  const target = start.tstamp + start.beatLength;
+  const factor = Math.pow((target - start.tstamp) / (end.tstamp - start.tstamp), B);
+
+  const updatedBPM = (start.bpm - factor * end.bpm) / (1 - factor);
+
+  return (x: number) => Math.pow((x - start.tstamp) / (end.tstamp - start.tstamp), B) * (end.bpm - updatedBPM) + updatedBPM;
+};
+*/
+
+const generatePowFunction = (start: InterpolationPoint, end: InterpolationPoint, meanTempoAt: number, maxIterations = 1000, tolerance = 0.01): ((x: number) => number) => {
+    let iteration = 0;
+    let updatedBPM = start.bpm;
+
+    const computePowFunction = (bpm: number) => (x: number) => Math.pow((x - start.tstamp) / (end.tstamp - start.tstamp), Math.log(0.5) / Math.log(meanTempoAt)) * (end.bpm - bpm) + bpm;
+
+    while (iteration < maxIterations) {
+        let powFunction = computePowFunction(updatedBPM);
+        let target = start.tstamp + start.beatLength;
+        let diff = powFunction(target) - start.bpm;
+
+        if (Math.abs(diff) < tolerance) {
+            return powFunction;
+        }
+
+        // Update updatedBPM and recompute powFunction
+        updatedBPM -= diff;
+        iteration++;
+    }
+
+    // Return the best approximation of powFunction after maxIterations
+    return computePowFunction(updatedBPM);
+};
+
+
 /**
  * Calculates the BPMs between time onsets.
  * 
@@ -81,16 +125,6 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
         let tempos: Tempo[] = []
 
-        const generatepPowFunction = (frameBegin: number, frameEnd: number, bpm: number, transitionTo: number, meanTempoAt: number) => {
-            return (x: number) => Math.pow((x - frameBegin) / (frameEnd - frameBegin), Math.log(0.5) / Math.log(meanTempoAt)) * (transitionTo - bpm) + bpm;
-        }
-
-        type InterpolationPoint = {
-            tstamp: number,
-            bpm: number,
-            beatLength: number
-        }
-
         function douglasPeucker(points: InterpolationPoint[], epsilon: number) {
             if (!points.length) {
                 console.log('not enough notes present')
@@ -100,13 +134,8 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             const start = points[0]
             const end = points[points.length - 1]
 
-            //if (points.length > 1) {
-            //    start.bpm = points[0].bpm - (points[1].bpm - points[0].bpm)
-            //}
-
             const meanTempo = (start.bpm + end.bpm) / 2
 
-            // console.log('douglasPeucker [', start.tstamp, '-', end.tstamp, '], [', start.bpm, '-', end.bpm, ']')
 
             // search for BPM value closest to meanTempo
             let optimal = Number.MAX_SAFE_INTEGER
@@ -126,7 +155,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 const meanTempoAt = (meanTempoAtQstamp - start.tstamp) / fullDistance
 
                 // create a new tempo curve
-                const powFunction = generatepPowFunction(start.tstamp, end.tstamp, start.bpm, end.bpm, meanTempoAt)
+                const powFunction = generatePowFunction(start, end, meanTempoAt)
 
                 // find point of maximum distance from this curve
                 let dmax = 0
@@ -299,8 +328,6 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
             }
 
             perfDate += ((60 / ((bpmBeatLength || 0.25) * 4)) / bpm) * (dateDiff / 720)
-
-            console.log('perf date after tempo interpolation =', perfDate, 'midi onset=', chord[0]['midi.onset'])
 
             chord.forEach(note => {
                 note['midi.onset'] -= perfDate
