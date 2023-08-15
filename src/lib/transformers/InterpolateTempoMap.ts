@@ -186,7 +186,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                             'type': 'tempo',
                             'xml:id': 'tempo_' + v4(),
                             'date': start.tstamp,
-                            'bpm': +powFunction(start.tstamp).toFixed(precision),
+                            'bpm': Math.abs(+powFunction(start.tstamp).toFixed(precision)),
                             'transition.to': +powFunction(end.tstamp).toFixed(precision),
                             'beatLength': start.beatLength / 720 / 4,
                             'meanTempoAt': +meanTempoAt.toFixed(2)
@@ -196,7 +196,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                     // update the MSM bpm values accordingly
                     msm.allNotes.forEach(n => {
                         if (n.date >= start.tstamp) {
-                            n['bpm'] = +powFunction(n.date)
+                            n['bpm'] = Math.abs(+powFunction(n.date))
                             n['bpm.beatLength'] = start.beatLength / 720 / 4
                         }
                     })
@@ -206,14 +206,14 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         'type': 'tempo',
                         'xml:id': 'tempo_' + v4(),
                         'date': end.tstamp,
-                        'bpm': +powFunction(end.tstamp).toFixed(precision),
+                        'bpm': Math.abs(+powFunction(end.tstamp).toFixed(precision)),
                         'beatLength': end.beatLength / 720 / 4
                     })
 
                     // update the MSM bpm values accordingly
                     msm.allNotes.forEach(n => {
                         if (n.date >= end.tstamp) {
-                            n['bpm'] = +powFunction(end.tstamp)
+                            n['bpm'] = Math.abs(+powFunction(end.tstamp))
                             n['bpm.beatLength'] = end.beatLength
                         }
                     })
@@ -228,13 +228,13 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         'type': 'tempo',
                         'xml:id': 'tempo_' + v4(),
                         'date': start.tstamp,
-                        'bpm': +start.bpm.toFixed(precision),
+                        'bpm': Math.abs(+start.bpm.toFixed(precision)),
                         'beatLength': start.beatLength / 720 / 4
                     })
                 }
                 msm.allNotes.forEach(n => {
                     if (n.date >= start.tstamp) {
-                        n['bpm'] = +start.bpm
+                        n['bpm'] = Math.abs(+start.bpm)
                         n['bpm.beatLength'] = start.beatLength / 720 / 4
                     }
                 })
