@@ -10,7 +10,7 @@ import { ExtractStyleDefinitions } from "./ExtractStyleDefinitions";
 import { InterpolateAsynchrony } from "./InterpolateAsynchrony";
 import { InterpolateArticulation } from "./InterpolateArticulation";
 import { InterpolateRubato } from "./InterpolateRubato";
-import { TransformerSettings } from "../../components/mpm/TransformerSettings";
+import { TransformerSettings } from "../../components/mpm/TransformerSettingsBox";
 
 export const getDefaultPipeline = (mode: 'melodic-texture' | 'chordal-texture', settings: TransformerSettings) => {
     if (mode === "melodic-texture") {

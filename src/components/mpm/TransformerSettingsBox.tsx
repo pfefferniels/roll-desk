@@ -9,7 +9,7 @@ interface TransformerSettingsProps {
     onChange: (newSettings: TransformerSettings) => void
 }
 
-export const TransformerSettings = ({ onChange }: TransformerSettingsProps) => {
+export const TransformerSettingsBox = ({ onChange }: TransformerSettingsProps) => {
     const [minimumArpeggioSize, setMinimumArpeggioSize] = useState(2)
 
     useEffect(() => {

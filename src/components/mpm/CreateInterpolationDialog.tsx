@@ -13,7 +13,7 @@ import { MsmNote, MSM } from "../../lib/msm"
 import { getDefaultPipeline } from "../../lib/transformers"
 import { SelectEntity } from "../works/SelectEntity"
 import { Save } from "@mui/icons-material"
-import { TransformerSettings } from "./TransformerSettings"
+import { TransformerSettings, TransformerSettingsBox } from "./TransformerSettingsBox"
 
 
 interface CreateInterpolationDialogProps {
@@ -157,7 +157,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
                         <MenuItem value='melodic-texture'>melodic</MenuItem>
                     </Select>
                 </Box>
-                <TransformerSettings onChange={(settings) => setTransformerSettings(settings)} />
+                <TransformerSettingsBox onChange={(settings) => setTransformerSettings(settings)} />
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
