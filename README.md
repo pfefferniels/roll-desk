@@ -1,37 +1,12 @@
 # Measuring Early Records
-
-This project measures early Welte piano roll records and exports the results as 
-RDF triples.
+This is the main repository for the project Measuring Early Records,
+which is one of the outcomes of my dissertation ("Interpretationsnetzwerke").
+It allows to collaboratively annotate and discuss piano
+rolls, to align them to a MEI score, to create a [MPM](https://axelberndt.github.io/MPM)
+representation of based on such alignment and to view different 
+interpretations just like any other traditional digital edition.
 
 ## Preparation
-
-For testing this package relies on JSDOM. In order to make it work properly, add this to `webpack.config.js`
-
-```
-    resolve: {
-      fallback: {
-        "stream": false,
-        "path": false,
-        "buffer": false,
-        "util": false,
-        "http": false,
-        "os": false,
-        "zlib": false,
-        "https": false,
-        "url": false,
-        "crypto": false,
-        "tls": false,
-        "fs": false,
-        "child_process": false,
-        "assert": false,
-        "net": false
-      },
-```
-
-Also, the package `@digitalbazaar/http-client`, which is included by 
-the the package `jsonld` doesn't work well with ESM in a testing environment.
-To resolve this issue, simple delete the http-client folder in the
-local node_modules of jsonld.
 
 In order to enable MIDI generation through meico, make sure to run:
 
@@ -44,7 +19,7 @@ python3 generate-midi.py
 
 In the project directory, you can run:
 
-### `HTTPS=true npm start`
+### `npm start`
 
 Runs the app in the development mode.
 
@@ -59,4 +34,4 @@ ignore the browser's certificate warning.
 ### `npm run build`
 
 Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+It bundles React in production mode and optimizes the build for the best performance.
