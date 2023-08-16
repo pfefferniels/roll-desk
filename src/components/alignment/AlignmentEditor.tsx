@@ -274,7 +274,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
                 onSelect={(event) => event && setSelectedMidiEvent(event)} />
             )}
 
-            <g transform='translate(0, -3500) scale(8 8)'>
+            <g>
               {meiUrl && (
                 <ScoreViewer
                   asSvg

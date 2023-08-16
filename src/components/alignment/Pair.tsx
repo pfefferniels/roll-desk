@@ -1,4 +1,5 @@
 import React from 'react'
+import './Pair.css'
 
 interface PairProps {
     parent: Element
@@ -32,9 +33,6 @@ export const Pair = ({ parent, to, from, color, onAltShiftClick, onClick }: Pair
                     C ${to.getBoundingClientRect().x - parentX},${to.getBoundingClientRect().y + 90 - parentY}
                       ${from.getBoundingClientRect().x - parentX},${from.getBoundingClientRect().y - 90 - parentY}
                       ${from.getBoundingClientRect().x - parentX},${from.getBoundingClientRect().y - parentY}`}
-                fill='none'
-                strokeWidth={0.7}
-                stroke={color}
                 onClick={(e) => {
                     if (e.altKey && e.shiftKey) {
                         onAltShiftClick()
