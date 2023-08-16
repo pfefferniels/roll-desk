@@ -1,10 +1,11 @@
-import { Box, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
+import { Box, MenuItem, Select, TextField, Typography } from "@mui/material"
 import { useEffect, useState } from "react"
 import { BeatLengthBasis } from "../../lib/transformers/BeatLengthBasis"
 
 export interface TransformerSettings {
     minimumArpeggioSize: number
     beatLength: BeatLengthBasis
+    epsilon: number
 }
 
 interface TransformerSettingsProps {
@@ -14,13 +15,15 @@ interface TransformerSettingsProps {
 export const TransformerSettingsBox = ({ onChange }: TransformerSettingsProps) => {
     const [minimumArpeggioSize, setMinimumArpeggioSize] = useState(2)
     const [beatLength, setBeatLength] = useState<BeatLengthBasis>('denominator')
+    const [epsilon, setEpsilon] = useState(2)
 
     useEffect(() => {
         onChange({
             minimumArpeggioSize,
-            beatLength
+            beatLength,
+            epsilon
         })
-    }, [onChange, minimumArpeggioSize])
+    }, [onChange, minimumArpeggioSize, beatLength, epsilon])
 
     return (
         <>
@@ -49,6 +52,16 @@ export const TransformerSettingsBox = ({ onChange }: TransformerSettingsProps) =
                     <MenuItem value='thirdbar'>Third of bar (for triple measures)</MenuItem>
                     <MenuItem value='bar'>Bar</MenuItem>
                 </Select>
+            </Box>
+            <Box>
+                <Typography>How much may the tempo curve be smoothed?</Typography>
+                <TextField
+                    sx={{ m: 1 }}
+                    size='small'
+                    label='Epsilon'
+                    type='number'
+                    value={epsilon}
+                    onChange={(e) => setEpsilon(+e.target.value)} />
             </Box>
         </>
     )

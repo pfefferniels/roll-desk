@@ -32,7 +32,8 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
     const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
         minimumArpeggioSize: 2,
-        beatLength: 'denominator'
+        beatLength: 'denominator',
+        epsilon: 3
     })
 
     const performInterpolation = async () => {
@@ -108,6 +109,8 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         const msm = new MSM(msmNotes, mei_.timeSignature())
         const newMPM = new MPM(2)
 
+        console.log(msm.serialize())
+
         // kick-off pipeline
         getDefaultPipeline(defaultPipeline, transformerSettings).head?.transform(msm, newMPM)
 
@@ -130,6 +133,9 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
 
         onCreate(creationEvent.build(), mpm)
     }
+
+    const workInProgress = interpolationState !== undefined && interpolationState !== 'done'
+    const ready = alignmentUrl && !workInProgress
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -168,8 +174,8 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button
-                    disabled={interpolationState !== undefined && interpolationState !== 'done'}
-                    startIcon={(interpolationState !== undefined && interpolationState !== 'done')
+                    disabled={!ready}
+                    startIcon={workInProgress
                         ? <CircularProgress />
                         : <Save />}
                     onClick={async () => {
@@ -177,7 +183,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
                         onClose()
                     }}
                 >
-                    {(interpolationState !== undefined && interpolationState !== 'done') ? interpolationState : 'Save'}
+                    {workInProgress ? interpolationState : 'Save'}
                 </Button>
             </DialogActions>
         </Dialog>
