@@ -1,5 +1,4 @@
 import { MEI } from "../mei";
-import { AlignedPerformance } from "../AlignedPerformance";
 import { Part } from "../mpm";
 import { parse } from "js2xmlparser";
 import { RawPerformance } from "../midi";
@@ -232,30 +231,3 @@ export const parseMSM = async (msm: string) => {
         denominator: +(timeSignature?.getAttribute('denominator') || '')
     })
 }
-
-/**
- * Prepares an MSM from a given MEI encoding with performed MIDI and alignment. 
- * Mostly useful for testing. 
- * 
- * @param mei 
- * @param midi 
- * @param alignment 
- * @returns 
- */
-export const prepareMSM = async (mei: string, midi: ArrayLike<number>, alignment?: string): Promise<MSM> => {
-    let { read } = await import("midifile-ts");
-
-    const arr = Uint8Array.from(midi);
-
-    const score = new MEI(mei, await loadVerovio(), await loadDomParser());
-    const performance = new RawPerformance(read(arr));
-    const alignedPerformance = new AlignedPerformance(score, performance);
-    if (alignment) {
-        await alignedPerformance.loadAlignment(alignment);
-    }
-    else {
-        // if no alignment is given, perform an automatic alignment
-        alignedPerformance.performAlignment();
-    }
-    return new MSM();
-};

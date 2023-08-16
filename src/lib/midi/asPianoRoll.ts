@@ -3,7 +3,6 @@ import { mer, midi } from "../../helpers/namespaces"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { PianoRoll, pitchToSitch } from "alignmenttool"
 
-
 const tempoToTickTime = (event: Thing, ticksPerBeat: number) => {
     const microsecondsPerBeat = getInteger(event, midi('microsecondsPerBeat'))
     if (!microsecondsPerBeat) return 0

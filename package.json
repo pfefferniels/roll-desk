@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@digitalbazaar/http-client": "^3.2.0",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@inrupt/solid-client": "^1.24.0",
@@ -13,36 +12,26 @@
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.2",
     "@react-hook/window-size": "^3.1.1",
-    "@react-sigma/core": "^3.1.0",
     "@ryohey/wavelet": "^0.5.3",
-    "@testing-library/jest-dom": "^5.16.1",
-    "@testing-library/react": "^12.1.2",
-    "@testing-library/user-event": "^13.5.0",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^18.2.1",
     "@types/slate": "^0.47.11",
+    "@uiw/react-codemirror": "^4.21.7",
     "alignmenttool": "file:../AlignmentTool",
     "d3": "^7.8.4",
     "d3-force": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "detect-node": "^2.1.0",
-    "framer-motion": "^8.0.2",
-    "graphology": "^0.25.1",
-    "graphology-types": "^0.24.5",
-    "jest": "^28.1.0",
+    "install": "^0.13.0",
     "js2xmlparser": "^4.0.2",
-    "lodash": "^4.17.21",
-    "midi-json-parser": "^8.0.52",
     "midi-parser-js": "^4.0.4",
     "midifile-ts": "^1.4.0",
-    "rdflib": "^2.2.20",
+    "npm": "^9.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.5.0",
-    "react-scripts": "^5.0.1",
     "react-svg-pan-zoom": "^3.12.1",
     "sequence-align": "file:../sequence-align",
-    "sigma": "^2.4.0",
     "slate": "^0.82.1",
     "slate-history": "^0.66.0",
     "slate-react": "^0.83.2",
@@ -55,10 +44,10 @@
     "web-vitals": "^2.1.2"
   },
   "scripts": {
-    "start": "NODE_OPTIONS=--experimental-vm-modules react-scripts start",
-    "build": "react-scripts build",
-    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
-    "eject": "react-scripts eject"
+    "start": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "test": "npx vitest"
   },
   "eslintConfig": {
     "extends": [
@@ -83,7 +72,6 @@
     "@emotion/types": "^0.7.0",
     "@types/d3": "^7.4.0",
     "@types/detect-node": "^2.0.0",
-    "@types/jest": "^27.5.2",
     "@types/jsdom": "^20.0.0",
     "@types/node": "^16.11.60",
     "@types/react-svg-pan-zoom": "^3.3.5",
@@ -91,7 +79,9 @@
     "@types/verovio": "^3.11.0",
     "@types/wav-encoder": "^1.3.0",
     "@typescript-eslint/utils": "^5.30.5",
+    "@vitejs/plugin-react": "^4.0.4",
     "jsdom": "^20.0.0",
-    "ts-jest": "^28.0.4"
+    "vite": "^4.4.9",
+    "vitest": "^0.34.1"
   }
 }
