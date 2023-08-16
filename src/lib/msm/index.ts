@@ -1,9 +1,5 @@
-import { MEI } from "../mei";
 import { Part } from "../mpm";
 import { parse } from "js2xmlparser";
-import { RawPerformance } from "../midi";
-import { loadVerovio, loadDomParser } from '../globals';
-
 
 /**
  * Temporary attributes used and manipulated in the process of interpolation.
@@ -207,8 +203,8 @@ export class MSM {
     }
 }
 
-export const parseMSM = async (msm: string) => {
-    const domParser = await loadDomParser()
+export const parseMSM = (msm: string) => {
+    const domParser = new DOMParser()
     const dom = domParser.parseFromString(msm, 'application/xml')
     const notes = [...dom.querySelectorAll('note')].map(el => {
         return {
