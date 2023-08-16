@@ -153,7 +153,7 @@ export class MSM {
     public notesAtDate(tstamp: number, part: Part): MsmNote[] {
         return this.allNotes.filter(note => {
             return (typeof part === 'number') ?
-                (note.date === tstamp && note.part === part) // a specific part
+                (note.date === tstamp && note.part === part + 1) // a specific part
                 : (note.date === tstamp) // consider all parts
         })
     }
