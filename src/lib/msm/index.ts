@@ -68,7 +68,7 @@ export class MSM {
         }
     }
 
-    public serialize() {
+    public serialize(filterIntermediateAttributes = true) {
         if (this.allNotes.length === 0) {
             console.log('no notes to serialize')
             return
@@ -123,8 +123,8 @@ export class MSM {
                         score: {
                             'note': this.allNotes
                                 .filter(note => note.part === part + 1)
-                                .map(note => ({
-                                    '@': {
+                                .map(note => {
+                                    const result = {
                                         'xml:id': note['xml:id'],
                                         'date': note['date'],
                                         'pitchname': note['pitchname'],
@@ -132,8 +132,24 @@ export class MSM {
                                         'accidentals': note['accidentals'],
                                         'midi.pitch': note['midi.pitch'],
                                         'duration': note['duration']
+                                    } as any
+
+                                    if (!filterIntermediateAttributes) {
+                                        if (note['midi.onset']) {
+                                            result['midi.onset'] = note['midi.onset']
+                                        }
+                                        if (note['midi.duration']) {
+                                            result['midi.duration'] = note['midi.duration']
+                                        }
+                                        if (note['midi.velocity']) {
+                                            result['midi.velocity'] = note['midi.velocity']
+                                        }
                                     }
-                                }))
+
+                                    return {
+                                        '@': result
+                                    }
+                                })
                         }
                     }
                 }
@@ -190,6 +206,31 @@ export class MSM {
     public lastNote(): MsmNote | undefined {
         return this.allNotes.find(n => n.date === this.lastDate())
     }
+}
+
+export const parseMSM = async (msm: string) => {
+    const domParser = await loadDomParser()
+    const dom = domParser.parseFromString(msm, 'application/xml')
+    const notes = [...dom.querySelectorAll('note')].map(el => {
+        return {
+            'accidentals': +(el.getAttribute('accidentals') || ''),
+            'date': +(el.getAttribute('date') || ''),
+            'duration': +(el.getAttribute('duration') || ''),
+            'midi.duration': +(el.getAttribute('midi.duration') || ''),
+            'midi.onset': +(el.getAttribute('midi.onset') || ''),
+            'midi.pitch': +(el.getAttribute('midi.pitch') || ''),
+            'midi.velocity': +(el.getAttribute('midi.pitch') || ''),
+            'octave': +(el.getAttribute('octave') || ''),
+            'part': +(el.closest('part')?.getAttribute('number') || ''),
+            'pitchname': el.getAttribute('pitchname') || '',
+            'xml:id': el.getAttribute('pitchname') || ''
+        } as MsmNote
+    })
+    const timeSignature = dom.querySelector('timeSignature')
+    return new MSM(notes, {
+        numerator: +(timeSignature?.getAttribute('numerator') || ''),
+        denominator: +(timeSignature?.getAttribute('denominator') || '')
+    })
 }
 
 /**

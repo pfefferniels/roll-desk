@@ -109,7 +109,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         const msm = new MSM(msmNotes, mei_.timeSignature())
         const newMPM = new MPM(2)
 
-        console.log(msm.serialize())
+        console.log(msm.serialize(false))
 
         // kick-off pipeline
         getDefaultPipeline(defaultPipeline, transformerSettings).head?.transform(msm, newMPM)
