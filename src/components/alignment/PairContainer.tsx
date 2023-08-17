@@ -63,8 +63,8 @@ export const PairContainer = ({ pairs, parentRef, color, onRemove, onSelect }: P
                         {action}
                         <Pair
                             parent={parentRef}
-                            from={midiEl}
-                            to={noteEl}
+                            from={midiEl.querySelector('.notehead') || midiEl}
+                            to={noteEl.querySelector('.notehead') || noteEl}
                             color={color || 'gray'}
                             onAltShiftClick={() => onRemove && onRemove(pair)}
                             onClick={() => onSelect && onSelect(pair)}
