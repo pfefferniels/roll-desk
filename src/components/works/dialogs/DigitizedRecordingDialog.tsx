@@ -2,7 +2,7 @@ import { Thing, asUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
-import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, Stack, TextField } from "@mui/material";
 import { useContext, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
 import { midi2ld } from "../../../lib/midi/midi2ld";
@@ -45,6 +45,7 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
     const [midiFile, setMidiFile] = useState<File | null>(null);
+    const [title, setTitle] = useState<string>()
 
     const [loading, setLoading] = useState<'saving-midi' | 'saving-expression' | false>(false)
 
@@ -64,6 +65,10 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
             .addUrl(RDF.type, frbroo('F26_Recording'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(crm('P2_has_type'), mer('DigitalRecording'))
+
+        if (title) {
+            recording.addStringNoLocale(crm('P102_has_title'), title)
+        }
 
         if (midiFile) {
             const midi = await parseMidiInput(midiFile)
@@ -104,15 +109,23 @@ export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: Dig
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Add/Edit Recording Expression</DialogTitle>
             <DialogContent>
-                <Button variant="contained" component="label" startIcon={< MusicNote />}>
-                    Upload MIDI
-                    <input
-                        type="file"
-                        hidden
-                        accept=".mid"
-                        onChange={(e) => setMidiFile(e.target.files ? e.target.files[0] : null)}
-                    />
-                </Button>
+                <Stack spacing={2} p={1}>
+                    <TextField
+                        size='small'
+                        label='Title'
+                        value={title}
+                        onChange={e => setTitle(e.target.value)} />
+                    <Button variant="contained" component="label" startIcon={< MusicNote />}>
+                        Upload MIDI
+                        <input
+                            type="file"
+                            hidden
+                            accept=".mid"
+                            onChange={(e) => setMidiFile(e.target.files ? e.target.files[0] : null)}
+                        />
+                    </Button>
+                </Stack>
+
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>

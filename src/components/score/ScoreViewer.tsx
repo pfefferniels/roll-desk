@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadVerovio } from '../../lib/globals';
+import { loadVerovio } from '../../lib/loadVerovio.mjs';
 import { useSession } from '@inrupt/solid-ui-react';
 import { getFile } from '@inrupt/solid-client';
 import { LinkOutlined } from '@mui/icons-material';

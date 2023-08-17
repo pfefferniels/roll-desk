@@ -5,7 +5,7 @@ import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, But
 import { useContext, useState } from "react"
 import { crm, mer, oa, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
-import { loadVerovio, loadDomParser } from "../../lib/globals"
+import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MEI } from "../../lib/mei"
 import { asPianoRoll } from "../../lib/midi/asPianoRoll"
 import { MPM } from "../../lib/mpm"
@@ -67,7 +67,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         const piece = getThing(midiDataset, pieceUrl)
         if (!piece) return
 
-        const mei_ = new MEI(await mei.text(), await loadVerovio(), await loadDomParser())
+        const mei_ = new MEI(await mei.text(), await loadVerovio(), new DOMParser())
         const pr_ = asPianoRoll(piece, midiDataset)
         if (!pr_) return
 

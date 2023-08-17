@@ -11,7 +11,7 @@ export default defineConfig(() => {
             format: 'es',
         },
         optimizeDeps: {
-            include: ['alignmenttool'],
+            include: ['alignmenttool', '@mui/material'],
             exclude: ["verovio"],
             esbuildOptions: {
                 target: "es2020",

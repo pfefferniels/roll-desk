@@ -21,7 +21,7 @@ interface RecordingWorkDialogProps {
 }
 
 export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialogProps) => {
-    const [label, setLabel] = useState((thing && getStringNoLocale(thing, RDFS.label)) || '');
+    const [label, setLabel] = useState((thing && getStringNoLocale(thing, crm('P102_has_title'))) || '');
     const [note, setNote] = useState((thing && getUrl(thing, crm('P3_has_note'))) || '')
     const [seeAlso, setSeeAlso] = useState((thing && getUrl(thing, RDFS.seeAlso)) || '');
 
@@ -48,7 +48,7 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
         const recordingWork = buildThing(thing || createThing())
             .setUrl(RDF.type, frbroo('F21_Recording_Work'))
             .setUrl(crm('P2_has_type'), mer('RecordingWork'))
-            .setStringNoLocale(RDFS.label, label)
+            .setStringNoLocale(crm('P102_has_title'), label)
 
         if (seeAlso !== '') {
             recordingWork.setStringNoLocale(RDFS.seeAlso, seeAlso)

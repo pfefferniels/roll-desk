@@ -21,7 +21,7 @@ interface ScoreWorkDialogProps {
 }
 
 export const ScoreWorkDialog = ({ thing, open, onClose }: ScoreWorkDialogProps) => {
-    const [label, setLabel] = useState((thing && getStringNoLocale(thing, RDFS.label)) || '');
+    const [label, setLabel] = useState((thing && getStringNoLocale(thing, crm('P102_has_title'))) || '');
     const [note, setNote] = useState((thing && getUrl(thing, crm('P3_has_note'))) || '')
     const [seeAlso, setSeeAlso] = useState((thing && getUrl(thing, RDFS.seeAlso)) || '');
 
@@ -48,7 +48,7 @@ export const ScoreWorkDialog = ({ thing, open, onClose }: ScoreWorkDialogProps) 
         const scoreWork = buildThing(thing || createThing())
             .setUrl(RDF.type, crm('F1_Work'))
             .setUrl(crm('P2_has_type'), mer('ScoreWork'))
-            .setStringNoLocale(RDFS.label, label)
+            .setStringNoLocale(crm('P102_has_title'), label)
 
         if (seeAlso !== '') {
             scoreWork.setStringNoLocale(RDFS.seeAlso, seeAlso)

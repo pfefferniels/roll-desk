@@ -127,10 +127,13 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             .text((node) => {
                 if (getUrlAll(node.thing, RDF.type).includes(crm('E13_Attribute_Assignment')))
                     return ''
-                return getStringNoLocale(node.thing, RDFS.label) ||
+                return (
+                    getStringNoLocale(node.thing, crm('P102_has_title')) ||
+                    getStringNoLocale(node.thing, RDFS.label) ||
                     urlAsLabel(getUrl(node.thing, crm('P2_has_type'))) ||
                     urlAsLabel(getUrl(node.thing, RDF.type)) ||
                     '(unknown)'
+                )
             })
             .attr('dx', -10)
             .attr('dy', 5)

@@ -8,6 +8,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { DigitizedRecordingDialog } from '../dialogs/DigitizedRecordingDialog';
 import { MpmDialog } from '../dialogs/MpmDialog';
 import { useNavigate } from 'react-router-dom';
+import { crm } from '../../../helpers/namespaces';
 
 interface RecordingWorkDetailsProps {
     thing: Thing;
@@ -15,7 +16,7 @@ interface RecordingWorkDetailsProps {
 
 const RecordingWorkDetails = ({ thing: work }: RecordingWorkDetailsProps) => {
     const navigate = useNavigate()
-    const label = getStringNoLocale(work, RDFS.label);
+    const label = getStringNoLocale(work, crm('P102_has_title'));
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [performanceDialogOpen, setPerformanceDialogOpen] = useState(false);
     const [mpmDialogOpen, setMpmDialogOpen] = useState(false);

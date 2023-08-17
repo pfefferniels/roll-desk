@@ -4,7 +4,7 @@ import ListSubheader from '@mui/material/ListSubheader';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { useState, useContext, useEffect } from 'react';
-import { Thing, UrlString, asUrl, getThing, getThingAll, getUrl, getUrlAll, isThing } from '@inrupt/solid-client';
+import { Thing, UrlString, asUrl, getStringNoLocale, getThing, getThingAll, getUrl, getUrlAll, isThing } from '@inrupt/solid-client';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { crm } from '../../helpers/namespaces';
 import { RDFS } from '@inrupt/vocab-common-rdf';
@@ -36,7 +36,7 @@ export const SelectEntity = ({ title, type, secondaryType, onSelect }: SelectEnt
                 const digitalScoreUrls = getUrlAll(entity, secondaryType)
 
                 return {
-                    label: getUrl(entity, RDFS.label) || '',
+                    label: getUrl(entity, crm('P102_has_title')) || getUrl(entity, RDFS.label) || '',
                     items:
                         digitalScoreUrls.reduce((acc, currentUrl) => {
                             const digitalScore = getThing(worksDataset, currentUrl)
@@ -65,11 +65,13 @@ export const SelectEntity = ({ title, type, secondaryType, onSelect }: SelectEnt
                 >
                     {entities?.map((entity) => (
                         isThing(entity)
-                            ? <MenuItem value={asUrl(entity)}>{asUrl(entity)}</MenuItem>
+                            ? <MenuItem value={asUrl(entity)}>
+                                {getStringNoLocale(entity, crm('P102_has_title')) || asUrl(entity)}
+                            </MenuItem>
                             : [
                                 <ListSubheader>{entity.label}</ListSubheader>,
                                 entity.items.map(item => (
-                                    <MenuItem value={asUrl(item)}>{asUrl(item)}</MenuItem>
+                                    <MenuItem value={asUrl(item)}>{getStringNoLocale(item, crm('P102_has_title')) || asUrl(item)}</MenuItem>
                                 ))
                             ]
                     ))}

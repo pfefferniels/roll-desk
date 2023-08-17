@@ -7,7 +7,7 @@ import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { crm, crmdig, frbroo, mer, oa } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { MEI } from "../../lib/mei"
-import { loadDomParser, loadVerovio } from "../../lib/globals"
+import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { ArrowBack, Download } from "@mui/icons-material"
 import { DownloadDialog } from "./DownloadDialog"
 import { MPM, parseMPM } from "../../lib/mpm"
@@ -106,7 +106,7 @@ export const Work = ({ url }: WorkProps) => {
 
                     mei = enrichMEI(
                         mpm,
-                        new MEI(await meiContents.text(), await loadVerovio(), await loadDomParser()))
+                        new MEI(await meiContents.text(), await loadVerovio(), new DOMParser()))
                     console.log(mei.asString())
                     break;
                 }
@@ -164,7 +164,7 @@ export const Work = ({ url }: WorkProps) => {
         setSelectedAnalyses(newChecked);
     }
 
-    const title = work && getStringNoLocale(work, RDFS.label)
+    const title = work && getStringNoLocale(work, crm('P102_has_title'))
 
     const handleAddAnalysisUrl = () => {
 
@@ -234,42 +234,38 @@ export const Work = ({ url }: WorkProps) => {
                 <Stack direction='row' spacing={2}>
                     {availableAnalyses.map((analysis, i) => (
                         <ListItem key={`analysis_${asUrl(analysis)}`}>
-                            <ListItemButton dense>
-                                <ListItemIcon>
-                                    {loading ? <CircularProgress /> : (
-                                        <IconButton onClick={handleToggleAnalysis(analysis)} >
-                                            <Checkbox
-                                                edge="start"
-                                                checked={selectedAnalyses.findIndex(a => a.url === asUrl(analysis)) !== -1}
-                                                tabIndex={-1}
-                                                disableRipple
-                                                inputProps={{ 'aria-labelledby': `checkbox_${i}` }}
-                                            />
-                                        </IconButton>
-                                    )}
-                                    {loading ? <CircularProgress /> : (
-                                        <IconButton
-                                            onClick={async () => {
-                                                const loadedAnalysis = selectedAnalyses.find(a => a.url === asUrl(analysis))
-                                                if (loadedAnalysis) setSelectedForDownload(loadedAnalysis)
-                                                else setSelectedForDownload(await loadAnalysis(analysis))
-                                            }}>
-                                            <Download />
-                                        </IconButton>
-                                    )}
-                                </ListItemIcon>
-                                <ListItemText id={`checkbox_${i}`}
-                                    secondary={getStringNoLocale(analysis, crm('P3_has_note')) || '[no note]'}>
-                                    Analysis {i + 1}
-                                </ListItemText>
-                                <ListItemSecondaryAction>
-                                    {selectedForDownload && <DownloadDialog
-                                        open={!!selectedForDownload}
-                                        onClose={() => setSelectedForDownload(null)}
-                                        analysis={selectedForDownload} />
-                                    }
-                                </ListItemSecondaryAction>
-                            </ListItemButton>
+                            {loading ? <CircularProgress /> : (
+                                <IconButton onClick={handleToggleAnalysis(analysis)} >
+                                    <Checkbox
+                                        edge="start"
+                                        checked={selectedAnalyses.findIndex(a => a.url === asUrl(analysis)) !== -1}
+                                        tabIndex={-1}
+                                        disableRipple
+                                        inputProps={{ 'aria-labelledby': `checkbox_${i}` }}
+                                    />
+                                </IconButton>
+                            )}
+                            {loading ? <CircularProgress /> : (
+                                <IconButton
+                                    onClick={async () => {
+                                        const loadedAnalysis = selectedAnalyses.find(a => a.url === asUrl(analysis))
+                                        if (loadedAnalysis) setSelectedForDownload(loadedAnalysis)
+                                        else setSelectedForDownload(await loadAnalysis(analysis))
+                                    }}>
+                                    <Download />
+                                </IconButton>
+                            )}
+                            <ListItemText id={`checkbox_${i}`}
+                                secondary={getStringNoLocale(analysis, crm('P3_has_note')) || '[no note]'}>
+                                Analysis {i + 1}
+                            </ListItemText>
+                            <ListItemSecondaryAction>
+                                {selectedForDownload && <DownloadDialog
+                                    open={!!selectedForDownload}
+                                    onClose={() => setSelectedForDownload(null)}
+                                    analysis={selectedForDownload} />
+                                }
+                            </ListItemSecondaryAction>
                         </ListItem>
                     ))}
                 </Stack>

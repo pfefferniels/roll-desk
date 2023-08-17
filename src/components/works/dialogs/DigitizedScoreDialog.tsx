@@ -2,7 +2,7 @@ import { Thing, asUrl, buildThing, createThing, getSourceUrl, overwriteFile, sav
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
-import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress } from "@mui/material";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, TextField, Stack } from "@mui/material";
 import { useContext, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
 import { v4 } from "uuid";
@@ -23,7 +23,9 @@ interface DigitizedScoreDialogProps {
 export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: DigitizedScoreDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
+
     const [meiFile, setMEIFile] = useState<File | null>(null);
+    const [title, setTitle] = useState<string>()
 
     const [loading, setLoading] = useState<'saving-mei' | 'saving-expression' | false>(false)
 
@@ -56,6 +58,10 @@ export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: Digitiz
             }
         }
 
+        if (title) {
+            score.addStringNoLocale(crm('P102_has_title'), title)
+        }
+
         let updatedDataset = worksDataset
         if (attachTo) {
             score.addUrl(frbroo('R12i_realises'), attachTo)
@@ -78,15 +84,22 @@ export const DigitizedScoreDialog = ({ thing, attachTo, open, onClose }: Digitiz
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Add/Edit MEI File</DialogTitle>
             <DialogContent>
-                <Button variant="contained" component="label" startIcon={< MusicNote />}>
-                    Upload MEI
-                    <input
-                        type="file"
-                        hidden
-                        accept=".mei"
-                        onChange={(e) => setMEIFile(e.target.files ? e.target.files[0] : null)}
-                    />
-                </Button>
+                <Stack spacing={2} p={1}>
+                    <TextField
+                        size="small"
+                        label='Title'
+                        value={title}
+                        onChange={e => setTitle(e.target.value)} />
+                    <Button variant="contained" component="label" startIcon={< MusicNote />}>
+                        Upload MEI
+                        <input
+                            type="file"
+                            hidden
+                            accept=".mei"
+                            onChange={(e) => setMEIFile(e.target.files ? e.target.files[0] : null)}
+                        />
+                    </Button>
+                </Stack>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
