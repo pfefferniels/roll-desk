@@ -21,7 +21,7 @@ test('does not interpolate anything when no arpeggiation is given', () => {
     expect(ornamentInstruction.length).toEqual(0)
 })
 
-test('correctly interpolates real-word arpeggiations (WM 79)', () => {
+test('correctly interpolates real-world arpeggiations (WM 79)', () => {
     // Arrange
     const msm = parseMSM(
         readFileSync('tests/files/arpeggiation/arpeggiated.msm', 'utf-8'))
