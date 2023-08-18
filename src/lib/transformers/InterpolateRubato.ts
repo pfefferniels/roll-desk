@@ -172,6 +172,13 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
 
         mpm.insertInstructions(instructions, this.options?.part !== undefined ? this.options.part : 'global')
 
+        this.removeRubatoDistortion(msm, chords, instructions)
+
+        // hand it over to the next transformer
+        return super.transform(msm, mpm)
+    }
+
+    removeRubatoDistortion(msm: MSM, chords: [string, MsmNote[]][], instructions: Rubato[]) {
         let pendingNotes: { remainder: number, note: MsmNote }[] = []
         for (const [date, chord] of chords) {
             const insideRubato = instructions.slice().reverse().find(rubato => rubato.date <= chord[0].date)
@@ -233,8 +240,5 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
                 }
             }
         }
-
-        // hand it over to the next transformer
-        return super.transform(msm, mpm)
     }
 }
