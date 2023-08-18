@@ -179,11 +179,29 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
     }
 
     removeRubatoDistortion(msm: MSM, chords: [string, MsmNote[]][], instructions: Rubato[]) {
-        let pendingNotes: { remainder: number, note: MsmNote }[] = []
+        const pendingNotes: { remainder: number, note: MsmNote }[] = []
+
         for (const [date, chord] of chords) {
             const insideRubato = instructions.slice().reverse().find(rubato => rubato.date <= chord[0].date)
-            if (!insideRubato) continue
-            if ((+date >= (insideRubato.date + insideRubato.frameLength)) && !insideRubato.loop) continue
+
+            const outsideScope = !insideRubato || (+date >= (insideRubato.date + insideRubato.frameLength) && !insideRubato.loop)
+            if (outsideScope) {
+                if (!pendingNotes.length) continue
+
+                // processing pending notes here, that fell outside
+                // their rubato frame and end instead in a non-rubato
+                // frame. We can just add the already-known remainder
+                // without having to remove any rubato timing.
+                for (const pendingNote of pendingNotes) {
+                    pendingNote.note['midi.duration'] += pendingNote.remainder
+
+                    const index = pendingNotes.indexOf(pendingNote, 0);
+                    if (index > -1) {
+                        pendingNotes.splice(index, 1);
+                    }
+                }
+                continue
+            }
 
             const remainingBit = ((+date - insideRubato.date) % insideRubato.frameLength)
             const actualRubatoDate = +date - remainingBit
@@ -200,7 +218,6 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
                     const newRemainderDuration = symbolicToPhysical(
                         note.bpm, note["bpm.beatLength"] || 0.25,
                         removeRubatoFromDate(onsetInTicks + remainderDurationInTicks, insideRubato)!)
-
                     pendingNote.note['midi.duration'] += newRemainderDuration
 
                     const index = pendingNotes.indexOf(pendingNote, 0);
