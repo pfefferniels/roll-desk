@@ -22,7 +22,7 @@ export type MsmNote = {
     readonly 'xml:id': string,
     readonly 'part': number,
     readonly 'date': number,
-    readonly 'duration': number
+    'duration': number
     readonly pitchname: string
     readonly accidentals: number
     readonly octave: number
