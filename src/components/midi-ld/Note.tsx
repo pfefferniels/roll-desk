@@ -36,13 +36,16 @@ export const Note = ({ note, color }: NoteProps) => {
 
   return (
     <>
-      <rect
+      <line
         className='note'
         data-id={urlAsLabel(asUrl(note))}
-        x={tick * pixelsPerTick}
-        y={(128 - pitch) * noteHeight}
-        width={duration * pixelsPerTick}
-        height={noteHeight}
+        x1={tick * pixelsPerTick + noteHeight/2}
+        y1={(128 - pitch + 0.5) * noteHeight}
+        x2={(tick + duration) * pixelsPerTick - noteHeight/2}
+        y2={(128 - pitch + 0.5) * noteHeight}
+        stroke={color}
+        strokeWidth={noteHeight}
+        strokeLinecap='round'
         fill={color}
         fillOpacity={note === selectedEvent ? 1 : 0.5}
         onClick={() => onSelect(note)}

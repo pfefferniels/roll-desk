@@ -26,15 +26,11 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s, asSvg }: MidiViewer
   const [selectedNote, setSelectedNote] = useState<Thing>()
   const [pixelsPerTick, setPixelsPerTick] = useState(0.3);
 
-  const handlePixelsPerTickChange = (event: any, newValue: number | number[]) => {
-    setPixelsPerTick(newValue as number);
-  };
-
   useEffect(() => {
     if (!piece || !dataset) return
 
     if (onDone) {
-      const pianoRoll = asPianoRoll(piece, dataset)
+      const pianoRoll = asPianoRoll(piece, dataset, 0.001)
       pianoRoll && onDone(pianoRoll)
     }
   }, [piece, dataset, onDone])
@@ -80,17 +76,6 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s, asSvg }: MidiViewer
             <LinkOutlined />
           </IconButton>
         </h4>
-      </div>
-
-      <div style={{ padding: '20px', width: '30vw' }}>
-        <Slider
-          value={pixelsPerTick}
-          onChange={handlePixelsPerTickChange}
-          min={0.1}
-          max={1.5}
-          step={0.1}
-          valueLabelDisplay="auto"
-        />
       </div>
 
       <Piece

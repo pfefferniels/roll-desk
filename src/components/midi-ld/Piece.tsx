@@ -37,11 +37,17 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
   useEffect(() => {
     if (!ref.current) return;
     const svg = d3.select(ref.current);
-    const zoom = d3.zoom()
-      .on('zoom', (event) => {
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .on('zoom', (event: d3.ZoomBehavior<SVGSVGElement, unknown>) => {
+        const zoom = (event.transform as any).k
+        const x = (event.transform as any).x
+
         svg
           .select('#roll')
-          .attr('transform', event.transform);
+          .attr('transform', `translate(${x}, 0) scale(${zoom}, 1)`)
+        
+        svg.selectAll('.pedalLine').attr('stroke-width', 1/zoom)
+        svg.selectAll('.tick').attr('stroke-width', 2/zoom)
       })
     svg.call(zoom as any);
   }, [ref, ref.current]);
@@ -67,7 +73,8 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
   // we're using a provider to pass the settings 
   // and callbacks down to the single components.
   return (
-    <svg ref={ref} width={800} height={128 * (noteHeight || 8)}>
+    <svg ref={ref} width={1000} height={128 * (noteHeight || 8)}>
+      {/*<rect fill="lightgray" x={0} y={0} width={800} height={128 * (noteHeight || 8)} />*/}
       <g id='roll'>
         <MidiGrid
           lastTick={lastTick}
