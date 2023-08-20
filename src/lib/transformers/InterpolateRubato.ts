@@ -3,14 +3,6 @@ import { MSM, MsmNote } from "../msm"
 import { AbstractTransformer, TransformationOptions } from "./Transformer"
 import { v4 } from "uuid"
 
-const physicalToSymbolic = (physicalDate: number, bpm: number, beatLength: number) => {
-    return (physicalDate * (bpm * beatLength * 4 / 60)) * 720
-}
-
-const symbolicToPhysical = (bpm: number, beatLength: number, symbolic: number) => {
-    return ((60 / ((beatLength || 0.25) * 4)) / bpm) * (symbolic / 720)
-}
-
 /**
  * This function calculates the effect of the rubato
  * on the MSM notes
@@ -27,16 +19,18 @@ const calculateRubatoOnDate = (date: number, rubato: Rubato) => {
  * TODO: find a numerical, non-iterative solution.
  */
 const removeRubatoFromDate = (newDate: number, rubato: Rubato) => {
-    const target = (newDate - rubato.date) % rubato.frameLength;
+    const target = rubato.date + ((newDate - rubato.date) % rubato.frameLength);
     let lowerBound = rubato.date;
     let upperBound = rubato.date + rubato.frameLength;
+
+    console.log('target=', target, 'lower bound=', lowerBound, 'upper bound=', upperBound)
 
     while (upperBound - lowerBound > 1e-6) {
         const middle = (upperBound + lowerBound) / 2;
         const middleNewDate = calculateRubatoOnDate(middle, rubato);
 
         if (Math.abs(target - middleNewDate) < 1) {
-            return middle;
+            return middle - rubato.date;
         } else if (middleNewDate < target) {
             lowerBound = middle;
         } else {
@@ -44,7 +38,7 @@ const removeRubatoFromDate = (newDate: number, rubato: Rubato) => {
         }
     }
 
-    return lowerBound;
+    return lowerBound - rubato.date;
 };
 
 export interface InterpolateRubatoOptions extends TransformationOptions {
@@ -172,90 +166,49 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
 
         mpm.insertInstructions(instructions, this.options?.part !== undefined ? this.options.part : 'global')
 
-        this.removeRubatoDistortion(msm, chords, instructions)
+        // this.removeRubatoDistortion(msm, chords, instructions)
+        this.removeRubatoDistortion(msm, mpm)
 
         // hand it over to the next transformer
         return super.transform(msm, mpm)
     }
 
-    removeRubatoDistortion(msm: MSM, chords: [string, MsmNote[]][], instructions: Rubato[]) {
-        const pendingNotes: { remainder: number, note: MsmNote }[] = []
+    /**
+     * This method removes any rubato distortions from the
+     * duration of notes.
+     * 
+     * @param msm 
+     * @param mpm 
+     */
+    removeRubatoDistortion(msm: MSM, mpm: MPM) {
+        const affectedNotes =
+            this.options?.part === 'global' ?
+                msm.allNotes :
+                msm.allNotes.filter(n => n.part - 1 === this.options?.part)
 
-        for (const [date, chord] of chords) {
-            const insideRubato = instructions.slice().reverse().find(rubato => rubato.date <= chord[0].date)
+        for (const note of affectedNotes) {
+            if (!note.tickDuration) continue
 
-            const outsideScope = !insideRubato || (+date >= (insideRubato.date + insideRubato.frameLength) && !insideRubato.loop)
-            if (outsideScope) {
-                if (!pendingNotes.length) continue
+            const onsetRubato =  mpm.instructionsEffectiveAtDate<Rubato>(note.date, 'rubato', this.options?.part !== undefined ? this.options.part : 'global')[0]
+            const onsetInTicks = onsetRubato
+                ? calculateRubatoOnDate(note.date, onsetRubato)
+                : note.date
+            
+            const onsetDiff = onsetInTicks - note.date
+            note.tickDuration += onsetDiff
 
-                // processing pending notes here, that fell outside
-                // their rubato frame and end instead in a non-rubato
-                // frame. We can just add the already-known remainder
-                // without having to remove any rubato timing.
-                for (const pendingNote of pendingNotes) {
-                    pendingNote.note['midi.duration'] += pendingNote.remainder
+            const offset = onsetInTicks + note.tickDuration
 
-                    const index = pendingNotes.indexOf(pendingNote, 0);
-                    if (index > -1) {
-                        pendingNotes.splice(index, 1);
-                    }
-                }
-                continue
-            }
+            const rubatos = mpm.instructionsEffectiveAtDate<Rubato>(offset, 'rubato', this.options?.part !== undefined ? this.options.part : 'global')
+            const effectiveRubato = rubatos[0]
+            if (!effectiveRubato) continue
 
-            const remainingBit = ((+date - insideRubato.date) % insideRubato.frameLength)
-            const actualRubatoDate = +date - remainingBit
-            const rubatoEnd = actualRubatoDate + insideRubato.frameLength
+            const rubatoStart = offset - ((offset - effectiveRubato.date) % effectiveRubato.frameLength)
+            const remainder = offset - rubatoStart
+            note['tickDuration'] -= remainder
 
-            for (const note of chord) {
-                if (!note.bpm) continue
-                const onsetInTicks = calculateRubatoOnDate(note.date, insideRubato)
-
-                for (const pendingNote of pendingNotes) {
-                    if (pendingNote.note.date === note.date) continue
-
-                    const remainderDurationInTicks = physicalToSymbolic(pendingNote.remainder, note.bpm, note["bpm.beatLength"] || 0.25)
-                    const newRemainderDuration = symbolicToPhysical(
-                        note.bpm, note["bpm.beatLength"] || 0.25,
-                        removeRubatoFromDate(onsetInTicks + remainderDurationInTicks, insideRubato)!)
-                    pendingNote.note['midi.duration'] += newRemainderDuration
-
-                    const index = pendingNotes.indexOf(pendingNote, 0);
-                    if (index > -1) {
-                        pendingNotes.splice(index, 1);
-                    }
-                }
-
-                const durationInTicks = physicalToSymbolic(note['midi.duration'], note.bpm, note["bpm.beatLength"] || 0.25)
-
-                // if the offset is outside the scope of this 
-                // rubato instruction, delay the processing of 
-                // this duration to the next rubato instruction
-                // in which it falls.
-                // TODO: handle the case that it does fall into
-                // an area where no rubato instruction is present.
-                if (onsetInTicks + durationInTicks > rubatoEnd && +date !== msm.lastDate()) {
-                    // the remainder is that bit of the physical duration
-                    // which falls outside the scope of the present rubato
-                    // instruction. Until the remainder is processed,
-                    // the note has the duration from its onset (without any rubato
-                    // present) to the end of the current rubato frame.
-                    const remainder = note["midi.duration"] - symbolicToPhysical(note.bpm, note["bpm.beatLength"] || 0.25, rubatoEnd - onsetInTicks)
-                    note['midi.duration'] = symbolicToPhysical(note.bpm, note["bpm.beatLength"] || 0.25, rubatoEnd - note.date)
-                    pendingNotes.push({
-                        remainder,
-                        note
-                    })
-                    continue
-                }
-
-                if (note.date !== msm.lastDate()) {
-                    // remove any rubato timing from the midi.duration for 
-                    // further processing.
-                    note['midi.duration'] = symbolicToPhysical(note.bpm, note["bpm.beatLength"] || 0.25,
-                        removeRubatoFromDate(onsetInTicks + durationInTicks, insideRubato)!)
-                }
-            }
+            const remainderWithoutRubato = removeRubatoFromDate(effectiveRubato.date + remainder, effectiveRubato)!
+            note['tickDuration'] += remainderWithoutRubato
         }
     }
 }
