@@ -66,9 +66,11 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
                     return
                 }
 
-                // convert symbolic timing + bpm to physical timing
-                const fullDuration = ((60 / ((note['bpm.beatLength'] || 0.25) * 4)) / note.bpm) * (note.duration / 720)
-                const relativeDuration = +(note['midi.duration'] / fullDuration).toFixed(relativeDurationPrecision)
+                const fullDuration = note.duration
+                let relativeDuration = 1.0
+                if (note['tickDuration']) {
+                    relativeDuration = +(note['tickDuration'] / fullDuration).toFixed(relativeDurationPrecision)
+                }
 
                 // if it takes the full length, we don't need to insert any instruction
                 if (relativeDuration === 1.0) return
@@ -86,7 +88,7 @@ export class InterpolateArticulation extends AbstractTransformer<InterpolateArti
                     'xml:id': `articulation_${v4()}`,
                     date: +date,
                     noteid: '#' + note['xml:id'],
-                    relativeDuration: +relativeDuration.toFixed(1)
+                    relativeDuration: +relativeDuration.toFixed(relativeDurationPrecision)
                 })
             })
 

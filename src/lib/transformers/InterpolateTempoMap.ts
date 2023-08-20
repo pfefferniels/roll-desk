@@ -3,25 +3,13 @@ import { MPM, Tempo } from "../mpm";
 import { MSM } from "../msm";
 import { BeatLengthBasis, calculateBeatLength } from "./BeatLengthBasis";
 import { AbstractTransformer, TransformationOptions } from "./Transformer";
+import { calculateSymbolicNoteDuration } from "./basicCalculations";
 
 type InterpolationPoint = {
     tstamp: number,
     bpm: number,
     beatLength: number
 }
-
-/*
-non-iterative method. TODO: test it
-const generatePowFunction = (start: InterpolationPoint, end: InterpolationPoint, meanTempoAt: number): ((x: number) => number) => {
-  const B = Math.log(0.5) / Math.log(meanTempoAt);
-  const target = start.tstamp + start.beatLength;
-  const factor = Math.pow((target - start.tstamp) / (end.tstamp - start.tstamp), B);
-
-  const updatedBPM = (start.bpm - factor * end.bpm) / (1 - factor);
-
-  return (x: number) => Math.pow((x - start.tstamp) / (end.tstamp - start.tstamp), B) * (end.bpm - updatedBPM) + updatedBPM;
-};
-*/
 
 const generatePowFunction = (start: InterpolationPoint, end: InterpolationPoint, meanTempoAt: number, maxIterations = 1000, tolerance = 0.01): ((x: number) => number) => {
     let iteration = 0;
@@ -198,6 +186,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                         if (n.date >= start.tstamp) {
                             n['bpm'] = Math.abs(+powFunction(n.date))
                             n['bpm.beatLength'] = start.beatLength / 720 / 4
+
                         }
                     })
 
@@ -311,6 +300,7 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
 
         mpm.insertInstructions(tempos, 'global')
         this.reduceMidiOnset(msm)
+        this.calculateTickDurations(msm, mpm)
         return super.transform(msm, mpm)
     }
 
@@ -340,6 +330,21 @@ export class InterpolateTempoMap extends AbstractTransformer<InterpolateTempoMap
                 note['midi.onset'] -= perfDate
             })
         })
+    }
+
+    /**
+     * Translates MIDI durations into tick durations
+     * using the new <tempo> instructions.
+     * @todo Currently only consideres constant tempos.
+     * Approximation of tempo curves still a todo.
+     * @param msm 
+     * @param mpm 
+     */
+    calculateTickDurations(msm: MSM, mpm: MPM) {
+        for (const note of msm.allNotes) {
+            const tempos = mpm.instructionEffectiveInRange<Tempo>(note.date, note.date + note.duration, 'tempo', 'global')
+            note.tickDuration = calculateSymbolicNoteDuration(note, tempos)
+        }
     }
 }
 

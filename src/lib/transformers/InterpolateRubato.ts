@@ -197,7 +197,7 @@ export class InterpolateRubato extends AbstractTransformer<InterpolateRubatoOpti
             const onsetDiff = onsetInTicks - note.date
             note.tickDuration += onsetDiff
 
-            const offset = onsetInTicks + note.tickDuration
+            const offset = note.date + note.tickDuration
 
             const rubatos = mpm.instructionsEffectiveAtDate<Rubato>(offset, 'rubato', this.options?.part !== undefined ? this.options.part : 'global')
             const effectiveRubato = rubatos[0]

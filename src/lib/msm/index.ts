@@ -8,6 +8,7 @@ type TemporaryAttributes = {
     readonly 'midi.pitch': number
     'midi.onset': number
     'midi.duration': number
+    'tickDuration'?: number
     'midi.velocity': number
     'bpm'?: number
     'bpm.beatLength'?: number

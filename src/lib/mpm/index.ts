@@ -181,16 +181,85 @@ export class MPM {
      * @param part If not specified, all parts are considered
      * @todo
      */
-    instructionsAtDate(date: number, part?: Part) {
-        if (part === undefined) {
+    instructionsEffectiveAtDate<T>(date: number, type?: InstructionType, part?: Part): T[] {
+        const parts: Part[] = part ? [part] : [0, 1, 'global']
+        const instructionTypesToGet = type ? [type] : instructionTypes
 
-        }
-        else if (part === 'global') {
+        const result: T[] = []
 
-        }
-        else if (typeof part === 'number') {
+        for (const instructionType of instructionTypesToGet) {
+            for (part of parts) {
+                const instructions = this.getInstructions<T>(type, part)
 
+                const found = instructions.find(instruction => (instruction as any).date === date)
+                if (found) {
+                    result.push(found)
+                }
+                else {
+                    const ongoingInstruction =
+                        instructions.slice().reverse().find(instruction => (instruction as any).date <= date)
+
+                    if (!ongoingInstruction) continue
+
+                    if (instructionType === 'tempo') {
+                        result.push(ongoingInstruction)
+                    }
+                    else if (instructionType === 'rubato') {
+                        const rubato = ongoingInstruction as T as Rubato
+                        if (rubato.loop) result.push(ongoingInstruction)
+                        if (date < (rubato.date + rubato.frameLength)) {
+                            result.push(ongoingInstruction)
+                        }
+                    }
+                }
+            }
         }
+        return result
+    }
+
+    /**
+     * Returns the instructions effective in a given range.
+     * @param date 
+     * @param part If not specified, all parts are considered
+     * @todo
+     */
+    instructionEffectiveInRange<T>(from: number, to: number, type?: InstructionType, part?: Part): T[] {
+        const parts: Part[] = part ? [part] : [0, 1, 'global']
+        const instructionTypesToGet = type ? [type] : instructionTypes
+
+        const result: T[] = []
+
+        for (const instructionType of instructionTypesToGet) {
+            for (part of parts) {
+                const instructions = this.getInstructions<T>(type, part)
+
+                const found = instructions.filter(instruction => {
+                    const date = (instruction as any).date
+                    return date >= from && date < to
+                })
+                if (found) {
+                    result.push(...found)
+                }
+
+                const earlierInstruction =
+                    instructions.slice().reverse().find((i: any) => i.date < from)
+
+                if (!earlierInstruction) continue
+
+                if (instructionType === 'tempo') {
+                    const exactMatch = instructions.find((i: any) => i.date === from)
+                    if (!exactMatch) result.push(earlierInstruction)
+                }
+                else if (instructionType === 'rubato') {
+                    const rubato = earlierInstruction as T as Rubato
+                    if (rubato.loop) result.push(earlierInstruction)
+                    if (from < (rubato.date + rubato.frameLength)) {
+                        result.push(earlierInstruction)
+                    }
+                }
+            }
+        }
+        return result.sort((a: any, b: any) => a.date - b.date)
     }
 
     /**
@@ -288,7 +357,7 @@ export class MPM {
 
         const definition = defs.find(def => def['name'] === name)
         if (definitionType === 'ornamentDef') {
-            const dynamicsGradient = definition.dynamicsGradient 
+            const dynamicsGradient = definition.dynamicsGradient
             const temporalSpread = definition.temporalSpread
             return {
                 'frame.start': temporalSpread['frame.start'] || 0,
@@ -358,19 +427,31 @@ export class MPM {
 
     /**
      * Gets all instructions inside a given map type.
-     * @param part 
+     * @param part If not specified, both, global as well as all local maps will be considered.
+     * @param instructionType The instruction type to filter for. If not specified, 
+     * all instruction types will be considered.
      * @returns 
      */
-    getInstructions<T>(instructionType: InstructionType, part: Part): T[] {
-        const correspondingMapName = this.correspondingMapNameFor(instructionType)
-        const map = this.getMap(correspondingMapName, part, false)
-        if (!map) {
-            console.log('map', correspondingMapName, 'not found in MPM')
-            return []
+    getInstructions<T>(instructionType?: InstructionType, part?: Part): T[] {
+        const result = []
+        const parts: Part[] = part ? [part] : ['global', 0, 1]
+        const instructionTypesToGet = instructionType ? [instructionType] : instructionTypes
+
+        for (const part of parts) {
+            for (const instructionType of instructionTypesToGet) {
+                const correspondingMapName = this.correspondingMapNameFor(instructionType)
+                const map = this.getMap(correspondingMapName, part, false)
+                if (!map) {
+                    console.log('map', correspondingMapName, 'not found in MPM')
+                    continue
+                }
+
+                if (!map.get(instructionType)) continue
+                result.push(...map.get(instructionType).map((i: any) => i['@'] as T))
+            }
         }
 
-        if (!map.get(instructionType)) return []
-        return map.get(instructionType).map((i: any) => i['@'])
+        return result
     }
 
     setPerformanceName(performanceName: string) {
