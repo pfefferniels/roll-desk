@@ -2,13 +2,14 @@ import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { MEINote } from "."
 import { TimeSignature } from "../msm"
 import { parse } from "js2xmlparser"
+import { VerovioToolkit } from "verovio/esm"
 
 export class MEI {
     private scoreDOM: Document
     private domParser: DOMParser
     notes: MEINote[]
     timemap: any[]  // TODO define type. 
-    vrvToolkit: any
+    vrvToolkit: VerovioToolkit
 
     // score encoding can be anything that Verovio can parse
     constructor(scoreEncoding: string, vrvToolkit: any, domParser: DOMParser) {
@@ -125,6 +126,11 @@ export class MEI {
                 // ignore the note if its tied
                 if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
                     continue
+                }
+
+                if (Number(staff.getAttribute('n')) === 1) {
+                    console.log('times for', noteEl?.getAttribute('pname'))
+                    console.log(this.vrvToolkit.getTimesForElement(on))
                 }
 
                 result.push({
