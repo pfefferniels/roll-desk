@@ -72,9 +72,9 @@ export const AlignmentDialog = ({ alignment, target, open, onClose }: AlignmentD
                 .addUrl(RDF.type, crmdig('D1_Digital_Object'))
                 .addUrl(crm('P2_has_type'), mer('DigitalScore'))
                 .addUrl(RDFS.label, newMEIUrl)
+                .addStringNoLocale(crm('P102_has_title'), 'performed version')
 
             const scoreWork = getUrl(scoreThing, frbroo('R12i_realises'))
-            console.log('scoreWork=', scoreWork)
             if (scoreWork) {
                 newScore.addUrl(frbroo('R12i_realises'), scoreWork)
             }
