@@ -1,4 +1,4 @@
-import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, removeAll, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, removeAll, removeThing, removeUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -158,19 +158,44 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
     setSaving(true)
     const chunkSize = 100;
     let modifiedDataset = dataset
-    let modifiedAlignment = removeAll(alignment, crm('P9_consists_of'))
+    let modifiedAlignment: Thing | null = alignment
+
+    const alignmentsToRemove = getUrlAll(alignment, crm('P9_consists_of'))
+    for (let i = 0; i < alignmentsToRemove.length; i += chunkSize) {
+      const chunk = alignmentsToRemove.slice(i, i + chunkSize);
+
+      for (const pairToRemove of chunk) {
+        modifiedAlignment = removeUrl(alignment, crm('P9_consists_of'), pairToRemove)
+        modifiedDataset = removeThing(modifiedDataset, pairToRemove)
+      }
+
+      modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+      modifiedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+    }
+
+    const thingsAdded = []
     for (let i = 0; i < pairs.length; i += chunkSize) {
       const chunk = pairs.slice(i, i + chunkSize);
 
       for (const pair of chunk) {
         const pairThing = buildPair(pair.midiEventUrl, `${meiUrl}/${pair.meiId}`)
+        thingsAdded.push(pairThing)
         modifiedDataset = setThing(modifiedDataset, pairThing)
-        modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), pairThing)
       }
       modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
-      modifiedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      modifiedDataset = await saveSolidDatasetAt(getSourceUrl(modifiedDataset)!, modifiedDataset, { fetch: session.fetch as any })
     }
+
+    modifiedAlignment = getThing(modifiedDataset, url)
+    if (!modifiedAlignment) return
+
+    for (const thing of thingsAdded) {
+      modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), thing)
+    }
+
+    modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+    modifiedDataset = await saveSolidDatasetAt(getSourceUrl(modifiedDataset)!, modifiedDataset, { fetch: session.fetch as any })
+
     setAlignment(modifiedAlignment)
     setDataset(modifiedDataset)
 
