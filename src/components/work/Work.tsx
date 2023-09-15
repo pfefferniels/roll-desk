@@ -10,8 +10,8 @@ import { MEI } from "../../lib/mei"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { ArrowBack, Download } from "@mui/icons-material"
 import { DownloadDialog } from "./DownloadDialog"
-import { MPM, parseMPM } from "../../lib/mpm"
-import { enrichMEI } from "../../lib/mpm/enrichMEI"
+import { MPM, parseMPM } from "mpmify"
+import { enrichMEI } from "../../lib/mei/enrichMEI"
 import { useNavigate } from "react-router-dom"
 import * as d3 from 'd3';
 

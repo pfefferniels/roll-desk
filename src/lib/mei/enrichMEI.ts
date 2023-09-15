@@ -1,5 +1,5 @@
 import { Articulation, Asynchrony, DatedInstruction, Dynamics, MPM, Ornament, OrnamentDef, Part, Tempo } from ".";
-import { MEI } from "../mei";
+import { MEI } from ".";
 
 const determinePlist = <T extends string>(instruction: DatedInstruction<T>, mei: MEI, part: Part) => {
     if (instruction.noteid) return [instruction.noteid]

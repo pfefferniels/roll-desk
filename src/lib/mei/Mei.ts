@@ -1,8 +1,12 @@
 import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { MEINote } from "."
-import { TimeSignature } from "../msm"
 import { parse } from "js2xmlparser"
 import { VerovioToolkit } from "verovio/esm"
+
+export type TimeSignature = {
+    numerator: number
+    denominator: number
+}
 
 export class MEI {
     private scoreDOM: Document
@@ -129,7 +133,7 @@ export class MEI {
                 }
 
                 if (Number(staff.getAttribute('n')) === 1) {
-                    console.log('times for', noteEl?.getAttribute('pname'))
+                    // console.log('times for', noteEl?.getAttribute('pname'))
                     console.log(this.vrvToolkit.getTimesForElement(on))
                 }
 
@@ -248,27 +252,6 @@ export class MEI {
         hmm.events = result
 
         return hmm
-    }
-
-    /**
-     * This method return the qstamps of the first note in each measure. 
-     * In particular useful when different time signatures appear in one piece.
-     * @returns the qstamps of all downbeats
-     */
-    public allDownbeats(): number[] {
-        const qstamps: number[] = []
-        const measures = this.scoreDOM.querySelectorAll("measure")
-        for (const measure of measures) {
-            const note = measure.querySelector("note") // what about rests?
-            if (note) {
-                const id = note.getAttribute("xml:id")
-                const corresp = this.allNotes().find((note: MEINote) => {
-                    return note.id === id
-                })
-                if (corresp) qstamps.push(corresp?.qstamp)
-            }
-        }
-        return qstamps
     }
 
     public notesAtTime(qstamp: number): MEINote[] {

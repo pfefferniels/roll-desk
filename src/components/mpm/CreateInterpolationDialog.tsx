@@ -8,13 +8,11 @@ import { urlAsLabel } from "../../helpers/urlAsLabel"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MEI } from "../../lib/mei"
 import { asPianoRoll } from "../../lib/midi/asPianoRoll"
-import { MPM } from "../../lib/mpm"
-import { MsmNote, MSM } from "../../lib/msm"
-import { getDefaultPipeline } from "../../lib/transformers"
 import { SelectEntity } from "../works/SelectEntity"
 import { Save } from "@mui/icons-material"
 import { TransformerSettings, TransformerSettingsBox } from "./TransformerSettingsBox"
-
+import { MPM, MSM, getDefaultPipeline } from "mpmify"
+import { asMSM } from "../../lib/mei/asMSM"
 
 interface CreateInterpolationDialogProps {
     open: boolean
@@ -33,7 +31,8 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
         minimumArpeggioSize: 2,
         beatLength: 'denominator',
-        epsilon: 3
+        epsilon: 3,
+        rubatoLength: 'everything'
     })
 
     const performInterpolation = async () => {
@@ -74,43 +73,29 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         setInterpolationState('transforming')
 
         // convert alignment to MSM which then can be fed into the pipeline
-        const msmNotes: MsmNote[] =
-            getUrlAll(alignment, crm('P9_consists_of'))
-                .map(pairUrl => getThing(dataset, pairUrl))
-                .filter(pair => pair !== null)
-                .reduce((acc, pair) => {
-                    const scoreNoteId = urlAsLabel(getUrl(pair!, oa('hasTarget')))
-                    const midiNoteUrl = getUrl(pair!, oa('hasBody'))
+        const msm = asMSM(mei_)
 
-                    if (!scoreNoteId || !midiNoteUrl) return acc
+        const pairUrls = getUrlAll(alignment, crm('P9_consists_of'))
+        for (const pairUrl of pairUrls) {
+            const pair = getThing(dataset, pairUrl)
+            if (!pair) continue
 
-                    const scoreNote = mei_.getById(scoreNoteId)
-                    const midiNote = pr_.events.find(event => event.id === midiNoteUrl)
+            const scoreNoteId = urlAsLabel(getUrl(pair!, oa('hasTarget')))
+            const midiNoteUrl = getUrl(pair!, oa('hasBody'))
+            if (!scoreNoteId || !midiNoteUrl) continue
 
-                    if (!scoreNote || !midiNote) return acc
+            const midiNote = pr_.events.find(event => event.id === midiNoteUrl)
+            if (!midiNote) continue
 
-                    acc.push({
-                        'part': scoreNote.part,
-                        'xml:id': scoreNote.id,
-                        'date': MEI.qstampToTstamp(scoreNote.qstamp),
-                        'duration': MEI.qstampToTstamp(scoreNote.duration),
-                        'pitchname': scoreNote.pname!,
-                        'octave': scoreNote.octave!,
-                        'accidentals': scoreNote.accid!,
-                        'midi.pitch': midiNote.pitch,
-                        'midi.onset': midiNote.ontime,
-                        'midi.duration': midiNote.offtime - midiNote.ontime,
-                        'midi.velocity': midiNote.onvel
-                    })
-                    return acc
-                }, [] as MsmNote[])
+            msm.addPerformanceInfo(scoreNoteId, midiNote)
+        }
 
-        setInterpolationState('interpolating')
-        const msm = new MSM(msmNotes, mei_.timeSignature())
-        const newMPM = new MPM(2)
 
         console.log(msm.serialize(false))
 
+        const newMPM = new MPM(2)
+
+        setInterpolationState('interpolating')
         // kick-off pipeline
         getDefaultPipeline(defaultPipeline, transformerSettings).head?.transform(msm, newMPM)
 

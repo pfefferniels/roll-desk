@@ -26,6 +26,7 @@
     "js2xmlparser": "^4.0.2",
     "midi-parser-js": "^4.0.4",
     "midifile-ts": "^1.4.0",
+    "mpmify": "file:../mpmify",
     "npm": "^9.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
