@@ -8,19 +8,20 @@ import {
     DialogTitle,
     TextField,
     CircularProgress,
+    Typography,
 } from '@mui/material';
 import { getSourceUrl, buildThing, createThing, setThing, saveSolidDatasetAt, Thing, getStringNoLocale, getUrl, setUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { crm, frbroo, mer } from '../../../helpers/namespaces';
 
-interface RecordingWorkDialogProps {
+interface RollDialogProps {
     thing?: Thing;
     open: boolean;
     onClose: () => void;
 }
 
-export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialogProps) => {
+export const RollDialog = ({ thing, open, onClose }: RollDialogProps) => {
     const [label, setLabel] = useState((thing && getStringNoLocale(thing, crm('P102_has_title'))) || '');
     const [note, setNote] = useState((thing && getUrl(thing, crm('P3_has_note'))) || '')
     const [seeAlso, setSeeAlso] = useState((thing && getUrl(thing, RDFS.seeAlso)) || '');
@@ -68,9 +69,9 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Add Recording Work</DialogTitle>
+            <DialogTitle>Add Roll</DialogTitle>
             <DialogContent>
-                <DialogContentText>Enter the details of the performance.</DialogContentText>
+                <DialogContentText>Enter the details of the roll.</DialogContentText>
                 <TextField
                     autoFocus
                     margin="dense"
@@ -94,15 +95,22 @@ export const RecordingWorkDialog = ({ thing, open, onClose }: RecordingWorkDialo
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                 />
+                <Typography>
+                    <i>
+                        Note: This adds an abstract work. You can upload MIDI
+                        files of particular roll copies in a second step.
+                    </i>
+                </Typography>
+
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={saveToPod} disabled={loading}>
-                    {loading ? <CircularProgress size={24} /> : 'Add Performance'}
+                <Button variant='outlined' onClick={onClose}>Cancel</Button>
+                <Button variant='contained' onClick={saveToPod} disabled={loading}>
+                    {loading ? <CircularProgress size={24} /> : 'Add Roll'}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 };
 
-export default RecordingWorkDialog;
+export default RollDialog;

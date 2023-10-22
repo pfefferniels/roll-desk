@@ -41,7 +41,7 @@ interface DigitizedRecordingDialogProps {
     onClose: () => void
 }
 
-export const DigitizedRecordingDialog = ({ thing, attachTo, open, onClose }: DigitizedRecordingDialogProps) => {
+export const RollCopyDialog = ({ thing, attachTo, open, onClose }: DigitizedRecordingDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
     const [midiFile, setMidiFile] = useState<File | null>(null);

@@ -3,9 +3,9 @@ import { Thing, asUrl } from '@inrupt/solid-client';
 import { getStringNoLocale } from '@inrupt/solid-client';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { Typography, Box, IconButton, Stack, Button } from '@mui/material';
-import { RecordingWorkDialog } from '../dialogs/RecordingWorkDialog';
+import { RollDialog } from '../dialogs/RollDialog';
 import EditIcon from '@mui/icons-material/Edit';
-import { DigitizedRecordingDialog } from '../dialogs/DigitizedRecordingDialog';
+import { RollCopyDialog } from '../dialogs/RollCopyDialog';
 import { MpmDialog } from '../dialogs/MpmDialog';
 import { useNavigate } from 'react-router-dom';
 import { crm } from '../../../helpers/namespaces';
@@ -64,13 +64,13 @@ const RecordingWorkDetails = ({ thing: work }: RecordingWorkDetailsProps) => {
                 onClose={() => setMpmDialogOpen(false)}
                 attachTo={work} />
 
-            <RecordingWorkDialog
+            <RollDialog
                 open={editDialogOpen}
                 onClose={() => setEditDialogOpen(false)}
                 thing={work}
             />
 
-            <DigitizedRecordingDialog
+            <RollCopyDialog
                 attachTo={work}
                 open={performanceDialogOpen}
                 onClose={() => setPerformanceDialogOpen(false)}

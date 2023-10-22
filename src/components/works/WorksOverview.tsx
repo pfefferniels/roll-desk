@@ -2,17 +2,16 @@ import React, { useState, useEffect } from 'react';
 import WorksGraph from './WorksGraph';
 import { SolidDataset, getSolidDataset } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
-import RecordingWorkDialog from './dialogs/RecordingWorkDialog';
+import RollDialog from './dialogs/RollDialog';
 import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material';
-import { MusicNote, RecordVoiceOver } from '@mui/icons-material';
+import { Add } from '@mui/icons-material';
 import { datasetUrl } from '../../helpers/datasetUrl';
-import { ScoreWorkDialog } from './dialogs/ScoreWorkDialog';
 
 const WorksOverview: React.FC = () => {
   const { session } = useSession()
+
   const [dataset, setDataset] = useState<SolidDataset>();
   const [openAddWorkDialog, setOpenAddWorkDialog] = useState(false);
-  const [openScoreDialog, setOpenScoreDialog] = useState(false);
 
   useEffect(() => {
     const fetchThings = async () => {
@@ -36,8 +35,7 @@ const WorksOverview: React.FC = () => {
   };
 
   const actions = [
-    { name: 'Add Recording', icon: <RecordVoiceOver />, onClick: handleOpenAddWorkDialog },
-    { name: 'Add Score', icon: <MusicNote />, onClick: () => setOpenScoreDialog(true) },
+    { name: 'Add Roll Recording', icon: <Add />, onClick: handleOpenAddWorkDialog },
   ];
 
   return (
@@ -66,11 +64,7 @@ const WorksOverview: React.FC = () => {
 
       <WorksGraph />
 
-      <ScoreWorkDialog
-        open={openScoreDialog}
-        onClose={() => setOpenScoreDialog(false)} />
-
-      <RecordingWorkDialog
+      <RollDialog
         open={openAddWorkDialog}
         onClose={handleCloseAddWorkDialog}
       />
