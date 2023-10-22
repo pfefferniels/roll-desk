@@ -1,4 +1,4 @@
-import { Articulation, Asynchrony, DatedInstruction, Dynamics, MPM, Ornament, OrnamentDef, Part, Tempo } from ".";
+import { Articulation, Asynchrony, DatedInstruction, Dynamics, MPM, Ornament, OrnamentDef, Part, Tempo } from "mpm-ts";
 import { MEI } from ".";
 
 const determinePlist = <T extends string>(instruction: DatedInstruction<T>, mei: MEI, part: Part) => {
