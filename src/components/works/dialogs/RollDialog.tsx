@@ -48,7 +48,7 @@ export const RollDialog = ({ thing, open, onClose }: RollDialogProps) => {
 
         const recordingWork = buildThing(thing || createThing())
             .setUrl(RDF.type, frbroo('F21_Recording_Work'))
-            .setUrl(crm('P2_has_type'), mer('RecordingWork'))
+            .setUrl(crm('P2_has_type'), mer('Roll'))
             .setStringNoLocale(crm('P102_has_title'), label)
 
         if (seeAlso !== '') {

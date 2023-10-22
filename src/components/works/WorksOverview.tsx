@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import WorksGraph from './WorksGraph';
+import WorksGraph from './WorksGraph2';
 import { SolidDataset, getSolidDataset } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import RollDialog from './dialogs/RollDialog';
