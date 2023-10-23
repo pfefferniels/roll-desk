@@ -6,7 +6,7 @@ import { Typography, Box, IconButton, Stack, Button } from '@mui/material';
 import { RollDialog } from '../dialogs/RollDialog';
 import EditIcon from '@mui/icons-material/Edit';
 import { RollCopyDialog } from '../dialogs/RollCopyDialog';
-import { MpmDialog } from '../dialogs/MpmDialog';
+import { InterpretationDialog } from '../dialogs/InterpretationDialog';
 import { useNavigate } from 'react-router-dom';
 import { crm } from '../../../helpers/namespaces';
 
@@ -59,10 +59,10 @@ const RecordingWorkDetails = ({ thing: work }: RecordingWorkDetailsProps) => {
                 </Box>
             </Stack>
 
-            <MpmDialog
+            <InterpretationDialog
                 open={mpmDialogOpen}
                 onClose={() => setMpmDialogOpen(false)}
-                attachTo={work} />
+                attachToRoll={work} />
 
             <RollDialog
                 open={editDialogOpen}
