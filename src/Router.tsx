@@ -1,12 +1,9 @@
 import React from 'react';
 import { Route, BrowserRouter, Routes, useParams, useSearchParams } from 'react-router-dom';
 import WorksOverview from './components/works/WorksOverview';
-import MidiViewer from './components/midi-ld/MidiViewer';
-import { AnalysisEditor } from './components/analysis/AnalysisEditor';
 import { datasetUrl } from './helpers/datasetUrl';
 import { AlignmentEditor } from './components/alignment/AlignmentEditor';
 import { MpmEditor } from './components/mpm/MpmEditor';
-import { ScoreViewer } from './components/score/ScoreViewer';
 import { Work } from './components/work/Work';
 
 const ErrorBoundary = () => {
@@ -17,65 +14,26 @@ const ErrorBoundary = () => {
   )
 }
 
-const MidiViewerRoute = () => {
-  const { midiId, noteId } = useParams()
-  const [search] = useSearchParams()
-
-  const url =
-    midiId
-      ? `${datasetUrl}/${midiId}.mei#${noteId ? noteId : midiId}`
-      : search.get('url')
-  if (!url) throw new Error('no proper URL passed')
-
-  return <MidiViewer url={url} />
-}
-
-const ScoreViewerRoute = () => {
-  const { scoreId } = useParams()
-  const [search] = useSearchParams()
-
-  const url =
-    scoreId
-      ? `${datasetUrl}/${scoreId}.mei`
-      : search.get('url')
-  if (!url) throw new Error('no proper URL passed')
-
-  return <ScoreViewer url={url} />
-}
-
-const AnalysisRoute = () => {
-  const { analysisId } = useParams()
-  const [search] = useSearchParams()
-
-  const url =
-    analysisId
-      ? `${datasetUrl}/works.ttl#${analysisId}`
-      : search.get('url')
-  if (!url) throw new Error('no proper URL passed')
-
-  return <AnalysisEditor url={url} />
-}
-
 const AlignmentRoute = () => {
-  const { alignmentId } = useParams()
+  const { interpretationId } = useParams()
   const [search] = useSearchParams()
 
   const url =
-    alignmentId
-      ? `${datasetUrl}/works.ttl#${alignmentId}`
+    interpretationId
+      ? `${datasetUrl}/works.ttl#${interpretationId}`
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
   return <AlignmentEditor url={url} />
 }
 
-const MpmRoute = () => {
-  const { mpmId } = useParams()
+const InterpretationRoute = () => {
+  const { interpretationId } = useParams()
   const [search] = useSearchParams()
 
   const url =
-    mpmId
-      ? `${datasetUrl}/works.ttl#${mpmId}`
+    interpretationId
+      ? `${datasetUrl}/works.ttl#${interpretationId}`
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
@@ -83,51 +41,35 @@ const MpmRoute = () => {
 }
 
 const WorkRoute = () => {
-  const { workId } = useParams()
+  const { rollId } = useParams()
   const [search] = useSearchParams()
 
   const url =
-    workId
-      ? `${datasetUrl}/works.ttl${workId}`
+    rollId
+      ? `${datasetUrl}/works.ttl${rollId}`
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
   return <Work url={url} />
 }
 
-
-const AppRouter: React.FC = () => {
+const AppRouter = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/works" element={<WorksOverview />} />
         <Route
-          path="/midi/:midiId?/:noteId?"
-          element={<MidiViewerRoute />}
-          errorElement={<ErrorBoundary />}
-        />
-        <Route
-          path="/analysis/:analysisId?"
-          element={<AnalysisRoute />}
-          errorElement={<ErrorBoundary />}
-        />
-        <Route
-          path="/alignment/:alignmentId?"
+          path="/alignment/:interpretationId?"
           element={<AlignmentRoute />}
           errorElement={<ErrorBoundary />}
         />
         <Route
-          path="/mpm/:mpmId?"
-          element={<MpmRoute />}
+          path="/interpretation/:interpretationId?"
+          element={<InterpretationRoute />}
           errorElement={<ErrorBoundary />}
         />
         <Route
-          path="/score/:scoreId?"
-          element={<ScoreViewerRoute />}
-          errorElement={<ErrorBoundary />}
-        />
-        <Route
-          path="/work/:workId?"
+          path="/roll/:rollId?"
           element={<WorkRoute />}
           errorElement={<ErrorBoundary />}
         />
