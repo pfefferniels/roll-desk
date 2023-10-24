@@ -1,7 +1,7 @@
-import { Thing, getStringNoLocale } from "@inrupt/solid-client"
+import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
-import { AddOutlined, Remove } from "@mui/icons-material"
+import { AddOutlined, Link } from "@mui/icons-material"
 import { useState } from "react"
 import { InterpretationDialog } from "./dialogs/InterpretationDialog"
 
@@ -26,8 +26,8 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
                         <AddOutlined onClick={() => setInterpretationDialogOpen(true)} />
                     </IconButton>
 
-                    <IconButton size="small">
-                        <Remove />
+                    <IconButton onClick={() => window.open(asUrl(thing))}>
+                        <Link />
                     </IconButton>
                 </div>
 
