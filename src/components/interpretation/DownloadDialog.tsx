@@ -1,24 +1,28 @@
 import { Download } from "@mui/icons-material"
 import { Dialog, DialogContent, List, ListItem, ListItemAvatar, ListItemButton, ListItemText } from "@mui/material"
-import { Analysis } from "./Work"
 import { downloadFile } from "../../helpers/downloadFile"
+import { MEI } from "../../lib/mei"
+import { MPM } from "mpm-ts"
 
 interface DownloadDialogProps {
     open: boolean
     onClose: () => void
-    analysis: Analysis
+    mpm: MPM
+    mei: MEI
 }
 
-export const DownloadDialog = ({ open, onClose, analysis }: DownloadDialogProps) => {
+export const DownloadDialog = ({ open, onClose, mpm, mei }: DownloadDialogProps) => {
     return (
         <Dialog open={open} onClose={onClose}>
             <DialogContent>
                 <List>
                     <ListItem>
                         <ListItemButton onClick={() => {
-                            downloadFile('performance.mpm', analysis.mpm.serialize(), 'application/xml')
+                            downloadFile('performance.mpm', mpm.serialize(), 'application/xml')
                         }}>
-                            <ListItemAvatar><Download /></ListItemAvatar>
+                            <ListItemAvatar>
+                                <Download />
+                            </ListItemAvatar>
                             <ListItemText
                                 primary='MPM'
                                 secondary={
@@ -28,7 +32,7 @@ export const DownloadDialog = ({ open, onClose, analysis }: DownloadDialogProps)
                     </ListItem>
                     <ListItem>
                         <ListItemButton onClick={() => {
-                            downloadFile('score.mei', analysis.mei.asString(), 'application/xml')
+                            downloadFile('score.mei', mei.asString(), 'application/xml')
                         }}>
                             <ListItemAvatar><Download /></ListItemAvatar>
                             <ListItemText primary='MEI' secondary={
@@ -45,7 +49,7 @@ export const DownloadDialog = ({ open, onClose, analysis }: DownloadDialogProps)
                                 primary='MPM Toolbox Project'
                                 secondary={
                                     `This file can be opened using the MPM Toolbox. It
-                                    will include both, MPM and MSM.`
+                                    will include both, MPM and MEI.`
                                 } />
                         </ListItemButton>
                     </ListItem>

@@ -86,8 +86,8 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
         alignmentThing.addUrl(frbroo('R17i_was_created_by'), creationEvent.build())
 
         let updatedDataset = setThing(worksDataset, mpmThing.build())
-        updatedDataset = setThing(worksDataset, scoreThing.build())
-        updatedDataset = setThing(worksDataset, alignmentThing.build())
+        updatedDataset = setThing(updatedDataset, scoreThing.build())
+        updatedDataset = setThing(updatedDataset, alignmentThing.build())
 
         if (attachToRoll) {
             creationEvent.addUrl(frbroo('R19_created_a_realisation_of'), interpretationThing.build())

@@ -10,7 +10,7 @@ import {
     CircularProgress,
     Typography,
 } from '@mui/material';
-import { getSourceUrl, buildThing, createThing, setThing, saveSolidDatasetAt, Thing, getStringNoLocale, getUrl, setUrl } from '@inrupt/solid-client';
+import { getSourceUrl, buildThing, createThing, setThing, saveSolidDatasetAt, Thing, getStringNoLocale, getUrl } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import { RDF, RDFS } from '@inrupt/vocab-common-rdf';
 import { crm, frbroo, mer } from '../../../helpers/namespaces';

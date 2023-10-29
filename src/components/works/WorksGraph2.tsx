@@ -3,7 +3,6 @@ import * as d3 from 'd3';
 import { DatasetContext } from '@inrupt/solid-ui-react';
 import { getThingAll, getUrlAll, Thing, asUrl } from '@inrupt/solid-client';
 import { crm, frbroo, mer } from '../../helpers/namespaces';
-import { NodeDetails } from './details/NodeDetails';
 import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { RollNode } from './RollNode';
@@ -24,7 +23,6 @@ interface WorksGraphProps {
 const WorksGraph: React.FC<WorksGraphProps> = () => {
     const { solidDataset: worksDataset } = useContext(DatasetContext)
 
-    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
     const [nodes, setNodes] = useState<Node[]>([])
 
     const ref = useRef<SVGSVGElement | null>(null);
@@ -88,7 +86,7 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             .force("charge", d3.forceManyBody().strength(-2000))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .on('end', () => setNodes(nodes_))
-    }, [worksDataset])
+    }, [worksDataset, width, height])
 
     return (
         <div>
@@ -104,13 +102,6 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                     )))}
                 </g>
             </svg>
-
-            {selectedNode && (
-                <NodeDetails
-                    node={selectedNode.thing}
-                    onClose={() => setSelectedNode(null)}
-                />
-            )}
         </div>
     );
 };

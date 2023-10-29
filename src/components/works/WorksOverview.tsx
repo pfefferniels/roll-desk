@@ -43,8 +43,6 @@ const WorksOverview: React.FC = () => {
       solidDataset: dataset,
       setDataset
     }}>
-      <h1>Works Overview</h1>
-
       {session.info.isLoggedIn && (
         <SpeedDial
           ariaLabel="Add Entities"

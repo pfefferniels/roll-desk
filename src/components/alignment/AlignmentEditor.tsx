@@ -1,6 +1,5 @@
-import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, removeAll, removeThing, removeUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
+import { SolidDataset, Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, overwriteFile, removeThing, removeUrl, saveSolidDatasetAt, setThing } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
-import Grid2 from '@mui/material/Unstable_Grid2';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { oa, mer, crm, crmdig } from '../../helpers/namespaces';
 import { CircularProgress, IconButton, Link, Tooltip } from '@mui/material';
@@ -16,6 +15,7 @@ import { PairContainer } from './PairContainer';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { PairDataContext } from '../../providers/PairData';
 import { MEIContext } from '../../providers/MEIContext';
+import Grid2 from '@mui/system/Unstable_Grid';
 
 const findScoreTimeOfNote = (hmm: HMM, meiId: string) => {
   const result = hmm.events.find(
@@ -80,6 +80,9 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
 
   const handleMEIReady = useCallback((mei: MEI) => {
     renderedMEI.current = mei
+    const canvas = document.querySelector('.verovioCanvas')
+    if (!canvas) return
+    canvas.setAttribute('height', '400px')
   }, [])
 
   const handleMidiReady = useCallback((midi: PianoRoll) => {
@@ -291,15 +294,17 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
         </Grid2>
         <Grid2 xs={8}>
           <svg ref={parentRef} width={1000} height={900}>
-            {midiUrl && (
-              <MidiViewer
-                asSvg
-                url={midiUrl}
-                onDone={handleMidiReady}
-                onSelect={(event) => event && setSelectedMidiEvent(event)} />
-            )}
+            <svg transform='translate(0, 100)'>
+              {midiUrl && (
+                <MidiViewer
+                  asSvg
+                  url={midiUrl}
+                  onDone={handleMidiReady}
+                  onSelect={(event) => event && setSelectedMidiEvent(event)} />
+              )}
+            </svg>
 
-            <g>
+            <svg transform='translate(0, -100)'>
               {meiUrl && (
                 <ScoreViewer
                   asSvg
@@ -308,7 +313,7 @@ export const AlignmentEditor = ({ url }: AlignmentEditorProps) => {
                   onSelect={(noteId) => setSelectedNote(noteId)}
                   onDone={handleMEIReady} />
               )}
-            </g>
+            </svg>
 
             <MEIContext.Provider value={{
               mei: renderedMEI.current,

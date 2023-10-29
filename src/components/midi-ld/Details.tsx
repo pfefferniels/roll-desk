@@ -1,7 +1,5 @@
 import { Drawer } from "@mui/material"
-import { Thing, getUrlAll, thingAsMarkdown } from "@inrupt/solid-client"
-import { RDF } from "@inrupt/vocab-common-rdf"
-import { crm, midi } from "../../helpers/namespaces"
+import { Thing, thingAsMarkdown } from "@inrupt/solid-client"
 import { NoteOnOffDetails } from "./NoteOnOffDetails"
 import { PedalDetails } from "./PedalDetails"
 import { typeOf } from "../../helpers/typeOfEvent"

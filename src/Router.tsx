@@ -2,9 +2,9 @@ import React from 'react';
 import { Route, BrowserRouter, Routes, useParams, useSearchParams } from 'react-router-dom';
 import WorksOverview from './components/works/WorksOverview';
 import { datasetUrl } from './helpers/datasetUrl';
-import { AlignmentEditor } from './components/alignment/AlignmentEditor';
-import { MpmEditor } from './components/mpm/MpmEditor';
-import { Work } from './components/work/Work';
+import { AlignmentEditor } from './components/alignment/AlignmentEditor2';
+import { Interpretation } from './components/interpretation/Interpretation';
+import MidiViewer from './components/midi-ld/MidiViewer';
 
 const ErrorBoundary = () => {
   return (
@@ -24,7 +24,7 @@ const AlignmentRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <AlignmentEditor url={url} />
+  return <AlignmentEditor interpretationUrl={url} />
 }
 
 const InterpretationRoute = () => {
@@ -37,10 +37,10 @@ const InterpretationRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <MpmEditor url={url} />
+  return <Interpretation interpretationUrl={url} />
 }
 
-const WorkRoute = () => {
+const RollRoute = () => {
   const { rollId } = useParams()
   const [search] = useSearchParams()
 
@@ -50,7 +50,7 @@ const WorkRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <Work url={url} />
+  return <MidiViewer url={url} />
 }
 
 const AppRouter = () => {
@@ -59,7 +59,7 @@ const AppRouter = () => {
       <Routes>
         <Route path="/works" element={<WorksOverview />} />
         <Route
-          path="/alignment/:interpretationId?"
+          path="/align/:interpretationId?"
           element={<AlignmentRoute />}
           errorElement={<ErrorBoundary />}
         />
@@ -70,7 +70,7 @@ const AppRouter = () => {
         />
         <Route
           path="/roll/:rollId?"
-          element={<WorkRoute />}
+          element={<RollRoute />}
           errorElement={<ErrorBoundary />}
         />
 

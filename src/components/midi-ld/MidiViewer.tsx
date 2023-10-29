@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DatasetProvider } from '../DatasetProvider';
 import { Piece } from './Piece';
-import { CircularProgress, Slider, IconButton } from '@mui/material';
+import { CircularProgress, IconButton } from '@mui/material';
 import { Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { Details } from './Details';
 import { useDataset, useThing } from '@inrupt/solid-ui-react';
@@ -24,7 +24,7 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s, asSvg }: MidiViewer
   const { thing: piece, error } = useThing(url, url)
 
   const [selectedNote, setSelectedNote] = useState<Thing>()
-  const [pixelsPerTick, setPixelsPerTick] = useState(0.3);
+  const [pixelsPerTick, _] = useState(0.3);
 
   useEffect(() => {
     if (!piece || !dataset) return

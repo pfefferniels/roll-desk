@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Thing, asUrl } from '@inrupt/solid-client';
 import { getStringNoLocale } from '@inrupt/solid-client';
-import { RDFS } from '@inrupt/vocab-common-rdf';
 import { Typography, Box, IconButton, Stack, Button } from '@mui/material';
 import { RollDialog } from '../dialogs/RollDialog';
 import EditIcon from '@mui/icons-material/Edit';

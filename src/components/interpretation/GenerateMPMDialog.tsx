@@ -1,32 +1,30 @@
-import { Thing, UrlString, getUrl, getThing, getFile, getSolidDataset, getUrlAll, buildThing } from "@inrupt/solid-client"
+import { Thing, getUrl, getThing, getFile, getSolidDataset, getUrlAll, buildThing, asUrl } from "@inrupt/solid-client"
 import { useSession, DatasetContext } from "@inrupt/solid-ui-react"
 import { RDFS, RDF } from "@inrupt/vocab-common-rdf"
-import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem, Stack, Divider } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem, Stack } from "@mui/material"
 import { useContext, useState } from "react"
 import { crm, mer, oa, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MEI } from "../../lib/mei"
 import { asPianoRoll } from "../../lib/midi/asPianoRoll"
-import { SelectEntity } from "../works/SelectEntity"
 import { Save } from "@mui/icons-material"
 import { TransformerSettings, TransformerSettingsBox } from "./TransformerSettingsBox"
-import { MPM, MSM, getDefaultPipeline } from "mpmify"
+import { MPM, getDefaultPipeline } from "mpmify"
 import { asMSM } from "../../lib/mei/asMSM"
 
-interface CreateInterpolationDialogProps {
+interface GenerateMPMDialogProps {
+    alignment: Thing
     open: boolean
-    onCreate: (creation: Thing, mpm: string) => void
+    onCreate: (creation: Thing, mpm: MPM) => void
     onClose: () => void
 }
 
-export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInterpolationDialogProps) => {
+export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: GenerateMPMDialogProps) => {
     const { session } = useSession()
     const { solidDataset: dataset } = useContext(DatasetContext)
 
     const [interpolationState, setInterpolationState] = useState<'fetching-mei' | 'fetching-midi' | 'transforming' | 'interpolating' | 'done'>()
-    const [alignmentUrl, setAlignmentUrl] = useState<UrlString>()
-    const [analysisUrl, setAnalysisUrl] = useState<UrlString>()
     const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
     const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
         minimumArpeggioSize: 2,
@@ -36,12 +34,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     })
 
     const performInterpolation = async () => {
-        if (!dataset || !alignmentUrl) return
-
-        if (!alignmentUrl) return
-
-        const alignment = getThing(dataset, alignmentUrl)
-        if (!alignment) return
+        if (!dataset) return
 
         const meiUrl = getUrl(alignment, mer('has_score'))
         const midiUrl = getUrl(alignment, mer('has_recording'))
@@ -100,7 +93,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
         getDefaultPipeline(defaultPipeline, transformerSettings).head?.transform(msm, newMPM)
 
         setInterpolationState('done')
-        return newMPM.serialize()
+        return newMPM
     }
 
     const save = async () => {
@@ -109,9 +102,7 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
             .addStringNoLocale(crmdig('L23_used_software_or_firmware'), 'mpm-interpolator')
             .addUrl(crmdig('L30_has_operator'), session.info.webId!)
 
-        if (alignmentUrl) {
-            creationEvent.addUrl(crmdig('L10_had_input'), alignmentUrl)
-        }
+        creationEvent.addUrl(crmdig('L10_had_input'), asUrl(alignment))
 
         const mpm = await performInterpolation()
         if (!mpm) return
@@ -120,28 +111,13 @@ export const CreateInterpolationDialog = ({ open, onCreate, onClose }: CreateInt
     }
 
     const workInProgress = interpolationState !== undefined && interpolationState !== 'done'
-    const ready = alignmentUrl && !workInProgress
+    const ready = !workInProgress
 
     return (
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Perform MPM Interpolation</DialogTitle>
             <DialogContent>
                 <Stack spacing={1}>
-                    <Box>
-                        <Typography>On which alignment should the MPM be based on?</Typography>
-                        <SelectEntity
-                            title='Select Alignment'
-                            type={mer('Alignment')}
-                            onSelect={setAlignmentUrl} />
-                    </Box>
-                    <Box>
-                        <Typography>Is there an analysis which should be taken into account?</Typography>
-                        <SelectEntity
-                            title='Select Analysis'
-                            type={mer('Analysis')}
-                            onSelect={setAnalysisUrl} />
-                    </Box>
-                    <Divider />
                     <Box>
                         <Typography>Which texture does the music have?</Typography>
                         <Select

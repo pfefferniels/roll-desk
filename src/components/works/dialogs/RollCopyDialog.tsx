@@ -96,7 +96,7 @@ export const RollCopyDialog = ({ thing, attachTo, open, onClose }: DigitizedReco
             updatedDataset = setThing(updatedDataset, updatedWork)
         }
 
-        updatedDataset = setThing(worksDataset, recording.build())
+        updatedDataset = setThing(updatedDataset, recording.build())
 
 
         setLoading('saving-expression')

@@ -26,7 +26,7 @@ export const TransformerSettingsBox = ({ onChange }: TransformerSettingsProps) =
             epsilon,
             rubatoLength
         })
-    }, [onChange, minimumArpeggioSize, beatLength, epsilon])
+    }, [onChange, minimumArpeggioSize, beatLength, epsilon, rubatoLength])
 
     return (
         <>

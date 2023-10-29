@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Thing, asUrl, getUrl } from '@inrupt/solid-client';
+import { Thing, getUrl } from '@inrupt/solid-client';
 import { Typography, Box, Button, IconButton } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { RDFS } from '@inrupt/vocab-common-rdf';
 import { Edit } from '@mui/icons-material';
 import { RollCopyDialog } from '../dialogs/RollCopyDialog';
-import { AlignmentDialog } from '../dialogs/AlignmentDialog';
-import { AnalysisDialog } from '../dialogs/AnalysisDialog';
+import { InterpretationDialog } from '../dialogs/InterpretationDialog';
 
 interface DigitizedRecordingDetailsProps {
   thing: Thing;
@@ -16,24 +15,14 @@ interface DigitizedRecordingDetailsProps {
 const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ thing }) => {
   const navigate = useNavigate()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [alignmentDialogOpen, setAlignmentDialogOpen] = useState(false)
-  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false)
 
-  const handleAlignToScore = () => {
-    // This will open a dialog which allows selecting
-    // a stored score. Selecting one will create a 
-    // duplicate of that score (since we assume that 
-    // performing a score always means altering the score).
-    // It then opens a new window which allows editing
-    // an alignment.
-    setAlignmentDialogOpen(true)
-  };
+  const [interpretationDialogOpen, setInterpretationDialogOpen] = useState(false)
 
   const handleCreateInterpretation = () => {
     // This will open a dialog which allows creating
     // an interpretation or analysis of this particular
     // roll recording.
-    setAnalysisDialogOpen(true)
+    setInterpretationDialogOpen(true)
   }
 
   return (
@@ -54,12 +43,6 @@ const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ t
       </Box>
 
       <Box mt={2}>
-        <Button variant="contained" color="primary" onClick={handleAlignToScore}>
-          Align to Score
-        </Button>
-      </Box>
-
-      <Box mt={2}>
         <Button
           variant="contained"
           color="primary"
@@ -71,8 +54,7 @@ const DigitizedRecordingDetails: React.FC<DigitizedRecordingDetailsProps> = ({ t
       </Box>
 
       <RollCopyDialog thing={thing} open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
-      <AlignmentDialog target={thing} open={alignmentDialogOpen} onClose={() => setAlignmentDialogOpen(false)} />
-      <AnalysisDialog target={thing} open={analysisDialogOpen} onClose={() => setAnalysisDialogOpen(false)} />
+      <InterpretationDialog open={interpretationDialogOpen} onClose={() => setInterpretationDialogOpen(false)} attachToRoll={thing} />
     </Box >
   );
 };

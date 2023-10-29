@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@codemirror/lang-xml": "^6.0.2",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@inrupt/solid-client": "^1.24.0",
@@ -26,6 +27,7 @@
     "js2xmlparser": "^4.0.2",
     "midi-parser-js": "^4.0.4",
     "midifile-ts": "^1.4.0",
+    "mpm-ts": "file:../mpm-ts",
     "mpmify": "file:../mpmify",
     "npm": "^9.8.1",
     "react": "^18.2.0",
@@ -49,12 +51,6 @@
     "build": "vite build",
     "serve": "vite preview",
     "test": "npx vitest"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [
@@ -82,8 +78,11 @@
     "@types/wav-encoder": "^1.3.0",
     "@typescript-eslint/utils": "^5.30.5",
     "@vitejs/plugin-react": "^4.0.4",
+    "eslint": "^8.52.0",
+    "eslint-config-react-app": "^7.0.1",
     "jsdom": "^20.0.0",
     "vite": "^4.4.9",
+    "vite-plugin-eslint": "^1.8.1",
     "vitest": "^0.34.1"
   }
 }

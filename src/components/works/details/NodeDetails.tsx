@@ -1,18 +1,13 @@
 import React from 'react';
-import { Thing, asUrl, getUrl, getUrlAll } from '@inrupt/solid-client';
-import { RDF } from '@inrupt/vocab-common-rdf';
+import { Thing, asUrl, getUrl } from '@inrupt/solid-client';
 import { crm, mer } from '../../../helpers/namespaces';
 import RecordingWorkDetails from './RecordingWorkDetails';
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import DigitizedRecordingDetails from './DigitizedRecordingDetails';
-import AnalysisDetails from './AnalysisDetails';
-import AlignmentDetails from './AlignmentDetails';
 import { LinkOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import ScoreWorkDetails from './ScoreWorkDetails';
-import { DigitizedScoreDetails } from './DigitizedScoreDetails';
 import MpmDetails from './MpmDetails';
 
 interface NodeDetailsProps {
@@ -30,22 +25,9 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node, onClose }) => {
         else if (type === mer('DigitalRecording')) {
             return <DigitizedRecordingDetails thing={node} />
         }
-        else if (type === mer('ScoreWork')) {
-            return <ScoreWorkDetails thing={node} />
-        }
-        else if (type === mer('DigitalScore')) {
-            return <DigitizedScoreDetails thing={node} />
-        }
-        else if (type === mer('Analysis')) {
-            return <AnalysisDetails thing={node} />
-        }
-        else if (type === mer('Alignment')) {
-            return <AlignmentDetails thing={node} />
-        }
         else if (type === mer('MPM')) {
             return <MpmDetails thing={node} />;
         }
-
 
         return null;
     };

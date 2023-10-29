@@ -50,7 +50,7 @@ export const Piece = ({ piece, dataset: solidDataset, pixelsPerTick, noteHeight,
         svg.selectAll('.tick').attr('stroke-width', 2/zoom)
       })
     svg.call(zoom as any);
-  }, [ref, ref.current]);
+  }, [ref]);
 
   if (!piece || !solidDataset) return null
 

@@ -1,9 +1,8 @@
-import { UrlString } from "@inrupt/solid-client"
+import { Thing, UrlString, getUrl } from "@inrupt/solid-client"
 import { Pair } from "./Pair"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
 import React, { useEffect, useState } from "react"
-import { PairT } from "./AlignmentEditor"
-import { InsertReadingOverlay } from "./InsertReadingOverlay"
+import { mer } from "../../helpers/namespaces"
 
 export const findDOMElementFor = (url: UrlString) => {
     const id = urlAsLabel(url)
@@ -12,11 +11,11 @@ export const findDOMElementFor = (url: UrlString) => {
 }
 
 interface PairContainerProps {
-    pairs: PairT[]
+    pairs: Thing[]
     parentRef: Element | null
     color?: string
-    onRemove?: (pair: PairT) => void
-    onSelect?: (pair: PairT) => void
+    onRemove?: (pair: Thing) => void
+    onSelect?: (pair: Thing) => void
 }
 
 export const PairContainer = ({ pairs, parentRef, color, onRemove, onSelect }: PairContainerProps) => {
@@ -42,25 +41,16 @@ export const PairContainer = ({ pairs, parentRef, color, onRemove, onSelect }: P
     return (
         <>
             {pairs.map(pair => {
-                if (!pair.midiEventUrl || !pair.meiId) return null
+                const midiId = getUrl(pair, mer('has_midi_note'))?.split('#').at(-1)
+                const noteId = getUrl(pair, mer('has_score_note'))?.split('#').at(-1)
+                if (!midiId || !noteId) return null
 
-                const midiEl = findDOMElementFor(pair.midiEventUrl)
-                const noteEl = findDOMElementFor(pair.meiId)
-
+                const midiEl = findDOMElementFor(midiId)
+                const noteEl = findDOMElementFor(noteId)
                 if (!midiEl || !noteEl) return null
 
-                let action: JSX.Element | null = null
-                if (pair.type === 'alteration') {
-                    action = (
-                        <InsertReadingOverlay
-                            parent={parentRef}
-                            attachTo={pair.meiId} />
-                    )
-                }
-
                 return (
-                    <g key={`connection_${pair.midiEventUrl}_${pair.meiId}`}>
-                        {action}
+                    <g key={`connection_${midiId}_${noteId}`}>
                         <Pair
                             parent={parentRef}
                             from={midiEl.querySelector('.notehead') || midiEl}

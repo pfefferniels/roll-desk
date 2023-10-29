@@ -1,7 +1,8 @@
 import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
-import { Button, IconButton } from "@mui/material"
+import { IconButton } from "@mui/material"
 import { Edit, Link } from "@mui/icons-material"
+import { useNavigate } from "react-router-dom"
 
 interface InterpretationNodeProps {
     x: number
@@ -10,16 +11,25 @@ interface InterpretationNodeProps {
 }
 
 export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => {
+    const navigate = useNavigate()
     const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
 
     return (
         <g>
-            <circle cx={x} cy={y} r={60} fill='orange' fill-opacity={0.5} />
+            <circle
+                cx={x}
+                cy={y}
+                r={60}
+                fill='orange'
+                fillOpacity={0.5}
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/interpretation?url=${encodeURIComponent(asUrl(thing))}`)}
+            />
             <text x={x} y={y} fontSize={13} textAnchor="middle">{title}</text>
             <foreignObject x={x - 50} y={y + 5} width={100} height={50}>
                 <div>
-                    <IconButton size="small">
-                        {/*Align/Edit MEI*/}
+                    <IconButton size="small" onClick={() => navigate(`/align?url=${encodeURIComponent(asUrl(thing))}`)}
+                    >
                         <Edit />
                     </IconButton>
 

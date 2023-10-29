@@ -1,8 +1,6 @@
-import { Thing, asUrl, buildThing, createThing, getInteger, getUrl } from "@inrupt/solid-client"
+import { Thing, asUrl, getInteger, getUrl } from "@inrupt/solid-client"
 import { Box, Stack, TextField } from "@mui/material"
 import { crm, midi } from "../../helpers/namespaces"
-import { useEffect, useState } from "react"
-import { RDF } from "@inrupt/vocab-common-rdf"
 import { Midi } from "tonal";
 import { E13Range } from "./E13Range"
 
@@ -19,9 +17,6 @@ export const NoteOnOffDetails = ({ thing, e13s, onChange }: NoteDetailsProps) =>
     const velocityE13s = e13s?.filter(e13 =>
         getUrl(e13, crm('P177_assigned_property_of_type')) === midi('velocity'))
 
-    const pitchE13s = e13s?.filter(e13 =>
-        getUrl(e13, crm('P177_assigned_property_of_type')) === midi('pitch'))
-    
     return (
         <Box m={1}>
             <h4>Note {pitch}</h4>
