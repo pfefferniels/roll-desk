@@ -100,7 +100,11 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       setPairs(prev => [...prev, newPair])
       console.log('add to pairs', newPair)
 
-      const updatedAlignment = addUrl(alignment, crm('P9_consists_of'), newPair)
+      const updatedAlignment = buildThing(alignment)
+        .addUrl(crm('P9_consists_of'), newPair)
+        .setUrl(mer('has_score'), meiUrl || '')
+        .setUrl(mer('has_recording'), midiUrl || '')
+        .build()
 
       let updatedDataset = setThing(dataset, newPair)
       updatedDataset = setThing(dataset, updatedAlignment)
@@ -128,8 +132,8 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
 
       <Button variant='contained'>Perform Alignment</Button>
 
-      <svg ref={parentRef} width={1000} height={800}>
-        <g transform='translate(0, -100)'>
+      <svg ref={parentRef} width={1000} height={1000}>
+        <svg height={300}>
           {meiUrl && (
             <ScoreViewer
               asSvg
@@ -138,9 +142,9 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
               onSelect={(noteId) => setSelectedScoreNote(noteId)}
               onDone={() => { }} />
           )}
-        </g>
+        </svg>
 
-        <g transform='translate(0, 100)'>
+        <svg height={800} transform="translate(0, 200)">
           {midiUrl && (
             <MidiViewer
               asSvg
@@ -148,7 +152,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
               onDone={() => { }}
               onSelect={(event) => event && setSelectedMIDINote(asUrl(event))} />
           )}
-        </g>
+        </svg>
 
         <g id='pairs'>
           <PairContainer
