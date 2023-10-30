@@ -1,7 +1,7 @@
 import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
-import { Add, AddOutlined, Link, Upload, UploadFile } from "@mui/icons-material"
+import { Add, Link, UploadFile } from "@mui/icons-material"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { RollCopyDialog } from "./dialogs/RollCopyDialog"

@@ -24,7 +24,7 @@ const MidiViewer = ({ url, onChange, onSelect, onDone, e13s, asSvg }: MidiViewer
   const { thing: piece, error } = useThing(url, url)
 
   const [selectedNote, setSelectedNote] = useState<Thing>()
-  const [pixelsPerTick, _] = useState(0.3);
+  const [pixelsPerTick, ] = useState(0.3);
 
   useEffect(() => {
     if (!piece || !dataset) return

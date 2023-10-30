@@ -147,7 +147,10 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     setMessage(`Loading alignment pairs from ${realisationUrl}`)
                     const alignmentDataset = await getSolidDataset(realisationUrl, { fetch: session.fetch as any })
                     const alignmentThing = getThing(alignmentDataset, realisationUrl)
-                    if (alignmentThing) setAlignment(alignmentThing)
+                    if (alignmentThing) {
+                        setAlignment(alignmentThing)
+                        setMessage(`Alignment pairs succesfully loaded.`)
+                    }
                 }
             }
 

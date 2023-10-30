@@ -24,7 +24,10 @@ export class MEI {
 
         this.vrvToolkit.setOptions({
             adjustPageHeight: true,
-            pageHeight: 60000
+            adjustPageWidth: true,
+            pageHeight: 60000,
+            svgHtml5: true,
+            svgViewBox: true
         })
         this.vrvToolkit.loadData(scoreEncoding)
 
