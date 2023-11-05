@@ -13,28 +13,39 @@ export const findDOMElementFor = (url: UrlString) => {
 interface PairContainerProps {
     pairs: Thing[]
     parentRef: Element | null
+    ready: boolean
     color?: string
     onRemove?: (pair: Thing) => void
     onSelect?: (pair: Thing) => void
 }
 
-export const PairContainer = ({ pairs, parentRef, color, onRemove, onSelect }: PairContainerProps) => {
-    const [rerender, setRerender] = useState(0)
+export const PairContainer = ({ ready, pairs, parentRef, color, onRemove, onSelect }: PairContainerProps) => {
+    const [, setRerender] = useState(0)
 
     useEffect(() => {
         if (!parentRef) return
 
         const roll = document.querySelector('#roll')
-        const score = parentRef.querySelector('.verovioCanvas svg')
+        const score = document.querySelector('.verovioCanvas svg')
+
         if (!roll || !score) return
 
-        const observer = new MutationObserver(() => setRerender(prev => prev + 1))
-        observer.observe(roll, {
+        const rollObserver = new MutationObserver(() => setRerender(prev => prev + 1))
+        rollObserver.observe(roll, {
             attributes: true
         })
 
-        return () => observer.disconnect()
-    }, [parentRef])
+        const scoreObserver = new MutationObserver(() => setRerender(prev => prev + 1))
+        scoreObserver.observe(score, {
+            attributes: true
+        })
+
+
+        return () => {
+            rollObserver.disconnect()
+            scoreObserver.disconnect()
+        }
+    }, [ready, parentRef])
 
     if (!parentRef) return null
 

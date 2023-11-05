@@ -1,4 +1,4 @@
-import { Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, UrlString, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { useEffect, useRef, useState } from "react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
@@ -6,7 +6,7 @@ import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { ScoreViewer } from "../score/ScoreViewer"
 import MidiViewer from "../midi-ld/MidiViewer"
 import { PairContainer } from "./PairContainer"
-import { Button, IconButton, Snackbar } from "@mui/material"
+import { Button, IconButton, Paper, Snackbar } from "@mui/material"
 import { ArrowBack, Edit } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 
@@ -30,6 +30,8 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
   const [selectedScoreNote, setSelectedScoreNote] = useState<UrlString>()
   const [selectedMIDINote, setSelectedMIDINote] = useState<UrlString>()
 
+  const [rollDone, setRollDone] = useState(false)
+  const [scoreDone, setScoreDone] = useState(false)
   const [message, setMessage] = useState<string>()
 
   const parentRef = useRef<SVGSVGElement>(null)
@@ -107,7 +109,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
         .build()
 
       let updatedDataset = setThing(dataset, newPair)
-      updatedDataset = setThing(dataset, updatedAlignment)
+      updatedDataset = setThing(updatedDataset, updatedAlignment)
       await saveSolidDatasetAt(getSourceUrl(dataset)!, updatedDataset, { fetch: session.fetch as any })
       setMessage(`Pair succesfully saved`)
 
@@ -116,31 +118,33 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     }
 
     savePair()
-  }, [selectedMIDINote, selectedScoreNote, alignment, dataset, meiUrl, session.fetch])
+  }, [selectedMIDINote, selectedScoreNote, alignment, dataset, meiUrl, midiUrl, session.fetch])
 
   return (
     <>
       <Snackbar message={message} open={!!message} />
 
-      <IconButton onClick={() => navigate('/works')}>
-        <ArrowBack />
-      </IconButton>
+      <Paper sx={{ p: 1, width: 'fit-content', ml: 1 }}>
+        <IconButton onClick={() => navigate('/works')}>
+          <ArrowBack />
+        </IconButton>
 
-      <IconButton>
-        <Edit />
-      </IconButton>
+        <IconButton>
+          <Edit />
+        </IconButton>
 
-      <Button variant='contained'>Perform Alignment</Button>
+        <Button variant='contained'>Perform Alignment</Button>
+      </Paper>
 
       <svg ref={parentRef} width={1000} height={1000}>
-        <svg height={300}>
+        <svg height={200}>
           {meiUrl && (
             <ScoreViewer
               asSvg
               url={meiUrl}
               landscape
               onSelect={(noteId) => setSelectedScoreNote(noteId)}
-              onDone={() => { }} />
+              onDone={() => setScoreDone(true)} />
           )}
         </svg>
 
@@ -149,13 +153,14 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
             <MidiViewer
               asSvg
               url={midiUrl}
-              onDone={() => { }}
+              onDone={() => setRollDone(true)}
               onSelect={(event) => event && setSelectedMIDINote(asUrl(event))} />
           )}
         </svg>
 
         <g id='pairs'>
           <PairContainer
+            ready={rollDone && scoreDone}
             pairs={pairs}
             parentRef={parentRef.current} />
         </g>
