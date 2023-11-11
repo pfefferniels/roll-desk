@@ -131,8 +131,8 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     const matches = sf.getMatchResult(pianoRoll).events.map(match => {
       const newPair = buildThing()
         .addUrl(RDF.type, mer('AlignmentPair'))
-        .addUrl(mer('has_score_note'), `http://${match.meiId}` || '')
-        .addUrl(mer('has_midi_note'), `http://${match.id}`)
+        .addUrl(mer('has_score_note'), `${meiUrl}#${match.meiId}`)
+        .addUrl(mer('has_midi_note'), match.id)
         .build()
       return newPair
     })
