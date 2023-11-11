@@ -1,4 +1,4 @@
-import { Thing, UrlString, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeThing, removeUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { useEffect, useRef, useState } from "react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
@@ -9,6 +9,8 @@ import { PairContainer } from "./PairContainer"
 import { Button, IconButton, Paper, Snackbar } from "@mui/material"
 import { ArrowBack, Edit } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
+import { PianoRoll, ScoreFollower } from "alignmenttool"
+import { MEI } from "../../lib/mei"
 
 interface AlignmentEditorProps {
   interpretationUrl: string
@@ -23,6 +25,9 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
 
   const [meiUrl, setMEIUrl] = useState<UrlString>()
   const [midiUrl, setMIDIUrl] = useState<UrlString>()
+
+  const [pianoRoll, setPianoRoll] = useState<PianoRoll>()
+  const [mei, setMEI] = useState<MEI>()
 
   const [pairs, setPairs] = useState<Thing[]>([])
   const [alignment, setAlignment] = useState<Thing>()
@@ -120,6 +125,69 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     savePair()
   }, [selectedMIDINote, selectedScoreNote, alignment, dataset, meiUrl, midiUrl, session.fetch])
 
+  const performAlignment = async () => {
+    if (!mei || !pianoRoll) return
+    const sf = new ScoreFollower(mei.asHMM(), 4)
+    const matches = sf.getMatchResult(pianoRoll).events.map(match => {
+      const newPair = buildThing()
+        .addUrl(RDF.type, mer('AlignmentPair'))
+        .addUrl(mer('has_score_note'), `http://${match.meiId}` || '')
+        .addUrl(mer('has_midi_note'), `http://${match.id}`)
+        .build()
+      return newPair
+    })
+
+    setPairs(matches)
+    setMessage('Pairs interpolated.')
+
+    if (!alignment || !dataset) return
+
+    const chunkSize = 100;
+    let modifiedDataset = dataset
+    let modifiedAlignment: Thing | null = alignment
+
+    setMessage(`Removing existing pairs`)
+    const alignmentsToRemove = getUrlAll(alignment, crm('P9_consists_of'))
+    for (let i = 0; i < alignmentsToRemove.length; i += chunkSize) {
+      const chunk = alignmentsToRemove.slice(i, i + chunkSize);
+
+      for (const pairToRemove of chunk) {
+        modifiedAlignment = removeUrl(alignment, crm('P9_consists_of'), pairToRemove)
+        modifiedDataset = removeThing(modifiedDataset, pairToRemove)
+      }
+
+      modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+      modifiedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+    }
+
+    const thingsAdded = []
+    for (let i = 0; i < matches.length; i += chunkSize) {
+      const chunk = matches.slice(i, i + chunkSize);
+
+      for (const pairThing of chunk) {
+        modifiedDataset = setThing(modifiedDataset, pairThing)
+        thingsAdded.push(pairThing)
+      }
+      modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+      modifiedDataset = await saveSolidDatasetAt(getSourceUrl(modifiedDataset)!, modifiedDataset, { fetch: session.fetch as any })
+      setMessage(`Saving chunk ${i}-${i + chunkSize}`)
+    }
+
+    modifiedAlignment = getThing(modifiedDataset, asUrl(alignment))
+    if (!modifiedAlignment) return
+
+    for (const thing of thingsAdded) {
+      modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), thing)
+    }
+
+    setMessage(`Updating alignment ...`)
+    modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+    modifiedDataset = await saveSolidDatasetAt(getSourceUrl(modifiedDataset)!, modifiedDataset, { fetch: session.fetch as any })
+
+    setAlignment(modifiedAlignment)
+    setMessage('Done saving alignment.')
+  }
+
   return (
     <>
       <Snackbar message={message} open={!!message} />
@@ -133,7 +201,9 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
           <Edit />
         </IconButton>
 
-        <Button variant='contained'>Perform Alignment</Button>
+        <Button
+          variant='contained'
+          onClick={performAlignment}>Perform Alignment</Button>
       </Paper>
 
       <svg ref={parentRef} width={1000} height={1000}>
@@ -144,7 +214,10 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
               url={meiUrl}
               landscape
               onSelect={(noteId) => setSelectedScoreNote(noteId)}
-              onDone={() => setScoreDone(true)} />
+              onDone={(mei) => {
+                setMEI(mei)
+                setScoreDone(true)
+              }} />
           )}
         </svg>
 
@@ -153,7 +226,10 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
             <MidiViewer
               asSvg
               url={midiUrl}
-              onDone={() => setRollDone(true)}
+              onDone={(pr) => {
+                setPianoRoll(pr)
+                setRollDone(true)
+              }}
               onSelect={(event) => event && setSelectedMIDINote(asUrl(event))} />
           )}
         </svg>
