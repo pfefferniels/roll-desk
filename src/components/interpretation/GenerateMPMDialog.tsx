@@ -62,8 +62,6 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
         const pr_ = asPianoRoll(piece, midiDataset)
         if (!pr_) return
 
-        setMessage(`Transforming`)
-
         // convert alignment to MSM which then can be fed into the pipeline
         const msm = asMSM(mei_)
 
@@ -73,13 +71,15 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
             return
         }
 
+        setMessage(`Loading Pairs`)
         const pairUrls = getUrlAll(alignment, crm('P9_consists_of'))
+        setMessage(`${pairUrls.length} pairs loaded successfully`)
         for (const pairUrl of pairUrls) {
             const pair = getThing(alignmentDataset, pairUrl)
             if (!pair) continue
 
-            const scoreNoteId = urlAsLabel(getUrl(pair!, oa('hasTarget')))
-            const midiNoteUrl = getUrl(pair!, oa('hasBody'))
+            const scoreNoteId = urlAsLabel(getUrl(pair!, mer('has_score_note')))
+            const midiNoteUrl = getUrl(pair!, mer('has_midi_note'))
             if (!scoreNoteId || !midiNoteUrl) continue
 
             const midiNote = pr_.events.find(event => event.id === midiNoteUrl)
