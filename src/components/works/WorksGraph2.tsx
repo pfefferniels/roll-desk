@@ -83,8 +83,14 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                 .id(function (d) { return d.index!; })
                 .links(links_)
             )
-            .force("charge", d3.forceManyBody().strength(-2000))
+            .force("charge", d3.forceManyBody().strength(100))
             .force("center", d3.forceCenter(width / 2, height / 2))
+            .force('collide', d3.forceCollide(d => {
+                const datum = d as Node
+                if (datum.type === 'roll') return 50
+                else if (datum.type === 'interpretation') return 60
+                return 0 
+            }))
             .on('end', () => setNodes(nodes_))
     }, [worksDataset, width, height])
 
