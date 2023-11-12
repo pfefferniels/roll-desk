@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CircularProgress, IconButton, Paper, Snackbar, Stack } from "@mui/material"
+import { CircularProgress, IconButton, Paper, Snackbar, Stack, ToggleButton } from "@mui/material"
 import { Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setThing, setUrl } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
@@ -7,30 +7,17 @@ import { DCTERMS, RDFS } from "@inrupt/vocab-common-rdf"
 import { MEI } from "../../lib/mei"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MPM, parseMPM } from "mpmify"
-import { enrichMEI } from "../../lib/mei/enrichMEI"
 import * as d3 from 'd3';
 import { DownloadDialog } from "./DownloadDialog"
-import { ArrowBack, AutoGraph, Code, Edit, FileDownload, PlayArrow, Settings } from "@mui/icons-material"
-import { GenerateMPMDialog } from "./GenerateMPMDialog"
+import { ArrowBack, Code, FileDownload, PlayArrow, Settings } from "@mui/icons-material"
 import { datasetUrl } from "../../helpers/datasetUrl"
 import { v4 } from "uuid"
-import { XMLEditor } from "./XMLEditor"
 import { useNavigate } from "react-router-dom"
-
-const initialMPM = `
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-model href="https://github.com/axelberndt/MPM/releases/latest/download/mpm.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
-<?xml-model href="https://github.com/axelberndt/MPM/releases/latest/download/mpm.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
-<mpm xmlns="http://www.cemfi.de/mpm/ns/1.0">
-    <performance name="a performance" pulsesPerQuarter="720">
-        <global>
-            <header></header>
-            <dated></dated>
-        </global>
-    </performance>
-</mpm>`
+import { NotesEditor } from "./NotesEditor"
+import { CodeEditor } from "./CodeEditor"
 
 const addGlow = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
+    console.log('adding glow to svg', svg)
     //Container for the gradients
     var defs = svg.append("defs");
 
@@ -70,8 +57,37 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
     const [message, setMessage] = useState<string>()
     const [downloadOpen, setDownloadOpen] = useState(false)
-    const [generateMPMOpen, setGenerateMPMOpen] = useState(false)
     const [xmlMode, setXMLMode] = useState((false))
+
+    const saveMEI = async (mei: MEI) => {
+        if (!dataset) return
+
+        setMessage('Saving MEI ...')
+        setMEI(mei)
+
+        const meiRealisation =
+            realisations.find(realisation => getUrlAll(realisation, crm('P2_has_type')).includes(mer('DigitalScore')))
+
+        if (!meiRealisation) {
+            setMessage('Unable to find existing MEI realisation')
+            return
+        }
+
+        let fileUrl = getUrl(meiRealisation, RDFS.label)
+        if (!fileUrl) {
+            setMessage(`No existing MEI file linked. Creating a new one ...`)
+            fileUrl = `${datasetUrl}/${v4()}.mei`
+            const modifiedMpmExpression = setUrl(meiRealisation, RDFS.label, fileUrl)
+            const modifiedDataset = setThing(dataset, modifiedMpmExpression)
+            await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+        }
+
+        await overwriteFile(fileUrl, new Blob([mei.asString()], {
+            type: 'application/xml'
+        }), { fetch: session.fetch as any })
+
+        setMessage('MEI successfully saved')
+    }
 
     const saveMPM = async (mpm: MPM) => {
         if (!dataset) return
@@ -130,6 +146,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     }
 
                     setMEI(new MEI(await meiContents.text(), await loadVerovio(), new DOMParser()))
+                    setTimeout(() => {
+                        addGlow(d3.select('#verovio svg'))
+                    }, 5000)
                 }
                 else if (type === mer('MPM')) {
                     const fileUrl = getUrl(realisation, RDFS.label)
@@ -152,10 +171,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         setMessage(`Alignment pairs succesfully loaded.`)
                     }
                 }
-            }
-
-            if (mpm && mei) {
-                setMEI(enrichMEI(mpm, mei))
             }
         }
 
@@ -190,17 +205,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     </div>
 
                     <Paper>
-                        <IconButton
-                            disabled={!alignment}
-                            onClick={() => setGenerateMPMOpen(true)}>
-                            <AutoGraph />
-                        </IconButton>
-                        <IconButton onClick={() => setXMLMode(!xmlMode)}>
+                        <ToggleButton color='primary' value='check' selected={xmlMode} onChange={() => setXMLMode(!xmlMode)}>
                             <Code />
-                        </IconButton>
-                        <IconButton disabled={!mpm && !mei}>
-                            <Edit />
-                        </IconButton>
+                        </ToggleButton>
                         <IconButton>
                             <PlayArrow />
                         </IconButton>
@@ -216,13 +223,20 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                 <div>
                     <b>Notes:</b>
                     <p>
-                        {note}
+                        <NotesEditor notes={note[0] || ''} save={() => {
+
+                        }} />
                     </p>
                 </div>
 
                 {xmlMode ?
-                    <XMLEditor text={mpm?.serialize() || initialMPM} onSave={text => saveMPM(parseMPM(text))} />
-                    : (mei && <div dangerouslySetInnerHTML={{__html: mei.asSVG()}} />)
+                    <CodeEditor
+                        alignment={alignment}
+                        mei={mei}
+                        mpm={mpm}
+                        onSaveMEI={saveMEI}
+                        onSaveMPM={saveMPM} />
+                    : (mei && <div id='verovio' dangerouslySetInnerHTML={{ __html: mei.asSVG() }} />)
                 }
             </Paper>
 
@@ -234,13 +248,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     mei={mei}
                 />
             )}
-
-            {alignment && <GenerateMPMDialog
-                alignment={alignment}
-                open={generateMPMOpen}
-                onClose={() => setGenerateMPMOpen(false)}
-                onCreate={(_, mpm) => saveMPM(mpm)}
-            />}
         </>
     )
 }

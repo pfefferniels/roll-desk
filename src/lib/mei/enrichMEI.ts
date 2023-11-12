@@ -38,6 +38,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
 
             const dynamics_ = dynamics[i]
             const plist = determinePlist(dynamics_, mei, part)
+            if (!plist.length) return
 
             const vol = determineDynamics(+dynamics_.volume)
 
@@ -71,6 +72,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
 
         ornaments.forEach(ornament => {
             const plist = determinePlist(ornament, mei, part)
+            if (!plist.length) return
 
             let order
             if (ornament["note.order"] === 'ascending pitch') order = 'up'
@@ -94,6 +96,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
 
         tempos.forEach(tempo => {
             const plist = determinePlist(tempo, mei, part)
+            if (!plist.length) return
 
             let change = ''
             if (tempo['transition.to']) {
@@ -121,6 +124,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
             else return
 
             const plist = determinePlist(asynchrony, mei, part)
+            if (!plist.length) return
 
             mei.insertMark(plist[0], 'dir', {
                 '@': {
@@ -141,6 +145,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
             else artic = ''
 
             const plist = determinePlist(articulation, mei, part)
+            if (!plist.length) return
 
             mei.insertMark(plist[0], 'artic', {
                 '@': {

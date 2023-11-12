@@ -27,7 +27,8 @@ export class MEI {
             adjustPageWidth: true,
             pageHeight: 60000,
             svgHtml5: true,
-            svgViewBox: true
+            svgViewBox: true,
+            svgAdditionalAttribute: ['dynam@resp']
         })
         this.vrvToolkit.loadData(scoreEncoding)
 
@@ -137,7 +138,7 @@ export class MEI {
 
                 if (Number(staff.getAttribute('n')) === 1) {
                     // console.log('times for', noteEl?.getAttribute('pname'))
-                    console.log(this.vrvToolkit.getTimesForElement(on))
+                    // console.log(this.vrvToolkit.getTimesForElement(on))
                 }
 
                 result.push({
@@ -165,7 +166,8 @@ export class MEI {
     public asSVG(): string {
         this.vrvToolkit.setOptions({
             adjustPageHeight: true,
-            pageHeight: 60000
+            pageHeight: 60000,
+            svgAdditionalAttribute: ['dynam@resp']
         })
         return this.vrvToolkit.renderToSVG(1)
     }
