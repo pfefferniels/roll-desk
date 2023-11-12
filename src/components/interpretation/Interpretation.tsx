@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { CircularProgress, IconButton, Paper, Snackbar, Stack, ToggleButton } from "@mui/material"
-import { Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setThing, setUrl } from "@inrupt/solid-client"
+import Grid2 from '@mui/system/Unstable_Grid';
+import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
 import { DCTERMS, RDFS } from "@inrupt/vocab-common-rdf"
@@ -46,8 +47,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const { session } = useSession()
     const navigate = useNavigate()
 
-    const { dataset } = useDataset(interpretationUrl, { fetch: session.fetch as any })
-    const { thing: interpretation } = useThing(interpretationUrl, interpretationUrl, { fetch: session.fetch as any })
+    const [dataset, setDataset] = useState<SolidDataset>()
+    const [interpretation, setInterpretation] = useState<Thing>()
 
     const [realisations, setRealisations] = useState<Thing[]>([])
 
@@ -58,6 +59,16 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [message, setMessage] = useState<string>()
     const [downloadOpen, setDownloadOpen] = useState(false)
     const [xmlMode, setXMLMode] = useState((false))
+
+    const saveNote = async (note: string) => {
+        if (!interpretation || !dataset) return
+
+        const updatedInterpretation = setStringNoLocale(interpretation, crm('P3_has_note'), note)
+        const updatedDataset = setThing(dataset, updatedInterpretation)
+        setDataset(
+            await saveSolidDatasetAt(interpretationUrl, updatedDataset, { fetch: session.fetch as any })
+        )
+    }
 
     const saveMEI = async (mei: MEI) => {
         if (!dataset) return
@@ -79,7 +90,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
             fileUrl = `${datasetUrl}/${v4()}.mei`
             const modifiedMpmExpression = setUrl(meiRealisation, RDFS.label, fileUrl)
             const modifiedDataset = setThing(dataset, modifiedMpmExpression)
-            await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+            setDataset(
+                await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+            )
         }
 
         await overwriteFile(fileUrl, new Blob([mei.asString()], {
@@ -108,7 +121,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
             fileUrl = `${datasetUrl}/${v4()}.mpm`
             const modifiedMpmExpression = setUrl(mpmRealisation, RDFS.label, fileUrl)
             const modifiedDataset = setThing(dataset, modifiedMpmExpression)
-            await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+            setDataset(
+                await saveSolidDatasetAt(getSourceUrl(dataset)!, modifiedDataset, { fetch: session.fetch as any })
+            )
         }
 
         await overwriteFile(fileUrl, new Blob([mpm.serialize()], {
@@ -117,6 +132,27 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
         setMessage('MPM successfully saved')
     }
+
+    useEffect(() => {
+        const loadDataset = async () => {
+            const solidDataset = await getSolidDataset(interpretationUrl, { fetch: session.fetch as any })
+            setDataset(solidDataset)
+        }
+
+        loadDataset()
+    }, [session.fetch, interpretationUrl])
+
+    useEffect(() => {
+        const loadInterpretation = async () => {
+            if (!dataset) return
+            const interpretationThing = getThing(dataset, interpretationUrl)
+            if (interpretationThing) {
+                setInterpretation(interpretationThing)
+            }
+        }
+
+        loadInterpretation()
+    }, [dataset, interpretationUrl])
 
     useEffect(() => {
         const loadRealisations = async () => {
@@ -220,15 +256,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     </Paper>
                 </Stack>
 
-                <div>
-                    <b>Notes:</b>
-                    <p>
-                        <NotesEditor notes={note[0] || ''} save={() => {
-
-                        }} />
-                    </p>
-                </div>
-
                 {xmlMode ?
                     <CodeEditor
                         alignment={alignment}
@@ -236,9 +263,18 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         mpm={mpm}
                         onSaveMEI={saveMEI}
                         onSaveMPM={saveMPM} />
-                    : (mei && <div id='verovio' dangerouslySetInnerHTML={{ __html: mei.asSVG() }} />)
+                    : (
+                        <Grid2 spacing={2} container>
+                            <Grid2 xs={8}>
+                                {mei && <div id='verovio' dangerouslySetInnerHTML={{ __html: mei.asSVG() }} />}
+                            </Grid2>
+                            <Grid2 xs={4}>
+                                <NotesEditor notes={note[0] || ''} save={(content) => saveNote(content)} />
+                            </Grid2>
+                        </Grid2>
+                    )
                 }
-            </Paper>
+            </Paper >
 
             {mei && mpm && (
                 <DownloadDialog
@@ -247,7 +283,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     mpm={mpm}
                     mei={mei}
                 />
-            )}
+            )
+            }
         </>
     )
 }
