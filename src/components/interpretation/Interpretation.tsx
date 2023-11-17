@@ -235,7 +235,14 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
                     const updatedMEI = new MEI(await meiContents.text(), await loadVerovio(), new DOMParser())
                     setMEI(updatedMEI)
-                    setScoreSVG(updatedMEI.asSVG())
+                    setScoreSVG(updatedMEI.asSVG({
+                        adjustPageHeight: true,
+                        pageHeight: 60000,
+                        svgAdditionalAttribute: [
+                            'artic@resp', 'dir@resp', 'tempo@resp', 'arpeg@resp', 'hairpin@resp', 'dynam@resp', 'app@resp',
+                            'artic@corresp', 'dir@corresp', 'tempo@corresp', 'arpeg@corresp', 'hairpin@corresp', 'dynam@corresp', 'app@corresp'
+                        ],
+                    }))
                 }
                 else if (type === mer('MPM')) {
                     const fileUrl = getUrl(realisation, RDFS.label)
@@ -317,7 +324,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     : (
                         <Grid2 spacing={2} container>
                             <Grid2 xs={8}>
-                                <div id='verovio' dangerouslySetInnerHTML={{ __html: scoreSVG || 'Loading ...'}} />
+                                <div id='verovio' dangerouslySetInnerHTML={{ __html: scoreSVG || 'Loading ...' }} />
                             </Grid2>
                             <Grid2 xs={4}>
                                 <NotesEditor notes={note[0] || ''} save={(content) => saveNote(content)} />

@@ -2,6 +2,7 @@ import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { MEINote } from "."
 import { parse } from "js2xmlparser"
 import { VerovioToolkit } from "verovio/esm"
+import { VerovioOptions } from "verovio"
 
 export type TimeSignature = {
     numerator: number
@@ -163,12 +164,11 @@ export class MEI {
         return result
     }
 
-    public asSVG(): string {
-        this.vrvToolkit.setOptions({
-            adjustPageHeight: true,
-            pageHeight: 60000,
-            svgAdditionalAttribute: ['dynam@resp', 'dynam@corresp']
-        })
+    public asSVG(options?: VerovioOptions): string {
+        if (options) {
+            this.vrvToolkit.setOptions(options)
+        }
+
         return this.vrvToolkit.renderToSVG(1)
     }
 
