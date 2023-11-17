@@ -1,4 +1,4 @@
-import { Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeThing, removeUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeThing, removeUrl, saveSolidDatasetAt, setThing, setUrl } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { useEffect, useRef, useState } from "react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
@@ -179,6 +179,11 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     for (const thing of thingsAdded) {
       modifiedAlignment = addUrl(modifiedAlignment, crm('P9_consists_of'), thing)
     }
+
+    // make sure that score and MIDI file are properly attached 
+    // to the alignment
+    modifiedAlignment = setUrl(modifiedAlignment, mer('has_score'), meiUrl || '')
+    modifiedAlignment = setUrl(modifiedAlignment, mer('has_recording'), midiUrl || '')
 
     setMessage(`Updating alignment ...`)
     modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
