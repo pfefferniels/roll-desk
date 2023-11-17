@@ -3,6 +3,7 @@ import { IconButton } from "@mui/material";
 import { Save } from "@mui/icons-material";
 import CodeMirror from '@uiw/react-codemirror';
 import { xml } from '@codemirror/lang-xml';
+import "./XMLEditor.css"
 
 interface XMLEditorProps {
     text: string

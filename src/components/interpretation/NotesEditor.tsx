@@ -43,16 +43,16 @@ export const NotesEditor = ({ notes, save }: NotesEditorProps) => {
     }
 
     useEffect(() => {
-        if (!editorRef.current) return 
+        if (!editorRef.current) return
 
         const editor = editorRef.current
         editor.update(() => {
             const parser = new DOMParser();
             const dom = parser.parseFromString(notes, 'text/html');
             const nodes = $generateNodesFromDOM(editor, dom);
-            $getRoot().select()
+            $getRoot().select().deleteLine(false)
             $insertNodes(nodes, true);
-          });
+        });
     }, [notes])
 
     return (

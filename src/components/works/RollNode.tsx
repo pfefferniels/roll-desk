@@ -28,12 +28,12 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
             <circle
                 cx={x}
                 cy={y}
-                r={50}
+                r={100}
                 fill='red'
                 fillOpacity={0.2}
                 onClick={() => navigate(`/roll?url=${encodeURIComponent(asUrl(thing))}`)}
             />
-            <text x={x} y={y} fontSize={13} textAnchor="middle">{title}</text>
+            <text x={x} y={y} fontSize={23} textAnchor="middle">{title}</text>
             <foreignObject x={x - 50} y={y + 5} width={200} height={50}>
                 <div>
                     <IconButton size="small" onClick={() => setInterpretationDialogOpen(true)} >

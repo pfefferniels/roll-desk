@@ -71,7 +71,6 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
         // Define the zoom behavior
         const zoom = d3.zoom()
             .scaleExtent([0.1, 4]) // This control how much you can unzoom (x0.1) and zoom (x4)
-            // .translateExtent([[-200, -200], [width + 200, height + 200]])
             .on("zoom", ({ transform }: any) => {
                 g.attr("transform", transform)
             }) as any
@@ -87,8 +86,8 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force('collide', d3.forceCollide(d => {
                 const datum = d as Node
-                if (datum.type === 'roll') return 50
-                else if (datum.type === 'interpretation') return 60
+                if (datum.type === 'roll') return 100
+                else if (datum.type === 'interpretation') return 80
                 return 0 
             }))
             .on('end', () => setNodes(nodes_))

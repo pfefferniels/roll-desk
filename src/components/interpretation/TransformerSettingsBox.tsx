@@ -1,13 +1,6 @@
 import { Box, MenuItem, Select, TextField, Typography } from "@mui/material"
 import { useEffect, useState } from "react"
-import { BeatLengthBasis } from "mpmify"
-
-export interface TransformerSettings {
-    minimumArpeggioSize: number
-    beatLength: BeatLengthBasis
-    rubatoLength: BeatLengthBasis
-    epsilon: number
-}
+import { BeatLengthBasis, TempoApproximation, TransformerSettings } from "mpmify"
 
 interface TransformerSettingsProps {
     onChange: (newSettings: TransformerSettings) => void
@@ -18,18 +11,33 @@ export const TransformerSettingsBox = ({ onChange }: TransformerSettingsProps) =
     const [beatLength, setBeatLength] = useState<BeatLengthBasis>('denominator')
     const [epsilon, setEpsilon] = useState(2)
     const [rubatoLength, setRubatoLength] = useState<BeatLengthBasis>('everything')
+    const [tempoApproximation, setTempoApproximation] = useState<TempoApproximation>('constant')
 
     useEffect(() => {
         onChange({
+            tempoApproximation,
             minimumArpeggioSize,
             beatLength,
             epsilon,
             rubatoLength
         })
-    }, [onChange, minimumArpeggioSize, beatLength, epsilon, rubatoLength])
+    }, [onChange, minimumArpeggioSize, beatLength, epsilon, rubatoLength, tempoApproximation])
 
     return (
         <>
+            <Box>
+                <Typography>How should the tempo be approximated?</Typography>
+                <Select
+                    sx={{ m: 1 }}
+                    size='small'
+                    label='Tempo Approximation'
+                    value={tempoApproximation}
+                    onChange={(e) => setTempoApproximation(e.target.value as TempoApproximation)}>
+                    <MenuItem value='constant'>Constant</MenuItem>
+                    <MenuItem value='linear'>Linear</MenuItem>
+                    <MenuItem value='curved'>Curved</MenuItem>
+                </Select>
+            </Box>
             <Box>
                 <Typography>How many notes must an arpeggio at least contain?</Typography>
                 <TextField

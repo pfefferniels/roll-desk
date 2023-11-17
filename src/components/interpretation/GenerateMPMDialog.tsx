@@ -3,14 +3,14 @@ import { useSession } from "@inrupt/solid-ui-react"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem, Stack, Alert, Snackbar } from "@mui/material"
 import { useState } from "react"
-import { crm, mer, oa, crmdig } from "../../helpers/namespaces"
+import { crm, mer, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MEI } from "../../lib/mei"
 import { asPianoRoll } from "../../lib/midi/asPianoRoll"
 import { Save } from "@mui/icons-material"
-import { TransformerSettings, TransformerSettingsBox } from "./TransformerSettingsBox"
-import { MPM, getDefaultPipeline } from "mpmify"
+import { TransformerSettingsBox } from "./TransformerSettingsBox"
+import { MPM, TransformerSettings, getDefaultPipeline } from "mpmify"
 import { asMSM } from "../../lib/mei/asMSM"
 
 interface GenerateMPMDialogProps {
@@ -26,6 +26,7 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
     const [message, setMessage] = useState<string>()
     const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
     const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
+        tempoApproximation: 'linear',
         minimumArpeggioSize: 2,
         beatLength: 'denominator',
         epsilon: 3,
@@ -39,7 +40,7 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
         const midiUrl = getUrl(alignment, mer('has_recording'))
         console.log(meiUrl, midiUrl)
         if (!meiUrl || !midiUrl) {
-            setMessage(`Invalid alignment provided.`)
+            setMessage(`Invalid alignment provided: ${asUrl(alignment)}`)
             return
         }
 

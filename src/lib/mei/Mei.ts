@@ -28,7 +28,7 @@ export class MEI {
             pageHeight: 60000,
             svgHtml5: true,
             svgViewBox: true,
-            svgAdditionalAttribute: ['dynam@resp']
+            svgAdditionalAttribute: ['dynam@resp', 'dynam@corresp']
         })
         this.vrvToolkit.loadData(scoreEncoding)
 
@@ -167,7 +167,7 @@ export class MEI {
         this.vrvToolkit.setOptions({
             adjustPageHeight: true,
             pageHeight: 60000,
-            svgAdditionalAttribute: ['dynam@resp']
+            svgAdditionalAttribute: ['dynam@resp', 'dynam@corresp']
         })
         return this.vrvToolkit.renderToSVG(1)
     }

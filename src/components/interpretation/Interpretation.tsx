@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { CircularProgress, IconButton, Paper, Snackbar, Stack, ToggleButton } from "@mui/material"
 import Grid2 from '@mui/system/Unstable_Grid';
 import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
-import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
+import { useSession } from "@inrupt/solid-ui-react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
 import { DCTERMS, RDFS } from "@inrupt/vocab-common-rdf"
 import { MEI } from "../../lib/mei"
@@ -16,6 +16,8 @@ import { v4 } from "uuid"
 import { useNavigate } from "react-router-dom"
 import { NotesEditor } from "./NotesEditor"
 import { CodeEditor } from "./CodeEditor"
+import { Overlay } from "./Overlay";
+import { asMSM } from "../../lib/mei/asMSM";
 
 const addGlow = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
     console.log('adding glow to svg', svg)
@@ -57,8 +59,22 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [alignment, setAlignment] = useState<Thing>()
 
     const [message, setMessage] = useState<string>()
+    const [hoveredInstruction, setHoveredInstruction] = useState<{ meiEl: Element, mpmEl: string } | null>(null)
     const [downloadOpen, setDownloadOpen] = useState(false)
-    const [xmlMode, setXMLMode] = useState((false))
+    const [xmlMode, setXMLMode] = useState(false)
+    const [scoreSVG, setScoreSVG] = useState<string>()
+
+    const getInstructionInfo = (mpmId: string) => {
+        if (!mpm) return
+        const mpmFragment = new DOMParser().parseFromString(mpm.serialize(), 'application/xml')
+        const mpmEl = mpmFragment.querySelector(`[*|id='${mpmId.slice(1)}']`)
+        if (!mpmEl) return
+        return new XMLSerializer()
+            .serializeToString(mpmEl)
+            .replace(/xmlns="[^"]+"/, '')
+            .replace(/xml:id="[^"]+"/, '')
+            .replace(/type="[^"]+"/, '')
+    }
 
     const saveNote = async (note: string) => {
         if (!interpretation || !dataset) return
@@ -133,6 +149,42 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         setMessage('MPM successfully saved')
     }
 
+    const play = async () => {
+        if (!mpm || !mei) return
+
+        const request = {
+            mpm: mpm.serialize(),
+            msm: asMSM(mei).serialize()
+        }
+
+        console.log('request:', request)
+
+        const response = await fetch(`http://localhost:8080/convert`, {
+            method: 'POST',
+            body: JSON.stringify(request)
+        })
+
+        console.log(await response.text())
+    }
+
+    useEffect(() => {
+        setTimeout(() => {
+            addGlow(d3.select('#verovio svg'))
+            document.querySelectorAll('[data-corresp]').forEach(meiEl => {
+                console.log(meiEl)
+                meiEl.addEventListener('mouseover', () => {
+                    setHoveredInstruction({
+                        meiEl,
+                        mpmEl: meiEl.getAttribute('data-corresp') || ''
+                    })
+                })
+                meiEl.addEventListener('mouseleave', () => {
+                    setHoveredInstruction(null)
+                })
+            })
+        }, 1000)
+    }, [scoreSVG])
+
     useEffect(() => {
         const loadDataset = async () => {
             const solidDataset = await getSolidDataset(interpretationUrl, { fetch: session.fetch as any })
@@ -181,10 +233,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         continue
                     }
 
-                    setMEI(new MEI(await meiContents.text(), await loadVerovio(), new DOMParser()))
-                    setTimeout(() => {
-                        addGlow(d3.select('#verovio svg'))
-                    }, 5000)
+                    const updatedMEI = new MEI(await meiContents.text(), await loadVerovio(), new DOMParser())
+                    setMEI(updatedMEI)
+                    setScoreSVG(updatedMEI.asSVG())
                 }
                 else if (type === mer('MPM')) {
                     const fileUrl = getUrl(realisation, RDFS.label)
@@ -244,7 +295,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         <ToggleButton color='primary' value='check' selected={xmlMode} onChange={() => setXMLMode(!xmlMode)}>
                             <Code />
                         </ToggleButton>
-                        <IconButton>
+                        <IconButton onClick={play}>
                             <PlayArrow />
                         </IconButton>
                         <IconButton onClick={() => setDownloadOpen(true)}>
@@ -266,7 +317,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     : (
                         <Grid2 spacing={2} container>
                             <Grid2 xs={8}>
-                                {mei && <div id='verovio' dangerouslySetInnerHTML={{ __html: mei.asSVG() }} />}
+                                <div id='verovio' dangerouslySetInnerHTML={{ __html: scoreSVG || 'Loading ...'}} />
                             </Grid2>
                             <Grid2 xs={4}>
                                 <NotesEditor notes={note[0] || ''} save={(content) => saveNote(content)} />
@@ -274,7 +325,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         </Grid2>
                     )
                 }
-            </Paper >
+            </Paper>
 
             {mei && mpm && (
                 <DownloadDialog
@@ -283,8 +334,15 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     mpm={mpm}
                     mei={mei}
                 />
-            )
-            }
+            )}
+
+            <Overlay anchorEl={hoveredInstruction?.meiEl}>
+                <div style={{ margin: '1rem' }}>
+                    <code>
+                        {hoveredInstruction && getInstructionInfo(hoveredInstruction.mpmEl)}
+                    </code>
+                </div>
+            </Overlay>
         </>
     )
 }

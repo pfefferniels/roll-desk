@@ -19,13 +19,13 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
             <circle
                 cx={x}
                 cy={y}
-                r={60}
+                r={80}
                 fill='orange'
                 fillOpacity={0.5}
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/interpretation?url=${encodeURIComponent(asUrl(thing))}`)}
             />
-            <text x={x} y={y} fontSize={13} textAnchor="middle">{title}</text>
+            <text x={x} y={y} fontSize={16} textAnchor="middle">{title}</text>
             <foreignObject x={x - 50} y={y + 5} width={100} height={50}>
                 <div>
                     <IconButton size="small" onClick={() => navigate(`/align?url=${encodeURIComponent(asUrl(thing))}`)}

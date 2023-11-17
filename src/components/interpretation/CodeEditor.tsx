@@ -40,7 +40,7 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
         <>
             <Grid2 spacing={2} container>
                 <Grid2 xs={12}>
-                    <Stack spacing={1} direction='row'>
+                    <Stack sx={{ mt: 1}} spacing={1} direction='row'>
                         <Button
                             variant='outlined'
                             size='small'
@@ -72,7 +72,10 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
                 <Grid2 xs={6}>
                     <XMLEditor
                         text={mei?.asString() || ''}
-                        onSave={text => onSaveMEI(new MEI(text, loadVerovio(), new DOMParser()))} />
+                        onSave={async (text) => {
+                            const verovio = await loadVerovio()
+                            onSaveMEI(new MEI(text, verovio, new DOMParser()))
+                        }} />
                 </Grid2>
             </Grid2>
 
