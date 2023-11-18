@@ -10,7 +10,7 @@ import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MPM, MSM, parseMPM } from "mpmify"
 import * as d3 from 'd3';
 import { DownloadDialog } from "./DownloadDialog"
-import { ArrowBack, Code, FileDownload, PlayArrow, Settings } from "@mui/icons-material"
+import { ArrowBack, Code, FileDownload, Pause, PlayArrow, Settings } from "@mui/icons-material"
 import { datasetUrl } from "../../helpers/datasetUrl"
 import { v4 } from "uuid"
 import { useNavigate } from "react-router-dom"
@@ -67,6 +67,10 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [downloadOpen, setDownloadOpen] = useState(false)
     const [xmlMode, setXMLMode] = useState(false)
     const [scoreSVG, setScoreSVG] = useState<string>()
+
+    const [grandPiano, setGrandPiano] = useState<SplendidGrandPiano>()
+    const [playing, setPlaying] = useState(false)
+    const [midiPlayer, setMidiPlayer] = useState<MIDIPlayer>()
 
     const getInstructionInfo = (mpmId: string) => {
         if (!mpm) return
@@ -153,7 +157,23 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         setMessage('MPM successfully saved')
     }
 
+    useEffect(() => {
+        const loadPiano = async () => {
+            const context = new AudioContext();
+            const piano = await new SplendidGrandPiano(context).load;
+            piano.output.addEffect("reverb", new Reverb(context), 0.2);
+            setGrandPiano(piano)
+        }
+
+        loadPiano()
+    }, [])
+
     const play = async () => {
+        if (!grandPiano) {
+            setMessage(`Grand piano not yet ready.`)
+            return
+        }
+
         if (!mpm || !msm) return
 
         const request = {
@@ -161,25 +181,32 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
             msm: msm.serialize(false)
         }
 
+        setMessage(`Converting to MIDI ...`)
         const response = await fetch(`http://localhost:8080/convert`, {
             method: 'POST',
             body: JSON.stringify(request)
         })
 
-        const context = new AudioContext();
-        const piano = await new SplendidGrandPiano(context).load;
-        piano.output.addEffect("reverb", new Reverb(context), 0.2);
         const midiBuffer = await response.arrayBuffer()
         const midiFile = read(midiBuffer)
+        setMessage(`Done converting`)
+
+        setPlaying(true)
         const midiPlayer = new MIDIPlayer(midiFile, 44000, (e: any) => {
             if (e.midi.subtype === 'noteOn') {
-                piano.start(e.midi.noteNumber);
+                grandPiano.start(e.midi.noteNumber);
             }
             else if (e.midi.subtype === 'noteOff') {
-                piano.stop(e.midi.noteNumber)
+                grandPiano.stop(e.midi.noteNumber)
             }
         })
         midiPlayer.resume()
+        setMidiPlayer(midiPlayer)
+    }
+
+    const pause = () => {
+        midiPlayer?.pause()
+        setPlaying(false)
     }
 
     useEffect(() => {
@@ -323,8 +350,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         <ToggleButton color='primary' value='check' selected={xmlMode} onChange={() => setXMLMode(!xmlMode)}>
                             <Code />
                         </ToggleButton>
-                        <IconButton onClick={play}>
-                            <PlayArrow />
+                        <IconButton onClick={() => playing ? pause() : play()}>
+                            {playing ? <Pause /> : <PlayArrow />}
                         </IconButton>
                         <IconButton onClick={() => setDownloadOpen(true)}>
                             <FileDownload />
