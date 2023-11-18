@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react"
 import { CircularProgress, IconButton, Paper, Snackbar, Stack, ToggleButton } from "@mui/material"
 import Grid2 from '@mui/system/Unstable_Grid';
-import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
+import { SolidDataset, Thing, asUrl, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
 import { useSession } from "@inrupt/solid-ui-react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
 import { DCTERMS, RDFS } from "@inrupt/vocab-common-rdf"
 import { MEI } from "../../lib/mei"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
-import { MPM, parseMPM } from "mpmify"
+import { MPM, MSM, parseMPM } from "mpmify"
 import * as d3 from 'd3';
 import { DownloadDialog } from "./DownloadDialog"
 import { ArrowBack, Code, FileDownload, PlayArrow, Settings } from "@mui/icons-material"
@@ -18,6 +18,11 @@ import { NotesEditor } from "./NotesEditor"
 import { CodeEditor } from "./CodeEditor"
 import { Overlay } from "./Overlay";
 import { asMSM } from "../../lib/mei/asMSM";
+import { urlAsLabel } from "../../helpers/urlAsLabel";
+import { asPianoRoll } from "../../lib/midi/asPianoRoll";
+import { Reverb, SplendidGrandPiano } from "smplr";
+import { read } from "midifile-ts";
+import { MIDIPlayer } from "../../lib/midi-player";
 
 const addGlow = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
     console.log('adding glow to svg', svg)
@@ -56,6 +61,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
     const [mpm, setMPM] = useState<MPM>()
     const [mei, setMEI] = useState<MEI>()
+    const [msm, setMSM] = useState<MSM>()
     const [alignment, setAlignment] = useState<Thing>()
 
     const [message, setMessage] = useState<string>()
@@ -150,21 +156,34 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     }
 
     const play = async () => {
-        if (!mpm || !mei) return
+        if (!mpm || !msm) return
 
         const request = {
             mpm: mpm.serialize(),
-            msm: asMSM(mei).serialize()
+            msm: msm.serialize(false)
         }
 
-        console.log('request:', request)
+        console.log(request.msm)
 
         const response = await fetch(`http://localhost:8080/convert`, {
             method: 'POST',
             body: JSON.stringify(request)
         })
 
-        console.log(await response.text())
+        const context = new AudioContext();
+        const piano = await new SplendidGrandPiano(context).load;
+        piano.output.addEffect("reverb", new Reverb(context), 0.2);
+        const midiBuffer = await response.arrayBuffer()
+        const midiFile = read(midiBuffer)
+        const midiPlayer = new MIDIPlayer(midiFile, 44000, (e: any) => {
+            if (e.midi.subtype === 'noteOn') {
+                piano.start(e.midi.noteNumber);
+            }
+            else if (e.midi.subtype === 'noteOff') {
+                piano.stop(e.midi.noteNumber)
+            }
+        })
+        midiPlayer.resume()
     }
 
     useEffect(() => {
@@ -182,7 +201,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     setHoveredInstruction(null)
                 })
             })
-        }, 1000)
+        }, 900)
     }, [scoreSVG])
 
     useEffect(() => {
@@ -205,6 +224,65 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
         loadInterpretation()
     }, [dataset, interpretationUrl])
+
+    useEffect(() => {
+        if (!alignment || !mei) return
+
+        // Once both, alignment and MEI are present
+        // we have everything we need to prepare the MSM
+        // which is required for playback and MPM generation
+        const loadMSM = async () => {
+            setMessage(`Loading alignments`)
+            const alignmentDataset = await getSolidDataset(asUrl(alignment), { fetch: session.fetch as any })
+            if (!alignmentDataset) {
+                setMessage(`Failed loading Solid Dataset with alignment pairs for ${asUrl(alignment)}`)
+                return
+            }
+
+            setMessage(`Loading MIDI`)
+            const midiUrl = getUrl(alignment, mer('has_recording'))
+            if (!midiUrl) {
+                setMessage(`No valid MIDI attached to alignment ${asUrl(alignment)}`)
+                return
+            }
+
+            const midiDataset = await getSolidDataset(midiUrl || '', { fetch: session.fetch as any })
+            if (!midiDataset) {
+                setMessage(`Failed loading MIDI dataset ${midiUrl}`)
+                return
+            }
+
+            const midiThing = getThing(midiDataset, midiUrl)
+            if (!midiThing) return
+
+            const pr = asPianoRoll(midiThing, midiDataset)
+            if (!pr) return
+
+            const pairUrls = getUrlAll(alignment, crm('P9_consists_of'))
+            setMessage(`${pairUrls.length} pairs loaded successfully`)
+
+            const msm = asMSM(mei)
+            for (const pairUrl of pairUrls) {
+                const pair = getThing(alignmentDataset, pairUrl)
+                if (!pair) continue
+
+                const scoreNoteId = urlAsLabel(getUrl(pair!, mer('has_score_note')))
+                const midiNoteUrl = getUrl(pair!, mer('has_midi_note'))
+                if (!scoreNoteId || !midiNoteUrl) continue
+
+                const midiNote = pr.events.find(event => event.id === midiNoteUrl)
+                console.log('adding', midiNote, 'to', scoreNoteId)
+                if (!midiNote) continue
+
+                msm.addPerformanceInfo(scoreNoteId, midiNote)
+            }
+
+            msm.allNotes = msm.allNotes.filter(note => note['midi.pitch'] !== undefined)
+            setMSM(msm)
+        }
+
+        loadMSM()
+    }, [alignment, mei, session.fetch])
 
     useEffect(() => {
         const loadRealisations = async () => {
