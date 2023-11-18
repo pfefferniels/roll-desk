@@ -9,7 +9,8 @@ export const asMSM = (mei: MEI) => {
         'duration': MEI.qstampToTstamp(note.duration),
         'pitchname': note.pname!,
         'octave': note.octave!,
-        'accidentals': note.accid!
+        'accidentals': note.accid!,
+        'midi.pitch': note.pnum
     } as any))
     return new MSM(msmNotes, mei.timeSignature())
 }
