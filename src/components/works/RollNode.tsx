@@ -1,7 +1,7 @@
 import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
-import { Add, Link, UploadFile } from "@mui/icons-material"
+import { Add, Delete, Link, UploadFile } from "@mui/icons-material"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { RollCopyDialog } from "./dialogs/RollCopyDialog"
@@ -21,6 +21,8 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
 
     const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
 
+    const toolboxWidth = 250
+
     return (
         <g
             className='rollNode'
@@ -34,8 +36,8 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
                 onClick={() => navigate(`/roll?url=${encodeURIComponent(asUrl(thing))}`)}
             />
             <text x={x} y={y} fontSize={23} textAnchor="middle">{title}</text>
-            <foreignObject x={x - 50} y={y + 5} width={200} height={50}>
-                <div>
+            <foreignObject x={x - (toolboxWidth / 2)} y={y + 5} width={toolboxWidth} height={50}>
+                <div style={{ textAlign: 'center' }}>
                     <IconButton size="small" onClick={() => setInterpretationDialogOpen(true)} >
                         <Add />
                     </IconButton>
@@ -44,8 +46,12 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
                         <UploadFile />
                     </IconButton>
 
-                    <IconButton onClick={() => window.open(asUrl(thing))}>
+                    <IconButton size='small' onClick={() => window.open(asUrl(thing))}>
                         <Link />
+                    </IconButton>
+
+                    <IconButton size='small'>
+                        <Delete />
                     </IconButton>
                 </div>
 
