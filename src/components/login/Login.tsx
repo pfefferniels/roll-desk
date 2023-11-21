@@ -27,20 +27,19 @@ export function LoginForm() {
     const [podProviderDialogOpen, setPodProviderDialogOpen] = useState(false)
 
     return (
-        <div style={{ width: '15%', margin: '1rem', position: 'absolute', top: '1rem', right: '1rem' }}>
+        <Paper sx={{ margin: '1rem', position: 'absolute', top: '1rem', right: '1rem' }}>
             {session.info.isLoggedIn ?
-                <Paper>
-                    <Stack direction='row'>
-                        <LogoutButton>
-                            <Tooltip title='Logout'>
-                                <IconButton>
-                                    <Logout />
-                                </IconButton>
-                            </Tooltip>
-                        </LogoutButton>
-                        <Profile />
-                    </Stack>
-                </Paper> :
+                <Stack direction='row'>
+                    <LogoutButton>
+                        <Tooltip title='Logout'>
+                            <IconButton>
+                                <Logout />
+                            </IconButton>
+                        </Tooltip>
+                    </LogoutButton>
+                    <Profile />
+                </Stack>
+                :
                 <>
                     <Stack direction='row'>
                         <Tooltip title='Change Pod Provider'>
@@ -69,6 +68,6 @@ export function LoginForm() {
                         }} />
                 </>
             }
-        </div>
+        </Paper>
     )
 }
