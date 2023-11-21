@@ -27,7 +27,7 @@ export function LoginForm() {
     const [podProviderDialogOpen, setPodProviderDialogOpen] = useState(false)
 
     return (
-        <div style={{ width: '15%', margin: '1rem' }}>
+        <div style={{ width: '15%', margin: '1rem', position: 'absolute', top: '1rem', right: '1rem' }}>
             {session.info.isLoggedIn ?
                 <Paper>
                     <Stack direction='row'>
