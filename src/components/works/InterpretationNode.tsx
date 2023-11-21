@@ -1,7 +1,7 @@
 import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
-import { Edit, Link } from "@mui/icons-material"
+import { AlignHorizontalCenter, Link } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 
 interface InterpretationNodeProps {
@@ -30,9 +30,8 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
                 <div>
                     <IconButton size="small" onClick={() => navigate(`/align?url=${encodeURIComponent(asUrl(thing))}`)}
                     >
-                        <Edit />
+                        <AlignHorizontalCenter />
                     </IconButton>
-
                     <IconButton size="small" onClick={() => window.open(asUrl(thing))}>
                         <Link />
                     </IconButton>
