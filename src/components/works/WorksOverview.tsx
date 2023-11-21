@@ -3,12 +3,14 @@ import WorksGraph from './WorksGraph2';
 import { SolidDataset, getSolidDataset } from '@inrupt/solid-client';
 import { DatasetContext, useSession } from '@inrupt/solid-ui-react';
 import RollDialog from './dialogs/RollDialog';
-import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material';
+import { SpeedDial, SpeedDialIcon, SpeedDialAction, Snackbar } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { datasetUrl } from '../../helpers/datasetUrl';
+import { useSnackbar } from '../../providers/SnackbarContext';
 
 const WorksOverview: React.FC = () => {
   const { session } = useSession()
+  const { setMessage } = useSnackbar()
 
   const [dataset, setDataset] = useState<SolidDataset>();
   const [openAddWorkDialog, setOpenAddWorkDialog] = useState(false);
@@ -16,8 +18,10 @@ const WorksOverview: React.FC = () => {
   useEffect(() => {
     const fetchThings = async () => {
       try {
+        setMessage(`Loading dataset at ${datasetUrl}`)
         const solidDataset = await getSolidDataset(`${datasetUrl}/works.ttl`, { fetch: session.fetch as any });
         setDataset(solidDataset)
+        setMessage('Done loading')
       } catch (error) {
         console.error('Error fetching Things:', error);
       }

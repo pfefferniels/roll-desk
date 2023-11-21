@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CircularProgress, IconButton, Paper, Snackbar, Stack, ToggleButton } from "@mui/material"
+import { CircularProgress, IconButton, Paper, Stack, ToggleButton } from "@mui/material"
 import Grid2 from '@mui/system/Unstable_Grid';
 import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
 import { useSession } from "@inrupt/solid-ui-react"
@@ -21,6 +21,7 @@ import { asMSM } from "../../lib/mei/asMSM";
 import { Reverb, SplendidGrandPiano } from "smplr";
 import { read } from "midifile-ts";
 import { MIDIPlayer } from "../../lib/midi-player";
+import { useSnackbar } from "../../providers/SnackbarContext";
 
 const addGlow = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
     console.log('adding glow to svg', svg)
@@ -51,6 +52,7 @@ interface InterpretationProps {
 export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const { session } = useSession()
     const navigate = useNavigate()
+    const { setMessage } = useSnackbar()
 
     const [dataset, setDataset] = useState<SolidDataset>()
     const [interpretation, setInterpretation] = useState<Thing>()
@@ -62,7 +64,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [msm, setMSM] = useState<MSM>()
     const [alignment, setAlignment] = useState<Thing>()
 
-    const [message, setMessage] = useState<string>()
     const [hoveredInstruction, setHoveredInstruction] = useState<{ meiEl: Element, mpmEl: string } | null>(null)
     const [downloadOpen, setDownloadOpen] = useState(false)
     const [xmlMode, setXMLMode] = useState(false)
@@ -330,11 +331,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
     return (
         <>
-            <Snackbar
-                open={!!message}
-                onClose={() => setMessage(undefined)}
-                message={message} />
-
             <IconButton onClick={() => navigate('/works')}>
                 <ArrowBack />
             </IconButton>

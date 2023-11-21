@@ -7,6 +7,7 @@ import './WorksGraph.css';
 import { urlAsLabel } from '../../helpers/urlAsLabel';
 import { RollNode } from './RollNode';
 import { InterpretationNode } from './InterpretationNode';
+import { useSnackbar } from '../../providers/SnackbarContext';
 
 export interface Node extends d3.SimulationNodeDatum {
     type: 'interpretation' | 'roll'
@@ -21,6 +22,7 @@ interface WorksGraphProps {
 }
 
 const WorksGraph: React.FC<WorksGraphProps> = () => {
+    const { setMessage } = useSnackbar()
     const { solidDataset: worksDataset } = useContext(DatasetContext)
 
     const [nodes, setNodes] = useState<Node[]>([])
@@ -64,7 +66,6 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                         links_.push({ source, target, relationship })
                     }
                 }
-
             }
         }
 
@@ -77,12 +78,13 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
 
         svg.call(zoom)
 
+        setMessage('Rendering graph ...')
         d3.forceSimulation(nodes_ as d3.SimulationNodeDatum[])
             .force("link", d3.forceLink()
                 .id(function (d) { return d.index!; })
                 .links(links_)
             )
-            .force("charge", d3.forceManyBody().strength(-5))
+            .force("charge", d3.forceManyBody().strength(-1))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force('collide', d3.forceCollide(d => {
                 const datum = d as Node
@@ -90,8 +92,11 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                 else if (datum.type === 'interpretation') return 80
                 return 0 
             }))
-            .on('end', () => setNodes(nodes_))
-    }, [worksDataset, width, height])
+            .on('end', () => {
+                setMessage('Done rendering.')
+                setNodes(nodes_)
+            })
+    }, [worksDataset, width, height, setMessage])
 
     return (
         <div>

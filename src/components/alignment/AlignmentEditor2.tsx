@@ -6,11 +6,12 @@ import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
 import { ScoreViewer } from "../score/ScoreViewer"
 import MidiViewer from "../midi-ld/MidiViewer"
 import { PairContainer } from "./PairContainer"
-import { Button, IconButton, Paper, Snackbar } from "@mui/material"
+import { Button, IconButton, Paper } from "@mui/material"
 import { ArrowBack, Edit } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 import { PianoRoll, ScoreFollower } from "alignmenttool"
 import { MEI } from "../../lib/mei"
+import { useSnackbar } from "../../providers/SnackbarContext"
 
 interface AlignmentEditorProps {
   interpretationUrl: string
@@ -19,6 +20,7 @@ interface AlignmentEditorProps {
 export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => {
   const session = useSession()
   const navigate = useNavigate()
+  const { setMessage } = useSnackbar()
 
   const { dataset } = useDataset(interpretationUrl, { fetch: session.fetch as any })
   const { thing: interpretation } = useThing(interpretationUrl, interpretationUrl, { fetch: session.fetch as any })
@@ -37,7 +39,6 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
 
   const [rollDone, setRollDone] = useState(false)
   const [scoreDone, setScoreDone] = useState(false)
-  const [message, setMessage] = useState<string>()
 
   const parentRef = useRef<SVGSVGElement>(null)
 
@@ -89,14 +90,23 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     }
 
     loadData()
-  }, [interpretation, dataset, session.fetch])
+  }, [interpretation, dataset, session.fetch, setMessage])
 
   useEffect(() => {
-    if (!dataset || !alignment || !selectedMIDINote || !selectedScoreNote) return
+    if (!dataset || !selectedMIDINote || !selectedScoreNote) return
 
     setMessage(`creating new pair with ${selectedMIDINote} and ${selectedScoreNote}`)
 
     const savePair = async () => {
+      let updatedAlignment = alignment
+      if (!updatedAlignment) {
+        setMessage(`Creating new alignment object`)
+        updatedAlignment = buildThing()
+          .setUrl(mer('has_score'), meiUrl || '')
+          .setUrl(mer('has_recording'), midiUrl || '')
+          .build()
+      }
+
       setMessage(`Saving pair ...`)
       const newPair = buildThing()
         .addUrl(RDF.type, mer('AlignmentPair'))
@@ -107,10 +117,8 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       setPairs(prev => [...prev, newPair])
       console.log('add to pairs', newPair)
 
-      const updatedAlignment = buildThing(alignment)
+      updatedAlignment = buildThing(updatedAlignment)
         .addUrl(crm('P9_consists_of'), newPair)
-        .setUrl(mer('has_score'), meiUrl || '')
-        .setUrl(mer('has_recording'), midiUrl || '')
         .build()
 
       let updatedDataset = setThing(dataset, newPair)
@@ -123,7 +131,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     }
 
     savePair()
-  }, [selectedMIDINote, selectedScoreNote, alignment, dataset, meiUrl, midiUrl, session.fetch])
+  }, [selectedMIDINote, selectedScoreNote, alignment, dataset, meiUrl, midiUrl, session.fetch, setMessage])
 
   const performAlignment = async () => {
     if (!mei || !pianoRoll) return
@@ -195,8 +203,6 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
 
   return (
     <>
-      <Snackbar message={message} open={!!message} />
-
       <Paper sx={{ p: 1, width: 'fit-content', ml: 1 }}>
         <IconButton onClick={() => navigate('/works')}>
           <ArrowBack />

@@ -96,7 +96,7 @@ export const ScoreViewer = ({ url, mei: meiProp, landscape, onSelect, onDone, as
           svg.attr('transform', `translate(${x}, 0) scale(${zoom * 2}, ${zoom * 2})`)
         })
       svg.call(zoom as any);
-    }, 1000)
+    }, 3000)
     return () => clearTimeout(timer)
   }, [svg, onSelect, mei, onDone, vrvToolkit])
 

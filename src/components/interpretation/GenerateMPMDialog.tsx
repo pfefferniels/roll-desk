@@ -1,7 +1,7 @@
 import { Thing, getUrl, getThing, getFile, getSolidDataset, getUrlAll, buildThing, asUrl } from "@inrupt/solid-client"
 import { useSession } from "@inrupt/solid-ui-react"
 import { RDF } from "@inrupt/vocab-common-rdf"
-import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem, Stack, Alert, Snackbar } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, Box, Typography, DialogActions, Button, CircularProgress, Select, MenuItem, Stack, Alert } from "@mui/material"
 import { useState } from "react"
 import { crm, mer, crmdig } from "../../helpers/namespaces"
 import { urlAsLabel } from "../../helpers/urlAsLabel"
@@ -12,6 +12,7 @@ import { Save } from "@mui/icons-material"
 import { TransformerSettingsBox } from "./TransformerSettingsBox"
 import { MPM, TransformerSettings, getDefaultPipeline } from "mpmify"
 import { asMSM } from "../../lib/mei/asMSM"
+import { useSnackbar } from "../../providers/SnackbarContext"
 
 interface GenerateMPMDialogProps {
     alignment: Thing
@@ -22,8 +23,8 @@ interface GenerateMPMDialogProps {
 
 export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: GenerateMPMDialogProps) => {
     const { session } = useSession()
+    const { setMessage } = useSnackbar()
 
-    const [message, setMessage] = useState<string>()
     const [defaultPipeline, setDefaultPipeline] = useState<'melodic-texture' | 'chordal-texture'>('melodic-texture')
     const [transformerSettings, setTransformerSettings] = useState<TransformerSettings>({
         tempoApproximation: 'linear',
@@ -115,11 +116,8 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
         onCreate(creationEvent.build(), mpm)
     }
 
-    const workInProgress = message !== undefined && message !== 'done'
-
     return (
         <>
-            <Snackbar message={message} open={!!message} />
             <Dialog open={open} onClose={onClose}>
                 <DialogTitle>Generate MPM</DialogTitle>
                 <DialogContent>
@@ -142,9 +140,7 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
                 <DialogActions>
                     <Button onClick={onClose}>Cancel</Button>
                     <Button
-                        startIcon={workInProgress
-                            ? <CircularProgress />
-                            : <Save />}
+                        startIcon={<Save />}
                         onClick={async () => {
                             await save()
                             onClose()
