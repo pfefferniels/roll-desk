@@ -110,7 +110,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
                     startid: plist[0]
                 },
                 rend: {
-                    '#': `${tempo.bpm} ${change}`
+                    '#': `${tempo.bpm.toFixed(0)} ${change}`
                 }
             })
         })
