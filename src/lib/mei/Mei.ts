@@ -103,6 +103,14 @@ export class MEI {
         }
     }
 
+    removeAllMarks() {
+        const marks = this.scoreDOM.querySelectorAll('slur, artic, dir, tempo, arpeg, hairpin, dynam')
+        marks.forEach(mark => {
+            mark.remove()
+        })
+        this.update()
+    }
+
     update() {
         // using getMEI() here since it adds `xml:id` to all elements
         const scoreEncoding = new XMLSerializer().serializeToString(this.scoreDOM)

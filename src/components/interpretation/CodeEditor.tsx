@@ -36,6 +36,12 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
     const [generateMPMOpen, setGenerateMPMOpen] = useState(false)
     const [enrichmentDialogOpen, setEnrichmentDialogOpen] = useState(false)
 
+    const removePerformanceInstructions = () => {
+        if (!mei) return
+        mei?.removeAllMarks()
+        onSaveMEI(mei)
+    }
+
     return (
         <>
             <Grid2 spacing={2} container>
@@ -52,8 +58,9 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
                         <Button
                             variant='outlined'
                             size='small'
+                            onClick={removePerformanceInstructions}
                             startIcon={<Delete />}>
-                            Remove performance markup from MEI
+                            Remove performance instructions from MEI
                         </Button>
                         <Button
                             variant='outlined'
