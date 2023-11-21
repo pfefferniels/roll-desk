@@ -1,11 +1,12 @@
-import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
+import { Thing, asUrl, getStringNoLocale, removeThing, saveSolidDatasetAt } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
 import { Add, Delete, Link, UploadFile } from "@mui/icons-material"
-import { useState } from "react"
+import { useContext, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { RollCopyDialog } from "./dialogs/RollCopyDialog"
 import { InterpretationDialog } from "./dialogs/InterpretationDialog"
+import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
 
 interface RollNodeProps {
     x: number
@@ -15,12 +16,22 @@ interface RollNodeProps {
 
 export const RollNode = ({ x, y, thing }: RollNodeProps) => {
     const navigate = useNavigate()
+    const { solidDataset, setDataset } = useContext(DatasetContext)
+    const { session } = useSession()
 
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [interpretationDialogOpen, setInterpretationDialogOpen] = useState(false)
 
-    const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
+    const remove = async () => {
+        if (!solidDataset) return
 
+        const modifiedDataset = removeThing(solidDataset, thing)
+        setDataset(
+            await saveSolidDatasetAt(asUrl(thing), modifiedDataset, { fetch: session.fetch as any })
+        )
+    }
+
+    const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
     const toolboxWidth = 250
 
     return (
@@ -50,7 +61,7 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
                         <Link />
                     </IconButton>
 
-                    <IconButton size='small'>
+                    <IconButton size='small' onClick={remove}>
                         <Delete />
                     </IconButton>
                 </div>

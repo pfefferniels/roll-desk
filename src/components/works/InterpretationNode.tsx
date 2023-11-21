@@ -1,8 +1,10 @@
-import { Thing, asUrl, getStringNoLocale } from "@inrupt/solid-client"
+import { Thing, asUrl, getStringNoLocale, removeThing, saveSolidDatasetAt } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
 import { AlignHorizontalCenter, Delete, Link } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
+import { useContext } from "react"
+import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
 
 interface InterpretationNodeProps {
     x: number
@@ -12,8 +14,19 @@ interface InterpretationNodeProps {
 
 export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => {
     const navigate = useNavigate()
-    const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
+    const { solidDataset, setDataset } = useContext(DatasetContext)
+    const { session } = useSession()
 
+    const remove = async () => {
+        if (!solidDataset) return
+
+        const modifiedDataset = removeThing(solidDataset, thing)
+        setDataset(
+            await saveSolidDatasetAt(asUrl(thing), modifiedDataset, { fetch: session.fetch as any })
+        )
+    }
+
+    const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
     const toolboxWidth = 150
 
     return (
@@ -37,7 +50,7 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
                     <IconButton size="small" onClick={() => window.open(asUrl(thing))}>
                         <Link />
                     </IconButton>
-                    <IconButton size='small'>
+                    <IconButton size='small' onClick={remove}>
                         <Delete />
                     </IconButton>
                 </div>
