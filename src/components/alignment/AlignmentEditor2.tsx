@@ -72,9 +72,6 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
           }
         }
         else if (types.includes(mer('Alignment'))) {
-          const pairUrls = getUrlAll(realisation, crm('P9_consists_of'))
-          const pairThings = pairUrls.map(pairUrl => getThing(dataset, pairUrl)).filter(pair => !!pair)
-          setPairs(pairThings as Thing[])
           setAlignment(realisation)
         }
       }
@@ -106,6 +103,15 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     loadData()
   }, [interpretation, dataset, session.fetch, setMessage])
 
+  // everytime the alignment changes, fetch its pairs
+  useEffect(() => {
+    if (!alignment || !dataset) return 
+
+    const pairUrls = getUrlAll(alignment, crm('P9_consists_of'))
+    const pairThings = pairUrls.map(pairUrl => getThing(dataset, pairUrl)).filter(pair => !!pair)
+    setPairs(pairThings as Thing[])
+  }, [alignment, dataset])
+
   useEffect(() => {
     if (!dataset || !selectedMIDINote || !selectedScoreNote) return
 
@@ -115,11 +121,13 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       let updatedAlignment = alignment
       if (!updatedAlignment) {
         setMessage(`Creating new alignment object`)
-        updatedAlignment = buildThing()
-          .setUrl(mer('has_score'), meiUrl || '')
-          .setUrl(mer('has_recording'), midiUrl || '')
-          .build()
+        updatedAlignment = buildThing().build()
       }
+
+      updatedAlignment = buildThing(updatedAlignment)
+        .setUrl(mer('has_score'), meiUrl || '')
+        .setUrl(mer('has_recording'), midiUrl || '')
+        .build()
 
       setMessage(`Saving pair ...`)
       const newPair = buildThing()
@@ -214,6 +222,23 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     setMessage('Done saving alignment.')
   }
 
+  const removePair = async (pair: Thing) => {
+    if (!dataset || !alignment) return
+
+    setMessage(`Removing pair`)
+    let modifiedDataset = removeThing(dataset, pair)
+    let modifiedAlignment = getThing(modifiedDataset, asUrl(alignment))
+    if (!modifiedAlignment) return
+
+    modifiedAlignment = removeUrl(modifiedAlignment, crm('P9_consists_of'), asUrl(pair))
+    modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
+    setAlignment(modifiedAlignment)
+
+    setMessage(`Saving ...`)
+    await saveSolidDatasetAt(getSourceUrl(modifiedDataset)!, modifiedDataset, { fetch: session.fetch as any })
+    setMessage(`Done.`)
+  }
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!mei) return
@@ -266,7 +291,9 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
           <PairContainer
             ready={(pianoRoll && mei) !== undefined}
             pairs={pairs}
-            parentRef={parentRef.current} />
+            parentRef={parentRef.current}
+            onRemove={removePair}
+             />
         </g>
       </svg>
     </>
