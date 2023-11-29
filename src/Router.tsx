@@ -57,7 +57,7 @@ const AppRouter = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/works" element={<WorksOverview />} />
+        <Route path="/" element={<WorksOverview />} />
         <Route
           path="/align/:interpretationId?"
           element={<AlignmentRoute />}
