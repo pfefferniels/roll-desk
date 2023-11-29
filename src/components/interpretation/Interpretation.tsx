@@ -331,7 +331,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
     return (
         <>
-            <IconButton onClick={() => navigate('/works')}>
+            <IconButton onClick={() => navigate('/')}>
                 <ArrowBack />
             </IconButton>
 
