@@ -175,6 +175,7 @@ export class MEI {
     public asSVG(options?: VerovioOptions): string {
         if (options) {
             this.vrvToolkit.setOptions(options)
+            this.update()
         }
 
         return this.vrvToolkit.renderToSVG(1)

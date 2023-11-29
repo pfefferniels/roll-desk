@@ -1,9 +1,8 @@
-import { Thing, UrlString, addUrl, asUrl, buildThing, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeThing, removeUrl, saveSolidDatasetAt, setThing, setUrl } from "@inrupt/solid-client"
+import { Thing, UrlString, addUrl, asUrl, buildThing, getFile, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeThing, removeUrl, saveSolidDatasetAt, setThing, setUrl } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { useEffect, useRef, useState } from "react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
-import { ScoreViewer } from "../score/ScoreViewer"
 import MidiViewer from "../midi-ld/MidiViewer"
 import { PairContainer } from "./PairContainer"
 import { Button, IconButton, Paper } from "@mui/material"
@@ -12,6 +11,7 @@ import { useNavigate } from "react-router-dom"
 import { PianoRoll, ScoreFollower } from "alignmenttool"
 import { MEI } from "../../lib/mei"
 import { useSnackbar } from "../../providers/SnackbarContext"
+import { loadVerovio } from "../../lib/loadVerovio.mjs"
 
 interface AlignmentEditorProps {
   interpretationUrl: string
@@ -37,10 +37,8 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
   const [selectedScoreNote, setSelectedScoreNote] = useState<UrlString>()
   const [selectedMIDINote, setSelectedMIDINote] = useState<UrlString>()
 
-  const [rollDone, setRollDone] = useState(false)
-  const [scoreDone, setScoreDone] = useState(false)
-
   const parentRef = useRef<SVGSVGElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -55,7 +53,23 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
         const types = getUrlAll(realisation, crm('P2_has_type'))
         if (types.includes(mer('DigitalScore'))) {
           const label = getUrl(realisation, RDFS.label)
-          if (label) setMEIUrl(label)
+          if (label) {
+            setMEIUrl(label)
+            getFile(label, { fetch: session.fetch as any })
+              .then(blob => blob.text())
+              .then(async text => {
+                const mei_ = new MEI(text, await loadVerovio(), new DOMParser())
+                setMEI(mei_)
+                svgRef.current!.innerHTML = mei_.asSVG({
+                  adjustPageWidth: true,
+                  svgHtml5: true,
+                  svgViewBox: true,
+                  pageWidth: 60000,
+                  adjustPageHeight: true,
+                  breaks: 'none'
+                })
+              })
+          }
         }
         else if (types.includes(mer('Alignment'))) {
           const pairUrls = getUrlAll(realisation, crm('P9_consists_of'))
@@ -115,7 +129,6 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
         .build()
 
       setPairs(prev => [...prev, newPair])
-      console.log('add to pairs', newPair)
 
       updatedAlignment = buildThing(updatedAlignment)
         .addUrl(crm('P9_consists_of'), newPair)
@@ -201,10 +214,28 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     setMessage('Done saving alignment.')
   }
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!mei) return
+
+      const verovioCanvas = document.getElementById('verovio-canvas')
+      if (!verovioCanvas) return
+
+      const notes = verovioCanvas.getElementsByClassName('note')
+      for (const note of notes) {
+        note.addEventListener('click', () => {
+          setSelectedScoreNote(note.getAttribute('data-id') || undefined)
+        })
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [mei])
+
   return (
     <>
       <Paper sx={{ p: 1, width: 'fit-content', ml: 1 }}>
-        <IconButton onClick={() => navigate('/works')}>
+        <IconButton onClick={() => navigate('/')}>
           <ArrowBack />
         </IconButton>
 
@@ -218,36 +249,22 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       </Paper>
 
       <svg ref={parentRef} width={1000} height={1000}>
-        <svg height={200}>
-          {meiUrl && (
-            <ScoreViewer
-              asSvg
-              url={meiUrl}
-              landscape
-              onSelect={(noteId) => setSelectedScoreNote(noteId)}
-              onDone={(mei) => {
-                setMEI(mei)
-                setScoreDone(true)
-              }} />
-          )}
-        </svg>
+        <svg height={200} id='verovio-canvas' ref={svgRef} />
 
         <svg height={800} transform="translate(0, 200)">
           {midiUrl && (
             <MidiViewer
               asSvg
               url={midiUrl}
-              onDone={(pr) => {
-                setPianoRoll(pr)
-                setRollDone(true)
-              }}
-              onSelect={(event) => event && setSelectedMIDINote(asUrl(event))} />
+              onDone={setPianoRoll}
+              onSelect={(event) => event && setSelectedMIDINote(asUrl(event))}
+            />
           )}
         </svg>
 
         <g id='pairs'>
           <PairContainer
-            ready={rollDone && scoreDone}
+            ready={(pianoRoll && mei) !== undefined}
             pairs={pairs}
             parentRef={parentRef.current} />
         </g>
