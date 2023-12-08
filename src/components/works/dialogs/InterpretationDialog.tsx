@@ -96,6 +96,7 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
                 .addUrl(frbroo('R12_is_realised_in'), asUrl(mpmThing.build(), containerUrl))
                 .addUrl(frbroo('R12_is_realised_in'), asUrl(scoreThing.build(), containerUrl))
                 .addUrl(frbroo('R12_is_realised_in'), asUrl(alignmentThing.build(), containerUrl))
+                .addUrl(frbroo('R19i_was_realised_through'), creationEvent.build())
                 .build()
 
             updatedDataset = setThing(updatedDataset, updatedInterpretation)

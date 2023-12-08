@@ -10,7 +10,7 @@ import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MPM, MSM, parseMPM } from "mpmify"
 import * as d3 from 'd3';
 import { DownloadDialog } from "./DownloadDialog"
-import { ArrowBack, Code, FileDownload, Pause, PlayArrow, Settings } from "@mui/icons-material"
+import { ArrowBack, Code, FileDownload, Link, Pause, PlayArrow } from "@mui/icons-material"
 import { datasetUrl } from "../../helpers/datasetUrl"
 import { v4 } from "uuid"
 import { useNavigate } from "react-router-dom"
@@ -56,6 +56,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
     const [dataset, setDataset] = useState<SolidDataset>()
     const [interpretation, setInterpretation] = useState<Thing>()
+    const [creation, setCreation] = useState<Thing>()
 
     const [realisations, setRealisations] = useState<Thing[]>([])
 
@@ -64,7 +65,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [msm, setMSM] = useState<MSM>()
     const [alignment, setAlignment] = useState<Thing>()
 
-    const [hoveredInstruction, setHoveredInstruction] = useState<{ meiEl: Element, mpmEl: string } | null>(null)
+    const [hoveredInstruction, setHoveredInstruction] = useState<{ meiEl: Element, mpmEls: string[] } | null>(null)
     const [downloadOpen, setDownloadOpen] = useState(false)
     const [xmlMode, setXMLMode] = useState(false)
     const [scoreSVG, setScoreSVG] = useState<string>()
@@ -73,16 +74,23 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [playing, setPlaying] = useState(false)
     const [midiPlayer, setMidiPlayer] = useState<MIDIPlayer>()
 
-    const getInstructionInfo = (mpmId: string) => {
+    const getInstructionInfos = (mpmIds: string[]) => {
         if (!mpm) return
         const mpmFragment = new DOMParser().parseFromString(mpm.serialize(), 'application/xml')
-        const mpmEl = mpmFragment.querySelector(`[*|id='${mpmId.slice(1)}']`)
-        if (!mpmEl) return
-        return new XMLSerializer()
-            .serializeToString(mpmEl)
-            .replace(/xmlns="[^"]+"/, '')
-            .replace(/xml:id="[^"]+"/, '')
-            .replace(/type="[^"]+"/, '')
+
+        let info = ''
+        for (const mpmId of mpmIds) {
+            const mpmEl = mpmFragment.querySelector(`[*|id='${mpmId.slice(1)}']`)
+            if (!mpmEl) continue
+            info += new XMLSerializer()
+                .serializeToString(mpmEl)
+                .replace(/xmlns="[^"]+"/, '')
+                .replace(/xml:id="[^"]+"/, '')
+                .replace(/type="[^"]+"/, '')
+            info += '\n\n'
+        }
+
+        return info
     }
 
     const saveNote = async (note: string) => {
@@ -100,6 +108,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
         setMessage('Saving MEI ...')
         setMEI(mei)
+
+        console.log('realisations=', realisations)
 
         const meiRealisation =
             realisations.find(realisation => getUrlAll(realisation, crm('P2_has_type')).includes(mer('DigitalScore')))
@@ -195,7 +205,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         setPlaying(true)
         const midiPlayer = new MIDIPlayer(midiFile, 44000, (e: any) => {
             if (e.midi.subtype === 'noteOn') {
-                grandPiano.start(e.midi.noteNumber);
+                grandPiano.start({ note: e.midi.noteNumber, velocity: e.midi.velocity });
             }
             else if (e.midi.subtype === 'noteOff') {
                 grandPiano.stop(e.midi.noteNumber)
@@ -214,11 +224,13 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         setTimeout(() => {
             addGlow(d3.select('#verovio svg'))
             document.querySelectorAll('[data-corresp]').forEach(meiEl => {
-                console.log(meiEl)
+                if (!meiEl.hasAttribute('data-corresp')) return
+
+                const mpmEls = meiEl.getAttribute('data-corresp')!.split(' ')
                 meiEl.addEventListener('mouseover', () => {
                     setHoveredInstruction({
                         meiEl,
-                        mpmEl: meiEl.getAttribute('data-corresp') || ''
+                        mpmEls
                     })
                 })
                 meiEl.addEventListener('mouseleave', () => {
@@ -241,9 +253,16 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         const loadInterpretation = async () => {
             if (!dataset) return
             const interpretationThing = getThing(dataset, interpretationUrl)
-            if (interpretationThing) {
-                setInterpretation(interpretationThing)
-            }
+
+            if (!interpretationThing) return
+            setInterpretation(interpretationThing)
+
+            const creationUrl = getUrl(interpretationThing, frbroo('R19i_was_realised_through'))
+            if (!creationUrl) return 
+
+            const creationThing = getThing(dataset, creationUrl)
+            if (!creationThing) return
+            setCreation(creationThing)
         }
 
         loadInterpretation()
@@ -261,6 +280,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
             const realisationUrls = getUrlAll(interpretation, frbroo('R12_is_realised_in'))
 
+            const linkedRealisations = []
             for (const realisationUrl of realisationUrls) {
                 const realisation = getThing(dataset, realisationUrl)
                 if (!realisation) {
@@ -268,36 +288,31 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     continue
                 }
 
-                setRealisations(prev => [...prev, realisation])
+                linkedRealisations.push(realisation)
 
                 const type = getUrl(realisation, crm('P2_has_type'))
 
                 if (type === mer('DigitalScore')) {
                     const fileUrl = getUrl(realisation, RDFS.label)
-                    setMessage(`Loading MEI file ${fileUrl}`)
+                    if (!fileUrl) continue
 
-                    const meiContents = await getFile(fileUrl || '', { fetch: session.fetch as any })
+                    setMessage(`Loading MEI file ${fileUrl}`)
+                    const meiContents = await getFile(fileUrl, { fetch: session.fetch as any })
                     if (!meiContents) {
                         console.log('Unable to load contents of MPM', realisation)
                         continue
                     }
+                    setMessage(`Done loading MEI`)
 
                     const updatedMEI = new MEI(await meiContents.text(), await loadVerovio(), new DOMParser())
                     setMEI(updatedMEI)
-                    setScoreSVG(updatedMEI.asSVG({
-                        adjustPageHeight: true,
-                        pageHeight: 60000,
-                        svgAdditionalAttribute: [
-                            'artic@resp', 'dir@resp', 'tempo@resp', 'arpeg@resp', 'hairpin@resp', 'dynam@resp', 'app@resp',
-                            'artic@corresp', 'dir@corresp', 'tempo@corresp', 'arpeg@corresp', 'hairpin@corresp', 'dynam@corresp', 'app@corresp'
-                        ],
-                    }))
                 }
                 else if (type === mer('MPM')) {
                     const fileUrl = getUrl(realisation, RDFS.label)
-                    setMessage(`Loading MPM file ${fileUrl}`)
+                    if (!fileUrl) continue
 
-                    const mpmContents = await getFile(fileUrl || '', { fetch: session.fetch as any })
+                    setMessage(`Loading MPM file ${fileUrl}`)
+                    const mpmContents = await getFile(fileUrl, { fetch: session.fetch as any })
                     if (!mpmContents) {
                         console.log('Unable to load contents of MPM', realisation)
                         continue
@@ -315,10 +330,26 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     }
                 }
             }
+
+            setRealisations(linkedRealisations)
         }
 
         loadRealisations()
     }, [session.fetch, interpretation, dataset])
+
+    // Once the MEI changes, rerender it
+    useEffect(() => {
+        if (!mei) return
+
+        setScoreSVG(mei.asSVG({
+            adjustPageHeight: true,
+            pageHeight: 60000,
+            svgAdditionalAttribute: [
+                'artic@resp', 'dir@resp', 'tempo@resp', 'arpeg@resp', 'hairpin@resp', 'dynam@resp', 'app@resp', 'slur@resp',
+                'artic@corresp', 'dir@corresp', 'tempo@corresp', 'arpeg@corresp', 'hairpin@corresp', 'dynam@corresp', 'app@corresp', 'slur@corresp'
+            ],
+        }))
+    }, [mei])
 
     if (!interpretation) {
         return <CircularProgress />
@@ -326,8 +357,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
     const title = getStringNoLocale(interpretation, crm('P102_has_title')) || '[no title]'
     const note = getStringNoLocaleAll(interpretation, crm('P3_has_note')) || '[no note]'
-    const date = getDatetime(interpretation, DCTERMS.created)
-    const author = getUrl(interpretation, crm('P14_carried_out_by')) || '[no author]'
+    const date = creation && getDatetime(creation, DCTERMS.created)
+    const author = (creation && getUrl(creation, crm('P14_carried_out_by'))) || '[no author]'
 
     return (
         <>
@@ -352,8 +383,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         <IconButton onClick={() => setDownloadOpen(true)}>
                             <FileDownload />
                         </IconButton>
-                        <IconButton>
-                            <Settings />
+                        <IconButton onClick={() => window.open(interpretationUrl)}>
+                            <Link />
                         </IconButton>
                     </Paper>
                 </Stack>
@@ -390,7 +421,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
             <Overlay anchorEl={hoveredInstruction?.meiEl}>
                 <div style={{ margin: '1rem' }}>
                     <code>
-                        {hoveredInstruction && getInstructionInfo(hoveredInstruction.mpmEl)}
+                        <pre>
+                            {hoveredInstruction && getInstructionInfos(hoveredInstruction.mpmEls)}
+                        </pre>
                     </code>
                 </div>
             </Overlay>

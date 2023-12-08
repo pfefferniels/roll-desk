@@ -74,14 +74,15 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
                 <Grid2 xs={6}>
                     <XMLEditor
                         text={mpm?.serialize() || initialMPM}
-                        onSave={text => onSaveMPM(parseMPM(text))} />
+                        onSave={text => {
+                            onSaveMPM(parseMPM(text))
+                        }} />
                 </Grid2>
                 <Grid2 xs={6}>
                     <XMLEditor
                         text={mei?.asString() || ''}
                         onSave={async (text) => {
-                            const verovio = await loadVerovio()
-                            onSaveMEI(new MEI(text, verovio, new DOMParser()))
+                            onSaveMEI(new MEI(text, await loadVerovio(), new DOMParser()))
                         }} />
                 </Grid2>
             </Grid2>

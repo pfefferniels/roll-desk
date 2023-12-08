@@ -30,9 +30,9 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
         const articulations = mpm.getInstructions<Articulation>('articulation', part)
 
         let wasTransition = false
-        for (let i=0; i<dynamics.length; i++) {
+        for (let i = 0; i < dynamics.length; i++) {
             if (wasTransition) {
-                wasTransition = false 
+                wasTransition = false
                 continue
             }
 
@@ -44,7 +44,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
 
             if (dynamics_["transition.to"] && i < dynamics.length - 1) {
                 const form = +dynamics_["transition.to"] > +dynamics_.volume ? 'cres' : 'dim'
-                const endid = determinePlist(dynamics[i+1], mei, part)[0]
+                const endid = determinePlist(dynamics[i + 1], mei, part)[0]
 
                 mei.insertMark(plist[0], 'hairpin', {
                     '@': {
@@ -58,7 +58,7 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
                 })
                 wasTransition = true
             }
-            if (i > 0 && determineDynamics(+dynamics[i-1].volume) === vol) continue
+            if (i > 0 && determineDynamics(+dynamics[i - 1].volume) === vol) continue
 
             mei.insertMark(plist[0], 'dynam', {
                 '@': {
@@ -80,6 +80,11 @@ export const enrichMEI = (mpm: MPM, mei: MEI) => {
             else return
 
             const definition = mpm.getDefinition('ornamentDef', ornament["name.ref"]) as OrnamentDef | null
+            if (!definition) {
+                console.log('Definition with ID', ornament['name.ref'], 'not found.')
+                return
+            }
+
             const frameLength = (definition && definition.frameLength) || 0
 
             if (frameLength < 20) return
