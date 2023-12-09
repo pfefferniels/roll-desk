@@ -84,7 +84,7 @@ const WorksGraph: React.FC<WorksGraphProps> = () => {
                 .id(function (d) { return d.index!; })
                 .links(links_)
             )
-            .force("charge", d3.forceManyBody().strength(-1))
+            .force("charge", d3.forceManyBody().strength(-20))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force('collide', d3.forceCollide(d => {
                 const datum = d as Node
