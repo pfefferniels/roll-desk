@@ -1,8 +1,8 @@
-import { Thing, asUrl, buildThing, createThing, getSourceUrl, overwriteFile, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
+import { Thing, UrlString, asUrl, buildThing, createThing, getSourceUrl, getStringNoLocale, getThing, getThingAll, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
-import { DCTERMS, RDF, RDFS } from "@inrupt/vocab-common-rdf";
+import { DCTERMS, OWL, RDF, RDFS } from "@inrupt/vocab-common-rdf";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, Stack, Typography, TextField } from "@mui/material";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
 import { datasetUrl } from "../../../helpers/datasetUrl";
 import { v4 } from "uuid";
@@ -24,8 +24,30 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
 
     const [meiFile, setMEIFile] = useState<File | null>(null)
     const [title, setTitle] = useState<string>()
-    const [author, setAuthor] = useState<string>()
+    const [authorName, setAuthorName] = useState<string>()
+    const [authorLink, setAuthorLink] = useState<UrlString>()
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        if (!worksDataset || !interpretation) return 
+
+        setTitle(getStringNoLocale(interpretation, crm('P102_has_title')) || undefined)
+
+        const creationUrl = getUrl(interpretation, crm('R19i_was_realised_through'))
+        if (!creationUrl) return 
+
+        const creation = getThing(worksDataset, creationUrl)
+        if (!creation) return
+
+        const actorUrl = getUrl(creation, crm('P14_carried_out_by'))
+        if (!actorUrl) return
+
+        const actor = getThing(worksDataset, actorUrl)
+        if (!actor) return
+
+        setAuthorLink(getUrl(actor, OWL.sameAs) || undefined)
+        setAuthorName(getStringNoLocale(actor, crm('P141_is_identified_by')) || undefined)
+    }, [worksDataset, interpretation, open])
 
     const saveToPod = async () => {
         if (!worksDataset) {
@@ -57,7 +79,7 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
             .addUrl(RDF.type, frbroo('F22_Self_Contained_Expression'))
             .addUrl(RDF.type, crmdig('D1_Digital_Object'))
             .addUrl(crm('P2_has_type'), mer('DigitalScore'))
-        
+
         const alignmentThing = buildThing(createThing())
             .addUrl(RDF.type, frbroo('F22_Self_Contained_Expression'))
             .addUrl(crm('P2_has_type'), mer('Alignment'))
@@ -73,9 +95,25 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
             }
         }
 
+        // try to find an existing person in the dataset
+        let actor = authorLink && getThingAll(worksDataset)
+            .find(thing => getUrlAll(thing, OWL.sameAs).includes(authorLink))
+
+        // if that did not succeed, create a new entity
+        if (!actor) {
+            actor = buildThing()
+                .addUrl(RDF.type, frbroo('E21_Person'))
+                .addUrl(OWL.sameAs, authorLink || session.info.webId!)
+                .addStringNoLocale(crm('P141_is_identified_by'), authorName || '')
+                .build()
+        }
+
+        // Cf. https://cidoc-crm.org/sites/default/files/Roles.pdf 
+        // on how to define different roles. For now, P2 has note
+        // should be used if the constellations are more complex.
         const creationEvent = buildThing()
             .addUrl(RDF.type, frbroo('F28_Expression_Creation'))
-            .addUrl(crm('P14_carried_out_by'), author || session.info.webId!)
+            .addUrl(crm('P14_carried_out_by'), actor)
             .addDatetime(DCTERMS.created, new Date(Date.now()))
             .addUrl(frbroo('R17_created'), mpmThing.build())
             .addUrl(frbroo('R17_created'), scoreThing.build())
@@ -101,6 +139,7 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
 
             updatedDataset = setThing(updatedDataset, updatedInterpretation)
         }
+        updatedDataset = setThing(updatedDataset, actor)
         updatedDataset = setThing(updatedDataset, creationEvent.build())
 
         setLoading(true)
@@ -126,13 +165,24 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
                         variant='filled'
                         size='small'
                         label='Author'
-                        value={author}
-                        placeholder={session.info.webId}
-                        onChange={(e) => setAuthor(e.target.value)} />
+                        value={authorName}
+                        placeholder='John Doe'
+                        onChange={(e) => setAuthorName(e.target.value)} />
+
+                    <TextField
+                        fullWidth
+                        variant='filled'
+                        size='small'
+                        label='Link (e.g. to ORCID)'
+                        value={authorLink}
+                        placeholder={session.info.webId || 'https://…'}
+                        onChange={(e) => setAuthorLink(e.target.value)} />
 
                     <Typography>
-                        <i>The author should be specified using a URL. If not specified,
-                            the currently logged-in user is assumed to be the author.</i>
+                        <i>
+                            If no link is specified, the currently
+                            logged-in user is assumed to be the author.
+                        </i>
                     </Typography>
                     <TextField fullWidth variant='filled' size='small' label='Date' />
                     <Typography>

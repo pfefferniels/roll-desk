@@ -1,10 +1,11 @@
 import { Thing, asUrl, getStringNoLocale, removeThing, saveSolidDatasetAt } from "@inrupt/solid-client"
 import { crm } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
-import { AlignHorizontalCenter, Delete, Link } from "@mui/icons-material"
+import { AlignHorizontalCenter, Delete, Edit, Link } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
-import { useContext } from "react"
+import { useContext, useState } from "react"
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
+import { InterpretationDialog } from "./dialogs/InterpretationDialog"
 
 interface InterpretationNodeProps {
     x: number
@@ -17,6 +18,8 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
     const { solidDataset, setDataset } = useContext(DatasetContext)
     const { session } = useSession()
 
+    const [interpretationDialogOpen, setInterpretationDialogOpen] = useState(false)
+
     const remove = async () => {
         if (!solidDataset) return
 
@@ -27,21 +30,39 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
     }
 
     const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
-    const toolboxWidth = 150
+    const nodeWidth = 160
 
     return (
         <g>
             <circle
                 cx={x}
                 cy={y}
-                r={80}
+                r={nodeWidth / 2}
                 fill='orange'
                 fillOpacity={0.5}
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/interpretation?url=${encodeURIComponent(asUrl(thing))}`)}
             />
-            <text x={x} y={y} fontSize={16} textAnchor="middle">{title}</text>
-            <foreignObject x={x - (toolboxWidth / 2)} y={y + 5} width={toolboxWidth} height={50}>
+            <defs>
+                <filter x="0" y="0" width="1" height="1" id="solid">
+                    <feFlood floodColor="white" floodOpacity="0.35" result="bg" />
+                    <feMerge>
+                        <feMergeNode in="bg" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <text
+                x={x}
+                y={y}
+                width={nodeWidth}
+                fontSize={13}
+                style={{ backgroundColor: 'white' }}
+                filter="url(#solid)"
+                textAnchor="middle">{title}</text>
+
+            <foreignObject x={x - (nodeWidth / 2)} y={y + 5} width={nodeWidth} height={50}>
                 <div style={{ textAlign: 'center' }}>
                     <IconButton size="small" onClick={() => navigate(`/align?url=${encodeURIComponent(asUrl(thing))}`)}
                     >
@@ -50,10 +71,18 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
                     <IconButton size="small" onClick={() => window.open(asUrl(thing))}>
                         <Link />
                     </IconButton>
+                    <IconButton size="small" onClick={() => setInterpretationDialogOpen(true)}>
+                        <Edit />
+                    </IconButton>
                     <IconButton size='small' onClick={remove}>
                         <Delete />
                     </IconButton>
                 </div>
+
+                <InterpretationDialog
+                    open={interpretationDialogOpen}
+                    onClose={() => setInterpretationDialogOpen(false)}
+                    interpretation={thing} />
             </foreignObject>
         </g >
     )

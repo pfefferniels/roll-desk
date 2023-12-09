@@ -4,7 +4,7 @@ import Grid2 from '@mui/system/Unstable_Grid';
 import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
 import { useSession } from "@inrupt/solid-ui-react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
-import { DCTERMS, RDFS } from "@inrupt/vocab-common-rdf"
+import { DCTERMS, OWL, RDFS } from "@inrupt/vocab-common-rdf"
 import { MEI } from "../../lib/mei"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
 import { MPM, MSM, parseMPM } from "mpmify"
@@ -57,6 +57,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [dataset, setDataset] = useState<SolidDataset>()
     const [interpretation, setInterpretation] = useState<Thing>()
     const [creation, setCreation] = useState<Thing>()
+    const [actor, setActor] = useState<Thing>()
 
     const [realisations, setRealisations] = useState<Thing[]>([])
 
@@ -108,8 +109,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
 
         setMessage('Saving MEI ...')
         setMEI(mei)
-
-        console.log('realisations=', realisations)
 
         const meiRealisation =
             realisations.find(realisation => getUrlAll(realisation, crm('P2_has_type')).includes(mer('DigitalScore')))
@@ -261,11 +260,18 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
             setInterpretation(interpretationThing)
 
             const creationUrl = getUrl(interpretationThing, frbroo('R19i_was_realised_through'))
-            if (!creationUrl) return 
+            if (!creationUrl) return
 
             const creationThing = getThing(dataset, creationUrl)
             if (!creationThing) return
             setCreation(creationThing)
+
+            const actorUrl = getUrl(creationThing, crm('P14_carried_out_by'))
+            if (!actorUrl) return
+
+            const actorThing = getThing(dataset, actorUrl)
+            if (!actorThing) return
+            setActor(actorThing)
         }
 
         loadInterpretation()
@@ -361,7 +367,8 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const title = getStringNoLocale(interpretation, crm('P102_has_title')) || '[no title]'
     const note = getStringNoLocaleAll(interpretation, crm('P3_has_note')) || '[no note]'
     const date = creation && getDatetime(creation, DCTERMS.created)
-    const author = (creation && getUrl(creation, crm('P14_carried_out_by'))) || '[no author]'
+    const authorName = (actor && getStringNoLocaleAll(actor, crm('P141_is_identified_by'))) || '[no author]'
+    const authorLink = (actor && getUrl(actor, OWL.sameAs))
 
     return (
         <>
@@ -372,8 +379,11 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
             <Paper sx={{ padding: 2, margin: 2 }}>
                 <Stack direction='row' spacing={2}>
                     <div>
-                        <div><b>{title}</b></div>
-                        <div>({author}, {date?.toString() || '[no date]'})</div>
+                        <div style={{ fontWeight: 'bold' }}>{title}</div>
+                        <div>
+                            (<a href={authorLink || 'about:blank'}>{authorName}</a>,&nbsp;
+                            {date?.toDateString() || '[no date]'})
+                        </div>
                     </div>
 
                     <Paper>
