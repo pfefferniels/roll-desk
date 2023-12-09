@@ -171,7 +171,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     useEffect(() => {
         const loadPiano = async () => {
             const context = new AudioContext();
-            const piano = await new SplendidGrandPiano(context).load;
+            const piano = await new SplendidGrandPiano(context, { scheduleIntervalMs: 10, scheduleLookaheadMs: 1000 }).load;
             piano.output.addEffect("reverb", new Reverb(context), 0.2);
             setGrandPiano(piano)
         }
@@ -221,7 +221,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     }
 
     useEffect(() => {
-        setTimeout(() => {
+        if (!document.querySelector('#verovio svg')) return
+
+        const timeout = setTimeout(() => {
             addGlow(d3.select('#verovio svg'))
             document.querySelectorAll('[data-corresp]').forEach(meiEl => {
                 if (!meiEl.hasAttribute('data-corresp')) return
@@ -238,6 +240,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                 })
             })
         }, 900)
+        return () => clearTimeout(timeout)
     }, [scoreSVG])
 
     useEffect(() => {
@@ -335,7 +338,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         }
 
         loadRealisations()
-    }, [session.fetch, interpretation, dataset])
+    }, [session.fetch, interpretation, dataset, setMessage])
 
     // Once the MEI changes, rerender it
     useEffect(() => {
