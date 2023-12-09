@@ -90,7 +90,8 @@ export const GenerateMPMDialog = ({ alignment, open, onCreate, onClose }: Genera
             msm.addPerformanceInfo(scoreNoteId, midiNote)
         }
 
-        console.log('msm=', msm.serialize(false))
+        // make sure that only defined notes are being passed on to MPM generation
+        msm.allNotes = msm.allNotes.filter(note => !isNaN(note['midi.onset']) && note['midi.onset'] !== undefined)
 
         const newMPM = new MPM(2)
 
