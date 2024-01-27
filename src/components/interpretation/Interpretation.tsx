@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { CircularProgress, IconButton, Paper, Stack, ToggleButton } from "@mui/material"
 import Grid2 from '@mui/system/Unstable_Grid';
 import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
@@ -219,27 +219,24 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         setPlaying(false)
     }
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!document.querySelector('#verovio svg')) return
 
-        const timeout = setTimeout(() => {
-            addGlow(d3.select('#verovio svg'))
-            document.querySelectorAll('[data-corresp]').forEach(meiEl => {
-                if (!meiEl.hasAttribute('data-corresp')) return
+        addGlow(d3.select('#verovio svg'))
+        document.querySelectorAll('[data-corresp]').forEach(meiEl => {
+            if (!meiEl.hasAttribute('data-corresp')) return
 
-                const mpmEls = meiEl.getAttribute('data-corresp')!.split(' ')
-                meiEl.addEventListener('mouseover', () => {
-                    setHoveredInstruction({
-                        meiEl,
-                        mpmEls
-                    })
-                })
-                meiEl.addEventListener('mouseleave', () => {
-                    setHoveredInstruction(null)
+            const mpmEls = meiEl.getAttribute('data-corresp')!.split(' ')
+            meiEl.addEventListener('mouseover', () => {
+                setHoveredInstruction({
+                    meiEl,
+                    mpmEls
                 })
             })
-        }, 900)
-        return () => clearTimeout(timeout)
+            meiEl.addEventListener('mouseleave', () => {
+                setHoveredInstruction(null)
+            })
+        })
     }, [scoreSVG])
 
     useEffect(() => {
