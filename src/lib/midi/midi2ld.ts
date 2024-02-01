@@ -1,4 +1,4 @@
-import { SolidDataset, createSolidDataset, buildThing, setThing, asUrl, Thing, getInteger, getSourceUrl } from "@inrupt/solid-client"
+import { SolidDataset, createSolidDataset, buildThing, setThing, asUrl, Thing, getInteger } from "@inrupt/solid-client"
 import { RDF } from "@inrupt/vocab-common-rdf"
 import { AnyEvent, MidiFile, NoteOffEvent, NoteOnEvent } from "midifile-ts"
 import { v4 } from "uuid"

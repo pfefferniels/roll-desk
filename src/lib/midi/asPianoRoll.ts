@@ -11,7 +11,6 @@ const tempoToTickTime = (event: Thing, ticksPerBeat: number) => {
     return realTimePerBeat / ticksPerBeat;
 }
 
-
 /**
  * This function converts a MIDI-LD representation
  * into a PianoRoll object which can be passed to the
@@ -19,7 +18,7 @@ const tempoToTickTime = (event: Thing, ticksPerBeat: number) => {
  * 
  * @returns a `SolidDataset` containing the `Thing`s representing the MIDI file
  */
-export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll | null => {
+export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset, rollTempo?: number): PianoRoll | null => {
     const sortEvents = (a?: Thing | null, b?: Thing | null) => {
         if (!a || !b) return 0
 
@@ -102,15 +101,15 @@ export const asPianoRoll = (piece: Thing, midiDataset: SolidDataset): PianoRoll 
                 const offsetVelocity = getInteger(onset, midi('velocity')) || 0
 
                 allEvents.push({
-                    ontime: tempo * onsetTime,
-                    offtime: tempo * offsetTime,
+                    ontime: 0.0015 * onsetTime,
+                    offtime: 0.0015 * offsetTime,
                     id: asUrl(event),
                     pitch: pitch,
                     sitch: pitchToSitch(pitch),
                     onvel: onsetVelocity,
                     offvel: offsetVelocity,
                     channel: 0,
-                    endtime: tempo * offsetTime,
+                    endtime: 0.0015 * offsetTime,
                     label: asUrl(event)
                 })
             }

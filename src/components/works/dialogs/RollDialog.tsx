@@ -97,7 +97,7 @@ export const RollDialog = ({ thing, open, onClose }: RollDialogProps) => {
                 />
                 <Typography>
                     <i>
-                        Note: This adds an abstract work. You can upload MIDI
+                        Note: This adds an abstract work. You can upload analysis
                         files of particular roll copies in a second step.
                     </i>
                 </Typography>

@@ -1,4 +1,3 @@
-import isNode from "detect-node";
 import createVerovioModule from 'verovio/wasm';
 import { VerovioToolkit } from 'verovio/esm';
 

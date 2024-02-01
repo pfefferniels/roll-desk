@@ -27,6 +27,7 @@
     "install": "^0.13.0",
     "js2xmlparser": "^4.0.2",
     "lexical": "^0.12.2",
+    "linked-rolls": "file:../linked-rolls",
     "midi-parser-js": "^4.0.4",
     "midifile-ts": "^1.4.0",
     "mpm-ts": "file:../mpm-ts",
@@ -86,6 +87,8 @@
     "jsdom": "^20.0.0",
     "vite": "^4.4.9",
     "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-top-level-await": "^1.4.1",
+    "vite-plugin-wasm": "^3.3.0",
     "vitest": "^0.34.1"
   }
 }

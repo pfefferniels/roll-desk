@@ -38,7 +38,7 @@ export const MidiGrid = ({ pixelsPerTick, noteHeight, lastTick }: MidiGridProps)
                     x2={cm * ticksPerCm * pixelsPerTick}
                     y2={128 * noteHeight}
                     stroke="#525151"
-                    strokeWidth={0.5}
+                    strokeWidth={0.2}
                 />
             ))}
 
@@ -51,7 +51,7 @@ export const MidiGrid = ({ pixelsPerTick, noteHeight, lastTick }: MidiGridProps)
                     x2={lastTick * pixelsPerTick}
                     y2={note * noteHeight}
                     stroke="#525151"
-                    strokeWidth={0.5}
+                    strokeWidth={0.2}
                 />
             ))}
         </g>

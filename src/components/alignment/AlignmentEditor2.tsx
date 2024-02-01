@@ -3,12 +3,12 @@ import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { useEffect, useRef, useState } from "react"
 import { crm, frbroo, mer } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
-import MidiViewer from "../midi-ld/MidiViewer"
+import MidiViewer from "../roll-o/MidiViewer"
 import { PairContainer } from "./PairContainer"
 import { Button, IconButton, Paper } from "@mui/material"
 import { ArrowBack, Edit } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
-import { PianoRoll, ScoreFollower } from "alignmenttool"
+import Matcher, { Match, MatchResult, NoteEvent, NoteEventVector, MidiNoteVector } from "alignmenttool"
 import { MEI } from "../../lib/mei"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
@@ -62,12 +62,27 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
                 setMEI(mei_)
                 svgRef.current!.innerHTML = mei_.asSVG({
                   adjustPageWidth: true,
-                  svgHtml5: true,
-                  svgViewBox: true,
-                  pageWidth: 60000,
                   adjustPageHeight: true,
+                  svgHtml5: true,
+                  pageWidth: 60000,
                   breaks: 'none'
                 })
+
+                setTimeout(() => {
+                  const defScale = svgRef.current?.querySelector('.definition-scale')
+                  if (!defScale) return
+
+                  const viewBox = defScale.getAttribute('viewBox')
+                  if (!viewBox) return
+
+                  const width = viewBox.split(' ')[3]
+                  if (!width) return
+
+                  const canvas = document.querySelector('#verovio-canvas')
+                  if (!canvas) return
+
+                  canvas.setAttribute('width', (+width / 2).toString())
+                }, 500)
               })
           }
         }
@@ -105,7 +120,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
 
   // everytime the alignment changes, fetch its pairs
   useEffect(() => {
-    if (!alignment || !dataset) return 
+    if (!alignment || !dataset) return
 
     const pairUrls = getUrlAll(alignment, crm('P9_consists_of'))
     const pairThings = pairUrls.map(pairUrl => getThing(dataset, pairUrl)).filter(pair => !!pair)
@@ -274,7 +289,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       </Paper>
 
       <svg ref={parentRef} width={1000} height={1000}>
-        <svg height={200} id='verovio-canvas' ref={svgRef} />
+        <svg height={200} width={2000} id='verovio-canvas' ref={svgRef} />
 
         <svg height={800} transform="translate(0, 200)">
           {midiUrl && (
@@ -293,7 +308,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
             pairs={pairs}
             parentRef={parentRef.current}
             onRemove={removePair}
-             />
+          />
         </g>
       </svg>
     </>

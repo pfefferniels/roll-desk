@@ -2,9 +2,9 @@ import React from 'react';
 import { Route, BrowserRouter, Routes, useParams, useSearchParams } from 'react-router-dom';
 import WorksOverview from './components/works/WorksOverview';
 import { datasetUrl } from './helpers/datasetUrl';
-import { AlignmentEditor } from './components/alignment/AlignmentEditor2';
-import { Interpretation } from './components/interpretation/Interpretation';
-import MidiViewer from './components/midi-ld/MidiViewer';
+// import { AlignmentEditor } from './components/alignment/AlignmentEditor2';
+// import { Interpretation } from './components/interpretation/Interpretation';
+import { Desk } from './components/roll-desk/RollDesk';
 
 const ErrorBoundary = () => {
   return (
@@ -24,7 +24,7 @@ const AlignmentRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <AlignmentEditor interpretationUrl={url} />
+  return null // <AlignmentEditor interpretationUrl={url} />
 }
 
 const InterpretationRoute = () => {
@@ -37,7 +37,7 @@ const InterpretationRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <Interpretation interpretationUrl={url} />
+  return null // <Interpretation interpretationUrl={url} />
 }
 
 const RollRoute = () => {
@@ -50,7 +50,7 @@ const RollRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <MidiViewer url={url} />
+  return <Desk url={url} />
 }
 
 const AppRouter = () => {
