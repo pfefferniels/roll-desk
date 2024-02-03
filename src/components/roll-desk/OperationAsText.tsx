@@ -5,7 +5,6 @@ interface OperationsAsSecondaryTextProps {
 }
 
 export const OperationsAsText = ({ operations }: OperationsAsSecondaryTextProps) => {
-    console.log('operations=', operations)
     return (
         <div>
             {operations.map((op, i) => (
@@ -14,8 +13,7 @@ export const OperationsAsText = ({ operations }: OperationsAsSecondaryTextProps)
                     {op.type["@id"] === 'Shifting' && `${(op as Shifting).horizontal.toFixed(3)}mm, ${(op as Shifting).vertical}`}
                     {op.type["@id"] === 'Stretching' && `${(((op as Stretching).factor - 1) * 100).toFixed(3)}%`}
                 </div>
-            ))
-            }
+            ))}
         </div >
     )
 }
