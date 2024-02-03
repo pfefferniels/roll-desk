@@ -1,9 +1,0 @@
-.pedalLine {
-    stroke: orange;
-}
-
-.pedalLine:hover {
-    stroke: orange;
-    stroke-width: 5;
-    stroke-opacity: 1;
-}
