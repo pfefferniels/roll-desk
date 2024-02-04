@@ -1,11 +1,14 @@
 import { CollatedEvent } from "linked-rolls/lib/.ldo/rollo.typings"
+import { useState } from "react"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
+    highlight: boolean
     onClick: () => void
 }
 
-const CollatedEventViewer = ({ event, onClick }: CollatedEventViewerProps) => {
+const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
+    const [displayOrientation, setDisplayOrientation] = useState(false)
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
 
@@ -18,42 +21,69 @@ const CollatedEventViewer = ({ event, onClick }: CollatedEventViewerProps) => {
     const onsetStretch = [onsets[0] / 5, onsets[onsets.length - 1] / 5]
     const offsetStretch = [offsets[0] / 5, offsets[offsets.length - 1] / 5]
 
+    const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
+    const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2
+
     const trackerHole = (100 - collatedFrom[0].trackerHole) * 5
 
     return (
-        <g className='collated-event'>
+        <g
+            data-id={event["@id"]}
+            id={event["@id"]}
+            className='collated-event'>
             <rect
                 x={innerBoundaries[0]}
                 width={innerBoundaries[1] - innerBoundaries[0]}
                 y={trackerHole}
                 height={5}
-                fill='blue'
-                fillOpacity={0.2}
-                onClick={onClick} />
+                fill={highlight ? 'red' : 'blue'}
+                fillOpacity={0.5}
+                onClick={onClick}
+                onMouseEnter={() => setDisplayOrientation(true)}
+                onMouseLeave={() => setDisplayOrientation(false)} />
+            <line
+                x1={meanOnset}
+                x2={meanOnset}
+                y1={displayOrientation ? 0 : (trackerHole - 5)}
+                y2={displayOrientation ? 100 * 5 : trackerHole + 10}
+                stroke='black'
+                strokeWidth={0.1} />
+            <line
+                x1={meanOffset}
+                x2={meanOffset}
+                y1={displayOrientation ? 0 : (trackerHole - 5)}
+                y2={displayOrientation ? 100 * 5 : trackerHole + 10}
+                stroke='black'
+                strokeWidth={0.1} />
             <polygon
                 onClick={onClick}
-                fill='blue'
-                fillOpacity={0.2}
+                fill='red'
+                fillOpacity={0.5}
                 points={`${onsetStretch[0]},${trackerHole + 2.5} ${onsetStretch[1]},${trackerHole} ${onsetStretch[1]},${trackerHole + 5}`} />
             <polygon
                 onClick={onClick}
-                fill='blue'
-                fillOpacity={0.2}
+                fill='red'
+                fillOpacity={0.5}
                 points={`${offsetStretch[1]},${trackerHole + 2.5} ${offsetStretch[0]},${trackerHole} ${offsetStretch[0]},${trackerHole + 5}`} />
         </g>
     )
 }
 
-interface CollationViewerProps {
+interface WorkingPaperProps {
+    numberOfRolls: number
     events: CollatedEvent[]
     onClick: (event: CollatedEvent) => void
 }
 
-export const WorkingPaper = ({ events, onClick }: CollationViewerProps) => {
+export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperProps) => {
     return (
         <g className='collated-copies'>
             {events.map((event, i) => (
-                <CollatedEventViewer event={event} onClick={() => onClick(event)} />
+                <CollatedEventViewer
+                    key={`workingPaper_${event["@id"] || i}`}
+                    event={event}
+                    highlight={event.wasCollatedFrom?.length !== numberOfRolls}
+                    onClick={() => onClick(event)} />
             ))}
         </g>
     )

@@ -1,22 +1,23 @@
-import { Box, Checkbox, FormControlLabel, FormGroup, Grid, IconButton, List, ListItemButton, ListItemText, Paper, ToggleButton } from "@mui/material"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { Box, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Paper } from "@mui/material"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { Collator, Emulation, RollCopy } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import { CollatedEvent, Note, Expression, NoteOnEvent, NoteOffEvent } from "linked-rolls/lib/.ldo/rollo.typings"
+import { CollatedEvent, Note, Expression } from "linked-rolls/lib/.ldo/rollo.typings"
 import { RollCopyViewer } from "./RollCopyViewer"
-import { Add, AlignHorizontalCenter, ArrowUpward, CallMerge, MultipleStop, Pause, PlayArrow, Save } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowUpward, CallMerge, ColorLens, ContentCut, CopyAll, MultipleStop, Pause, PlayArrow, Save, Visibility, VisibilityOff } from "@mui/icons-material"
 import { OperationsAsText } from "./OperationAsText"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { WorkingPaper } from "./WorkingPaper"
-import { Piano } from "../../lib/midi-player/tonejs-piano"
-import * as Tone from 'tone'
+import { usePiano } from "../../hooks/usePiano"
+import { RollGrid } from "./RollGrid"
+import { PinContainer } from "./PinContainer"
+import { Glow } from "./Glow"
 
 interface RollEditorProps {
     url: string
 }
 
-/*
 const stringToColour = (str: string) => {
     let hash = 0;
     str.split('').forEach(char => {
@@ -29,7 +30,6 @@ const stringToColour = (str: string) => {
     }
     return colour
 }
-*/
 
 /**
  * Working on piano rolls is imagined like working on a 
@@ -44,28 +44,60 @@ const stringToColour = (str: string) => {
 export const Desk = ({ url }: RollEditorProps) => {
     const [rerender, setRerender] = useState(0)
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
-    const [copyOnTop, setCopyOnTop] = useState<string>()
-    const [alignMode, setAlignMode] = useState<'shift' | 'stretch' | false>(false)
+    const [stack, setStack] = useState<({
+        id: 'working-paper' | string,
+        active: boolean,
+        color: string
+    })[]>([{
+        id: 'working-paper',
+        active: true,
+        color: 'blue'
+    }])
     const [isDragging, setIsDragging] = useState(false)
-    const [positions, setPositions] = useState<[[number | undefined, number | undefined], [number | undefined, number | undefined]]>([[undefined, undefined], [undefined, undefined]])
-    const [displayPaper, setDisplayPaper] = useState(false)
+    const [pins, setPins] = useState<(Note | Expression | CollatedEvent)[]>([])
     const [shiftX, setShiftX] = useState(0)
     const [stretch, setStretch] = useState(2)
     const [isPlaying, setIsPlaying] = useState(false)
+    const { play, stopAll } = usePiano()
 
     const collator = useRef(new Collator())
-    const piano = useRef(new Piano({
-        velocities: 5
-    }))
+
     const svgRef = useRef<SVGGElement>(null)
 
     const render = () => setRerender(rerender => rerender + 1)
 
-    const findPartner = (forEvent: (Note | Expression)) => {
-        //if (collatedEvents.length === 0) return
-        //
-        //return collatedEvents[0].wasCollatedFrom || []
-        return []
+    const createCutout = () => {
+
+    }
+
+    const handleAlign = () => {
+        if (pins.length !== 4) return
+
+        const collatedEvents = pins.filter(e => e.type?.["@id"] === 'CollatedEvent') as CollatedEvent[]
+        const notes = pins.filter(e => e.type?.["@id"] === 'Note') as Note[]
+        if (collatedEvents.length !== 2 || notes.length !== 2) return
+
+        const point1 = [
+            notes[0].P43HasDimension.from,
+            collatedEvents[0].wasCollatedFrom!.at(0)!.P43HasDimension.from]
+
+        const point2 = [
+            notes[1].P43HasDimension.to,
+            collatedEvents[1].wasCollatedFrom!.at(0)!.P43HasDimension.to
+        ]
+
+        const stretch = (point2[1] - point1[1]) / (point2[0] - point1[0])
+        const shift = point1[1] - stretch * point1[0]
+
+        const active = stack.find(item => item.active && item.id !== 'working-paper')
+        if (!active) return
+        const copy = collator.current.findCopy(active.id)
+        if (!copy) return
+
+        collator.current.stretchRollCopy(copy, stretch)
+        collator.current.shiftRollCopy(copy, shift, 0)
+        collator.current.applyOperations()
+        render()
     }
 
     const updateStretch = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -91,65 +123,7 @@ export const Desk = ({ url }: RollEditorProps) => {
         if (updateStretch.current) clearTimeout(updateStretch.current)
     }, [stretch])
 
-    const playPauseCurrentColl = useCallback(() => {
-        if (isPlaying) {
-            piano.current.stopAll()
-            setIsPlaying(false)
-            return
-        }
-        const emulation = new Emulation()
-        if (!copyOnTop) {
-            emulation.emulateFromCollatedRoll(collator.current.events)
-        }
-        else {
-            const currentCopy = collator.current.findCopy(copyOnTop)
-            if (!currentCopy) return
-            emulation.emulateFromRoll(currentCopy.events)
-        }
-        const events = emulation.midiEvents
-        for (const event of events) {
-            if (event.type?.["@id"] === 'NoteOnEvent') {
-                const noteOn = event as NoteOnEvent
-                piano.current.keyDown({
-                    note: Tone.Midi(noteOn.pitch, 'midi').toNote(),
-                    velocity: 1 / noteOn.velocity,
-                    time: event.at,
-                    midi: noteOn.pitch
-                })
-            }
-            else if (event.type?.["@id"] === 'NoteOffEvent') {
-                const noteOff = event as NoteOffEvent
-                piano.current.keyUp({
-                    note: Tone.Midi(noteOff.pitch, 'midi').toNote(),
-                    time: event.at,
-                    midi: noteOff.pitch
-                })
-            }
-            else if (event.type?.["@id"] === 'SustainPedalOnEvent') {
-                console.log('pedal down')
-                piano.current.pedalDown({ time: event.at })
-            }
-            else if (event.type?.["@id"] === 'SustainPedalOffEvent') {
-                console.log('pedal up')
-                piano.current.pedalUp({ time: event.at })
-            }
-        }
-        piano.current.context.on('tick', () => {
-            console.log(piano.current.context.currentTime)
-        })
-        setIsPlaying(true)
-    }, [copyOnTop, isPlaying])
-
     useEffect(() => {
-        console.log('loading piano')
-        piano.current.toDestination()
-        piano.current.load().then(() => {
-            console.log('piano loaded?', piano.current.loaded)
-        })
-    }, [])
-
-    useEffect(() => {
-        console.log('use layout effect')
         const svg = svgRef.current
         if (!svg) return
 
@@ -175,13 +149,24 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Collation'>
-                            <ToggleButton value='align' selected={!!alignMode} onChange={() => setAlignMode(alignMode => !!alignMode ? false : 'shift')}>
+                            <IconButton onClick={handleAlign}>
                                 <AlignHorizontalCenter />
-                            </ToggleButton>
+                            </IconButton>
                             <IconButton onClick={async () => {
-                                await collator.current.collateRolls()
+                                await collator.current.collateAllRolls()
+                                render()
                             }}>
                                 <CallMerge />
+                            </IconButton>
+                            <IconButton onClick={async () => {
+                                const activeLayer = stack.find(item => item.active && item.id !== 'working-paper')
+                                if (!activeLayer) return
+                                const copy = collator.current.findCopy(activeLayer.id)
+                                if (!copy) return
+                                collator.current.prepareFromRollCopy(copy)
+                                render()
+                            }}>
+                                <CopyAll />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Correction'>
@@ -194,9 +179,31 @@ export const Desk = ({ url }: RollEditorProps) => {
                         </Ribbon>
                         <Ribbon title='Emulation'>
                             <IconButton
-                                disabled={collator.current.rolls.length === 0 ||
-                                    (!copyOnTop && collator.current.events.length === 0)}
-                                onClick={playPauseCurrentColl}>
+                                disabled={stack.find(item => item.active) === null}
+                                onClick={() => {
+                                    if (isPlaying) {
+                                        stopAll()
+                                        setIsPlaying(false)
+                                    }
+                                    else {
+                                        const emulation = new Emulation()
+
+                                        const activeRoll = stack.find(copy => copy.active)
+                                        console.log('active roll=', activeRoll)
+                                        if (!activeRoll) {
+                                            emulation.emulateFromCollatedRoll(
+                                                collator.current.events)
+                                        }
+                                        else {
+                                            const roll = collator.current.findCopy(activeRoll.id)
+                                            if (!roll) return
+                                            emulation.emulateFromRoll(roll.events)
+                                        }
+
+                                        play(emulation.midiEvents)
+                                        setIsPlaying(true)
+                                    }
+                                }}>
                                 {isPlaying ? <Pause /> : <PlayArrow />}
                             </IconButton>
                             <IconButton>
@@ -204,95 +211,118 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Annotation'>
+                            <IconButton onClick={() => createCutout()}>
+                                <ContentCut />
+                            </IconButton>
                             <IconButton>
                                 <Add />
                             </IconButton>
                         </Ribbon>
                     </RibbonGroup>
                 </Grid >
-                <Grid item xs={2}>
+                <Grid item xs={3}>
                     <Paper sx={{ maxWidth: 360 }}>
                         <span>Rolls</span>
-                        <List>
-                            {collator.current.rolls.map((copy, i) => (
-                                <ListItemButton
-                                    selected={copyOnTop === copy.physicalItem["@id"]}
-                                    onClick={() => setCopyOnTop(copy.physicalItem["@id"])}>
-                                    <ListItemText
-                                        secondary={
-                                            <OperationsAsText operations={collator.current.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
-                                        }
-                                        primary={copy.physicalItem["@id"] || 'not defined'} />
-                                </ListItemButton>
-                            ))}
+                        <List dense>
+                            {stack.map((stackItem, i) => {
+                                const copy = collator.current.findCopy(stackItem.id)
+                                return (
+                                    <React.Fragment key={`listItem_${i}`}>
+                                        <ListItem
+                                            secondaryAction={(
+                                                <IconButton edge="end" sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColour(stackItem.id) }}>
+                                                    <ColorLens />
+                                                </IconButton>
+                                            )}>
+                                            <ListItemButton
+                                                onClick={() => {
+                                                    stackItem.active = !stackItem.active
+                                                    setStack([...stack])
+                                                }}>
+                                                <ListItemIcon>
+                                                    <IconButton
+                                                        size='small'
+                                                        edge="start"
+                                                        tabIndex={-1}
+                                                    >
+                                                        {stackItem.active ? <Visibility /> : <VisibilityOff />}
+                                                    </IconButton>
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    secondary={
+                                                        copy &&
+                                                        <OperationsAsText
+                                                            operations={collator.current.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
+                                                    }
+                                                    primary={
+                                                        stackItem.id === 'working-paper'
+                                                            ? 'Working Paper'
+                                                            : copy?.physicalItem["@id"] || 'not defined'} />
+                                            </ListItemButton>
+                                        </ListItem>
+                                        {i === 0 && <Divider flexItem />}
+                                    </React.Fragment>
+                                )
+                            })}
                         </List>
                         <Box>
                             <IconButton onClick={() => setRollCopyDialogOpen(true)}>
                                 <Add />
                             </IconButton>
                         </Box>
-                        <FormGroup>
-                            <FormControlLabel control={<Checkbox checked={displayPaper} onChange={(_, checked) => setDisplayPaper(checked)} />} label="Display Working Paper" />
-                        </FormGroup>
                     </Paper>
-                </Grid>
-                <Grid item xs={10}>
+                </Grid >
+                <Grid item xs={9}>
                     <Paper>
                         <svg width="10000" height="500">
+                            <Glow />
                             <g transform={`translate(${shiftX}, 0) scale(${stretch}, 1)`} ref={svgRef}>
-                                {collator.current.rolls.map((copy, i) => (
-                                    <RollCopyViewer
-                                        key={`copy_${i}`}
-                                        copy={copy}
-                                        onClick={(event) => {
-                                            if (!alignMode) {
-                                                if (event.type?.["@id"] === 'Note') {
-                                                    const note = event as Note
-                                                    console.log(Tone.Midi(note.hasPitch, 'midi').toNote())
-                                                    piano.current.keyDown({
-                                                        note: Tone.Midi(note.hasPitch, 'midi').toNote(),
-                                                        midi: note.hasPitch
-                                                    })
-                                                    piano.current.keyUp({
-                                                        note: Tone.Midi(note.hasPitch, 'midi').toNote(),
-                                                        midi: note.hasPitch,
-                                                        time: +500
-                                                    })
-                                                }
-                                                return
-                                            }
+                                <RollGrid width={10000} />
+                                {stack.slice().reverse().map((stackItem, i) => {
+                                    if (!stackItem.active) return null
 
-                                            if (!positions[0][0]) {
-                                                positions[0][0] = event.P43HasDimension.from
-                                                return
-                                            }
+                                    if (stackItem.id === 'working-paper') {
+                                        return (
+                                            <WorkingPaper
+                                                key={`copy_${i}`}
+                                                numberOfRolls={collator.current.collatedRolls.length}
+                                                events={collator.current.events}
+                                                onClick={(event: CollatedEvent) => {
+                                                    const existingPin = pins.indexOf(event)
+                                                    if (existingPin !== -1) {
+                                                        console.log('removing existing pin', existingPin)
+                                                        setPins(prev => {
+                                                            prev.splice(existingPin, 1)
+                                                            return [...prev]
+                                                        })
+                                                    }
+                                                    else {
+                                                        setPins(prev => [...prev, event])
+                                                    }
+                                                }} />
+                                        )
+                                    }
 
-                                            positions[1][0] = event.P43HasDimension.to
+                                    const copy = collator.current.findCopy(stackItem.id)
+                                    if (!copy) return null
 
-                                            if (!positions[0][1] || !positions[1][1]) return
+                                    return (
+                                        <RollCopyViewer
+                                            key={`copy_${i}`}
+                                            copy={copy}
+                                            onTop={i === 0}
+                                            color={stackItem.color}
+                                            onClick={(event) => {
+                                                setPins(prev => [...prev, event])
+                                            }} />
+                                    )
+                                })}
 
-                                            const stretch = (positions[1][1] - positions[0][1]) / (positions[1][0] - positions[0][0])
-                                            const shift = positions[0][1] - stretch * positions[0][0]
-
-                                            collator.current.stretchRollCopy(copy, stretch)
-                                            collator.current.shiftRollCopy(copy, shift, 0)
-                                            collator.current.applyOperations()
-                                            setAlignMode(false)
-                                        }} />
-                                ))}
-
-                                {displayPaper && (
-                                    <WorkingPaper
-                                        events={collator.current.events}
-                                        onClick={(event: CollatedEvent) => {
-                                            if (!alignMode) return
-
-                                            if (!positions[0][1]) {
-                                                positions[0][1] = event.wasCollatedFrom!.at(0)!.P43HasDimension.from
-                                            }
-                                            else {
-                                                positions[1][1] = event.wasCollatedFrom!.at(0)!.P43HasDimension.to
-                                            }
+                                {svgRef.current && (
+                                    <PinContainer
+                                        pins={pins}
+                                        remove={pinToRemove => {
+                                            setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
                                         }} />
                                 )}
                             </g>
@@ -307,7 +337,14 @@ export const Desk = ({ url }: RollEditorProps) => {
                 onDone={async (itemLink, rollAnalysis) => {
                     const newCopy = new RollCopy(itemLink)
                     newCopy.readFromStanfordAton(rollAnalysis)
-                    collator.current.addRoll(newCopy)
+                    const id = collator.current.addRoll(newCopy)
+                    if (!id) return
+
+                    stack.push({
+                        id,
+                        active: true,
+                        color: stringToColour(id)
+                    })
                     render()
                 }} />
         </>

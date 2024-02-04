@@ -5,6 +5,7 @@ import { datasetUrl } from './helpers/datasetUrl';
 // import { AlignmentEditor } from './components/alignment/AlignmentEditor2';
 // import { Interpretation } from './components/interpretation/Interpretation';
 import { Desk } from './components/roll-desk/RollDesk';
+import { PianoContextProvider } from './hooks/usePiano';
 
 const ErrorBoundary = () => {
   return (
@@ -50,7 +51,11 @@ const RollRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <Desk url={url} />
+  return (
+    <PianoContextProvider>
+      <Desk url={url} />
+    </PianoContextProvider>
+  )
 }
 
 const AppRouter = () => {
