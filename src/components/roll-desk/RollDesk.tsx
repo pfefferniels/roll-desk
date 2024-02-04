@@ -14,6 +14,7 @@ import { RollGrid } from "./RollGrid"
 import { PinContainer } from "./PinContainer"
 import { Glow } from "./Glow"
 import { CutoutContainer } from "./CutoutContainer"
+import { InterpretationDialog } from "../works/dialogs/InterpretationDialog"
 
 interface RollEditorProps {
     url: string
@@ -45,6 +46,7 @@ const stringToColour = (str: string) => {
 export const Desk = ({ url }: RollEditorProps) => {
     const [rerender, setRerender] = useState(0)
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
+    const [interpretationDialogOpen, setInterpretationDialogOpen] = useState(false)
     const [stack, setStack] = useState<({
         id: 'working-paper' | string,
         active: boolean,
@@ -57,6 +59,7 @@ export const Desk = ({ url }: RollEditorProps) => {
     const [isDragging, setIsDragging] = useState(false)
     const [pins, setPins] = useState<(Note | Expression | CollatedEvent)[]>([])
     const [cutouts, setCutouts] = useState<Cutout[]>([])
+    const [activeCutout, setActiveCutout] = useState<Cutout>()
     const [shiftX, setShiftX] = useState(0)
     const [stretch, setStretch] = useState(2)
     const [isPlaying, setIsPlaying] = useState(false)
@@ -147,7 +150,9 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Collation'>
-                            <IconButton onClick={handleAlign}>
+                            <IconButton
+                                disabled={pins.length !== 4}
+                                onClick={handleAlign}>
                                 <AlignHorizontalCenter />
                             </IconButton>
                             <IconButton onClick={async () => {
@@ -177,7 +182,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                         </Ribbon>
                         <Ribbon title='Emulation'>
                             <IconButton
-                                disabled={stack.find(item => item.active) === null}
+                                disabled={stack.find(item => item.active && item.id !== 'working-paper') === null}
                                 onClick={() => {
                                     if (isPlaying) {
                                         stopAll()
@@ -209,12 +214,19 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Annotation'>
-                            <IconButton onClick={() => {
+                            <IconButton
+                                disabled={pins.length === 0}
+                                onClick={() => {
                                 setCutouts(cutouts => [...cutouts, createCutout(pins)])
+                                setPins([])
                             }}>
                                 <ContentCut />
                             </IconButton>
-                            <IconButton>
+                            <IconButton
+                                disabled={!activeCutout}
+                                onClick={() => {
+                                setInterpretationDialogOpen(true)
+                            }}>
                                 <Add />
                             </IconButton>
                         </Ribbon>
@@ -285,6 +297,11 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <Glow />
                             <g transform={`translate(${shiftX}, 0) scale(${stretch}, 1)`} ref={svgRef}>
                                 <RollGrid width={10000} />
+                                <CutoutContainer
+                                    cutouts={cutouts}
+                                    setCutouts={setCutouts}
+                                    active={activeCutout}
+                                    onActivate={(cutout) => setActiveCutout(cutout)} />
                                 {stack.slice().reverse().map((stackItem, i) => {
                                     if (!stackItem.active) return null
 
@@ -332,8 +349,6 @@ export const Desk = ({ url }: RollEditorProps) => {
                                             setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
                                         }} />
                                 )}
-
-                                <CutoutContainer cutouts={cutouts} setCutouts={setCutouts} />
                             </g>
                         </svg>
                     </Paper>
@@ -356,6 +371,11 @@ export const Desk = ({ url }: RollEditorProps) => {
                     })
                     render()
                 }} />
+            
+            {activeCutout && <InterpretationDialog
+                open={interpretationDialogOpen}
+                onClose={() => setInterpretationDialogOpen(false)}
+                cutout={activeCutout} />}
         </>
     )
 }

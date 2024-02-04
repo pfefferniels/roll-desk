@@ -6,6 +6,7 @@ import { useContext, useEffect, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
 import { datasetUrl } from "../../../helpers/datasetUrl";
 import { v4 } from "uuid";
+import { Cutout } from "linked-rolls/lib/.ldo/rollo.typings";
 
 interface InterpretationDialogProps {
     // the expression
@@ -14,6 +15,7 @@ interface InterpretationDialogProps {
     // the mer:Roll to which attach 
     // the interpretation to when creating
     attachToRoll?: Thing
+    cutout: Cutout
     open: boolean
     onClose: () => void
 }

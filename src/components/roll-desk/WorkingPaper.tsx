@@ -1,5 +1,6 @@
-import { CollatedEvent } from "linked-rolls/lib/.ldo/rollo.typings"
+import { CollatedEvent, Note } from "linked-rolls/lib/.ldo/rollo.typings"
 import { useState } from "react"
+import { usePiano } from "../../hooks/usePiano"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -76,6 +77,8 @@ interface WorkingPaperProps {
 }
 
 export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperProps) => {
+    const { playSingleNote } = usePiano()
+
     return (
         <g className='collated-copies'>
             {events.map((event, i) => (
@@ -83,7 +86,14 @@ export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperPro
                     key={`workingPaper_${event["@id"] || i}`}
                     event={event}
                     highlight={event.wasCollatedFrom?.length !== numberOfRolls}
-                    onClick={() => onClick(event)} />
+                    onClick={() => {
+                        if (event.wasCollatedFrom &&
+                            event.wasCollatedFrom.length && 
+                            event.wasCollatedFrom[0].type?.["@id"] === 'Note') {
+                            playSingleNote((event.wasCollatedFrom[0] as Note))
+                        }
+                        onClick(event)
+                    }} />
             ))}
         </g>
     )

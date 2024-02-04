@@ -19,7 +19,6 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
                 <rect
                     key={event["@id"] || `event_${i}`}
                     onClick={() => {
-                        console.log('click')
                         if (event.type?.["@id"] === 'Note') {
                             playSingleNote(event as Note)
                         }

@@ -4,12 +4,12 @@ import { useState } from "react";
 
 interface CutoutViewerProps {
     cutout: Cutout
+    active: boolean
+    onActivate: () => void
     onRemove: () => void
 }
 
-const CutoutViewer = ({ cutout, onRemove }: CutoutViewerProps) => {
-    const [active, setActive] = useState(false)
-
+const CutoutViewer = ({ cutout, onRemove, active, onActivate }: CutoutViewerProps) => {
     const points: [number, number][] = []
     for (const iri of cutout.P106IsComposedOf) {
         const corresp = document.getElementById(iri["@id"]) as SVGGraphicsElement | null
@@ -20,7 +20,7 @@ const CutoutViewer = ({ cutout, onRemove }: CutoutViewerProps) => {
         points.push([bbox.x + bbox.width, bbox.y])
         points.push([bbox.x + bbox.width, bbox.y + bbox.height])
     }
-    const hull = roundedHull(points, 0.5)
+    const hull = roundedHull(points, 2.5)
 
     return (
         <path
@@ -34,7 +34,7 @@ const CutoutViewer = ({ cutout, onRemove }: CutoutViewerProps) => {
                     onRemove()
                     return
                 }
-                setActive(!active)
+                onActivate()
             }} />
     )
 }
@@ -42,19 +42,23 @@ const CutoutViewer = ({ cutout, onRemove }: CutoutViewerProps) => {
 interface CutoutContainerProps {
     cutouts: Cutout[]
     setCutouts: (cutouts: Cutout[]) => void
+    active?: Cutout 
+    onActivate: (cutout: Cutout) => void
 }
 
-export const CutoutContainer = ({ cutouts, setCutouts }: CutoutContainerProps) => {
+export const CutoutContainer = ({ cutouts, setCutouts, active, onActivate }: CutoutContainerProps) => {
     return (
         <>
             {cutouts.map((cutout, i) => (
                 <CutoutViewer
                     cutout={cutout}
                     key={`cutout_${i}`}
+                    active={cutout === active}
                     onRemove={() => {
                         cutouts.splice(i, 1)
                         setCutouts([...cutouts])
-                    }} />
+                    }}
+                    onActivate={() => onActivate(cutout)}  />
             ))}
         </>
     )
