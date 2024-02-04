@@ -1,8 +1,8 @@
 import { Box, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Paper } from "@mui/material"
 import React, { useCallback, useEffect, useRef, useState } from "react"
-import { Collator, Emulation, RollCopy } from 'linked-rolls'
+import { Collator, Emulation, RollCopy, createCutout } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import { CollatedEvent, Note, Expression } from "linked-rolls/lib/.ldo/rollo.typings"
+import { CollatedEvent, Note, Expression, Cutout } from "linked-rolls/lib/.ldo/rollo.typings"
 import { RollCopyViewer } from "./RollCopyViewer"
 import { Add, AlignHorizontalCenter, ArrowUpward, CallMerge, ColorLens, ContentCut, CopyAll, MultipleStop, Pause, PlayArrow, Save, Visibility, VisibilityOff } from "@mui/icons-material"
 import { OperationsAsText } from "./OperationAsText"
@@ -13,6 +13,7 @@ import { usePiano } from "../../hooks/usePiano"
 import { RollGrid } from "./RollGrid"
 import { PinContainer } from "./PinContainer"
 import { Glow } from "./Glow"
+import { CutoutContainer } from "./CutoutContainer"
 
 interface RollEditorProps {
     url: string
@@ -55,6 +56,7 @@ export const Desk = ({ url }: RollEditorProps) => {
     }])
     const [isDragging, setIsDragging] = useState(false)
     const [pins, setPins] = useState<(Note | Expression | CollatedEvent)[]>([])
+    const [cutouts, setCutouts] = useState<Cutout[]>([])
     const [shiftX, setShiftX] = useState(0)
     const [stretch, setStretch] = useState(2)
     const [isPlaying, setIsPlaying] = useState(false)
@@ -65,10 +67,6 @@ export const Desk = ({ url }: RollEditorProps) => {
     const svgRef = useRef<SVGGElement>(null)
 
     const render = () => setRerender(rerender => rerender + 1)
-
-    const createCutout = () => {
-
-    }
 
     const handleAlign = () => {
         if (pins.length !== 4) return
@@ -211,7 +209,9 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Annotation'>
-                            <IconButton onClick={() => createCutout()}>
+                            <IconButton onClick={() => {
+                                setCutouts(cutouts => [...cutouts, createCutout(pins)])
+                            }}>
                                 <ContentCut />
                             </IconButton>
                             <IconButton>
@@ -222,7 +222,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                 </Grid >
                 <Grid item xs={3}>
                     <Paper sx={{ maxWidth: 360 }}>
-                        <span>Rolls</span>
+                        <Box p={1}>Stack</Box>
                         <List dense>
                             {stack.map((stackItem, i) => {
                                 const copy = collator.current.findCopy(stackItem.id)
@@ -250,14 +250,21 @@ export const Desk = ({ url }: RollEditorProps) => {
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     secondary={
-                                                        copy &&
-                                                        <OperationsAsText
-                                                            operations={collator.current.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
+                                                        (() => {
+                                                            if (stackItem.id === 'working-paper') {
+                                                                return <span>{collator.current.collatedRolls.length} collated rolls</span>
+                                                            }
+                                                            if (copy) {
+                                                                return <OperationsAsText
+                                                                    operations={collator.current.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
+                                                            }
+                                                            return null
+                                                        })()
                                                     }
-                                                    primary={
-                                                        stackItem.id === 'working-paper'
-                                                            ? 'Working Paper'
-                                                            : copy?.physicalItem["@id"] || 'not defined'} />
+                                                primary={
+                                                    stackItem.id === 'working-paper'
+                                                        ? 'Working Paper'
+                                                        : copy?.physicalItem["@id"] || 'not defined'} />
                                             </ListItemButton>
                                         </ListItem>
                                         {i === 0 && <Divider flexItem />}
@@ -325,6 +332,8 @@ export const Desk = ({ url }: RollEditorProps) => {
                                             setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
                                         }} />
                                 )}
+
+                                <CutoutContainer cutouts={cutouts} setCutouts={setCutouts} />
                             </g>
                         </svg>
                     </Paper>
