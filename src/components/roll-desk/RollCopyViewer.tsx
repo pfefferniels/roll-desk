@@ -12,11 +12,10 @@ interface RollCopyViewerProps {
 
 export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerProps) => {
     const { playSingleNote } = usePiano()
-    const { zoom, pinch } = usePinchZoom()
+    const { zoom, pinch, trackHeight } = usePinchZoom()
 
     return (
         <g className='roll-copy'>
-            <rect fill='white' fillOpacity={0.1} x={0} y={0} height={100 * 5} width={copy.events[copy.events.length - 1].P43HasDimension.to / 5}></rect>
             {copy.events.map((event, i) => (
                 <rect
                     key={event["@id"] || `event_${i}`}
@@ -33,7 +32,7 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
                     height={5}
                     fillOpacity={onTop ? 0.8 : 0.4}
                     fill={onTop ? color : 'gray'}
-                    y={(100 - event.trackerHole) * 5}>
+                    y={(100 - event.trackerHole) * trackHeight}>
                 </rect>
             ))}
         </g>

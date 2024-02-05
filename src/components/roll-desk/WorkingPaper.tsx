@@ -1,4 +1,4 @@
-import { CollatedEvent, Note } from "linked-rolls/lib/.ldo/rollo.typings"
+import { CollatedEvent, Expression, Note } from "linked-rolls/lib/.ldo/rollo.typings"
 import { useState } from "react"
 import { usePiano } from "../../hooks/usePiano"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
@@ -10,8 +10,8 @@ interface CollatedEventViewerProps {
 }
 
 const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
-    const [displayOrientation, setDisplayOrientation] = useState(false)
-    const { zoom, pinch } = usePinchZoom()
+    const [displayDetails, setDisplayDetails] = useState(false)
+    const { zoom, pinch, trackHeight } = usePinchZoom()
 
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
@@ -21,6 +21,8 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 
     if (onsets.length === 0 || offsets.length === 0) return null
 
+    const type = collatedFrom[0].type?.["@id"] === 'Expression' && (collatedFrom[0] as Expression).P2HasType["@id"]
+
     const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(v => (v / zoom + pinch))
     const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(v => (v / zoom + pinch))
     const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(v => (v / zoom + pinch))
@@ -28,7 +30,7 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
     const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
     const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2
 
-    const trackerHole = (100 - collatedFrom[0].trackerHole) * 5
+    const trackerHole = (100 - collatedFrom[0].trackerHole) * trackHeight
 
     return (
         <g
@@ -43,22 +45,22 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 fill={highlight ? 'red' : 'blue'}
                 fillOpacity={0.5}
                 onClick={onClick}
-                onMouseEnter={() => setDisplayOrientation(true)}
-                onMouseLeave={() => setDisplayOrientation(false)} />
+                onMouseEnter={() => setDisplayDetails(true)}
+                onMouseLeave={() => setDisplayDetails(false)} />
             <line
                 x1={meanOnset}
                 x2={meanOnset}
-                y1={displayOrientation ? 0 : (trackerHole - 5)}
-                y2={displayOrientation ? 100 * 5 : trackerHole + 10}
+                y1={displayDetails ? 0 : (trackerHole - 5)}
+                y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
                 stroke='black'
-                strokeWidth={0.1} />
+                strokeWidth={0.2} />
             <line
                 x1={meanOffset}
                 x2={meanOffset}
-                y1={displayOrientation ? 0 : (trackerHole - 5)}
-                y2={displayOrientation ? 100 * 5 : trackerHole + 10}
+                y1={displayDetails ? 0 : (trackerHole - 5)}
+                y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
                 stroke='black'
-                strokeWidth={0.1} />
+                strokeWidth={0.2} />
             <polygon
                 onClick={onClick}
                 fill='red'
@@ -69,6 +71,14 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 fill='red'
                 fillOpacity={0.5}
                 points={`${offsetStretch[1]},${trackerHole + 2.5} ${offsetStretch[0]},${trackerHole} ${offsetStretch[0]},${trackerHole + 5}`} />
+            {displayDetails && (
+                <text
+                    x={innerBoundaries[0]}
+                    y={trackerHole}
+                    fontSize={12}>
+                    <tspan>{type}</tspan>
+                </text>
+            )}
         </g>
     )
 }

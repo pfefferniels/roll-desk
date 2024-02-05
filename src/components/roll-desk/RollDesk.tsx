@@ -72,6 +72,12 @@ export const Desk = ({ url }: RollEditorProps) => {
 
     const render = () => setRerender(rerender => rerender + 1)
 
+    const saveAll = async () => {
+        const dataset = collator.current.asDataset('https://mypod.org/')
+        // const emulationDataset = 
+        console.log('Saving dataset', dataset, 'and emulation and', cutouts)
+    }
+
     const handleAlign = () => {
         if (pins.length !== 4) return
 
@@ -143,7 +149,7 @@ export const Desk = ({ url }: RollEditorProps) => {
     return (
         <>
             <Grid container m={1} spacing={1}>
-                <Grid item xs={12}>
+                <Grid item xs={12} md={12} xl={12}>
                     <RibbonGroup>
                         <Ribbon title='Condition'>
                             <IconButton>
@@ -232,7 +238,14 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                     </RibbonGroup>
-                </Grid >
+                    <RibbonGroup>
+                        <Ribbon title='General'>
+                            <IconButton onClick={saveAll}>
+                                <Save />
+                            </IconButton>
+                        </Ribbon>
+                    </RibbonGroup>
+                </Grid>
                 <Grid item xs={3}>
                     <Paper sx={{ maxWidth: 360 }}>
                         <Box p={1}>Stack</Box>
@@ -294,10 +307,10 @@ export const Desk = ({ url }: RollEditorProps) => {
                 </Grid >
                 <Grid item xs={9}>
                     <Paper>
-                        <svg width="10000" height="500">
+                        <svg width="1000" height={6 * 100}>
                             <Glow />
                             <g transform={/*`translate(${shiftX}, 0) scale(${stretch}, 1)`*/''} ref={svgRef}>
-                                <PinchZoomProvider pinch={shiftX} zoom={stretch}>
+                                <PinchZoomProvider pinch={shiftX} zoom={stretch} trackHeight={6}>
                                     <RollGrid width={10000} />
                                     <CutoutContainer
                                         cutouts={cutouts}
