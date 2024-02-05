@@ -15,6 +15,7 @@ import { PinContainer } from "./PinContainer"
 import { Glow } from "./Glow"
 import { CutoutContainer } from "./CutoutContainer"
 import { InterpretationDialog } from "../works/dialogs/InterpretationDialog"
+import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 
 interface RollEditorProps {
     url: string
@@ -217,16 +218,16 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <IconButton
                                 disabled={pins.length === 0}
                                 onClick={() => {
-                                setCutouts(cutouts => [...cutouts, createCutout(pins)])
-                                setPins([])
-                            }}>
+                                    setCutouts(cutouts => [...cutouts, createCutout(pins)])
+                                    setPins([])
+                                }}>
                                 <ContentCut />
                             </IconButton>
                             <IconButton
                                 disabled={!activeCutout}
                                 onClick={() => {
-                                setInterpretationDialogOpen(true)
-                            }}>
+                                    setInterpretationDialogOpen(true)
+                                }}>
                                 <Add />
                             </IconButton>
                         </Ribbon>
@@ -273,10 +274,10 @@ export const Desk = ({ url }: RollEditorProps) => {
                                                             return null
                                                         })()
                                                     }
-                                                primary={
-                                                    stackItem.id === 'working-paper'
-                                                        ? 'Working Paper'
-                                                        : copy?.physicalItem["@id"] || 'not defined'} />
+                                                    primary={
+                                                        stackItem.id === 'working-paper'
+                                                            ? 'Working Paper'
+                                                            : copy?.physicalItem["@id"] || 'not defined'} />
                                             </ListItemButton>
                                         </ListItem>
                                         {i === 0 && <Divider flexItem />}
@@ -295,60 +296,62 @@ export const Desk = ({ url }: RollEditorProps) => {
                     <Paper>
                         <svg width="10000" height="500">
                             <Glow />
-                            <g transform={`translate(${shiftX}, 0) scale(${stretch}, 1)`} ref={svgRef}>
-                                <RollGrid width={10000} />
-                                <CutoutContainer
-                                    cutouts={cutouts}
-                                    setCutouts={setCutouts}
-                                    active={activeCutout}
-                                    onActivate={(cutout) => setActiveCutout(cutout)} />
-                                {stack.slice().reverse().map((stackItem, i) => {
-                                    if (!stackItem.active) return null
+                            <g transform={/*`translate(${shiftX}, 0) scale(${stretch}, 1)`*/''} ref={svgRef}>
+                                <PinchZoomProvider pinch={shiftX} zoom={stretch}>
+                                    <RollGrid width={10000} />
+                                    <CutoutContainer
+                                        cutouts={cutouts}
+                                        setCutouts={setCutouts}
+                                        active={activeCutout}
+                                        onActivate={(cutout) => setActiveCutout(cutout)} />
+                                    {stack.slice().reverse().map((stackItem, i) => {
+                                        if (!stackItem.active) return null
 
-                                    if (stackItem.id === 'working-paper') {
+                                        if (stackItem.id === 'working-paper') {
+                                            return (
+                                                <WorkingPaper
+                                                    key={`copy_${i}`}
+                                                    numberOfRolls={collator.current.collatedRolls.length}
+                                                    events={collator.current.events}
+                                                    onClick={(event: CollatedEvent) => {
+                                                        const existingPin = pins.indexOf(event)
+                                                        if (existingPin !== -1) {
+                                                            console.log('removing existing pin', existingPin)
+                                                            setPins(prev => {
+                                                                prev.splice(existingPin, 1)
+                                                                return [...prev]
+                                                            })
+                                                        }
+                                                        else {
+                                                            setPins(prev => [...prev, event])
+                                                        }
+                                                    }} />
+                                            )
+                                        }
+
+                                        const copy = collator.current.findCopy(stackItem.id)
+                                        if (!copy) return null
+
                                         return (
-                                            <WorkingPaper
+                                            <RollCopyViewer
                                                 key={`copy_${i}`}
-                                                numberOfRolls={collator.current.collatedRolls.length}
-                                                events={collator.current.events}
-                                                onClick={(event: CollatedEvent) => {
-                                                    const existingPin = pins.indexOf(event)
-                                                    if (existingPin !== -1) {
-                                                        console.log('removing existing pin', existingPin)
-                                                        setPins(prev => {
-                                                            prev.splice(existingPin, 1)
-                                                            return [...prev]
-                                                        })
-                                                    }
-                                                    else {
-                                                        setPins(prev => [...prev, event])
-                                                    }
+                                                copy={copy}
+                                                onTop={i === 0}
+                                                color={stackItem.color}
+                                                onClick={(event) => {
+                                                    setPins(prev => [...prev, event])
                                                 }} />
                                         )
-                                    }
+                                    })}
 
-                                    const copy = collator.current.findCopy(stackItem.id)
-                                    if (!copy) return null
-
-                                    return (
-                                        <RollCopyViewer
-                                            key={`copy_${i}`}
-                                            copy={copy}
-                                            onTop={i === 0}
-                                            color={stackItem.color}
-                                            onClick={(event) => {
-                                                setPins(prev => [...prev, event])
+                                    {svgRef.current && (
+                                        <PinContainer
+                                            pins={pins}
+                                            remove={pinToRemove => {
+                                                setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
                                             }} />
-                                    )
-                                })}
-
-                                {svgRef.current && (
-                                    <PinContainer
-                                        pins={pins}
-                                        remove={pinToRemove => {
-                                            setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
-                                        }} />
-                                )}
+                                    )}
+                                </PinchZoomProvider>
                             </g>
                         </svg>
                     </Paper>
@@ -371,7 +374,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                     })
                     render()
                 }} />
-            
+
             {activeCutout && <InterpretationDialog
                 open={interpretationDialogOpen}
                 onClose={() => setInterpretationDialogOpen(false)}

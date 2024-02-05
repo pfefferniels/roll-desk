@@ -1,6 +1,7 @@
 import { CollatedEvent, Note } from "linked-rolls/lib/.ldo/rollo.typings"
 import { useState } from "react"
 import { usePiano } from "../../hooks/usePiano"
+import { usePinchZoom } from "../../hooks/usePinchZoom"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -10,6 +11,8 @@ interface CollatedEventViewerProps {
 
 const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
     const [displayOrientation, setDisplayOrientation] = useState(false)
+    const { zoom, pinch } = usePinchZoom()
+
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
 
@@ -18,9 +21,9 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 
     if (onsets.length === 0 || offsets.length === 0) return null
 
-    const innerBoundaries = [onsets[onsets.length - 1] / 5, offsets[0] / 5]
-    const onsetStretch = [onsets[0] / 5, onsets[onsets.length - 1] / 5]
-    const offsetStretch = [offsets[0] / 5, offsets[offsets.length - 1] / 5]
+    const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(v => (v / zoom + pinch))
+    const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(v => (v / zoom + pinch))
+    const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(v => (v / zoom + pinch))
 
     const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
     const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2

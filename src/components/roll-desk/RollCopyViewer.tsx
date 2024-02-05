@@ -1,6 +1,7 @@
 import { RollCopy } from "linked-rolls"
 import { Expression, Note } from "linked-rolls/lib/.ldo/rollo.typings"
 import { usePiano } from "../../hooks/usePiano"
+import { usePinchZoom } from "../../hooks/usePinchZoom"
 
 interface RollCopyViewerProps {
     copy: RollCopy
@@ -11,6 +12,7 @@ interface RollCopyViewerProps {
 
 export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerProps) => {
     const { playSingleNote } = usePiano()
+    const { zoom, pinch } = usePinchZoom()
 
     return (
         <g className='roll-copy'>
@@ -26,8 +28,8 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
                     }}
                     data-id={event["@id"]}
                     id={event["@id"]}
-                    x={event.P43HasDimension.from / 5}
-                    width={(event.P43HasDimension.to - event.P43HasDimension.from) / 5}
+                    x={event.P43HasDimension.from * (1/zoom) + pinch}
+                    width={(event.P43HasDimension.to - event.P43HasDimension.from) * (1/zoom)}
                     height={5}
                     fillOpacity={onTop ? 0.8 : 0.4}
                     fill={onTop ? color : 'gray'}

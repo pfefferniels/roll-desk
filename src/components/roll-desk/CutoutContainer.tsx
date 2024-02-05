@@ -1,6 +1,8 @@
 import { Cutout } from "linked-rolls/lib/.ldo/rollo.typings";
 import { roundedHull } from "../../helpers/roundedHull";
 import { useState } from "react";
+import { Node } from "../works/WorksGraph2";
+import { InterpretationNode } from "../works/InterpretationNode";
 
 interface CutoutViewerProps {
     cutout: Cutout
@@ -10,6 +12,8 @@ interface CutoutViewerProps {
 }
 
 const CutoutViewer = ({ cutout, onRemove, active, onActivate }: CutoutViewerProps) => {
+    const [nodes, setNodes] = useState<Node[]>([])
+
     const points: [number, number][] = []
     for (const iri of cutout.P106IsComposedOf) {
         const corresp = document.getElementById(iri["@id"]) as SVGGraphicsElement | null
@@ -23,26 +27,38 @@ const CutoutViewer = ({ cutout, onRemove, active, onActivate }: CutoutViewerProp
     const hull = roundedHull(points, 2.5)
 
     return (
-        <path
-            className='selection'
-            filter={active ? 'url(#purple-glow)' : ''}
-            fill='gray'
-            fillOpacity={0.3}
-            d={hull}
-            onClick={(e) => {
-                if (e.altKey && e.shiftKey) {
-                    onRemove()
-                    return
-                }
-                onActivate()
-            }} />
+        <>
+            <path
+                className='selection'
+                filter={active ? 'url(#purple-glow)' : ''}
+                fill='gray'
+                fillOpacity={0.3}
+                d={hull}
+                onClick={(e) => {
+                    if (e.altKey && e.shiftKey) {
+                        onRemove()
+                        return
+                    }
+                    onActivate()
+                }} />
+            {active && (
+                <g id='nodes'>
+                    {nodes.map(((node, i) => (
+                        <g key={`node_${i}`}>
+                            <InterpretationNode x={node.x!} y={node.y!} thing={node.thing} />
+                        </g>
+                    )))}
+                </g>
+
+            )}
+        </>
     )
 }
 
 interface CutoutContainerProps {
     cutouts: Cutout[]
     setCutouts: (cutouts: Cutout[]) => void
-    active?: Cutout 
+    active?: Cutout
     onActivate: (cutout: Cutout) => void
 }
 
@@ -58,7 +74,7 @@ export const CutoutContainer = ({ cutouts, setCutouts, active, onActivate }: Cut
                         cutouts.splice(i, 1)
                         setCutouts([...cutouts])
                     }}
-                    onActivate={() => onActivate(cutout)}  />
+                    onActivate={() => onActivate(cutout)} />
             ))}
         </>
     )
