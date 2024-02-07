@@ -1,17 +1,20 @@
 import { Thing, UrlString, addUrl, asUrl, buildThing, getFile, getSolidDataset, getSourceUrl, getThing, getUrl, getUrlAll, removeThing, removeUrl, saveSolidDatasetAt, setThing, setUrl } from "@inrupt/solid-client"
 import { useDataset, useSession, useThing } from "@inrupt/solid-ui-react"
 import { useEffect, useRef, useState } from "react"
-import { crm, frbroo, mer } from "../../helpers/namespaces"
+import { crm, crmdig, frbroo, mer } from "../../helpers/namespaces"
 import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
-import MidiViewer from "../roll-o/MidiViewer"
 import { PairContainer } from "./PairContainer"
 import { Button, IconButton, Paper } from "@mui/material"
 import { ArrowBack, Edit } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
-import Matcher, { Match, MatchResult, NoteEvent, NoteEventVector, MidiNoteVector } from "alignmenttool"
 import { MEI } from "../../lib/mei"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { loadVerovio } from "../../lib/loadVerovio.mjs"
+import { CollatedEvent, Note } from "linked-rolls/lib/.ldo/rollo.typings"
+import { Collator } from "linked-rolls"
+import { align } from "alignmenttool"
+import { v4 } from "uuid"
+import { WorkingPaper } from "../roll-desk/WorkingPaper"
 
 interface AlignmentEditorProps {
   interpretationUrl: string
@@ -25,17 +28,15 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
   const { dataset } = useDataset(interpretationUrl, { fetch: session.fetch as any })
   const { thing: interpretation } = useThing(interpretationUrl, interpretationUrl, { fetch: session.fetch as any })
 
-  const [meiUrl, setMEIUrl] = useState<UrlString>()
-  const [midiUrl, setMIDIUrl] = useState<UrlString>()
-
-  const [pianoRoll, setPianoRoll] = useState<PianoRoll>()
+  const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
   const [mei, setMEI] = useState<MEI>()
+  const [meiUrl, setMEIUrl] = useState<UrlString>()
 
   const [pairs, setPairs] = useState<Thing[]>([])
   const [alignment, setAlignment] = useState<Thing>()
 
-  const [selectedScoreNote, setSelectedScoreNote] = useState<UrlString>()
-  const [selectedMIDINote, setSelectedMIDINote] = useState<UrlString>()
+  const [selectedScoreNote, setSelectedScoreNote] = useState<string>()
+  const [selectedEvent, setSelectedEvent] = useState<string>()
 
   const parentRef = useRef<SVGSVGElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -91,27 +92,32 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
         }
       }
 
-      // find the MIDI
-      const rollUrl = getUrl(interpretation, frbroo('R2_is_derivative_of'))
-      setMessage(`Loading MIDI for roll ${rollUrl}`)
-      if (!rollUrl) return
+      // Load the collated events
+      const cutoutUrl = getUrl(interpretation, crmdig('L43_annotates'))
+      if (!cutoutUrl) {
+        setMessage('No cutout associated')
+        return
+      }
 
-      const rollDataset = await getSolidDataset(rollUrl, { fetch: session.fetch as any })
-      if (!rollDataset) return
+      const cutoutDataset = await getSolidDataset(cutoutUrl, { fetch: session.fetch as any })
+      const cutout = getThing(cutoutDataset, cutoutUrl)
+      if (!cutout) {
+        setMessage('Associated cutout could not be found')
+        return
+      }
 
-      const rollThing = getThing(rollDataset, rollUrl)
-      if (!rollThing) return
+      const eventUrls = getUrlAll(cutout, crm('P106_is_composed_of'))
+      if (!eventUrls.length) {
+        console.log('Associated cutout contains no roll events')
+        return
+      }
 
-      const rollCopyUrl = getUrl(rollThing, frbroo('R12_is_realised_in'))
-      if (!rollCopyUrl) return
+      const eventDataset = await getFile(eventUrls[0], { fetch: session.fetch as any })
 
-      const rollCopy = getThing(rollDataset, rollCopyUrl)
-      if (!rollCopy) return
+      const collator = new Collator()
+      await collator.importFromTurtle(await eventDataset.text())
+      setCollatedEvents(collator.events.filter(e => eventUrls.includes(e["@id"] || '')))
 
-      const rollCopyLabel = getUrl(rollCopy, RDFS.label)
-      if (!rollCopyLabel) return
-
-      setMIDIUrl(rollCopyLabel)
       setMessage(`Done.`)
     }
 
@@ -128,9 +134,9 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
   }, [alignment, dataset])
 
   useEffect(() => {
-    if (!dataset || !selectedMIDINote || !selectedScoreNote) return
+    if (!dataset || !interpretation || !selectedEvent || !selectedScoreNote) return
 
-    setMessage(`creating new pair with ${selectedMIDINote} and ${selectedScoreNote}`)
+    setMessage(`creating new pair with ${selectedEvent} and ${selectedScoreNote}`)
 
     const savePair = async () => {
       let updatedAlignment = alignment
@@ -141,14 +147,14 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
 
       updatedAlignment = buildThing(updatedAlignment)
         .setUrl(mer('has_score'), meiUrl || '')
-        .setUrl(mer('has_recording'), midiUrl || '')
+        .setUrl(mer('has_cutout'), getUrl(interpretation, crmdig('L43_annotates')) || '')
         .build()
 
       setMessage(`Saving pair ...`)
       const newPair = buildThing()
         .addUrl(RDF.type, mer('AlignmentPair'))
         .addUrl(mer('has_score_note'), `${meiUrl}#${selectedScoreNote}`)
-        .addUrl(mer('has_midi_note'), selectedMIDINote)
+        .addUrl(mer('has_event'), selectedEvent)
         .build()
 
       setPairs(prev => [...prev, newPair])
@@ -162,26 +168,44 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       await saveSolidDatasetAt(getSourceUrl(dataset)!, updatedDataset, { fetch: session.fetch as any })
       setMessage(`Pair succesfully saved`)
 
-      setSelectedMIDINote(undefined)
+      setSelectedEvent(undefined)
       setSelectedScoreNote(undefined)
     }
 
     savePair()
-  }, [selectedMIDINote, selectedScoreNote, alignment, dataset, meiUrl, midiUrl, session.fetch, setMessage])
+  }, [interpretation, selectedEvent, selectedScoreNote, alignment, dataset, meiUrl, session.fetch, setMessage])
 
   const performAlignment = async () => {
-    if (!mei || !pianoRoll) return
-    const sf = new ScoreFollower(mei.asHMM(), 4)
-    const matches = sf.getMatchResult(pianoRoll).events.map(match => {
-      const newPair = buildThing()
-        .addUrl(RDF.type, mer('AlignmentPair'))
-        .addUrl(mer('has_score_note'), `${meiUrl}#${match.meiId}`)
-        .addUrl(mer('has_midi_note'), match.id)
-        .build()
-      return newPair
-    })
+    if (!interpretation) return
+    if (!mei) return
 
-    setPairs(matches)
+    // TODO:
+    const midiEvents = collatedEvents
+      .filter(e => e.wasCollatedFrom && e.wasCollatedFrom.length && e.wasCollatedFrom[0].type?.["@id"] === 'Note')
+      .map(e => {
+        const note = e.wasCollatedFrom![0] as Note
+        return {
+          id: e["@id"] || v4(),
+          onset: note.P43HasDimension.from / 60,
+          offset: note.P43HasDimension.to / 60,
+          pitch: note.hasPitch,
+          channel: 0
+        }
+      })
+    let noteEvents = mei.asNoteEvents()
+    const matchResult = align(midiEvents, noteEvents, 0.1, 4)
+    const matches = matchResult.matches;
+
+    const newPairs = []
+    for (let i = 0; i < matches.size(); i++) {
+      newPairs.push(buildThing()
+        .addUrl(RDF.type, mer('AlignmentPair'))
+        .addUrl(mer('has_score_note'), `${meiUrl}#${matches.get(i).scoreId}`)
+        .addUrl(mer('has_midi_note'), matches.get(i).midiId)
+        .build())
+    }
+
+    setPairs(newPairs)
     setMessage('Pairs interpolated.')
 
     if (!alignment || !dataset) return
@@ -205,8 +229,8 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     }
 
     const thingsAdded = []
-    for (let i = 0; i < matches.length; i += chunkSize) {
-      const chunk = matches.slice(i, i + chunkSize);
+    for (let i = 0; i < newPairs.length; i += chunkSize) {
+      const chunk = newPairs.slice(i, i + chunkSize);
 
       for (const pairThing of chunk) {
         modifiedDataset = setThing(modifiedDataset, pairThing)
@@ -227,7 +251,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     // make sure that score and MIDI file are properly attached 
     // to the alignment
     modifiedAlignment = setUrl(modifiedAlignment, mer('has_score'), meiUrl || '')
-    modifiedAlignment = setUrl(modifiedAlignment, mer('has_recording'), midiUrl || '')
+    modifiedAlignment = setUrl(modifiedAlignment, mer('has_cutout'), getUrl(interpretation, crmdig('L43_annotates')) || '')
 
     setMessage(`Updating alignment ...`)
     modifiedDataset = setThing(modifiedDataset, modifiedAlignment)
@@ -292,19 +316,16 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
         <svg height={200} width={2000} id='verovio-canvas' ref={svgRef} />
 
         <svg height={800} transform="translate(0, 200)">
-          {midiUrl && (
-            <MidiViewer
-              asSvg
-              url={midiUrl}
-              onDone={setPianoRoll}
-              onSelect={(event) => event && setSelectedMIDINote(asUrl(event))}
+            <WorkingPaper
+              numberOfRolls={1}
+              events={collatedEvents}
+              onClick={(event) => setSelectedEvent(event["@id"])}
             />
-          )}
         </svg>
 
         <g id='pairs'>
           <PairContainer
-            ready={(pianoRoll && mei) !== undefined}
+            ready={collatedEvents.length > 0 && mei !== undefined}
             pairs={pairs}
             parentRef={parentRef.current}
             onRemove={removePair}

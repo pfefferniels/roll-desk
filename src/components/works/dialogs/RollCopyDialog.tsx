@@ -5,7 +5,7 @@ import { MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, Stack, TextField } from "@mui/material";
 import { useContext, useState } from "react";
 import { crm, crmdig, frbroo, mer } from "../../../helpers/namespaces";
-import { midi2ld } from "../../../lib/midi/midi2ld";
+// import { midi2ld } from "../../../lib/midi/midi2ld";
 import { MidiFile, read } from "midifile-ts";
 import { v4 } from "uuid";
 import { datasetUrl } from "../../../helpers/datasetUrl";
@@ -76,13 +76,13 @@ export const RollCopyDialog = ({ thing, attachTo, open, onClose }: DigitizedReco
             if (midi) {
                 // TODO: use private pod instead
                 const midiDatasetUrl = `${datasetUrl}/${v4()}.ttl`
-                const midiLd = midi2ld(midi, midiDatasetUrl);
+                // const midiLd = midi2ld(midi, midiDatasetUrl);
 
                 // Save the RDF dataset in the pod
-                recording.addUrl(RDFS.label, `${midiDatasetUrl}#${midiLd.name}`)
+                // recording.addUrl(RDFS.label, `${midiDatasetUrl}#${midiLd.name}`)
 
                 setLoading('saving-midi')
-                await saveSolidDatasetAt(midiDatasetUrl, midiLd.dataset, { fetch: session.fetch as any })
+                // await saveSolidDatasetAt(midiDatasetUrl, midiLd.dataset, { fetch: session.fetch as any })
             }
         }
 

@@ -4,7 +4,7 @@ import { Collator, Emulation, RollCopy, createCutout } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
 import { CollatedEvent, Note, Expression, Cutout } from "linked-rolls/lib/.ldo/rollo.typings"
 import { RollCopyViewer } from "./RollCopyViewer"
-import { Add, AlignHorizontalCenter, ArrowUpward, CallMerge, ColorLens, ContentCut, CopyAll, MultipleStop, Pause, PlayArrow, Save, Visibility, VisibilityOff } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowBack, ArrowUpward, CallMerge, ColorLens, ContentCut, CopyAll, MultipleStop, Pause, PlayArrow, Save, Visibility, VisibilityOff } from "@mui/icons-material"
 import { OperationsAsText } from "./OperationAsText"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -16,6 +16,17 @@ import { Glow } from "./Glow"
 import { CutoutContainer } from "./CutoutContainer"
 import { InterpretationDialog } from "../works/dialogs/InterpretationDialog"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
+import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
+import { SolidDataset, Thing, addUrl, asUrl, buildThing, getContainedResourceUrlAll, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getThingAll, getUrl, getUrlAll, overwriteFile, saveFileInContainer, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
+import { crm, frbroo, mer, rollo } from "../../helpers/namespaces"
+import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
+import { datasetUrl } from "../../helpers/datasetUrl"
+import { v4 } from "uuid"
+import { Editor } from "linked-rolls/lib/Editor"
+import { datasetToString } from "@ldo/rdf-utils"
+import { useNavigate } from "react-router-dom"
+import { useSnackbar } from "../../providers/SnackbarContext"
+import { parseRdf } from "ldo"
 
 interface RollEditorProps {
     url: string
@@ -45,37 +56,107 @@ const stringToColour = (str: string) => {
  */
 
 export const Desk = ({ url }: RollEditorProps) => {
+    const { session } = useSession()
+    const navigate = useNavigate()
+    const { setMessage } = useSnackbar()
+    const { play, stopAll } = usePiano()
+
+    const [collator,] = useState<Collator>(new Collator())
+    const [emulation,] = useState<Emulation>(new Emulation())
+
+    const [solidDataset, setDataset] = useState<SolidDataset>()
+    const [rollWork, setRollWork] = useState<Thing | null>()
+    const [physicalExpression, setPhysicalExpression] = useState<Thing | null>()
+    const [digitalExpression, setDigitalExpression] = useState<Thing>()
+
     const [rerender, setRerender] = useState(0)
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [interpretationDialogOpen, setInterpretationDialogOpen] = useState(false)
     const [stack, setStack] = useState<({
         id: 'working-paper' | string,
+        title: string,
         active: boolean,
         color: string
     })[]>([{
         id: 'working-paper',
+        title: 'Working Paper',
         active: true,
         color: 'blue'
     }])
-    const [isDragging, setIsDragging] = useState(false)
     const [pins, setPins] = useState<(Note | Expression | CollatedEvent)[]>([])
     const [cutouts, setCutouts] = useState<Cutout[]>([])
     const [activeCutout, setActiveCutout] = useState<Cutout>()
+
+    const [isDragging, setIsDragging] = useState(false)
     const [shiftX, setShiftX] = useState(0)
     const [stretch, setStretch] = useState(2)
-    const [isPlaying, setIsPlaying] = useState(false)
-    const { play, stopAll } = usePiano()
 
-    const collator = useRef(new Collator())
+    const [isPlaying, setIsPlaying] = useState(false)
 
     const svgRef = useRef<SVGGElement>(null)
 
     const render = () => setRerender(rerender => rerender + 1)
 
     const saveAll = async () => {
-        const dataset = collator.current.asDataset('https://mypod.org/')
-        // const emulationDataset = 
-        console.log('Saving dataset', dataset, 'and emulation and', cutouts)
+        if (!solidDataset || !rollWork) return
+        setMessage('Saving all ...')
+
+        if (emulation.midiEvents.length === 0) {
+            setMessage('Running emulation')
+            emulation.emulateFromCollatedRoll(
+                collator.events)
+        }
+
+        setMessage('Combining datasets for emulation and collation')
+
+        const eventDataset = await emulation.asDataset().union(
+            await collator.asDataset()
+        )
+
+        setMessage('Generating turtle')
+        const turtle = await datasetToString(eventDataset, {})
+
+        if (!digitalExpression) {
+            setMessage('Cannot proceed without an existing digital expression.')
+            return
+        }
+
+        let changedDataset = solidDataset
+        setMessage('Attaching data to existing digital expression')
+        const eventsUrl = getUrl(digitalExpression, RDFS.label)
+        if (!eventsUrl) return
+        const fileName = eventsUrl.slice(eventsUrl.lastIndexOf('/')).replace('.ttl', '')
+        changedDataset = setThing(solidDataset, digitalExpression)
+        changedDataset = await saveSolidDatasetAt(getSourceUrl(solidDataset)!, changedDataset, { fetch: session.fetch as any })
+
+        // TODO use private POD
+        const savedFile = await overwriteFile(
+            eventsUrl,
+            new File([turtle], fileName, { type: 'text/turtle' }),
+            { fetch: session.fetch as any })
+
+        setMessage('Done')
+        if (!savedFile) {
+            setMessage('Failed saving file for ' + eventsUrl)
+        }
+
+        // Save cutouts
+        setMessage('Saving cutouts')
+        for (const cutout of cutouts) {
+            const cutoutThing = buildThing({
+                url: cutout["@id"] || `${getSourceUrl(solidDataset)}#${v4()}`
+            })
+
+            cutoutThing.addUrl(RDF.type, rollo(cutout.type["@id"]))
+            for (const part of cutout.P106IsComposedOf) {
+                if (!part["@id"]) continue
+                cutoutThing.addUrl(crm('P106_is_composed_of'), part["@id"])
+            }
+
+            changedDataset = setThing(changedDataset, cutoutThing.build())
+        }
+        setDataset(await saveSolidDatasetAt(getSourceUrl(solidDataset)!, changedDataset, { fetch: session.fetch as any }))
+        setMessage('Done.')
     }
 
     const handleAlign = () => {
@@ -99,13 +180,14 @@ export const Desk = ({ url }: RollEditorProps) => {
 
         const active = stack.find(item => item.active && item.id !== 'working-paper')
         if (!active) return
-        const copy = collator.current.findCopy(active.id)
+        const copy = collator.findCopy(active.id)
         if (!copy) return
 
-        collator.current.stretchRollCopy(copy, stretch)
-        collator.current.shiftRollCopy(copy, shift, 0)
-        collator.current.applyOperations()
-        render()
+        collator.stretchRollCopy(copy, stretch)
+        collator.shiftRollCopy(copy, shift, 0)
+        collator.applyOperations()
+
+        setPins([])
     }
 
     const updateStretch = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -119,7 +201,7 @@ export const Desk = ({ url }: RollEditorProps) => {
         setShiftX(prev => prev + e.movementX)
     }, [isDragging])
 
-    const onDragEnd = useCallback((e: MouseEvent) => {
+    const onDragEnd = useCallback(() => {
         setIsDragging(false)
     }, [])
 
@@ -146,37 +228,153 @@ export const Desk = ({ url }: RollEditorProps) => {
         }
     }, [onDrag, onDragEnd, onDragStart, onZoom])
 
+    useEffect(() => {
+        const fetchRoll = async () => {
+            setMessage('Fetching dataset')
+            const dataset = await getSolidDataset(url, { fetch: session.fetch as any })
+            if (!dataset) return
+
+            let newRollWork = getThing(dataset, url)
+            if (!newRollWork) {
+                setMessage(`Given work ${url} could not be found in the dataset`)
+                return
+            }
+
+            let physicalExpressionThing, digitalExpressionThing
+            const expressionUrls = getUrlAll(newRollWork, frbroo('R12_is_realised_in'))
+            for (const url of expressionUrls) {
+                const thing = getThing(dataset, url)
+                if (!thing) continue
+
+                if (getUrlAll(thing, crm('P2_has_type')).includes(mer('PhysicalExpression'))) {
+                    setMessage(`Physical expression found`)
+                    physicalExpressionThing = thing
+                }
+                else if (getUrlAll(thing, crm('P2_has_type')).includes(mer('DigitalExpression'))) {
+                    setMessage(`Digital expression found`)
+                    digitalExpressionThing = thing
+
+                    const datasetUrl = getUrl(thing, RDFS.label)
+                    if (!datasetUrl) continue
+
+                    setMessage(`Loading roll events associated with the digital expression.`)
+                    try {
+                        const file = await getFile(datasetUrl, { fetch: session.fetch as any })
+                        collator.importFromDataset(await parseRdf(await file.text()))
+                        setMessage('Digital expression sucessfully imported')
+                    }
+                    catch (e) {
+                        setMessage(`No file yet associated with the digital expression.`)
+                    }
+
+                    // Find cutouts referring to events inside that dataset
+                    const things = getThingAll(dataset)
+                    setCutouts(
+                        things
+                            .filter(thing => {
+                                const linkedEvents = getUrlAll(thing, crm('P106_is_composed_of'))
+                                if (linkedEvents.length === 0) return false
+
+                                console.log('testing if', linkedEvents, 'all start with', datasetUrl)
+                                return (linkedEvents.every(event => event.startsWith(datasetUrl)))
+                            })
+                            .map(thing => ({
+                                '@id': asUrl(thing),
+                                'P106IsComposedOf': getUrlAll(thing, crm('P106_is_composed_of')).map(url => ({
+                                    '@id': url
+                                })),
+                                'type': { '@id': 'Selection' }
+                            }))
+                    )
+                }
+            }
+
+            let updatedDataset = dataset
+            if (!physicalExpressionThing) {
+                physicalExpressionThing = buildThing()
+                    .addUrl(RDF.type, frbroo('F26_Recording'))
+                    .addUrl(RDF.type, frbroo('F3_Manifestation_Product_Type'))
+                    .addUrl(crm('P2_type'), mer('PhysicalExpression'))
+                    .addUrl(frbroo('R12i_realises'), newRollWork)
+                    .build()
+                newRollWork = addUrl(newRollWork, frbroo('R12_is_realised_in'), physicalExpressionThing)
+
+                updatedDataset = setThing(dataset, physicalExpressionThing)
+                updatedDataset = setThing(updatedDataset, newRollWork)
+                updatedDataset = await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
+            }
+
+            if (!digitalExpressionThing) {
+                setMessage('Creating new digital expression')
+                digitalExpressionThing = buildThing()
+                    .addUrl(RDF.type, frbroo('F26_Recording'))
+                    .addUrl(crm('P2_has_type'), mer('DigitalExpression'))
+                    .addUrl(RDFS.label, `${datasetUrl}/${v4()}.ttl`)
+                    .build()
+                newRollWork = addUrl(newRollWork, frbroo('R12_is_realised_in'), digitalExpressionThing)
+
+                updatedDataset = setThing(dataset, digitalExpressionThing)
+                updatedDataset = setThing(updatedDataset, newRollWork)
+                updatedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, updatedDataset, { fetch: session.fetch as any })
+            }
+
+            setDataset(updatedDataset)
+            setRollWork(newRollWork)
+            setPhysicalExpression(physicalExpressionThing)
+            setDigitalExpression(digitalExpressionThing)
+            setMessage('Done')
+        }
+
+        fetchRoll()
+    }, [session.fetch, setMessage, url, collator])
+
+    useEffect(() => {
+        if (!digitalExpression) return 
+
+        const eventsDataset = getUrl(digitalExpression, RDFS.label) || ''
+        collator.baseURI = eventsDataset
+        emulation.baseURI = eventsDataset
+    }, [digitalExpression, collator, emulation])
+
     return (
         <>
             <Grid container m={1} spacing={1}>
                 <Grid item xs={12} md={12} xl={12}>
                     <RibbonGroup>
-                        <Ribbon title='Condition'>
-                            <IconButton>
-                                <Add />
+                        <Ribbon title=' '>
+                            <IconButton onClick={() => navigate('/')}>
+                                <ArrowBack />
+                            </IconButton>
+                            <IconButton
+                                disabled={!digitalExpression}
+                                onClick={saveAll}>
+                                <Save />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Collation'>
+                            <IconButton
+                                disabled={!digitalExpression}
+                                onClick={async () => {
+                                console.log('collator.baseURI', collator.baseURI)
+                                const activeLayer = stack.find(item => item.active && item.id !== 'working-paper')
+                                if (!activeLayer) return
+                                const copy = collator.findCopy(activeLayer.id)
+                                if (!copy) return
+                                collator.prepareFromRollCopy(copy)
+                                render()
+                            }}>
+                                <CopyAll />
+                            </IconButton>
                             <IconButton
                                 disabled={pins.length !== 4}
                                 onClick={handleAlign}>
                                 <AlignHorizontalCenter />
                             </IconButton>
                             <IconButton onClick={async () => {
-                                await collator.current.collateAllRolls()
+                                await collator.collateAllRolls()
                                 render()
                             }}>
                                 <CallMerge />
-                            </IconButton>
-                            <IconButton onClick={async () => {
-                                const activeLayer = stack.find(item => item.active && item.id !== 'working-paper')
-                                if (!activeLayer) return
-                                const copy = collator.current.findCopy(activeLayer.id)
-                                if (!copy) return
-                                collator.current.prepareFromRollCopy(copy)
-                                render()
-                            }}>
-                                <CopyAll />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Correction'>
@@ -196,35 +394,35 @@ export const Desk = ({ url }: RollEditorProps) => {
                                         setIsPlaying(false)
                                     }
                                     else {
-                                        const emulation = new Emulation()
+                                        const activeLayer = stack.find(copy => copy.active)
+                                        if (!activeLayer) return
 
-                                        const activeRoll = stack.find(copy => copy.active)
-                                        console.log('active roll=', activeRoll)
-                                        if (!activeRoll) {
+                                        if (activeLayer?.id === 'working-paper') {
                                             emulation.emulateFromCollatedRoll(
-                                                collator.current.events)
+                                                collator.events)
+                                            play(emulation.midiEvents)
                                         }
                                         else {
-                                            const roll = collator.current.findCopy(activeRoll.id)
+                                            const emulation = new Emulation()
+
+                                            const roll = collator.findCopy(activeLayer.id)
                                             if (!roll) return
                                             emulation.emulateFromRoll(roll.events)
                                         }
 
-                                        play(emulation.midiEvents)
                                         setIsPlaying(true)
                                     }
                                 }}>
                                 {isPlaying ? <Pause /> : <PlayArrow />}
-                            </IconButton>
-                            <IconButton>
-                                <Save />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Annotation'>
                             <IconButton
                                 disabled={pins.length === 0}
                                 onClick={() => {
-                                    setCutouts(cutouts => [...cutouts, createCutout(pins)])
+                                    const containerUrl = (solidDataset && getSourceUrl(solidDataset))
+                                    console.log('container URL=', containerUrl)
+                                    setCutouts(cutouts => [...cutouts, createCutout(pins, containerUrl || 'https://linked-rolls.org/')])
                                     setPins([])
                                 }}>
                                 <ContentCut />
@@ -238,20 +436,13 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                     </RibbonGroup>
-                    <RibbonGroup>
-                        <Ribbon title='General'>
-                            <IconButton onClick={saveAll}>
-                                <Save />
-                            </IconButton>
-                        </Ribbon>
-                    </RibbonGroup>
                 </Grid>
                 <Grid item xs={3}>
                     <Paper sx={{ maxWidth: 360 }}>
                         <Box p={1}>Stack</Box>
                         <List dense>
                             {stack.map((stackItem, i) => {
-                                const copy = collator.current.findCopy(stackItem.id)
+                                const copy = collator.findCopy(stackItem.id)
                                 return (
                                     <React.Fragment key={`listItem_${i}`}>
                                         <ListItem
@@ -278,19 +469,16 @@ export const Desk = ({ url }: RollEditorProps) => {
                                                     secondary={
                                                         (() => {
                                                             if (stackItem.id === 'working-paper') {
-                                                                return <span>{collator.current.collatedRolls.length} collated rolls</span>
+                                                                return <span>{collator.collatedRolls.length} collated rolls</span>
                                                             }
                                                             if (copy) {
                                                                 return <OperationsAsText
-                                                                    operations={collator.current.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
+                                                                    operations={collator.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
                                                             }
                                                             return null
                                                         })()
                                                     }
-                                                    primary={
-                                                        stackItem.id === 'working-paper'
-                                                            ? 'Working Paper'
-                                                            : copy?.physicalItem["@id"] || 'not defined'} />
+                                                    primary={stackItem.title} />
                                             </ListItemButton>
                                         </ListItem>
                                         {i === 0 && <Divider flexItem />}
@@ -299,7 +487,9 @@ export const Desk = ({ url }: RollEditorProps) => {
                             })}
                         </List>
                         <Box>
-                            <IconButton onClick={() => setRollCopyDialogOpen(true)}>
+                            <IconButton
+                                disabled={!digitalExpression}
+                                onClick={() => setRollCopyDialogOpen(true)}>
                                 <Add />
                             </IconButton>
                         </Box>
@@ -312,11 +502,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <g transform={/*`translate(${shiftX}, 0) scale(${stretch}, 1)`*/''} ref={svgRef}>
                                 <PinchZoomProvider pinch={shiftX} zoom={stretch} trackHeight={6}>
                                     <RollGrid width={10000} />
-                                    <CutoutContainer
-                                        cutouts={cutouts}
-                                        setCutouts={setCutouts}
-                                        active={activeCutout}
-                                        onActivate={(cutout) => setActiveCutout(cutout)} />
+
                                     {stack.slice().reverse().map((stackItem, i) => {
                                         if (!stackItem.active) return null
 
@@ -324,8 +510,8 @@ export const Desk = ({ url }: RollEditorProps) => {
                                             return (
                                                 <WorkingPaper
                                                     key={`copy_${i}`}
-                                                    numberOfRolls={collator.current.collatedRolls.length}
-                                                    events={collator.current.events}
+                                                    numberOfRolls={collator.collatedRolls.length}
+                                                    events={collator.events}
                                                     onClick={(event: CollatedEvent) => {
                                                         const existingPin = pins.indexOf(event)
                                                         if (existingPin !== -1) {
@@ -342,7 +528,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                                             )
                                         }
 
-                                        const copy = collator.current.findCopy(stackItem.id)
+                                        const copy = collator.findCopy(stackItem.id)
                                         if (!copy) return null
 
                                         return (
@@ -364,34 +550,50 @@ export const Desk = ({ url }: RollEditorProps) => {
                                                 setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
                                             }} />
                                     )}
+
+                                    <DatasetContext.Provider value={{ solidDataset, setDataset }}>
+                                        <CutoutContainer
+                                            cutouts={cutouts}
+                                            setCutouts={setCutouts}
+                                            active={activeCutout}
+                                            onActivate={(cutout) => setActiveCutout(cutout)} />
+                                    </DatasetContext.Provider>
                                 </PinchZoomProvider>
                             </g>
                         </svg>
                     </Paper>
                 </Grid>
-            </Grid >
+            </Grid>
 
-            <RollCopyDialog
-                open={rollCopyDialogOpen}
-                onClose={() => setRollCopyDialogOpen(false)}
-                onDone={async (itemLink, rollAnalysis) => {
-                    const newCopy = new RollCopy(itemLink)
-                    newCopy.readFromStanfordAton(rollAnalysis)
-                    const id = collator.current.addRoll(newCopy)
-                    if (!id) return
+            <DatasetContext.Provider value={{ solidDataset, setDataset }}>
+                <RollCopyDialog
+                    open={rollCopyDialogOpen}
+                    onClose={() => setRollCopyDialogOpen(false)}
+                    attachTo={physicalExpression || undefined}
+                    onDone={async (item, rollAnalysis) => {
+                        const newCopy = new RollCopy(asUrl(item))
+                        newCopy.baseURI = collator.baseURI
+                        newCopy.readFromStanfordAton(rollAnalysis)
+                        const id = collator.addRoll(newCopy)
+                        if (!id) return
 
-                    stack.push({
-                        id,
-                        active: true,
-                        color: stringToColour(id)
-                    })
-                    render()
-                }} />
+                        stack.push({
+                            id,
+                            title: getStringNoLocale(item, crm('P102_has_title')) || '[untitled]',
+                            active: true,
+                            color: stringToColour(id)
+                        })
+                        render()
+                    }} />
 
-            {activeCutout && <InterpretationDialog
-                open={interpretationDialogOpen}
-                onClose={() => setInterpretationDialogOpen(false)}
-                cutout={activeCutout} />}
+                {activeCutout && (
+                    <InterpretationDialog
+                        open={interpretationDialogOpen}
+                        onClose={() => setInterpretationDialogOpen(false)}
+                        attachToRoll={rollWork || undefined}
+                        cutout={activeCutout["@id"]} />
+                )}
+            </DatasetContext.Provider>
         </>
     )
 }

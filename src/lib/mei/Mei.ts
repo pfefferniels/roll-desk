@@ -1,8 +1,8 @@
-import { HMM, HMMEvent, pitchToSitch } from "alignmenttool"
 import { MEINote } from "."
 import { parse } from "js2xmlparser"
 import { VerovioToolkit } from "verovio/esm"
 import { VerovioOptions } from "verovio"
+import { Midi } from "tonal"
 
 export type TimeSignature = {
     numerator: number
@@ -226,14 +226,21 @@ export class MEI {
         return this.vrvToolkit.getMEI()
     }
 
-    public asHMM(): HMM {
+    public asNoteEvents(): any[] {
+        const gcd = (a: number, b: number): number => {
+            if (!b) {
+                return a;
+            }
+
+            return gcd(b, a % b);
+        }
+
         const timemap = this.timemap
-        let result: HMMEvent[] = []
+        let result: any[] = []
 
         for (const event of timemap) {
             if (!event.on || !event.on.length) continue
 
-            const notesAtTime = []
             for (const on of event.on) {
                 const midiValues = this.vrvToolkit.getMIDIValuesForElement(on)
 
@@ -251,21 +258,27 @@ export class MEI {
                 if (this.scoreDOM.querySelector(`tie[endid='#${on}']`)) {
                     continue
                 }
-                notesAtTime.push({
-                    meiID: on,
-                    voice: voice,
-                    sitch: pitchToSitch(midiValues.pitch)
+
+                const times = this.vrvToolkit.getTimesForElement(on)
+
+                result.push({
+                    scoreTime: times.scoreTimeOnset,
+                    staff: +(staff?.getAttribute('n') || '0'),
+                    voice,
+                    suborder: 0,
+                    type: 'chord',
+                    duration: times.scoreTimeTiedDuration || times.scoreTimeDuration,
+                    sitches: [Midi.midiToNoteName(midiValues.pitch)],
+                    notetypes: ['N..'],
+                    ids: [on]
                 })
             }
-
-            if (notesAtTime.length > 0) {
-                result.push(new HMMEvent(event.qstamp, event.qstamp + 0.5, [notesAtTime]))
-            }
         }
-        const hmm = new HMM()
-        hmm.events = result
 
-        return hmm
+        /*const smallestDuration  ... */
+        /*const scoreTimeGCD = gcd(result[result.length - 1].scoreTime + duration, )*/
+
+        return result
     }
 
     public notesAtTime(qstamp: number): MEINote[] {

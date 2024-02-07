@@ -19,7 +19,10 @@ const App = () => {
         </SnackbarContext.Provider>
       </SessionProvider>
 
-      <Snackbar message={message} open={!!message} />
+      <Snackbar
+        message={message}
+        open={!!message}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }} />
     </div>
   );
 };

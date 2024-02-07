@@ -1,19 +1,21 @@
-import { Thing, asUrl, getStringNoLocale, removeThing, saveSolidDatasetAt } from "@inrupt/solid-client"
-import { crm } from "../../helpers/namespaces"
+import { Thing, asUrl, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getUrl, getUrlAll, removeThing, saveSolidDatasetAt } from "@inrupt/solid-client"
+import { crm, crmdig } from "../../helpers/namespaces"
 import { IconButton } from "@mui/material"
 import { AlignHorizontalCenter, Delete, Edit, Link } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
-import { useContext, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
 import { InterpretationDialog } from "./dialogs/InterpretationDialog"
+import { Cutout } from "linked-rolls/lib/.ldo/rollo.typings"
 
 interface InterpretationNodeProps {
     x: number
     y: number
+    size?: 'small'
     thing: Thing
 }
 
-export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => {
+export const InterpretationNode = ({ x, y, size, thing }: InterpretationNodeProps) => {
     const navigate = useNavigate()
     const { solidDataset, setDataset } = useContext(DatasetContext)
     const { session } = useSession()
@@ -29,8 +31,9 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
         )
     }
 
+    const cutoutUrl = getUrl(thing, crmdig('L43_annotates'))
     const title = getStringNoLocale(thing, crm('P102_has_title')) || '[no title]'
-    const nodeWidth = 160
+    const nodeWidth = size === 'small' ? 140 : 160
 
     return (
         <g>
@@ -39,7 +42,7 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
                 cy={y}
                 r={nodeWidth / 2}
                 fill='orange'
-                fillOpacity={0.5}
+                fillOpacity={0.6}
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/interpretation?url=${encodeURIComponent(asUrl(thing))}`)}
             />
@@ -82,7 +85,8 @@ export const InterpretationNode = ({ x, y, thing }: InterpretationNodeProps) => 
                 <InterpretationDialog
                     open={interpretationDialogOpen}
                     onClose={() => setInterpretationDialogOpen(false)}
-                    interpretation={thing} />
+                    interpretation={thing}
+                    cutout={cutoutUrl || undefined} />
             </foreignObject>
         </g >
     )

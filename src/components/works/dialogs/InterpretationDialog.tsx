@@ -14,13 +14,15 @@ interface InterpretationDialogProps {
 
     // the mer:Roll to which attach 
     // the interpretation to when creating
+    // and the cutout which it annotates
     attachToRoll?: Thing
-    cutout: Cutout
+    cutout?: UrlString
+
     open: boolean
     onClose: () => void
 }
 
-export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClose }: InterpretationDialogProps) => {
+export const InterpretationDialog = ({ interpretation, attachToRoll, cutout, open, onClose }: InterpretationDialogProps) => {
     const { session } = useSession()
     const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
 
@@ -70,6 +72,10 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, open, onClo
 
         if (attachToRoll) {
             interpretationThing.setUrl(frbroo('R2_is_derivative_of'), attachToRoll)
+        }
+
+        if (cutout) {
+            interpretationThing.setUrl(crmdig('L43_annotates'), cutout)
         }
 
         const mpmThing = buildThing(createThing())
