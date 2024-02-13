@@ -27,6 +27,7 @@ import { datasetToString } from "@ldo/rdf-utils"
 import { useNavigate } from "react-router-dom"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { parseRdf } from "ldo"
+import { Dynamics } from "./Dynamics"
 
 interface RollEditorProps {
     url: string
@@ -247,7 +248,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                 if (!thing) continue
 
                 if (getUrlAll(thing, crm('P2_has_type')).includes(mer('PhysicalExpression'))) {
-                    setMessage(`Physical expression found`)
+                    console.log(`Physical expression found`)
                     physicalExpressionThing = thing
                 }
                 else if (getUrlAll(thing, crm('P2_has_type')).includes(mer('DigitalExpression'))) {
@@ -294,7 +295,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                 physicalExpressionThing = buildThing()
                     .addUrl(RDF.type, frbroo('F26_Recording'))
                     .addUrl(RDF.type, frbroo('F3_Manifestation_Product_Type'))
-                    .addUrl(crm('P2_type'), mer('PhysicalExpression'))
+                    .addUrl(crm('P2_has_type'), mer('PhysicalExpression'))
                     .addUrl(frbroo('R12i_realises'), newRollWork)
                     .build()
                 newRollWork = addUrl(newRollWork, frbroo('R12_is_realised_in'), physicalExpressionThing)
@@ -329,7 +330,7 @@ export const Desk = ({ url }: RollEditorProps) => {
     }, [session.fetch, setMessage, url, collator])
 
     useEffect(() => {
-        if (!digitalExpression) return 
+        if (!digitalExpression) return
 
         const eventsDataset = getUrl(digitalExpression, RDFS.label) || ''
         collator.baseURI = eventsDataset
@@ -355,14 +356,14 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <IconButton
                                 disabled={!digitalExpression}
                                 onClick={async () => {
-                                console.log('collator.baseURI', collator.baseURI)
-                                const activeLayer = stack.find(item => item.active && item.id !== 'working-paper')
-                                if (!activeLayer) return
-                                const copy = collator.findCopy(activeLayer.id)
-                                if (!copy) return
-                                collator.prepareFromRollCopy(copy)
-                                render()
-                            }}>
+                                    console.log('collator.baseURI', collator.baseURI)
+                                    const activeLayer = stack.find(item => item.active && item.id !== 'working-paper')
+                                    if (!activeLayer) return
+                                    const copy = collator.findCopy(activeLayer.id)
+                                    if (!copy) return
+                                    collator.prepareFromRollCopy(copy)
+                                    render()
+                                }}>
                                 <CopyAll />
                             </IconButton>
                             <IconButton
@@ -397,16 +398,20 @@ export const Desk = ({ url }: RollEditorProps) => {
                                         const activeLayer = stack.find(copy => copy.active)
                                         if (!activeLayer) return
 
-                                        if (activeLayer?.id === 'working-paper') {
+                                        if (activeLayer?.id === 'working-paper' && collator.events.length !== 0) {
                                             emulation.emulateFromCollatedRoll(
-                                                collator.events)
+                                                collator.events,)
+                                            console.log(emulation.midiEvents)
                                             play(emulation.midiEvents)
                                         }
                                         else {
-                                            const emulation = new Emulation()
+                                            const activeRoll = stack.find(copy => copy.active && copy.id !== 'working-paper')
+                                            if (!activeRoll) return
 
-                                            const roll = collator.findCopy(activeLayer.id)
+                                            const roll = collator.findCopy(activeRoll.id)
                                             if (!roll) return
+
+                                            console.log('sending', roll.events, 'to emulation')
                                             emulation.emulateFromRoll(roll.events)
                                         }
 
@@ -558,6 +563,8 @@ export const Desk = ({ url }: RollEditorProps) => {
                                             active={activeCutout}
                                             onActivate={(cutout) => setActiveCutout(cutout)} />
                                     </DatasetContext.Provider>
+
+                                    <Dynamics forEmulation={emulation} />
                                 </PinchZoomProvider>
                             </g>
                         </svg>
