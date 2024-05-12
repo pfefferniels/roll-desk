@@ -1,18 +1,19 @@
-import { CollatedEvent, Expression, Note } from "linked-rolls/lib/.ldo/rollo.typings";
+import { CollatedEvent, Expression, Note } from "linked-rolls/lib/types";
 
-interface PinContainerProps {
+interface SelectionProps {
     pins: (Note | Expression | CollatedEvent)[]
     remove: (pin: (Note | Expression | CollatedEvent)) => void
 }
 
-export const PinContainer = ({ pins, remove }: PinContainerProps) => {
+export const Selection = ({ pins, remove }: SelectionProps) => {
     return (
-        <g className="pins">
+        <g className="selection">
             {pins.map((pin, i) => {
                 return (
                     <use
+                        key={`selected_${pin.id}`}
                         filter="url(#purple-glow)"
-                        href={'#' + pin['@id']}
+                        href={'#' + pin.id}
                         onClick={() => remove(pin)} />
                 )
             })}

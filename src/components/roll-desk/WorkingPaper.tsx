@@ -1,7 +1,9 @@
-import { CollatedEvent, Expression, Note } from "linked-rolls/lib/.ldo/rollo.typings"
-import { useState } from "react"
+import { CollatedEvent, Note, Expression } from "linked-rolls/lib/types"
+import { useEffect, useState } from "react"
 import { usePiano } from "../../hooks/usePiano"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent } from "linked-rolls"
+import { Dynamics } from "./Dynamics"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -16,12 +18,12 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
 
-    const onsets = collatedFrom.map(e => e.P43HasDimension.from).sort()
-    const offsets = collatedFrom.map(e => e.P43HasDimension.to).sort()
+    const onsets = collatedFrom.map(e => e.hasDimension.from).sort()
+    const offsets = collatedFrom.map(e => e.hasDimension.to).sort()
 
     if (onsets.length === 0 || offsets.length === 0) return null
 
-    const type = collatedFrom[0].type?.["@id"] === 'Expression' && (collatedFrom[0] as Expression).P2HasType["@id"]
+    const type = collatedFrom[0].type === 'expression' && (collatedFrom[0] as Expression).P2HasType
 
     const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(v => (v / zoom + pinch))
     const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(v => (v / zoom + pinch))
@@ -34,8 +36,8 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 
     return (
         <g
-            data-id={event["@id"]}
-            id={event["@id"]}
+            data-id={event.id}
+            id={event.id}
             className='collated-event'>
             <rect
                 x={innerBoundaries[0]}
@@ -47,20 +49,42 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 onClick={onClick}
                 onMouseEnter={() => setDisplayDetails(true)}
                 onMouseLeave={() => setDisplayDetails(false)} />
-            <line
-                x1={meanOnset}
-                x2={meanOnset}
-                y1={displayDetails ? 0 : (trackerHole - 5)}
-                y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
-                stroke='black'
-                strokeWidth={0.2} />
-            <line
-                x1={meanOffset}
-                x2={meanOffset}
-                y1={displayDetails ? 0 : (trackerHole - 5)}
-                y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
-                stroke='black'
-                strokeWidth={0.2} />
+            {type === 'SustainPedalOn' || type === 'SustainPedalOff' ?
+                <>
+                    <line
+                        x1={meanOnset}
+                        x2={meanOnset}
+                        y1={10 * trackHeight}
+                        y2={90 * trackHeight}
+                        stroke='darkred'
+                        strokeWidth={0.5} />
+                    <line
+                        x1={meanOnset}
+                        x2={meanOnset + (type === 'SustainPedalOn' ? 10 : -10)}
+                        y1={10 * trackHeight}
+                        y2={10 * trackHeight}
+                        stroke='darkred'
+                        strokeWidth={0.5} />
+                </>
+                : (
+                    <>
+                        <line
+                            x1={meanOnset}
+                            x2={meanOnset}
+                            y1={displayDetails ? 0 : (trackerHole - 5)}
+                            y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
+                            stroke='black'
+                            strokeWidth={0.2} />
+                        <line
+                            x1={meanOffset}
+                            x2={meanOffset}
+                            y1={displayDetails ? 0 : (trackerHole - 5)}
+                            y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
+                            stroke='black'
+                            strokeWidth={0.2} />
+
+                    </>
+                )}
             <polygon
                 onClick={onClick}
                 fill='red'
@@ -90,24 +114,38 @@ interface WorkingPaperProps {
 }
 
 export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperProps) => {
+    const [emulation, setEmulation] = useState<Emulation>()
     const { playSingleNote } = usePiano()
+
+    useEffect(() => {
+        // whenever the events change, update the emulation
+        const newEmulation = new Emulation()
+        newEmulation?.emulateFromCollatedRoll(events, [])
+        setEmulation(newEmulation)
+    }, [events])
 
     return (
         <g className='collated-copies'>
             {events.map((event, i) => (
                 <CollatedEventViewer
-                    key={`workingPaper_${event["@id"] || i}`}
+                    key={`workingPaper_${event.id || i}`}
                     event={event}
                     highlight={event.wasCollatedFrom?.length !== numberOfRolls}
                     onClick={() => {
-                        if (event.wasCollatedFrom &&
-                            event.wasCollatedFrom.length && 
-                            event.wasCollatedFrom[0].type?.["@id"] === 'Note') {
-                            playSingleNote((event.wasCollatedFrom[0] as Note))
-                        }
+                        if (!emulation) return
+
+                        const performingEvents = emulation.findEventsPerforming(event.id)
+                        const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
+                        const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
+                        if (!noteOn || !noteOff) return
+
+                        playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+
                         onClick(event)
                     }} />
             ))}
+
+            {emulation && <Dynamics forEmulation={emulation} color={'red'} />}
         </g>
     )
 }

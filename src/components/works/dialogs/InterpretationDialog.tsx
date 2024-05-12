@@ -33,12 +33,12 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, cutout, ope
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
-        if (!worksDataset || !interpretation) return 
+        if (!worksDataset || !interpretation) return
 
         setTitle(getStringNoLocale(interpretation, crm('P102_has_title')) || undefined)
 
         const creationUrl = getUrl(interpretation, crm('R19i_was_realised_through'))
-        if (!creationUrl) return 
+        if (!creationUrl) return
 
         const creation = getThing(worksDataset, creationUrl)
         if (!creation) return
@@ -135,18 +135,16 @@ export const InterpretationDialog = ({ interpretation, attachToRoll, cutout, ope
         updatedDataset = setThing(updatedDataset, scoreThing.build())
         updatedDataset = setThing(updatedDataset, alignmentThing.build())
 
-        if (attachToRoll) {
-            creationEvent.addUrl(frbroo('R19_created_a_realisation_of'), interpretationThing.build())
+        creationEvent.addUrl(frbroo('R19_created_a_realisation_of'), interpretationThing.build())
 
-            const updatedInterpretation = interpretationThing
-                .addUrl(frbroo('R12_is_realised_in'), asUrl(mpmThing.build(), containerUrl))
-                .addUrl(frbroo('R12_is_realised_in'), asUrl(scoreThing.build(), containerUrl))
-                .addUrl(frbroo('R12_is_realised_in'), asUrl(alignmentThing.build(), containerUrl))
-                .addUrl(frbroo('R19i_was_realised_through'), creationEvent.build())
-                .build()
+        const updatedInterpretation = interpretationThing
+            .addUrl(frbroo('R12_is_realised_in'), asUrl(mpmThing.build(), containerUrl))
+            .addUrl(frbroo('R12_is_realised_in'), asUrl(scoreThing.build(), containerUrl))
+            .addUrl(frbroo('R12_is_realised_in'), asUrl(alignmentThing.build(), containerUrl))
+            .addUrl(frbroo('R19i_was_realised_through'), creationEvent.build())
+            .build()
 
-            updatedDataset = setThing(updatedDataset, updatedInterpretation)
-        }
+        updatedDataset = setThing(updatedDataset, updatedInterpretation)
         updatedDataset = setThing(updatedDataset, actor)
         updatedDataset = setThing(updatedDataset, creationEvent.build())
 

@@ -2,10 +2,10 @@ import React from 'react';
 import { Route, BrowserRouter, Routes, useParams, useSearchParams } from 'react-router-dom';
 import WorksOverview from './components/works/WorksOverview';
 import { datasetUrl } from './helpers/datasetUrl';
-import { Interpretation } from './components/interpretation/Interpretation';
+// import { Interpretation } from './components/interpretation/Interpretation';
 import { Desk } from './components/roll-desk/RollDesk';
 import { PianoContextProvider } from './hooks/usePiano';
-import { AlignmentEditor } from './components/alignment/AlignmentEditor2';
+// import { AlignmentEditor } from './components/alignment/AlignmentEditor2';
 
 const ErrorBoundary = () => {
   return (
@@ -14,7 +14,7 @@ const ErrorBoundary = () => {
     </div>
   )
 }
-
+/*
 const AlignmentRoute = () => {
   const { interpretationId } = useParams()
   const [search] = useSearchParams()
@@ -25,7 +25,11 @@ const AlignmentRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <AlignmentEditor interpretationUrl={url} />
+  return (
+    <PianoContextProvider>
+      <AlignmentEditor interpretationUrl={url} />
+    </PianoContextProvider>
+  )
 }
 
 const InterpretationRoute = () => {
@@ -38,9 +42,13 @@ const InterpretationRoute = () => {
       : search.get('url')
   if (!url) throw new Error('no proper URL passed')
 
-  return <Interpretation interpretationUrl={url} />
+  return (
+    <PianoContextProvider>
+      <Interpretation interpretationUrl={url} />
+    </PianoContextProvider>
+  )
 }
-
+*/
 const RollRoute = () => {
   const { rollId } = useParams()
   const [search] = useSearchParams()
@@ -62,6 +70,7 @@ const AppRouter = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/*
         <Route path="/" element={<WorksOverview />} />
         <Route
           path="/align/:interpretationId?"
@@ -73,6 +82,8 @@ const AppRouter = () => {
           element={<InterpretationRoute />}
           errorElement={<ErrorBoundary />}
         />
+
+        */}
         <Route
           path="/roll/:rollId?"
           element={<RollRoute />}

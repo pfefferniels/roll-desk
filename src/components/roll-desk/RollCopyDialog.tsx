@@ -1,22 +1,12 @@
-import { Thing, addStringNoLocale, addUrl, buildThing, createThing, getSourceUrl, saveSolidDatasetAt, setThing } from "@inrupt/solid-client";
-import { DatasetContext, useSession } from "@inrupt/solid-ui-react";
-import { RDF } from "@inrupt/vocab-common-rdf";
 import { MusicNote } from "@mui/icons-material";
-import { Button, DialogTitle, DialogContent, Dialog, DialogActions, CircularProgress, Stack, TextField, Typography, Select, MenuItem, Divider } from "@mui/material";
-import { useCallback, useContext, useState } from "react";
-import { crm, frbroo } from "../../helpers/namespaces"
-import { v4 } from "uuid";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Stack, TextField, Typography, Select, MenuItem, Divider } from "@mui/material";
+import { useState } from "react";
+import { RollCopy } from "linked-rolls";
 
 interface RollCopyDialogProps {
-    // The F5 item. Pass it if you want to edit
-    // details.
-    item?: Thing
-
-    // The expression to which attach the F5 Item to.
-    attachTo?: Thing
     open: boolean
     onClose: () => void
-    onDone: (item: Thing, rollAnalysis: string) => void
+    onDone: (rollCopy: RollCopy) => void
 }
 
 /**
@@ -24,55 +14,25 @@ interface RollCopyDialogProps {
  * expressions and creates an expression if none
  * exists yet.
  */
-export const RollCopyDialog = ({ item, attachTo, open, onClose, onDone }: RollCopyDialogProps) => {
-    const { session } = useSession()
-    const { solidDataset: worksDataset, setDataset: setWorksDataset } = useContext(DatasetContext)
+export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [type, setType] = useState<'welte-red' | 'welte-green'>('welte-red')
-    const [title, setTitle] = useState<string>('')
-    const [loading, setLoading] = useState<'saving-item' | false>(false)
+    const [catalogueNumber, setCatalogueNumber] = useState('')
+    const [rollDate, setRollDate] = useState('')
 
-    const saveToPod = useCallback(async () => {
-        if (!worksDataset) {
-            console.log('No valid works dataset given')
+    const handleUpload = async () => {
+        if (!file) {
+            console.log('No file uploaded yet')
             return
         }
 
-        const containerUrl = getSourceUrl(worksDataset)
-        if (!containerUrl) {
-            console.log('unable to determine URL of the given dataset')
-            return
-        }
-
-        let itemThing = buildThing(item || createThing({
-            url: `${containerUrl}#${v4()}`
-        }))
-            .addUrl(RDF.type, frbroo('F5_Item'))
-            .addUrl(crm('P2_has_type'), `https://linked-rolls.org/skos/${type}`)
-            .build()
-
-        if (title) {
-            itemThing = addStringNoLocale(itemThing, crm('P102_has_title'), title)
-        }
-
-        let updatedDataset = worksDataset
-
-        if (attachTo) {
-            itemThing = addUrl(itemThing, frbroo('R7_is_example_of'), attachTo)
-            const updatedExpression = buildThing(attachTo)
-                .addUrl(frbroo('R7i_has_example'), itemThing)
-                .build()
-            updatedDataset = setThing(updatedDataset, updatedExpression)
-        }
-
-        updatedDataset = setThing(updatedDataset, itemThing)
-
-        setLoading('saving-item')
-        setWorksDataset(await saveSolidDatasetAt(containerUrl, updatedDataset, { fetch: session.fetch as any }))
-        setLoading(false)
-
-        return itemThing
-    }, [attachTo, item, session.fetch, setWorksDataset, title, type, worksDataset])
+        const rollCopy = new RollCopy()
+        rollCopy.physicalItem.hasType = type
+        rollCopy.physicalItem.rollDate = rollDate
+        rollCopy.physicalItem.catalogueNumber = catalogueNumber
+        rollCopy.readFromStanfordAton(await file?.text(), true)
+        onDone(rollCopy)
+    }
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -89,10 +49,14 @@ export const RollCopyDialog = ({ item, attachTo, open, onClose, onDone }: RollCo
                     </Select>
                     <TextField
                         size='small'
-                        label='Title'
-                        value={title}
-                        onChange={e => setTitle(e.target.value)} />
-                    <i>Note: The title is given only to easily recognize the roll copy.</i>
+                        label='Catalogue Number'
+                        value={catalogueNumber}
+                        onChange={e => setCatalogueNumber(e.target.value)} />
+                    <TextField
+                        size='small'
+                        label='Roll Date'
+                        value={rollDate}
+                        onChange={e => setRollDate(e.target.value)} />
                     <Divider flexItem />
                     <Button variant="contained" component="label" startIcon={< MusicNote />}>
                         Upload Roll Analysis
@@ -108,13 +72,11 @@ export const RollCopyDialog = ({ item, attachTo, open, onClose, onDone }: RollCo
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button onClick={async () => {
-                    const persistedItem = await saveToPod()
-                    console.log('persisted item=', persistedItem)
-                    if (!persistedItem) return
-                    onDone(persistedItem, await file?.text() || '')
+                    handleUpload()
                     onClose()
                 }}>
-                    {loading ? <CircularProgress /> : 'Save'}</Button>
+                    Save
+                </Button>
             </DialogActions>
         </Dialog>
     )

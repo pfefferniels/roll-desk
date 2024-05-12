@@ -1,5 +1,6 @@
 import { Checkbox, List, ListItem, ListItemButton, ListItemText } from "@mui/material"
 import { Pipeline } from "mpmify"
+import { Transformer } from "mpmify/lib/transformers/Transformer"
 
 interface PipelineEditorProps {
     pipeline: Pipeline
@@ -7,9 +8,9 @@ interface PipelineEditorProps {
 }
 
 export const PipelineEditor = ({ pipeline, onChange }: PipelineEditorProps) => {
-    const transformerItems = []
+    const transformerItems: Transformer[] = []
     for (let i = 0; i < pipeline.length; i++) {
-        transformerItems.push(pipeline.at(i))
+        // transformerItems.push(pipeline.at(i))
     }
 
     return (

@@ -26,7 +26,7 @@ interface GenerateMPMDialogProps {
 const defaultPipeline = () => {
     const pipeline = new Pipeline()
     pipeline.push(new InsertTempoInstructions())
-    pipeline.push(new InsertDynamicsInstructions())
+    // pipeline.push(new InsertDynamicsInstructions())
     return pipeline
 }
 

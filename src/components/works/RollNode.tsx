@@ -49,14 +49,6 @@ export const RollNode = ({ x, y, thing }: RollNodeProps) => {
             <text x={x} y={y} fontSize={23} textAnchor="middle">{title}</text>
             <foreignObject x={x - (toolboxWidth / 2)} y={y + 5} width={toolboxWidth} height={50}>
                 <div style={{ textAlign: 'center' }}>
-                    <IconButton size="small" onClick={() => setInterpretationDialogOpen(true)} >
-                        <Add />
-                    </IconButton>
-
-                    <IconButton size="small" onClick={() => setRollCopyDialogOpen(true)} >
-                        <UploadFile />
-                    </IconButton>
-
                     <IconButton size='small' onClick={() => window.open(asUrl(thing))}>
                         <Link />
                     </IconButton>

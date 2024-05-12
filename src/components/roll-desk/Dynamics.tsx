@@ -3,9 +3,10 @@ import { usePinchZoom } from "../../hooks/usePinchZoom"
 
 interface DynamicsProps {
     forEmulation: Emulation
+    color: string
 }
 
-export const Dynamics = ({ forEmulation: emulation }: DynamicsProps) => {
+export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
     const { pinch, zoom } = usePinchZoom()
 
     return (
@@ -18,7 +19,7 @@ export const Dynamics = ({ forEmulation: emulation }: DynamicsProps) => {
                             key={`treble_${v}_${i}`}
                             className='velocity'
                             cy={127 - v}
-                            fill='red'
+                            fill={color}
                             cx={emulation.timeToPlace(i / 1000)! / zoom + pinch}
                             r={1} />
                     )
@@ -33,7 +34,7 @@ export const Dynamics = ({ forEmulation: emulation }: DynamicsProps) => {
                             key={`bass_${v}_${i}`}
                             className='velocity'
                             cy={127 - v + 450}
-                            fill='red'
+                            fill={color}
                             cx={emulation.timeToPlace(i / 1000)! / zoom + pinch}
                             r={1} />
                     )

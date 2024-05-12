@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useState } from "react"
 import { CircularProgress, IconButton, Paper, Stack, ToggleButton } from "@mui/material"
 import Grid2 from '@mui/system/Unstable_Grid';
 import { SolidDataset, Thing, getDatetime, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getStringNoLocaleAll, getThing, getUrl, getUrlAll, overwriteFile, saveSolidDatasetAt, setStringNoLocale, setThing, setUrl } from "@inrupt/solid-client"
@@ -22,6 +22,7 @@ import { Reverb, SplendidGrandPiano } from "smplr";
 import { read } from "midifile-ts";
 import { MIDIPlayer } from "../../lib/midi-player";
 import { useSnackbar } from "../../providers/SnackbarContext";
+import { usePiano } from "../../hooks/usePiano";
 
 const addGlow = (svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>) => {
     console.log('adding glow to svg', svg)
@@ -53,11 +54,13 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const { session } = useSession()
     const navigate = useNavigate()
     const { setMessage } = useSnackbar()
+    const { play, stop } = usePiano()
 
     const [dataset, setDataset] = useState<SolidDataset>()
     const [interpretation, setInterpretation] = useState<Thing>()
     const [creation, setCreation] = useState<Thing>()
     const [actor, setActor] = useState<Thing>()
+    const [playing, setPlaying] = useState(false)
 
     const [realisations, setRealisations] = useState<Thing[]>([])
 
@@ -70,10 +73,6 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
     const [downloadOpen, setDownloadOpen] = useState(false)
     const [xmlMode, setXMLMode] = useState(false)
     const [scoreSVG, setScoreSVG] = useState<string>()
-
-    const [grandPiano, setGrandPiano] = useState<SplendidGrandPiano>()
-    const [playing, setPlaying] = useState(false)
-    const [midiPlayer, setMidiPlayer] = useState<MIDIPlayer>()
 
     const getInstructionInfos = (mpmIds: string[]) => {
         if (!mpm) return
@@ -104,7 +103,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         )
     }
 
-    const saveMEI = async (mei: MEI) => {
+    const saveMEI = useCallback(async (mei: MEI) => {
         if (!dataset) return
 
         setMessage('Saving MEI ...')
@@ -134,9 +133,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         }), { fetch: session.fetch as any })
 
         setMessage('MEI successfully saved')
-    }
+    }, [dataset, realisations, session.fetch, setMessage])
 
-    const saveMPM = async (mpm: MPM) => {
+    const saveMPM = useCallback(async (mpm: MPM) => {
         if (!dataset) return
 
         setMessage('Saving MPM ...')
@@ -165,25 +164,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         }), { fetch: session.fetch as any })
 
         setMessage('MPM successfully saved')
-    }
+    }, [dataset, realisations, session.fetch, setMessage])
 
-    useEffect(() => {
-        const loadPiano = async () => {
-            const context = new AudioContext();
-            const piano = await new SplendidGrandPiano(context, { scheduleIntervalMs: 10, scheduleLookaheadMs: 1000 }).load;
-            piano.output.addEffect("reverb", new Reverb(context), 0.2);
-            setGrandPiano(piano)
-        }
-
-        loadPiano()
-    }, [])
-
-    const play = async () => {
-        if (!grandPiano) {
-            setMessage(`Grand piano not yet ready.`)
-            return
-        }
-
+    const playMPM = async () => {
         if (!mpm || !msm) return
 
         const request = {
@@ -198,28 +181,9 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
         })
 
         const midiBuffer = await response.arrayBuffer()
-        const midiFile = read(midiBuffer)
-        setMessage(`Done converting`)
-
-        setPlaying(true)
-        const midiPlayer = new MIDIPlayer(midiFile, 44000, (e: any) => {
-            if (e.midi.subtype === 'noteOn') {
-                grandPiano.start({ note: e.midi.noteNumber, velocity: e.midi.velocity });
-            }
-            else if (e.midi.subtype === 'noteOff') {
-                grandPiano.stop(e.midi.noteNumber)
-            }
-        })
-        midiPlayer.resume()
-        setMidiPlayer(midiPlayer)
     }
 
-    const pause = () => {
-        midiPlayer?.pause()
-        setPlaying(false)
-    }
-
-    useLayoutEffect(() => {
+    useEffect(() => {
         if (!document.querySelector('#verovio svg')) return
 
         addGlow(d3.select('#verovio svg'))
@@ -308,10 +272,10 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         console.log('Unable to load contents of MPM', realisation)
                         continue
                     }
-                    setMessage(`Done loading MEI`)
 
                     const updatedMEI = new MEI(await meiContents.text(), await loadVerovio(), new DOMParser())
                     setMEI(updatedMEI)
+                    setMessage(`Done loading MEI`)
                 }
                 else if (type === mer('MPM')) {
                     const fileUrl = getUrl(realisation, RDFS.label)
@@ -327,7 +291,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                     setMPM(parseMPM(await mpmContents.text()))
                 }
                 else if (type === mer('Alignment')) {
-                    setMessage(`Loading alignment pairs from ${realisationUrl}`)
+                    setMessage(`Loading alignment from ${realisationUrl}`)
                     const alignmentDataset = await getSolidDataset(realisationUrl, { fetch: session.fetch as any })
                     const alignmentThing = getThing(alignmentDataset, realisationUrl)
                     if (alignmentThing) {
@@ -387,7 +351,7 @@ export const Interpretation = ({ interpretationUrl }: InterpretationProps) => {
                         <ToggleButton color='primary' value='check' selected={xmlMode} onChange={() => setXMLMode(!xmlMode)}>
                             <Code />
                         </ToggleButton>
-                        <IconButton onClick={() => playing ? pause() : play()}>
+                        <IconButton onClick={() => {}}>
                             {playing ? <Pause /> : <PlayArrow />}
                         </IconButton>
                         <IconButton onClick={() => setDownloadOpen(true)}>

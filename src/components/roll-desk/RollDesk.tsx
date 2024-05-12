@@ -1,33 +1,30 @@
-import { Box, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Paper } from "@mui/material"
+import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Paper } from "@mui/material"
 import React, { useCallback, useEffect, useRef, useState } from "react"
-import { Collator, Emulation, RollCopy, createCutout } from 'linked-rolls'
+import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import { CollatedEvent, Note, Expression, Cutout } from "linked-rolls/lib/.ldo/rollo.typings"
+import { CollatedEvent, Note, Expression, Assumption } from "linked-rolls/lib/types"
 import { RollCopyViewer } from "./RollCopyViewer"
-import { Add, AlignHorizontalCenter, ArrowBack, ArrowUpward, CallMerge, ColorLens, ContentCut, CopyAll, MultipleStop, Pause, PlayArrow, Save, Visibility, VisibilityOff } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowBack, CallMerge, ColorLens, Pause, PlayArrow, Save, Undo, Visibility, VisibilityOff } from "@mui/icons-material"
 import { OperationsAsText } from "./OperationAsText"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { WorkingPaper } from "./WorkingPaper"
 import { usePiano } from "../../hooks/usePiano"
 import { RollGrid } from "./RollGrid"
-import { PinContainer } from "./PinContainer"
+import { Selection } from "./Selection"
 import { Glow } from "./Glow"
-import { CutoutContainer } from "./CutoutContainer"
-import { InterpretationDialog } from "../works/dialogs/InterpretationDialog"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
-import { DatasetContext, useSession } from "@inrupt/solid-ui-react"
-import { SolidDataset, Thing, addUrl, asUrl, buildThing, getContainedResourceUrlAll, getFile, getSolidDataset, getSourceUrl, getStringNoLocale, getThing, getThingAll, getUrl, getUrlAll, overwriteFile, saveFileInContainer, saveSolidDatasetAt, setThing } from "@inrupt/solid-client"
-import { crm, frbroo, mer, rollo } from "../../helpers/namespaces"
-import { RDF, RDFS } from "@inrupt/vocab-common-rdf"
-import { datasetUrl } from "../../helpers/datasetUrl"
 import { v4 } from "uuid"
-import { Editor } from "linked-rolls/lib/Editor"
-import { datasetToString } from "@ldo/rdf-utils"
 import { useNavigate } from "react-router-dom"
 import { useSnackbar } from "../../providers/SnackbarContext"
-import { parseRdf } from "ldo"
-import { Dynamics } from "./Dynamics"
+import { write } from "midifile-ts"
+
+interface LayerInfo {
+    id: 'working-paper' | string,
+    title: string,
+    visible: boolean,
+    color: string
+}
 
 interface RollEditorProps {
     url: string
@@ -57,36 +54,25 @@ const stringToColour = (str: string) => {
  */
 
 export const Desk = ({ url }: RollEditorProps) => {
-    const { session } = useSession()
     const navigate = useNavigate()
     const { setMessage } = useSnackbar()
-    const { play, stopAll } = usePiano()
+    const { play, stop } = usePiano()
 
-    const [collator,] = useState<Collator>(new Collator())
-    const [emulation,] = useState<Emulation>(new Emulation())
+    const [copies, setCopies] = useState<RollCopy[]>([])
+    const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
+    const [assumptions, setAssumptions] = useState<Assumption[]>([])
 
-    const [solidDataset, setDataset] = useState<SolidDataset>()
-    const [rollWork, setRollWork] = useState<Thing | null>()
-    const [physicalExpression, setPhysicalExpression] = useState<Thing | null>()
-    const [digitalExpression, setDigitalExpression] = useState<Thing>()
-
-    const [rerender, setRerender] = useState(0)
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
-    const [interpretationDialogOpen, setInterpretationDialogOpen] = useState(false)
-    const [stack, setStack] = useState<({
-        id: 'working-paper' | string,
-        title: string,
-        active: boolean,
-        color: string
-    })[]>([{
+
+    const [stack, setStack] = useState<LayerInfo[]>([{
         id: 'working-paper',
         title: 'Working Paper',
-        active: true,
+        visible: true,
         color: 'blue'
     }])
+    const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
+
     const [pins, setPins] = useState<(Note | Expression | CollatedEvent)[]>([])
-    const [cutouts, setCutouts] = useState<Cutout[]>([])
-    const [activeCutout, setActiveCutout] = useState<Cutout>()
 
     const [isDragging, setIsDragging] = useState(false)
     const [shiftX, setShiftX] = useState(0)
@@ -96,97 +82,110 @@ export const Desk = ({ url }: RollEditorProps) => {
 
     const svgRef = useRef<SVGGElement>(null)
 
-    const render = () => setRerender(rerender => rerender + 1)
+    // makes sure that the active layer comes last
+    let orderedLayers = [...stack].reverse()
+    const activeLayer = stack.find(layer => layer.id === activeLayerId)
+    if (activeLayer) {
+        orderedLayers.splice(stack.indexOf(activeLayer), 1)
+        orderedLayers.push(activeLayer)
+    }
 
-    const saveAll = async () => {
-        if (!solidDataset || !rollWork) return
-        setMessage('Saving all ...')
+    const downloadXML = async () => {
+        const xmlDoc = asXML(copies, collatedEvents, assumptions)
+        if (!xmlDoc) return
 
+        const xml = new XMLSerializer().serializeToString(xmlDoc)
+        const blob = new Blob([xml], { type: 'application/xml' })
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob);
+        a.download = 'roll.xml';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    }
+
+    const downloadMIDI = async () => {
+        const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
-            setMessage('Running emulation')
-            emulation.emulateFromCollatedRoll(
-                collator.events)
+            setMessage('Running emulation');
+            emulation.emulateFromCollatedRoll(collatedEvents, []);
         }
 
-        setMessage('Combining datasets for emulation and collation')
+        console.log(emulation.midiEvents)
 
-        const eventDataset = await emulation.asDataset().union(
-            await collator.asDataset()
-        )
-
-        setMessage('Generating turtle')
-        const turtle = await datasetToString(eventDataset, {})
-
-        if (!digitalExpression) {
-            setMessage('Cannot proceed without an existing digital expression.')
-            return
-        }
-
-        let changedDataset = solidDataset
-        setMessage('Attaching data to existing digital expression')
-        const eventsUrl = getUrl(digitalExpression, RDFS.label)
-        if (!eventsUrl) return
-        const fileName = eventsUrl.slice(eventsUrl.lastIndexOf('/')).replace('.ttl', '')
-        changedDataset = setThing(solidDataset, digitalExpression)
-        changedDataset = await saveSolidDatasetAt(getSourceUrl(solidDataset)!, changedDataset, { fetch: session.fetch as any })
-
-        // TODO use private POD
-        const savedFile = await overwriteFile(
-            eventsUrl,
-            new File([turtle], fileName, { type: 'text/turtle' }),
-            { fetch: session.fetch as any })
-
-        setMessage('Done')
-        if (!savedFile) {
-            setMessage('Failed saving file for ' + eventsUrl)
-        }
-
-        // Save cutouts
-        setMessage('Saving cutouts')
-        for (const cutout of cutouts) {
-            const cutoutThing = buildThing({
-                url: cutout["@id"] || `${getSourceUrl(solidDataset)}#${v4()}`
-            })
-
-            cutoutThing.addUrl(RDF.type, rollo(cutout.type["@id"]))
-            for (const part of cutout.P106IsComposedOf) {
-                if (!part["@id"]) continue
-                cutoutThing.addUrl(crm('P106_is_composed_of'), part["@id"])
-            }
-
-            changedDataset = setThing(changedDataset, cutoutThing.build())
-        }
-        setDataset(await saveSolidDatasetAt(getSourceUrl(solidDataset)!, changedDataset, { fetch: session.fetch as any }))
-        setMessage('Done.')
+        const midiFile = emulation.asMIDI()
+        const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
+        const blob = new Blob([dataBuf], { type: 'audio/midi' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'output.mid';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
     }
 
     const handleAlign = () => {
         if (pins.length !== 4) return
 
-        const collatedEvents = pins.filter(e => e.type?.["@id"] === 'CollatedEvent') as CollatedEvent[]
-        const notes = pins.filter(e => e.type?.["@id"] === 'Note') as Note[]
-        if (collatedEvents.length !== 2 || notes.length !== 2) return
+        const copy = copies.find(copy => copy.physicalItem.id === activeLayerId)
+        if (!copy) {
+            console.log('No active copy selected')
+            return
+        }
+
+        const notesInActiveLayer: (Note | Expression)[] = []
+        const otherNotes = []
+        for (const pin of pins) {
+            if (copy.events.findIndex(event => event.id === pin.id) !== -1 && !('wasCollatedFrom' in pin)) {
+                notesInActiveLayer.push(pin)
+            }
+            else {
+                otherNotes.push(pin)
+            }
+        }
+
+        if (notesInActiveLayer.length !== 2 || otherNotes.length !== 2) {
+            console.log('You have to select exactly 2 + 2 events')
+            return
+        }
+
+        const from = (event: Note | Expression | CollatedEvent) => {
+            if ('wasCollatedFrom' in event) {
+                const sum = event.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.from, 0)
+                return sum / event.wasCollatedFrom.length
+            }
+            return event.hasDimension.from
+        }
 
         const point1 = [
-            notes[0].P43HasDimension.from,
-            collatedEvents[0].wasCollatedFrom!.at(0)!.P43HasDimension.from]
+            from(otherNotes[0]),
+            from(notesInActiveLayer[0])
+        ]
 
         const point2 = [
-            notes[1].P43HasDimension.to,
-            collatedEvents[1].wasCollatedFrom!.at(0)!.P43HasDimension.to
+            from(otherNotes[1]),
+            from(notesInActiveLayer[1])
         ]
 
         const stretch = (point2[1] - point1[1]) / (point2[0] - point1[0])
         const shift = point1[1] - stretch * point1[0]
 
-        const active = stack.find(item => item.active && item.id !== 'working-paper')
-        if (!active) return
-        const copy = collator.findCopy(active.id)
         if (!copy) return
 
-        collator.stretchRollCopy(copy, stretch)
-        collator.shiftRollCopy(copy, shift, 0)
-        collator.applyOperations()
+        copy.applyOperations([
+            {
+                id: v4(),
+                type: 'shifting',
+                vertical: 0,
+                horizontal: -shift
+            },
+            {
+                id: v4(),
+                type: 'stretching',
+                factor: stretch
+            }])
 
         setPins([])
     }
@@ -229,113 +228,9 @@ export const Desk = ({ url }: RollEditorProps) => {
         }
     }, [onDrag, onDragEnd, onDragStart, onZoom])
 
-    useEffect(() => {
-        const fetchRoll = async () => {
-            setMessage('Fetching dataset')
-            const dataset = await getSolidDataset(url, { fetch: session.fetch as any })
-            if (!dataset) return
-
-            let newRollWork = getThing(dataset, url)
-            if (!newRollWork) {
-                setMessage(`Given work ${url} could not be found in the dataset`)
-                return
-            }
-
-            let physicalExpressionThing, digitalExpressionThing
-            const expressionUrls = getUrlAll(newRollWork, frbroo('R12_is_realised_in'))
-            for (const url of expressionUrls) {
-                const thing = getThing(dataset, url)
-                if (!thing) continue
-
-                if (getUrlAll(thing, crm('P2_has_type')).includes(mer('PhysicalExpression'))) {
-                    console.log(`Physical expression found`)
-                    physicalExpressionThing = thing
-                }
-                else if (getUrlAll(thing, crm('P2_has_type')).includes(mer('DigitalExpression'))) {
-                    setMessage(`Digital expression found`)
-                    digitalExpressionThing = thing
-
-                    const datasetUrl = getUrl(thing, RDFS.label)
-                    if (!datasetUrl) continue
-
-                    setMessage(`Loading roll events associated with the digital expression.`)
-                    try {
-                        const file = await getFile(datasetUrl, { fetch: session.fetch as any })
-                        collator.importFromDataset(await parseRdf(await file.text()))
-                        setMessage('Digital expression sucessfully imported')
-                    }
-                    catch (e) {
-                        setMessage(`No file yet associated with the digital expression.`)
-                    }
-
-                    // Find cutouts referring to events inside that dataset
-                    const things = getThingAll(dataset)
-                    setCutouts(
-                        things
-                            .filter(thing => {
-                                const linkedEvents = getUrlAll(thing, crm('P106_is_composed_of'))
-                                if (linkedEvents.length === 0) return false
-
-                                console.log('testing if', linkedEvents, 'all start with', datasetUrl)
-                                return (linkedEvents.every(event => event.startsWith(datasetUrl)))
-                            })
-                            .map(thing => ({
-                                '@id': asUrl(thing),
-                                'P106IsComposedOf': getUrlAll(thing, crm('P106_is_composed_of')).map(url => ({
-                                    '@id': url
-                                })),
-                                'type': { '@id': 'Selection' }
-                            }))
-                    )
-                }
-            }
-
-            let updatedDataset = dataset
-            if (!physicalExpressionThing) {
-                physicalExpressionThing = buildThing()
-                    .addUrl(RDF.type, frbroo('F26_Recording'))
-                    .addUrl(RDF.type, frbroo('F3_Manifestation_Product_Type'))
-                    .addUrl(crm('P2_has_type'), mer('PhysicalExpression'))
-                    .addUrl(frbroo('R12i_realises'), newRollWork)
-                    .build()
-                newRollWork = addUrl(newRollWork, frbroo('R12_is_realised_in'), physicalExpressionThing)
-
-                updatedDataset = setThing(dataset, physicalExpressionThing)
-                updatedDataset = setThing(updatedDataset, newRollWork)
-                updatedDataset = await saveSolidDatasetAt(url, updatedDataset, { fetch: session.fetch as any })
-            }
-
-            if (!digitalExpressionThing) {
-                setMessage('Creating new digital expression')
-                digitalExpressionThing = buildThing()
-                    .addUrl(RDF.type, frbroo('F26_Recording'))
-                    .addUrl(crm('P2_has_type'), mer('DigitalExpression'))
-                    .addUrl(RDFS.label, `${datasetUrl}/${v4()}.ttl`)
-                    .build()
-                newRollWork = addUrl(newRollWork, frbroo('R12_is_realised_in'), digitalExpressionThing)
-
-                updatedDataset = setThing(dataset, digitalExpressionThing)
-                updatedDataset = setThing(updatedDataset, newRollWork)
-                updatedDataset = await saveSolidDatasetAt(getSourceUrl(dataset)!, updatedDataset, { fetch: session.fetch as any })
-            }
-
-            setDataset(updatedDataset)
-            setRollWork(newRollWork)
-            setPhysicalExpression(physicalExpressionThing)
-            setDigitalExpression(digitalExpressionThing)
-            setMessage('Done')
-        }
-
-        fetchRoll()
-    }, [session.fetch, setMessage, url, collator])
-
-    useEffect(() => {
-        if (!digitalExpression) return
-
-        const eventsDataset = getUrl(digitalExpression, RDFS.label) || ''
-        collator.baseURI = eventsDataset
-        emulation.baseURI = eventsDataset
-    }, [digitalExpression, collator, emulation])
+    const importXML = () => {
+        // TODO
+    }
 
     return (
         <>
@@ -347,24 +242,19 @@ export const Desk = ({ url }: RollEditorProps) => {
                                 <ArrowBack />
                             </IconButton>
                             <IconButton
-                                disabled={!digitalExpression}
-                                onClick={saveAll}>
+                                onClick={downloadXML}>
                                 <Save />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Collation'>
-                            <IconButton
-                                disabled={!digitalExpression}
-                                onClick={async () => {
-                                    console.log('collator.baseURI', collator.baseURI)
-                                    const activeLayer = stack.find(item => item.active && item.id !== 'working-paper')
-                                    if (!activeLayer) return
-                                    const copy = collator.findCopy(activeLayer.id)
-                                    if (!copy) return
-                                    collator.prepareFromRollCopy(copy)
-                                    render()
-                                }}>
-                                <CopyAll />
+                            <IconButton onClick={() => {
+                                const modifiedRolls = [...copies]
+                                const copy = modifiedRolls.find(copy => copy.physicalItem.id === activeLayerId)
+                                if (!copy) return
+                                copy.undoOperations()
+                                setCopies(modifiedRolls)
+                            }}>
+                                <Undo />
                             </IconButton>
                             <IconButton
                                 disabled={pins.length !== 4}
@@ -372,72 +262,50 @@ export const Desk = ({ url }: RollEditorProps) => {
                                 <AlignHorizontalCenter />
                             </IconButton>
                             <IconButton onClick={async () => {
-                                await collator.collateAllRolls()
-                                render()
+                                setCollatedEvents(await collateRolls(copies))
                             }}>
                                 <CallMerge />
                             </IconButton>
                         </Ribbon>
-                        <Ribbon title='Correction'>
-                            <IconButton>
-                                <MultipleStop />
-                            </IconButton>
-                            <IconButton>
-                                <ArrowUpward />
-                            </IconButton>
+                        <Ribbon title='Editorial Actions'>
+                            <Button>
+                                Unify
+                            </Button>
+                            <Button>
+                                Seperate
+                            </Button>
+                            <Button>
+                                Lemmatize
+                            </Button>
+                            <Button>
+                                Place Relatively
+                            </Button>
+                            <Button>
+                                Annotate
+                            </Button>
                         </Ribbon>
                         <Ribbon title='Emulation'>
+                            <Button>
+                                Adjust Roll Tempo
+                            </Button>
+                            <Button onClick={downloadMIDI}>
+                                Download MIDI
+                            </Button>
                             <IconButton
-                                disabled={stack.find(item => item.active && item.id !== 'working-paper') === null}
+                                disabled={collatedEvents.length === 0}
                                 onClick={() => {
                                     if (isPlaying) {
-                                        stopAll()
+                                        stop()
                                         setIsPlaying(false)
+                                        return
                                     }
-                                    else {
-                                        const activeLayer = stack.find(copy => copy.active)
-                                        if (!activeLayer) return
 
-                                        if (activeLayer?.id === 'working-paper' && collator.events.length !== 0) {
-                                            emulation.emulateFromCollatedRoll(
-                                                collator.events,)
-                                            console.log(emulation.midiEvents)
-                                            play(emulation.midiEvents)
-                                        }
-                                        else {
-                                            const activeRoll = stack.find(copy => copy.active && copy.id !== 'working-paper')
-                                            if (!activeRoll) return
-
-                                            const roll = collator.findCopy(activeRoll.id)
-                                            if (!roll) return
-
-                                            console.log('sending', roll.events, 'to emulation')
-                                            emulation.emulateFromRoll(roll.events)
-                                        }
-
-                                        setIsPlaying(true)
-                                    }
+                                    const emulation = new Emulation()
+                                    emulation.emulateFromCollatedRoll(collatedEvents, [])
+                                    play(emulation.asMIDI())
+                                    setIsPlaying(true)
                                 }}>
                                 {isPlaying ? <Pause /> : <PlayArrow />}
-                            </IconButton>
-                        </Ribbon>
-                        <Ribbon title='Annotation'>
-                            <IconButton
-                                disabled={pins.length === 0}
-                                onClick={() => {
-                                    const containerUrl = (solidDataset && getSourceUrl(solidDataset))
-                                    console.log('container URL=', containerUrl)
-                                    setCutouts(cutouts => [...cutouts, createCutout(pins, containerUrl || 'https://linked-rolls.org/')])
-                                    setPins([])
-                                }}>
-                                <ContentCut />
-                            </IconButton>
-                            <IconButton
-                                disabled={!activeCutout}
-                                onClick={() => {
-                                    setInterpretationDialogOpen(true)
-                                }}>
-                                <Add />
                             </IconButton>
                         </Ribbon>
                     </RibbonGroup>
@@ -447,44 +315,36 @@ export const Desk = ({ url }: RollEditorProps) => {
                         <Box p={1}>Stack</Box>
                         <List dense>
                             {stack.map((stackItem, i) => {
-                                const copy = collator.findCopy(stackItem.id)
+                                const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
+
                                 return (
                                     <React.Fragment key={`listItem_${i}`}>
-                                        <ListItem
-                                            secondaryAction={(
+                                        <ListItem>
+                                            <ListItemIcon>
+                                                <IconButton
+                                                    size='small'
+                                                    edge="start"
+                                                    tabIndex={-1}
+                                                    onClick={() => {
+                                                        stackItem.visible = !stackItem.visible
+                                                        setStack([...stack])
+                                                    }}
+                                                >
+                                                    {stackItem.visible ? <Visibility /> : <VisibilityOff />}
+                                                </IconButton>
+                                            </ListItemIcon>
+                                            <ListItemButton
+                                                onClick={() => setActiveLayerId(stackItem.id)}>
+                                                <ListItemText
+                                                    style={{ border: activeLayerId === stackItem.id ? '3px' : '1px' }}
+                                                    secondary={copy ? <OperationsAsText operations={copy.operations} /> : null}
+                                                    primary={activeLayerId === stackItem.id ? <b>{stackItem.title}</b> : stackItem.title} />
+                                            </ListItemButton>
+                                            <ListItemSecondaryAction>
                                                 <IconButton edge="end" sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColour(stackItem.id) }}>
                                                     <ColorLens />
                                                 </IconButton>
-                                            )}>
-                                            <ListItemButton
-                                                onClick={() => {
-                                                    stackItem.active = !stackItem.active
-                                                    setStack([...stack])
-                                                }}>
-                                                <ListItemIcon>
-                                                    <IconButton
-                                                        size='small'
-                                                        edge="start"
-                                                        tabIndex={-1}
-                                                    >
-                                                        {stackItem.active ? <Visibility /> : <VisibilityOff />}
-                                                    </IconButton>
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    secondary={
-                                                        (() => {
-                                                            if (stackItem.id === 'working-paper') {
-                                                                return <span>{collator.collatedRolls.length} collated rolls</span>
-                                                            }
-                                                            if (copy) {
-                                                                return <OperationsAsText
-                                                                    operations={collator.operations.filter(op => op.P16UsedSpecificObject["@id"] === copy.physicalItem["@id"])} />
-                                                            }
-                                                            return null
-                                                        })()
-                                                    }
-                                                    primary={stackItem.title} />
-                                            </ListItemButton>
+                                            </ListItemSecondaryAction>
                                         </ListItem>
                                         {i === 0 && <Divider flexItem />}
                                     </React.Fragment>
@@ -492,9 +352,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                             })}
                         </List>
                         <Box>
-                            <IconButton
-                                disabled={!digitalExpression}
-                                onClick={() => setRollCopyDialogOpen(true)}>
+                            <IconButton onClick={() => setRollCopyDialogOpen(true)}>
                                 <Add />
                             </IconButton>
                         </Box>
@@ -508,63 +366,54 @@ export const Desk = ({ url }: RollEditorProps) => {
                                 <PinchZoomProvider pinch={shiftX} zoom={stretch} trackHeight={6}>
                                     <RollGrid width={10000} />
 
-                                    {stack.slice().reverse().map((stackItem, i) => {
-                                        if (!stackItem.active) return null
+                                    {orderedLayers
+                                        .map((stackItem, i) => {
+                                            if (!stackItem.visible) return null
 
-                                        if (stackItem.id === 'working-paper') {
+                                            if (stackItem.id === 'working-paper') {
+                                                return (
+                                                    <WorkingPaper
+                                                        key={`copy_${i}`}
+                                                        numberOfRolls={copies.length}
+                                                        events={collatedEvents}
+                                                        onClick={(event: CollatedEvent) => {
+                                                            const existingPin = pins.indexOf(event)
+                                                            if (existingPin !== -1) {
+                                                                console.log('removing existing pin', existingPin)
+                                                                setPins(prev => {
+                                                                    prev.splice(existingPin, 1)
+                                                                    return [...prev]
+                                                                })
+                                                            }
+                                                            else {
+                                                                setPins(prev => [...prev, event])
+                                                            }
+                                                        }} />
+                                                )
+                                            }
+
+                                            const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
+                                            if (!copy) return null
+
                                             return (
-                                                <WorkingPaper
+                                                <RollCopyViewer
                                                     key={`copy_${i}`}
-                                                    numberOfRolls={collator.collatedRolls.length}
-                                                    events={collator.events}
-                                                    onClick={(event: CollatedEvent) => {
-                                                        const existingPin = pins.indexOf(event)
-                                                        if (existingPin !== -1) {
-                                                            console.log('removing existing pin', existingPin)
-                                                            setPins(prev => {
-                                                                prev.splice(existingPin, 1)
-                                                                return [...prev]
-                                                            })
-                                                        }
-                                                        else {
-                                                            setPins(prev => [...prev, event])
-                                                        }
+                                                    copy={copy}
+                                                    onTop={i === 0}
+                                                    color={stackItem.color}
+                                                    onClick={(event) => {
+                                                        setPins(prev => [...prev, event])
                                                     }} />
                                             )
-                                        }
-
-                                        const copy = collator.findCopy(stackItem.id)
-                                        if (!copy) return null
-
-                                        return (
-                                            <RollCopyViewer
-                                                key={`copy_${i}`}
-                                                copy={copy}
-                                                onTop={i === 0}
-                                                color={stackItem.color}
-                                                onClick={(event) => {
-                                                    setPins(prev => [...prev, event])
-                                                }} />
-                                        )
-                                    })}
+                                        })}
 
                                     {svgRef.current && (
-                                        <PinContainer
+                                        <Selection
                                             pins={pins}
                                             remove={pinToRemove => {
-                                                setPins(prev => prev.filter(pin => pin["@id"] !== pinToRemove["@id"]))
+                                                setPins(prev => prev.filter(pin => pin.id !== pinToRemove.id))
                                             }} />
                                     )}
-
-                                    <DatasetContext.Provider value={{ solidDataset, setDataset }}>
-                                        <CutoutContainer
-                                            cutouts={cutouts}
-                                            setCutouts={setCutouts}
-                                            active={activeCutout}
-                                            onActivate={(cutout) => setActiveCutout(cutout)} />
-                                    </DatasetContext.Provider>
-
-                                    <Dynamics forEmulation={emulation} />
                                 </PinchZoomProvider>
                             </g>
                         </svg>
@@ -572,35 +421,18 @@ export const Desk = ({ url }: RollEditorProps) => {
                 </Grid>
             </Grid>
 
-            <DatasetContext.Provider value={{ solidDataset, setDataset }}>
-                <RollCopyDialog
-                    open={rollCopyDialogOpen}
-                    onClose={() => setRollCopyDialogOpen(false)}
-                    attachTo={physicalExpression || undefined}
-                    onDone={async (item, rollAnalysis) => {
-                        const newCopy = new RollCopy(asUrl(item))
-                        newCopy.baseURI = collator.baseURI
-                        newCopy.readFromStanfordAton(rollAnalysis)
-                        const id = collator.addRoll(newCopy)
-                        if (!id) return
-
-                        stack.push({
-                            id,
-                            title: getStringNoLocale(item, crm('P102_has_title')) || '[untitled]',
-                            active: true,
-                            color: stringToColour(id)
-                        })
-                        render()
-                    }} />
-
-                {activeCutout && (
-                    <InterpretationDialog
-                        open={interpretationDialogOpen}
-                        onClose={() => setInterpretationDialogOpen(false)}
-                        attachToRoll={rollWork || undefined}
-                        cutout={activeCutout["@id"]} />
-                )}
-            </DatasetContext.Provider>
+            <RollCopyDialog
+                open={rollCopyDialogOpen}
+                onClose={() => setRollCopyDialogOpen(false)}
+                onDone={rollCopy => {
+                    setCopies(copies => [...copies, rollCopy])
+                    stack.push({
+                        id: rollCopy.physicalItem.id,
+                        title: `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`,
+                        visible: true,
+                        color: stringToColour(rollCopy.physicalItem.id)
+                    })
+                }} />
         </>
     )
 }

@@ -5,9 +5,7 @@ import React, { useEffect, useState } from "react"
 import { mer } from "../../helpers/namespaces"
 
 export const findDOMElementFor = (url: UrlString) => {
-    const id = urlAsLabel(url)
-    if (!id) return null
-    return document.querySelector(`*[data-id="${id}"]`)
+    return document.querySelector(`*[data-id="${url}"]`)
 }
 
 interface PairContainerProps {
@@ -52,12 +50,13 @@ export const PairContainer = ({ ready, pairs, parentRef, color, onRemove, onSele
     return (
         <>
             {pairs.map(pair => {
-                const midiId = getUrl(pair, mer('has_midi_note'))?.split('#').at(-1)
+                const midiId = getUrl(pair, mer('has_event'))
                 const noteId = getUrl(pair, mer('has_score_note'))?.split('#').at(-1)
                 if (!midiId || !noteId) return null
 
                 const midiEl = findDOMElementFor(midiId)
                 const noteEl = findDOMElementFor(noteId)
+                console.log(midiId, midiEl, noteEl)
                 if (!midiEl || !noteEl) return null
 
                 return (

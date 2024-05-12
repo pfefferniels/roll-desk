@@ -46,7 +46,7 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
         <>
             <Grid2 spacing={2} container>
                 <Grid2 xs={12}>
-                    <Stack sx={{ mt: 1}} spacing={1} direction='row'>
+                    <Stack sx={{ mt: 1 }} spacing={1} direction='row'>
                         <Button
                             variant='outlined'
                             size='small'
@@ -92,16 +92,16 @@ export const CodeEditor = ({ onSaveMPM, onSaveMEI, mpm, mei, alignment }: CodeEd
                 open={generateMPMOpen}
                 onClose={() => setGenerateMPMOpen(false)}
                 onCreate={(_, mpm) => onSaveMPM(mpm)}
-            />}
+                    />}
 
-            <EnrichmentDialog
+            {<EnrichmentDialog
                 open={enrichmentDialogOpen}
                 onClose={() => setEnrichmentDialogOpen(false)}
                 onDone={(options) => {
                     if (!mpm || !mei) return
                     onSaveMEI(enrichMEI(mpm, mei))
                     setEnrichmentDialogOpen(false)
-                }} />
+                }} />}
         </>
     )
 }

@@ -15,6 +15,8 @@ import { Collator } from "linked-rolls"
 import { align } from "alignmenttool"
 import { v4 } from "uuid"
 import { WorkingPaper } from "../roll-desk/WorkingPaper"
+import { parseRdf } from "ldo"
+import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 
 interface AlignmentEditorProps {
   interpretationUrl: string
@@ -115,7 +117,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       const eventDataset = await getFile(eventUrls[0], { fetch: session.fetch as any })
 
       const collator = new Collator()
-      await collator.importFromTurtle(await eventDataset.text())
+      await collator.importFromDataset(await parseRdf(await eventDataset.text()))
       setCollatedEvents(collator.events.filter(e => eventUrls.includes(e["@id"] || '')))
 
       setMessage(`Done.`)
@@ -129,6 +131,7 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
     if (!alignment || !dataset) return
 
     const pairUrls = getUrlAll(alignment, crm('P9_consists_of'))
+    console.log('pair urls=', pairUrls)
     const pairThings = pairUrls.map(pairUrl => getThing(dataset, pairUrl)).filter(pair => !!pair)
     setPairs(pairThings as Thing[])
   }, [alignment, dataset])
@@ -192,18 +195,21 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
           channel: 0
         }
       })
+
+    console.log(midiEvents)
     let noteEvents = mei.asNoteEvents()
-    const matchResult = align(midiEvents, noteEvents, 0.1, 4)
-    const matches = matchResult.matches;
+    console.log(noteEvents)
+    const matches = await align(midiEvents, noteEvents, 0.1, 4) as any
 
     const newPairs = []
     for (let i = 0; i < matches.size(); i++) {
       newPairs.push(buildThing()
         .addUrl(RDF.type, mer('AlignmentPair'))
         .addUrl(mer('has_score_note'), `${meiUrl}#${matches.get(i).scoreId}`)
-        .addUrl(mer('has_midi_note'), matches.get(i).midiId)
+        .addUrl(mer('has_event'), matches.get(i).midiId)
         .build())
     }
+    console.log('new pairs=', newPairs)
 
     setPairs(newPairs)
     setMessage('Pairs interpolated.')
@@ -315,12 +321,14 @@ export const AlignmentEditor = ({ interpretationUrl }: AlignmentEditorProps) => 
       <svg ref={parentRef} width={1000} height={1000}>
         <svg height={200} width={2000} id='verovio-canvas' ref={svgRef} />
 
-        <svg height={800} transform="translate(0, 200)">
+        <svg height={800} width={5000} transform="translate(0, 200)">
+          <PinchZoomProvider pinch={1} zoom={1} trackHeight={4}>
             <WorkingPaper
               numberOfRolls={1}
               events={collatedEvents}
               onClick={(event) => setSelectedEvent(event["@id"])}
             />
+          </PinchZoomProvider>
         </svg>
 
         <g id='pairs'>
