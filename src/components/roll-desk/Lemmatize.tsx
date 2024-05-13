@@ -1,0 +1,52 @@
+import { Button, Drawer, Stack } from "@mui/material"
+import { CollatedEvent, Lemma } from "linked-rolls/lib/types"
+import { useState } from "react"
+import { v4 } from "uuid"
+
+interface LemmatizeProps {
+    open: boolean
+    selection: CollatedEvent[]
+    onDone: (lemma: Lemma) => void
+}
+
+export const Lemmatize = ({ selection, onDone, open }: LemmatizeProps) => {
+    const [lemma, setLemma] = useState<CollatedEvent[]>([])
+    const [otherReading, setOtherReading] = useState<CollatedEvent[]>([])
+
+    return (
+        <Drawer open={open} variant='persistent'>
+            <Stack direction='column'>
+                <Button
+                    onClick={() => {
+                        setLemma(selection)
+                    }}>
+                    Make Lemma
+                </Button>
+                <div>
+                    {lemma.map(e => e.id).join(' ')}
+                </div>
+                <Button onClick={() => {
+                    setOtherReading(selection)
+                }}>
+                    Make Other Reading
+                </Button>
+                <div>
+                    {otherReading.map(e => e.id).join(' ')}
+                </div>
+                <Button
+                    onClick={() => {
+                        onDone({
+                            type: 'lemma',
+                            carriedOutBy: 'abc',
+                            id: v4(),
+                            preferred: lemma,
+                            over: otherReading
+                        })
+                    }}
+                    variant='contained'>
+                    Done
+                </Button>
+            </Stack>
+        </Drawer>
+    )
+}

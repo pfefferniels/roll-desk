@@ -18,6 +18,7 @@ import { v4 } from "uuid"
 import { useNavigate } from "react-router-dom"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
+import { Lemmatize } from "./Lemmatize"
 
 interface LayerInfo {
     id: 'working-paper' | string,
@@ -63,6 +64,7 @@ export const Desk = ({ url }: RollEditorProps) => {
     const [assumptions, setAssumptions] = useState<Assumption[]>([])
 
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
+    const [lemmatizeDialogOpen, setLemmatizeDialogOpen] = useState(false)
 
     const [stack, setStack] = useState<LayerInfo[]>([{
         id: 'working-paper',
@@ -177,15 +179,16 @@ export const Desk = ({ url }: RollEditorProps) => {
         copy.applyOperations([
             {
                 id: v4(),
-                type: 'shifting',
-                vertical: 0,
-                horizontal: -shift
+                type: 'stretching',
+                factor: stretch
             },
             {
                 id: v4(),
-                type: 'stretching',
-                factor: stretch
-            }])
+                type: 'shifting',
+                vertical: 0,
+                horizontal: -shift
+            }
+        ])
 
         setPins([])
     }
@@ -274,7 +277,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <Button>
                                 Seperate
                             </Button>
-                            <Button>
+                            <Button onClick={() => setLemmatizeDialogOpen(true)}>
                                 Lemmatize
                             </Button>
                             <Button>
@@ -433,6 +436,16 @@ export const Desk = ({ url }: RollEditorProps) => {
                         color: stringToColour(rollCopy.physicalItem.id)
                     })
                 }} />
+
+            <Lemmatize
+                open={lemmatizeDialogOpen}
+                onDone={(lemma) => {
+                    const newAssumptiosn = [...assumptions]
+                    newAssumptiosn.push(lemma)
+                    setAssumptions(newAssumptiosn)
+                    setLemmatizeDialogOpen(false)
+                }}
+                selection={pins.filter(pin => 'wasCollatedFrom' in pin) as CollatedEvent[]} />
         </>
     )
 }
