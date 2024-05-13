@@ -445,6 +445,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                     setAssumptions(newAssumptiosn)
                     setLemmatizeDialogOpen(false)
                 }}
+                clearSelection={() => setPins([])}
                 selection={pins.filter(pin => 'wasCollatedFrom' in pin) as CollatedEvent[]} />
         </>
     )

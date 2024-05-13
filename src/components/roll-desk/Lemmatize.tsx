@@ -6,10 +6,11 @@ import { v4 } from "uuid"
 interface LemmatizeProps {
     open: boolean
     selection: CollatedEvent[]
+    clearSelection: () => void
     onDone: (lemma: Lemma) => void
 }
 
-export const Lemmatize = ({ selection, onDone, open }: LemmatizeProps) => {
+export const Lemmatize = ({ selection, clearSelection, onDone, open }: LemmatizeProps) => {
     const [lemma, setLemma] = useState<CollatedEvent[]>([])
     const [otherReading, setOtherReading] = useState<CollatedEvent[]>([])
 
@@ -19,16 +20,18 @@ export const Lemmatize = ({ selection, onDone, open }: LemmatizeProps) => {
                 <Button
                     onClick={() => {
                         setLemma(selection)
+                        clearSelection()
                     }}>
-                    Make Lemma
+                    Mark Lemma
                 </Button>
                 <div>
                     {lemma.map(e => e.id).join(' ')}
                 </div>
                 <Button onClick={() => {
                     setOtherReading(selection)
+                    clearSelection()
                 }}>
-                    Make Other Reading
+                    Mark Other Reading
                 </Button>
                 <div>
                     {otherReading.map(e => e.id).join(' ')}
@@ -42,6 +45,9 @@ export const Lemmatize = ({ selection, onDone, open }: LemmatizeProps) => {
                             preferred: lemma,
                             over: otherReading
                         })
+
+                        setLemma([])
+                        setOtherReading([])
                     }}
                     variant='contained'>
                     Done
