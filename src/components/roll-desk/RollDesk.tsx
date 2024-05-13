@@ -440,9 +440,9 @@ export const Desk = ({ url }: RollEditorProps) => {
             <Lemmatize
                 open={lemmatizeDialogOpen}
                 onDone={(lemma) => {
-                    const newAssumptiosn = [...assumptions]
-                    newAssumptiosn.push(lemma)
-                    setAssumptions(newAssumptiosn)
+                    const newAssumptions = [...assumptions]
+                    newAssumptions.push(lemma)
+                    setAssumptions(newAssumptions)
                     setLemmatizeDialogOpen(false)
                 }}
                 clearSelection={() => setPins([])}
