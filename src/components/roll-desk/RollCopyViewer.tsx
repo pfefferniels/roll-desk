@@ -4,7 +4,6 @@ import { usePiano } from "../../hooks/usePiano"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { useEffect, useState } from "react"
 import { Dynamics } from "./Dynamics"
-import { createPortal } from "react-dom"
 
 interface RollCopyViewerProps {
     copy: RollCopy
@@ -32,10 +31,16 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
                 {copy.events.map((event, i) => (
                     <rect
                         key={event.id}
-                        onClick={() => {
+                        onClick={(e) => {
                             if (event.type === 'note') {
                                 playSingleNote(event.hasPitch)
                             }
+
+                            if (e.metaKey && event.annotates) {
+                                window.open(event.annotates)
+                                return
+                            }
+
                             onClick(event)
                         }}
                         data-id={event.id}
