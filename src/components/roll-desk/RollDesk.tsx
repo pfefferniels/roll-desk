@@ -271,11 +271,28 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Editorial Actions'>
-                            <Button>
+                            <Button onClick={() => {
+                                const collatedPins =
+                                    pins.filter(pin => 'wasCollatedFrom' in pin) as CollatedEvent[]
+
+                                if (collatedPins.length < 2) {
+                                    console.log('At least 2 elements must be selected')
+                                    return
+                                }
+
+                                assumptions.push({
+                                    type: 'unification',
+                                    unified: collatedPins,
+                                    id: v4(),
+                                    carriedOutBy: ''
+                                })
+
+                                setPins([])
+                            }}>
                                 Unify
                             </Button>
                             <Button>
-                                Seperate
+                                Separate
                             </Button>
                             <Button onClick={() => setLemmatizeDialogOpen(true)}>
                                 Lemmatize
