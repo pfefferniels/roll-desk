@@ -2,9 +2,12 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 
 interface PinchZoomContextProps {
-    zoom: number;
-    pinch: number;
-    trackHeight: number;
+    translateX: (x: number) => number 
+    translateY: (y: number) => number
+
+    trackHeight: number
+    pinch: number 
+    zoom: number
 }
 
 const PinchZoomContext = createContext<PinchZoomContextProps | undefined>(undefined);
@@ -17,8 +20,16 @@ interface PinchZoomProviderProps {
 }
 
 export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ pinch, zoom, trackHeight, children }) => {
+    const translateX = (x: number) => {
+        return zoom * x + pinch
+    }
+
+    const translateY = (y: number) => {
+        return trackHeight * y
+    }
+
     return (
-        <PinchZoomContext.Provider value={{ pinch, zoom, trackHeight }}>
+        <PinchZoomContext.Provider value={{ translateX, translateY, pinch, zoom, trackHeight }}>
             {children}
         </PinchZoomContext.Provider>
     );

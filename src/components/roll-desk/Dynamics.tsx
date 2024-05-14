@@ -7,7 +7,7 @@ interface DynamicsProps {
 }
 
 export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
-    const { pinch, zoom } = usePinchZoom()
+    const { translateX } = usePinchZoom()
 
     return (
         <>
@@ -20,7 +20,7 @@ export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
                             className='velocity'
                             cy={127 - v}
                             fill={color}
-                            cx={emulation.timeToPlace(i / 1000)! / zoom + pinch}
+                            cx={translateX(emulation.timeToPlace(i / 1000)!)}
                             r={1} />
                     )
                 })}
@@ -35,7 +35,7 @@ export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
                             className='velocity'
                             cy={127 - v + 450}
                             fill={color}
-                            cx={emulation.timeToPlace(i / 1000)! / zoom + pinch}
+                            cx={translateX(emulation.timeToPlace(i / 1000)!)}
                             r={1} />
                     )
                 })}

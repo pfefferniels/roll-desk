@@ -13,7 +13,7 @@ interface RollCopyViewerProps {
 }
 
 export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerProps) => {
-    const { zoom, pinch, trackHeight } = usePinchZoom()
+    const { translateX, translateY } = usePinchZoom()
     const { playSingleNote } = usePiano()
 
     const [emulation, setEmulation] = useState<Emulation>()
@@ -45,12 +45,12 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
                         }}
                         data-id={event.id}
                         id={event.id}
-                        x={event.hasDimension.from * (1 / zoom) + pinch}
-                        width={(event.hasDimension.to - event.hasDimension.from) * (1 / zoom)}
+                        x={translateX(event.hasDimension.from)}
+                        width={translateX(event.hasDimension.to) - translateX(event.hasDimension.from)}
                         height={5}
                         fillOpacity={onTop ? 0.8 : 0.4}
                         fill={onTop ? color : 'gray'}
-                        y={(100 - event.trackerHole) * trackHeight}>
+                        y={translateY(100 - event.trackerHole)}>
                     </rect>
                 ))}
 

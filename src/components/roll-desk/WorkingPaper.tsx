@@ -13,7 +13,7 @@ interface CollatedEventViewerProps {
 
 const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
     const [displayDetails, setDisplayDetails] = useState(false)
-    const { zoom, pinch, trackHeight } = usePinchZoom()
+    const { translateX, translateY, trackHeight } = usePinchZoom()
 
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
@@ -25,14 +25,14 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 
     const type = collatedFrom[0].type === 'expression' && (collatedFrom[0] as Expression).P2HasType
 
-    const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(v => (v / zoom + pinch))
-    const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(v => (v / zoom + pinch))
-    const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(v => (v / zoom + pinch))
+    const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(translateX)
+    const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(translateX)
+    const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(translateX)
 
     const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
     const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2
 
-    const trackerHole = (100 - collatedFrom[0].trackerHole) * trackHeight
+    const trackerHole = translateY(100 - collatedFrom[0].trackerHole)
 
     return (
         <g
@@ -54,15 +54,15 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                     <line
                         x1={meanOnset}
                         x2={meanOnset}
-                        y1={10 * trackHeight}
-                        y2={90 * trackHeight}
+                        y1={translateY(10)}
+                        y2={translateY(90)}
                         stroke='darkred'
                         strokeWidth={0.5} />
                     <line
                         x1={meanOnset}
                         x2={meanOnset + (type === 'SustainPedalOn' ? 10 : -10)}
-                        y1={10 * trackHeight}
-                        y2={10 * trackHeight}
+                        y1={translateY(10)}
+                        y2={translateY(10)}
                         stroke='darkred'
                         strokeWidth={0.5} />
                 </>

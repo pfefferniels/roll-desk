@@ -2,7 +2,7 @@ import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton,
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import { CollatedEvent, Note, Expression, Assumption } from "linked-rolls/lib/types"
+import { CollatedEvent, Note, Expression, Assumption, isCollatedEvent } from "linked-rolls/lib/types"
 import { RollCopyViewer } from "./RollCopyViewer"
 import { Add, AlignHorizontalCenter, ArrowBack, CallMerge, ColorLens, Pause, PlayArrow, Save, Undo, Visibility, VisibilityOff } from "@mui/icons-material"
 import { OperationsAsText } from "./OperationAsText"
@@ -20,6 +20,7 @@ import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
 import { Lemmatize } from "./Lemmatize"
 import { UnifyDialog } from "./UnifyDialog"
+import { Cursor } from "./Cursor"
 
 interface LayerInfo {
     id: 'working-paper' | string,
@@ -81,6 +82,8 @@ export const Desk = ({ url }: RollEditorProps) => {
     const [isDragging, setIsDragging] = useState(false)
     const [shiftX, setShiftX] = useState(0)
     const [stretch, setStretch] = useState(2)
+    const [cursorX, setCursorX] = useState(-1)
+    const [fixedX, setFixedX] = useState(-1)
 
     const [isPlaying, setIsPlaying] = useState(false)
 
@@ -94,7 +97,7 @@ export const Desk = ({ url }: RollEditorProps) => {
         orderedLayers.push(activeLayer)
     }
 
-    const downloadXML = async () => {
+    const downloadXML = useCallback(async () => {
         const xmlDoc = asXML(copies, collatedEvents, assumptions)
         if (!xmlDoc) return
 
@@ -107,9 +110,9 @@ export const Desk = ({ url }: RollEditorProps) => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-    }
+    }, [])
 
-    const downloadMIDI = async () => {
+    const downloadMIDI = useCallback(async () => {
         const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
             setMessage('Running emulation');
@@ -128,9 +131,9 @@ export const Desk = ({ url }: RollEditorProps) => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-    }
+    }, [collatedEvents, setMessage])
 
-    const handleAlign = () => {
+    const handleAlign = useCallback(() => {
         if (pins.length !== 4) return
 
         const copy = copies.find(copy => copy.physicalItem.id === activeLayerId)
@@ -193,7 +196,7 @@ export const Desk = ({ url }: RollEditorProps) => {
         ])
 
         setPins([])
-    }
+    }, [activeLayerId, copies, pins])
 
     const updateStretch = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -218,6 +221,13 @@ export const Desk = ({ url }: RollEditorProps) => {
         if (updateStretch.current) clearTimeout(updateStretch.current)
     }, [stretch])
 
+    const onMouseMove = useCallback((event: MouseEvent) => {
+        if (!event.target) return
+        const rect = (event.target as Element).getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        setCursorX((x - shiftX) / stretch)
+    }, [shiftX, stretch])
+
     useEffect(() => {
         const svg = svgRef.current
         if (!svg) return
@@ -226,16 +236,17 @@ export const Desk = ({ url }: RollEditorProps) => {
         svg.addEventListener('mousemove', onDrag)
         svg.addEventListener('mouseup', onDragEnd)
         svg.addEventListener('wheel', onZoom)
+        svg.addEventListener('mousemove', onMouseMove)
 
         return () => {
             svg.removeEventListener('mousedown', onDrag)
             svg.removeEventListener('mousemove', onDrag)
         }
-    }, [onDrag, onDragEnd, onDragStart, onZoom])
+    }, [onDrag, onDragEnd, onDragStart, onZoom, onMouseMove])
 
-    const importXML = () => {
+    const importXML = useCallback(() => {
         // TODO
-    }
+    }, [])
 
     return (
         <>
@@ -273,24 +284,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Editorial Actions'>
-                            <Button onClick={() => {
-                                const collatedPins =
-                                    pins.filter(pin => 'wasCollatedFrom' in pin) as CollatedEvent[]
-
-                                if (collatedPins.length < 2) {
-                                    console.log('At least 2 elements must be selected')
-                                    return
-                                }
-
-                                assumptions.push({
-                                    type: 'unification',
-                                    unified: collatedPins,
-                                    id: v4(),
-                                    carriedOutBy: ''
-                                })
-
-                                setPins([])
-                            }}>
+                            <Button onClick={() => setUnifyDialogOpen(true)}>
                                 Unify
                             </Button>
                             <Button>
@@ -387,6 +381,12 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <g transform={/*`translate(${shiftX}, 0) scale(${stretch}, 1)`*/''} ref={svgRef}>
                                 <PinchZoomProvider pinch={shiftX} zoom={stretch} trackHeight={6}>
                                     <RollGrid width={10000} />
+                                    <Cursor
+                                        onFix={() => setFixedX(cursorX)}
+                                        x={cursorX} />
+                                    <Cursor
+                                        fixed={true}
+                                        x={fixedX} />
 
                                     {orderedLayers
                                         .map((stackItem, i) => {
@@ -458,7 +458,7 @@ export const Desk = ({ url }: RollEditorProps) => {
 
             <UnifyDialog
                 open={unifyDialogOpen}
-                selection={pins.filter(pin => 'wasCollatedIn' in pin) as CollatedEvent[]}
+                selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]}
                 onDone={(unification) => {
                     const newAssumptions = [...assumptions]
                     newAssumptions.push(unification)
