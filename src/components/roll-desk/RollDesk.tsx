@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
 import { Lemmatize } from "./Lemmatize"
+import { UnifyDialog } from "./UnifyDialog"
 
 interface LayerInfo {
     id: 'working-paper' | string,
@@ -65,6 +66,7 @@ export const Desk = ({ url }: RollEditorProps) => {
 
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [lemmatizeDialogOpen, setLemmatizeDialogOpen] = useState(false)
+    const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
 
     const [stack, setStack] = useState<LayerInfo[]>([{
         id: 'working-paper',
@@ -453,6 +455,16 @@ export const Desk = ({ url }: RollEditorProps) => {
                         color: stringToColour(rollCopy.physicalItem.id)
                     })
                 }} />
+
+            <UnifyDialog
+                open={unifyDialogOpen}
+                selection={pins.filter(pin => 'wasCollatedIn' in pin) as CollatedEvent[]}
+                onDone={(unification) => {
+                    const newAssumptions = [...assumptions]
+                    newAssumptions.push(unification)
+                    setAssumptions(newAssumptions)
+                }}
+                onClose={() => setUnifyDialogOpen(false)} />
 
             <Lemmatize
                 open={lemmatizeDialogOpen}
