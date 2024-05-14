@@ -21,6 +21,7 @@ import { write } from "midifile-ts"
 import { Lemmatize } from "./Lemmatize"
 import { UnifyDialog } from "./UnifyDialog"
 import { Cursor } from "./Cursor"
+import { SeparateDialog } from "./SeparateDialog"
 
 interface LayerInfo {
     id: 'working-paper' | string,
@@ -68,6 +69,7 @@ export const Desk = ({ url }: RollEditorProps) => {
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [lemmatizeDialogOpen, setLemmatizeDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
+    const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
 
     const [stack, setStack] = useState<LayerInfo[]>([{
         id: 'working-paper',
@@ -244,6 +246,10 @@ export const Desk = ({ url }: RollEditorProps) => {
         }
     }, [onDrag, onDragEnd, onDragStart, onZoom, onMouseMove])
 
+    const pushAssumption = useCallback((assumption: Assumption) => {
+        setAssumptions(prev => [...prev, assumption])
+    }, [])
+
     const importXML = useCallback(() => {
         // TODO
     }, [])
@@ -287,7 +293,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                             <Button onClick={() => setUnifyDialogOpen(true)}>
                                 Unify
                             </Button>
-                            <Button>
+                            <Button onClick={() => setSeparateDialogOpen(true)}>
                                 Separate
                             </Button>
                             <Button onClick={() => setLemmatizeDialogOpen(true)}>
@@ -456,26 +462,30 @@ export const Desk = ({ url }: RollEditorProps) => {
                     })
                 }} />
 
+            {pins.length === 1 && isCollatedEvent(pins[0]) && (
+                <SeparateDialog
+                    open={separateDialogOpen}
+                    onClose={() => setSeparateDialogOpen(false)}
+                    selection={pins[0] as CollatedEvent}
+                    breakPoint={fixedX}
+                    onDone={pushAssumption}
+                />
+            )}
+
             <UnifyDialog
                 open={unifyDialogOpen}
                 selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]}
-                onDone={(unification) => {
-                    const newAssumptions = [...assumptions]
-                    newAssumptions.push(unification)
-                    setAssumptions(newAssumptions)
-                }}
+                onDone={pushAssumption}
                 onClose={() => setUnifyDialogOpen(false)} />
 
             <Lemmatize
                 open={lemmatizeDialogOpen}
                 onDone={(lemma) => {
-                    const newAssumptions = [...assumptions]
-                    newAssumptions.push(lemma)
-                    setAssumptions(newAssumptions)
+                    pushAssumption(lemma)
                     setLemmatizeDialogOpen(false)
                 }}
                 clearSelection={() => setPins([])}
-                selection={pins.filter(pin => 'wasCollatedFrom' in pin) as CollatedEvent[]} />
+                selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]} />
         </>
     )
 }
