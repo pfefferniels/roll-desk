@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Paper } from "@mui/material"
+import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Paper, Slider } from "@mui/material"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
@@ -200,51 +200,42 @@ export const Desk = ({ url }: RollEditorProps) => {
         setPins([])
     }, [activeLayerId, copies, pins])
 
-    const updateStretch = useRef<ReturnType<typeof setTimeout> | null>(null)
-
     const onDragStart = useCallback(() => {
         setIsDragging(true)
     }, [])
-
-    const onDrag = useCallback((e: MouseEvent) => {
-        if (!isDragging) return
-        setShiftX(prev => prev + e.movementX)
-    }, [isDragging])
 
     const onDragEnd = useCallback(() => {
         setIsDragging(false)
     }, [])
 
-    const onZoom = useCallback((event) => {
-        event.preventDefault();
-
-        const newStretch = Math.max(stretch + event.deltaY * -0.001, 1)
-        setStretch(newStretch);
-        if (updateStretch.current) clearTimeout(updateStretch.current)
-    }, [stretch])
-
     const onMouseMove = useCallback((event: MouseEvent) => {
         if (!event.target) return
-        const rect = (event.target as Element).getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        setCursorX((x - shiftX) / stretch)
-    }, [shiftX, stretch])
+
+        if (isDragging) {
+            if (!isDragging) return
+            setShiftX(prev => prev + event.movementX)
+        }
+        else {
+            const rect = (event.target as Element).getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            setCursorX((x - shiftX) / stretch)
+        }
+    }, [shiftX, stretch, isDragging])
 
     useEffect(() => {
         const svg = svgRef.current
         if (!svg) return
 
         svg.addEventListener('mousedown', onDragStart)
-        svg.addEventListener('mousemove', onDrag)
-        svg.addEventListener('mouseup', onDragEnd)
-        svg.addEventListener('wheel', onZoom)
         svg.addEventListener('mousemove', onMouseMove)
+        svg.addEventListener('mouseup', onDragEnd)
 
         return () => {
-            svg.removeEventListener('mousedown', onDrag)
-            svg.removeEventListener('mousemove', onDrag)
+            svg.removeEventListener('mousemove', onMouseMove)
+            svg.removeEventListener('mousedown', onDragStart)
+            svg.removeEventListener('mouseup', onDragEnd)
         }
-    }, [onDrag, onDragEnd, onDragStart, onZoom, onMouseMove])
+    }, [onDragEnd, onDragStart, onMouseMove])
 
     const pushAssumption = useCallback((assumption: Assumption) => {
         setAssumptions(prev => [...prev, assumption])
@@ -329,6 +320,15 @@ export const Desk = ({ url }: RollEditorProps) => {
                                 }}>
                                 {isPlaying ? <Pause /> : <PlayArrow />}
                             </IconButton>
+                        </Ribbon>
+                        <Ribbon title='Zoom'>
+                            <Slider
+                                sx={{ minWidth: 200 }}
+                                min={0.1}
+                                max={2}
+                                step={0.05}
+                                value={stretch}
+                                onChange={(_, newValue) => setStretch(newValue as number)} />
                         </Ribbon>
                     </RibbonGroup>
                 </Grid>
@@ -447,7 +447,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                         </svg>
                     </Paper>
                 </Grid>
-            </Grid>
+            </Grid >
 
             <RollCopyDialog
                 open={rollCopyDialogOpen}
@@ -462,15 +462,17 @@ export const Desk = ({ url }: RollEditorProps) => {
                     })
                 }} />
 
-            {pins.length === 1 && isCollatedEvent(pins[0]) && (
-                <SeparateDialog
-                    open={separateDialogOpen}
-                    onClose={() => setSeparateDialogOpen(false)}
-                    selection={pins[0] as CollatedEvent}
-                    breakPoint={fixedX}
-                    onDone={pushAssumption}
-                />
-            )}
+            {
+                pins.length === 1 && isCollatedEvent(pins[0]) && (
+                    <SeparateDialog
+                        open={separateDialogOpen}
+                        onClose={() => setSeparateDialogOpen(false)}
+                        selection={pins[0] as CollatedEvent}
+                        breakPoint={fixedX}
+                        onDone={pushAssumption}
+                    />
+                )
+            }
 
             <UnifyDialog
                 open={unifyDialogOpen}
