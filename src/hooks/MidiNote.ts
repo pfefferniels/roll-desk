@@ -36,7 +36,7 @@ export interface MidiPedal extends Event<'pedal'> {
 export const asNotes = (file: MidiFile) => {
     type Tempo = { atTick: number; microsecondsPerBeat: number; };
     const tempoMap: Tempo[] = [];
-    const newNotes = [];
+    const newNotes: (MidiNote | MidiPedal)[] = [];
     const currentNotes: (MidiNote | MidiPedal)[] = [];
     for (let i = 0; i < file.tracks.length; i++) {
         const track = file.tracks[i];
@@ -68,12 +68,37 @@ export const asNotes = (file: MidiFile) => {
                     offsetMs: 0
                 });
             }
-            else if (event.type === 'channel' && event.subtype === 'controller') {
-                console.log('TODO: Dealing with controller event', event.controllerType)
+            else if (event.type === 'channel'
+                && event.subtype === 'controller'
+                && event.controllerType === MIDIControlEvents.SUSTAIN) {
                 const currentTempo = tempoMap.slice().reverse().find(tempo => tempo.atTick <= currentTime);
                 if (!currentTempo) {
                     console.log('No tempo event found. Skipping');
                     continue;
+                }
+
+                if (event.value <= 63) {
+                    // pedal off
+                    const pendingPedal = newNotes.find(note => note.type === 'pedal' && note.offset === 0);
+                    if (!pendingPedal) {
+                        console.log('No pending pedal found for pedal off-event')
+                        continue
+                    }
+
+                    pendingPedal.offset = currentTime;
+                    pendingPedal.offsetMs = midiTickToMilliseconds(currentTime, currentTempo.microsecondsPerBeat, file.header.ticksPerBeat)
+                }
+                else {
+                    // pedal on
+                    newNotes.push({
+                        type: 'pedal',
+                        id: `${i}-${currentTime}-pedal`,
+                        onset: currentTime,
+                        offset: 0,
+                        channel: i,
+                        onsetMs: midiTickToMilliseconds(currentTime, currentTempo.microsecondsPerBeat, file.header.ticksPerBeat),
+                        offsetMs: 0
+                    })
                 }
             }
             else if (event.type === 'channel' && event.subtype === 'noteOff') {
