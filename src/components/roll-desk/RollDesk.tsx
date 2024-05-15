@@ -112,13 +112,13 @@ export const Desk = ({ url }: RollEditorProps) => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-    }, [])
+    }, [assumptions, collatedEvents, copies])
 
     const downloadMIDI = useCallback(async () => {
         const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
             setMessage('Running emulation');
-            emulation.emulateFromCollatedRoll(collatedEvents, []);
+            emulation.emulateFromCollatedRoll(collatedEvents, assumptions);
         }
 
         console.log(emulation.midiEvents)
@@ -133,7 +133,7 @@ export const Desk = ({ url }: RollEditorProps) => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-    }, [collatedEvents, setMessage])
+    }, [collatedEvents, setMessage, assumptions])
 
     const handleAlign = useCallback(() => {
         if (pins.length !== 4) return
@@ -314,7 +314,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                                     }
 
                                     const emulation = new Emulation()
-                                    emulation.emulateFromCollatedRoll(collatedEvents, [])
+                                    emulation.emulateFromCollatedRoll(collatedEvents, assumptions)
                                     play(emulation.asMIDI())
                                     setIsPlaying(true)
                                 }}>
