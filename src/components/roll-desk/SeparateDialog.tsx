@@ -46,9 +46,7 @@ export const SeparateDialog = ({ open, onClose, selection, onDone, breakPoint }:
                         const leftEvent: CollatedEvent = {
                             id: selection.id, // preserve the ID for the left event
                             isNonMusical: selection.isNonMusical,
-                            wasCollatedFrom: [{
-                                ...selection.wasCollatedFrom[0],
-                            }]
+                            wasCollatedFrom: [structuredClone(selection.wasCollatedFrom[0])]
                         }
 
                         const virtualLeftEvent = leftEvent.wasCollatedFrom[0]
@@ -60,9 +58,7 @@ export const SeparateDialog = ({ open, onClose, selection, onDone, breakPoint }:
                         const rightEvent: CollatedEvent = {
                             id: v4(),
                             isNonMusical: selection.isNonMusical,
-                            wasCollatedFrom: [{
-                                ...selection.wasCollatedFrom[0],
-                            }]
+                            wasCollatedFrom: [structuredClone(selection.wasCollatedFrom[0])]
                         }
 
                         const virtualRightEvent = rightEvent.wasCollatedFrom[0]
