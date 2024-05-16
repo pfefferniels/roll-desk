@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Select, Stack, TextareaAutosize } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextareaAutosize } from "@mui/material"
 import { Certainty, CollatedEvent, Unification } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
@@ -7,10 +7,11 @@ interface UnifyProps {
     open: boolean
     onClose: () => void
     selection: CollatedEvent[]
+    clearSelection: () => void
     onDone: (unification: Unification) => void
 }
 
-export const UnifyDialog = ({ open, onClose, selection, onDone }: UnifyProps) => {
+export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }: UnifyProps) => {
     const [cert, setCert] = useState<Certainty>('unknown')
     const [note, setNote] = useState('')
 
@@ -25,18 +26,24 @@ export const UnifyDialog = ({ open, onClose, selection, onDone }: UnifyProps) =>
                             {selection.map((e, i) => <li key={`unifyDialog${i}`}>{e.id}</li>)}
                         </ul>
                     </div>
-                    <Select label='Certainty' value={cert} onChange={e => {
-                        setCert(e.target.value as Certainty)
-                    }}>
-                        <MenuItem value='high'>High</MenuItem>
-                        <MenuItem value='medium'>Medium</MenuItem>
-                        <MenuItem value='low'>Low</MenuItem>
-                        <MenuItem value='Unknown'>Unknown</MenuItem>
-                    </Select>
-                    <TextareaAutosize
-                        value={note}
-                        onChange={e => setNote(e.target.value)}
-                        minRows={4} />
+                    <FormControl>
+                        <FormLabel>Certainty</FormLabel>
+                        <Select label='Certainty' value={cert} onChange={e => {
+                            setCert(e.target.value as Certainty)
+                        }}>
+                            <MenuItem value='high'>High</MenuItem>
+                            <MenuItem value='medium'>Medium</MenuItem>
+                            <MenuItem value='low'>Low</MenuItem>
+                            <MenuItem value='Unknown'>Unknown</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl>
+                        <FormLabel>Note</FormLabel>
+                        <TextareaAutosize
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            minRows={4} />
+                    </FormControl>
                 </Stack>
             </DialogContent>
             <DialogActions>
@@ -50,6 +57,7 @@ export const UnifyDialog = ({ open, onClose, selection, onDone }: UnifyProps) =>
                             certainty: cert,
                             note
                         })
+                        clearSelection()
                         onClose()
                     }}
                     variant='contained'>

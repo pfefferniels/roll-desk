@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Select, Stack, TextareaAutosize } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextareaAutosize } from "@mui/material"
 import { Certainty, CollatedEvent, Separation } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
@@ -7,11 +7,12 @@ interface SeparateProps {
     open: boolean
     onClose: () => void
     selection: CollatedEvent
+    clearSelection: () => void
     breakPoint: number
     onDone: (separation: Separation) => void
 }
 
-export const SeparateDialog = ({ open, onClose, selection, onDone, breakPoint }: SeparateProps) => {
+export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDone, breakPoint }: SeparateProps) => {
     const [cert, setCert] = useState<Certainty>('unknown')
     const [note, setNote] = useState('')
 
@@ -23,18 +24,24 @@ export const SeparateDialog = ({ open, onClose, selection, onDone, breakPoint }:
                     <div>
                         Separating {selection.id} at {breakPoint}
                     </div>
-                    <Select label='Certainty' value={cert} onChange={e => {
-                        setCert(e.target.value as Certainty)
-                    }}>
-                        <MenuItem value='high'>High</MenuItem>
-                        <MenuItem value='medium'>Medium</MenuItem>
-                        <MenuItem value='low'>Low</MenuItem>
-                        <MenuItem value='Unknown'>Unknown</MenuItem>
-                    </Select>
-                    <TextareaAutosize
-                        value={note}
-                        onChange={e => setNote(e.target.value)}
-                        minRows={4} />
+                    <FormControl>
+                        <FormLabel>Certainty</FormLabel>
+                        <Select label='Certainty' value={cert} onChange={e => {
+                            setCert(e.target.value as Certainty)
+                        }}>
+                            <MenuItem value='high'>High</MenuItem>
+                            <MenuItem value='medium'>Medium</MenuItem>
+                            <MenuItem value='low'>Low</MenuItem>
+                            <MenuItem value='Unknown'>Unknown</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl>
+                        <FormLabel>Note</FormLabel>
+                        <TextareaAutosize
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            minRows={4} />
+                    </FormControl>
                 </Stack>
             </DialogContent>
             <DialogActions>
@@ -76,6 +83,7 @@ export const SeparateDialog = ({ open, onClose, selection, onDone, breakPoint }:
                             certainty: cert,
                             note
                         })
+                        clearSelection()
                         onClose()
                     }}
                     variant='contained'>
