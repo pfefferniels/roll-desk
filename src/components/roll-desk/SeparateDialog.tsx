@@ -1,4 +1,5 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextareaAutosize } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField, TextareaAutosize } from "@mui/material"
+import { Unstable_NumberInput as NumberInput } from '@mui/base/Unstable_NumberInput';
 import { Certainty, CollatedEvent, Separation } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
@@ -13,6 +14,7 @@ interface SeparateProps {
 }
 
 export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDone, breakPoint }: SeparateProps) => {
+    const [gap, setGap] = useState<number>()
     const [cert, setCert] = useState<Certainty>('unknown')
     const [note, setNote] = useState('')
 
@@ -24,6 +26,16 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                     <div>
                         Separating {selection.id} at {breakPoint}
                     </div>
+                    <FormControl>
+                        <FormLabel>
+                            Gap (in {selection.wasCollatedFrom[0]?.hasDimension.hasUnit || 'mm'})
+                        </FormLabel>
+                        <NumberInput
+                            min={1}
+                            max={10}
+                            value={gap}
+                            onChange={(_, value) => setGap(value)} />
+                    </FormControl>
                     <FormControl>
                         <FormLabel>Certainty</FormLabel>
                         <Select label='Certainty' value={cert} onChange={e => {
@@ -59,7 +71,7 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                         const virtualLeftEvent = leftEvent.wasCollatedFrom[0]
                         virtualLeftEvent.annotates = undefined
                         virtualLeftEvent.hasDimension.from = originalStart
-                        virtualLeftEvent.hasDimension.to = breakPoint
+                        virtualLeftEvent.hasDimension.to = breakPoint - (gap || 0) / 2
                         virtualLeftEvent.id = v4()
 
                         const rightEvent: CollatedEvent = {
@@ -70,7 +82,7 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
 
                         const virtualRightEvent = rightEvent.wasCollatedFrom[0]
                         virtualRightEvent.annotates = undefined
-                        virtualRightEvent.hasDimension.from = breakPoint
+                        virtualRightEvent.hasDimension.from = breakPoint + (gap || 0) / 2
                         virtualRightEvent.hasDimension.to = originalEnd
                         virtualRightEvent.id = v4()
 
