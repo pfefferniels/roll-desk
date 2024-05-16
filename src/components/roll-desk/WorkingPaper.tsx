@@ -137,9 +137,9 @@ export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperPro
                         const performingEvents = emulation.findEventsPerforming(event.id)
                         const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
                         const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
-                        if (!noteOn || !noteOff) return
-
-                        playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                        if (noteOn && noteOff) {
+                            playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                        }
 
                         onClick(event)
                     }} />
