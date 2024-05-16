@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Paper, Slider } from "@mui/material"
+import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Paper, Slider, Stack } from "@mui/material"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
@@ -23,6 +23,7 @@ import { UnifyDialog } from "./UnifyDialog"
 import { Cursor } from "./Cursor"
 import { SeparateDialog } from "./SeparateDialog"
 import { StackList } from "./StackList"
+import { ActionList } from "./ActionList"
 
 export interface LayerInfo {
     id: 'working-paper' | string,
@@ -334,20 +335,26 @@ export const Desk = ({ url }: RollEditorProps) => {
                     </RibbonGroup>
                 </Grid>
                 <Grid item xs={3}>
-                    <Paper sx={{ maxWidth: 360 }}>
-                        <StackList
-                            stack={stack}
-                            setStack={setStack}
-                            copies={copies}
-                            activeLayerId={activeLayerId}
-                            setActiveLayerId={setActiveLayerId}
-                        />
-                        <Box>
-                            <IconButton onClick={() => setRollCopyDialogOpen(true)}>
-                                <Add />
-                            </IconButton>
-                        </Box>
-                    </Paper>
+                    <Stack direction='column' spacing={1}>
+                        <Paper sx={{ maxWidth: 360 }}>
+                            <StackList
+                                stack={stack}
+                                setStack={setStack}
+                                copies={copies}
+                                activeLayerId={activeLayerId}
+                                setActiveLayerId={setActiveLayerId}
+                            />
+                            <Box>
+                                <IconButton onClick={() => setRollCopyDialogOpen(true)}>
+                                    <Add />
+                                </IconButton>
+                            </Box>
+                        </Paper>
+
+                        <Paper sx={{ maxWidth: 360 }}>
+                            <ActionList actions={assumptions} />
+                        </Paper>
+                    </Stack>
                 </Grid >
                 <Grid item xs={9}>
                     <Paper>
