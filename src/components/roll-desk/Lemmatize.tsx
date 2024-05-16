@@ -18,20 +18,23 @@ export const Lemmatize = ({ selection, clearSelection, onDone, open }: Lemmatize
         <Drawer open={open} variant='persistent'>
             <Stack direction='column'>
                 <Button
+                    disabled={selection.length === 0}
                     onClick={() => {
                         setLemma(selection)
                         clearSelection()
                     }}>
-                    Mark Lemma
+                    Mark Lemma ({selection.length})
                 </Button>
                 <div>
                     {lemma.map(e => e.id).join(' ')}
                 </div>
-                <Button onClick={() => {
-                    setOtherReading(selection)
-                    clearSelection()
-                }}>
-                    Mark Other Reading
+                <Button
+                    disabled={selection.length === 0}
+                    onClick={() => {
+                        setOtherReading(selection)
+                        clearSelection()
+                    }}>
+                    Mark Other Reading ({selection.length})
                 </Button>
                 <div>
                     {otherReading.map(e => e.id).join(' ')}
