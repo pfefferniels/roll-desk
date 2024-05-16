@@ -22,8 +22,9 @@ import { Lemmatize } from "./Lemmatize"
 import { UnifyDialog } from "./UnifyDialog"
 import { Cursor } from "./Cursor"
 import { SeparateDialog } from "./SeparateDialog"
+import { StackList } from "./StackList"
 
-interface LayerInfo {
+export interface LayerInfo {
     id: 'working-paper' | string,
     title: string,
     visible: boolean,
@@ -34,7 +35,7 @@ interface RollEditorProps {
     url: string
 }
 
-const stringToColour = (str: string) => {
+export const stringToColour = (str: string) => {
     let hash = 0;
     str.split('').forEach(char => {
         hash = char.charCodeAt(0) + ((hash << 5) - hash)
@@ -334,45 +335,13 @@ export const Desk = ({ url }: RollEditorProps) => {
                 </Grid>
                 <Grid item xs={3}>
                     <Paper sx={{ maxWidth: 360 }}>
-                        <Box p={1}>Stack</Box>
-                        <List dense>
-                            {stack.map((stackItem, i) => {
-                                const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
-
-                                return (
-                                    <React.Fragment key={`listItem_${i}`}>
-                                        <ListItem>
-                                            <ListItemIcon>
-                                                <IconButton
-                                                    size='small'
-                                                    edge="start"
-                                                    tabIndex={-1}
-                                                    onClick={() => {
-                                                        stackItem.visible = !stackItem.visible
-                                                        setStack([...stack])
-                                                    }}
-                                                >
-                                                    {stackItem.visible ? <Visibility /> : <VisibilityOff />}
-                                                </IconButton>
-                                            </ListItemIcon>
-                                            <ListItemButton
-                                                onClick={() => setActiveLayerId(stackItem.id)}>
-                                                <ListItemText
-                                                    style={{ border: activeLayerId === stackItem.id ? '3px' : '1px' }}
-                                                    secondary={copy ? <OperationsAsText operations={copy.operations} /> : null}
-                                                    primary={activeLayerId === stackItem.id ? <b>{stackItem.title}</b> : stackItem.title} />
-                                            </ListItemButton>
-                                            <ListItemSecondaryAction>
-                                                <IconButton edge="end" sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColour(stackItem.id) }}>
-                                                    <ColorLens />
-                                                </IconButton>
-                                            </ListItemSecondaryAction>
-                                        </ListItem>
-                                        {i === 0 && <Divider flexItem />}
-                                    </React.Fragment>
-                                )
-                            })}
-                        </List>
+                        <StackList
+                            stack={stack}
+                            setStack={setStack}
+                            copies={copies}
+                            activeLayerId={activeLayerId}
+                            setActiveLayerId={setActiveLayerId}
+                        />
                         <Box>
                             <IconButton onClick={() => setRollCopyDialogOpen(true)}>
                                 <Add />
@@ -468,6 +437,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                         open={separateDialogOpen}
                         onClose={() => setSeparateDialogOpen(false)}
                         selection={pins[0] as CollatedEvent}
+                        clearSelection={() => setPins([])}
                         breakPoint={fixedX}
                         onDone={pushAssumption}
                     />
@@ -477,6 +447,7 @@ export const Desk = ({ url }: RollEditorProps) => {
             <UnifyDialog
                 open={unifyDialogOpen}
                 selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]}
+                clearSelection={() => setPins([])}
                 onDone={pushAssumption}
                 onClose={() => setUnifyDialogOpen(false)} />
 
