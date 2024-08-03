@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
 import './App.css';
-import AppRouter from './Router';
-import { SessionProvider } from '@inrupt/solid-ui-react';
-import { LoginForm } from './components/login/Login';
 import { Snackbar } from '@mui/material';
 import { SnackbarContext } from './providers/SnackbarContext';
+import { Desk } from './components/roll-desk/RollDesk';
+import { PianoContextProvider } from 'react-pianosound';
 
 const App = () => {
   const [message, setMessage] = useState<string>()
 
   return (
     <div className="App">
-      <SessionProvider sessionId="early-records">
-        <LoginForm />
-
-        <SnackbarContext.Provider value={{ setMessage }}>
-          <AppRouter />
-        </SnackbarContext.Provider>
-      </SessionProvider>
+      <SnackbarContext.Provider value={{ setMessage }}>
+        <PianoContextProvider>
+          <Desk />
+        </PianoContextProvider>
+      </SnackbarContext.Provider>
 
       <Snackbar
         message={message}

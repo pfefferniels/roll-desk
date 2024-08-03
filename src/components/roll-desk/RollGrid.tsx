@@ -1,4 +1,4 @@
-import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
 interface RollGridProps {
     width: number

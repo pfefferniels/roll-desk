@@ -1,17 +1,18 @@
-import { CollatedEvent, Note, Expression } from "linked-rolls/lib/types"
+import type { Assumption, CollatedEvent, Expression } from "linked-rolls/lib/types"
 import { useEffect, useState } from "react"
-import { usePiano } from "../../hooks/usePiano"
+import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
+    subjectOfAssumption: boolean
     highlight: boolean
     onClick: () => void
 }
 
-const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
+const CollatedEventViewer = ({ event, highlight, subjectOfAssumption, onClick }: CollatedEventViewerProps) => {
     const [displayDetails, setDisplayDetails] = useState(false)
     const { translateX, translateY, trackHeight } = usePinchZoom()
 
@@ -98,7 +99,7 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
             {displayDetails && (
                 <text
                     x={innerBoundaries[0]}
-                    y={trackerHole}
+                    y={trackerHole - 2}
                     fontSize={12}>
                     <tspan>{type}</tspan>
                 </text>
@@ -110,19 +111,32 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 interface WorkingPaperProps {
     numberOfRolls: number
     events: CollatedEvent[]
+    assumptions: Assumption[]
     onClick: (event: CollatedEvent) => void
 }
 
-export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperProps) => {
+export const WorkingPaper = ({ numberOfRolls, events, assumptions, onClick }: WorkingPaperProps) => {
     const [emulation, setEmulation] = useState<Emulation>()
     const { playSingleNote } = usePiano()
 
     useEffect(() => {
         // whenever the events change, update the emulation
         const newEmulation = new Emulation()
-        newEmulation?.emulateFromCollatedRoll(events, [])
+        newEmulation.emulateFromCollatedRoll(events, assumptions)
         setEmulation(newEmulation)
-    }, [events])
+    }, [events, assumptions])
+
+    // smaller durations should be drawn last
+    const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
+    const durationOf = (event: CollatedEvent) => {
+        const from = avg(event.wasCollatedFrom.map(e => e.hasDimension.from))
+        const to = avg(event.wasCollatedFrom.map(e => e.hasDimension.to))
+
+        return to - from
+    }
+
+    console.log('sorting')
+    events.sort((a, b) => durationOf(b) - durationOf(a))
 
     return (
         <g className='collated-copies'>
@@ -130,6 +144,7 @@ export const WorkingPaper = ({ numberOfRolls, events, onClick }: WorkingPaperPro
                 <CollatedEventViewer
                     key={`workingPaper_${event.id || i}`}
                     event={event}
+                    subjectOfAssumption={false}
                     highlight={event.wasCollatedFrom?.length !== numberOfRolls}
                     onClick={() => {
                         if (!emulation) return

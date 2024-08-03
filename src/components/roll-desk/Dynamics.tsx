@@ -1,5 +1,5 @@
 import { Emulation } from "linked-rolls"
-import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
 interface DynamicsProps {
     forEmulation: Emulation
@@ -20,7 +20,7 @@ export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
                             className='velocity'
                             cy={127 - v}
                             fill={color}
-                            cx={translateX(emulation.placeTimeConversion.timeToPlace(i / 100)!)}
+                            cx={translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)}
                             r={1} />
                     )
                 })}
@@ -35,7 +35,7 @@ export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
                             className='velocity'
                             cy={127 - v + 450}
                             fill={color}
-                            cx={translateX(emulation.placeTimeConversion.timeToPlace(i / 100)!)}
+                            cx={translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)}
                             r={1} />
                     )
                 })}

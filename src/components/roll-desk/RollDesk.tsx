@@ -1,21 +1,20 @@
-import { Box, Button, Divider, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Paper, Slider, Stack } from "@mui/material"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import { CollatedEvent, Note, Expression, Assumption, isCollatedEvent } from "linked-rolls/lib/types"
+import type { CollatedEvent, Note, Expression, Assumption } from "linked-rolls/lib/types.d.ts"
+import { isCollatedEvent } from "linked-rolls"
 import { RollCopyViewer } from "./RollCopyViewer"
-import { Add, AlignHorizontalCenter, ArrowBack, CallMerge, ColorLens, Pause, PlayArrow, Save, Undo, Visibility, VisibilityOff } from "@mui/icons-material"
-import { OperationsAsText } from "./OperationAsText"
+import { Add, AlignHorizontalCenter, CallMerge, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { WorkingPaper } from "./WorkingPaper"
-import { usePiano } from "../../hooks/usePiano"
+import { usePiano } from "react-pianosound"
 import { RollGrid } from "./RollGrid"
 import { Selection } from "./Selection"
 import { Glow } from "./Glow"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { v4 } from "uuid"
-import { useNavigate } from "react-router-dom"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
 import { Lemmatize } from "./Lemmatize"
@@ -30,10 +29,6 @@ export interface LayerInfo {
     title: string,
     visible: boolean,
     color: string
-}
-
-interface RollEditorProps {
-    url: string
 }
 
 export const stringToColour = (str: string) => {
@@ -59,8 +54,7 @@ export const stringToColour = (str: string) => {
  * a thin transparent paper roll.
  */
 
-export const Desk = ({ url }: RollEditorProps) => {
-    const navigate = useNavigate()
+export const Desk = () => {
     const { setMessage } = useSnackbar()
     const { play, stop } = usePiano()
 
@@ -180,8 +174,8 @@ export const Desk = ({ url }: RollEditorProps) => {
             from(notesInActiveLayer[1])
         ]
 
-        const stretch = (point2[1] - point1[1]) / (point2[0] - point1[0])
-        const shift = point1[1] - stretch * point1[0]
+        const stretch = (point2[0] - point1[0]) / (point2[1] - point1[1])
+        const shift = point1[0] - stretch * point1[1]
 
         if (!copy) return
 
@@ -195,10 +189,11 @@ export const Desk = ({ url }: RollEditorProps) => {
                 id: v4(),
                 type: 'shifting',
                 vertical: 0,
-                horizontal: -shift
+                horizontal: shift
             }
         ])
 
+        setCopies([...copies])
         setPins([])
     }, [activeLayerId, copies, pins])
 
@@ -253,9 +248,6 @@ export const Desk = ({ url }: RollEditorProps) => {
                 <Grid item xs={12} md={12} xl={12}>
                     <RibbonGroup>
                         <Ribbon title=' '>
-                            <IconButton onClick={() => navigate('/')}>
-                                <ArrowBack />
-                            </IconButton>
                             <IconButton
                                 onClick={downloadXML}>
                                 <Save />
@@ -352,7 +344,16 @@ export const Desk = ({ url }: RollEditorProps) => {
                         </Paper>
 
                         <Paper sx={{ maxWidth: 360 }}>
-                            <ActionList actions={assumptions} />
+                            <ActionList
+                                actions={assumptions}
+                                removeAction={(action) => {
+                                    setAssumptions(prev => {
+                                        const index = prev.findIndex(a => a.id === action.id)
+                                        if (index === -1) return prev 
+                                        prev.splice(index, 1)
+                                        return [...prev]
+                                    })
+                                }} />
                         </Paper>
                     </Stack>
                 </Grid >
@@ -380,6 +381,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                                                         key={`copy_${i}`}
                                                         numberOfRolls={copies.length}
                                                         events={collatedEvents}
+                                                        assumptions={assumptions}
                                                         onClick={(event: CollatedEvent) => {
                                                             const existingPin = pins.indexOf(event)
                                                             if (existingPin !== -1) {
@@ -423,7 +425,7 @@ export const Desk = ({ url }: RollEditorProps) => {
                         </svg>
                     </Paper>
                 </Grid>
-            </Grid >
+            </Grid>
 
             <RollCopyDialog
                 open={rollCopyDialogOpen}

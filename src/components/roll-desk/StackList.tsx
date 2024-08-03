@@ -1,7 +1,6 @@
 import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText, ListItemSecondaryAction, Divider } from "@mui/material"
-import { stack } from "d3"
-import React from "react"
+import { Fragment } from "react"
 import { OperationsAsText } from "./OperationAsText"
 import { LayerInfo, stringToColour } from "./RollDesk"
 import { RollCopy } from "linked-rolls"
@@ -21,7 +20,7 @@ export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLay
                 const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
 
                 return (
-                    <React.Fragment key={`listItem_${i}`}>
+                    <Fragment key={`listItem_${i}`}>
                         <ListItem>
                             <ListItemIcon>
                                 <IconButton
@@ -50,7 +49,7 @@ export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLay
                             </ListItemSecondaryAction>
                         </ListItem>
                         {i === 0 && <Divider flexItem />}
-                    </React.Fragment>
+                    </Fragment>
                 )
             })}
         </List>

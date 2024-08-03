@@ -2,6 +2,7 @@
   "name": "measuring-early-records",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@codemirror/lang-xml": "^6.0.2",
     "@emotion/react": "^11.10.5",
@@ -39,6 +40,7 @@
     "npm": "^9.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-pianosound": "file:../react-pianosound",
     "react-router-dom": "^6.5.0",
     "react-svg-pan-zoom": "^3.12.1",
     "sequence-align": "file:../sequence-align",

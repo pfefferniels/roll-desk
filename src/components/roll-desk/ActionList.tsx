@@ -1,11 +1,13 @@
-import { List, ListItem, ListItemText } from "@mui/material";
-import { Assumption } from "linked-rolls/lib/types";
+import { Delete, Remove } from "@mui/icons-material";
+import { IconButton, List, ListItem, ListItemSecondaryAction, ListItemText } from "@mui/material";
+import { Assumption } from "linked-rolls";
 
 interface ActionListProps {
     actions: Assumption[]
+    removeAction: (action: Assumption) => void
 }
 
-export const ActionList = ({ actions }: ActionListProps) => {
+export const ActionList = ({ actions, removeAction }: ActionListProps) => {
     return (
         <List>
             {actions.map(action => {
@@ -23,6 +25,11 @@ export const ActionList = ({ actions }: ActionListProps) => {
                             secondary={
                                 <p>{action.note}</p>
                             } />
+                        <ListItemSecondaryAction>
+                            <IconButton onClick={() => removeAction(action)}>
+                                <Delete />
+                            </IconButton>
+                        </ListItemSecondaryAction>
                     </ListItem>
                 )
             })}
