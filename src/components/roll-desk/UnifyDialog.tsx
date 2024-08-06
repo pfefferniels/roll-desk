@@ -1,12 +1,12 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextareaAutosize } from "@mui/material"
-import { Certainty, CollatedEvent, Unification } from "linked-rolls/lib/types"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
+import { AnyRollEvent, Certainty, Unification } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
 interface UnifyProps {
     open: boolean
     onClose: () => void
-    selection: CollatedEvent[]
+    selection: AnyRollEvent[]
     clearSelection: () => void
     onDone: (unification: Unification) => void
 }
@@ -39,7 +39,7 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                     </FormControl>
                     <FormControl>
                         <FormLabel>Note</FormLabel>
-                        <TextareaAutosize
+                        <TextField
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             minRows={4} />

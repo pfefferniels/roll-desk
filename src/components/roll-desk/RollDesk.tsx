@@ -2,7 +2,7 @@ import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/materi
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import type { CollatedEvent, Note, Expression, Assumption } from "linked-rolls/lib/types.d.ts"
+import type { CollatedEvent, Note, Expression, Assumption, AnyRollEvent } from "linked-rolls/lib/types.d.ts"
 import { isCollatedEvent } from "linked-rolls"
 import { RollCopyViewer } from "./RollCopyViewer"
 import { Add, AlignHorizontalCenter, CallMerge, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
@@ -17,12 +17,14 @@ import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { v4 } from "uuid"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
-import { Lemmatize } from "./Lemmatize"
+import { Relate } from "./Relate"
 import { UnifyDialog } from "./UnifyDialog"
 import { Cursor } from "./Cursor"
 import { SeparateDialog } from "./SeparateDialog"
 import { StackList } from "./StackList"
 import { ActionList } from "./ActionList"
+import { AssignHand } from "./AssignHand"
+import { AddHandDialog } from "./AddHand"
 
 export interface LayerInfo {
     id: 'working-paper' | string,
@@ -63,9 +65,11 @@ export const Desk = () => {
     const [assumptions, setAssumptions] = useState<Assumption[]>([])
 
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
-    const [lemmatizeDialogOpen, setLemmatizeDialogOpen] = useState(false)
+    const [lemmatizeDialogOpen, setRelateDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
+    const [assignHandDialogOpen, setAssignHandDialogOpen] = useState(false)
+    const [addHandDialogOpen, setAddHandDialogOpen] = useState(false)
 
     const [stack, setStack] = useState<LayerInfo[]>([{
         id: 'working-paper',
@@ -75,7 +79,7 @@ export const Desk = () => {
     }])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
-    const [pins, setPins] = useState<(Note | Expression | CollatedEvent)[]>([])
+    const [pins, setPins] = useState<(AnyRollEvent | CollatedEvent)[]>([])
 
     const [isDragging, setIsDragging] = useState(false)
     const [shiftX, setShiftX] = useState(0)
@@ -114,7 +118,7 @@ export const Desk = () => {
         const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
             setMessage('Running emulation');
-            emulation.emulateFromCollatedRoll(collatedEvents, assumptions);
+            emulation.emulateFromCollatedRoll(collatedEvents, assumptions, copies[0]);
         }
 
         console.log(emulation.midiEvents)
@@ -129,7 +133,7 @@ export const Desk = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-    }, [collatedEvents, setMessage, assumptions])
+    }, [collatedEvents, setMessage, assumptions, copies])
 
     const handleAlign = useCallback(() => {
         if (pins.length !== 4) return
@@ -140,23 +144,23 @@ export const Desk = () => {
             return
         }
 
-        const notesInActiveLayer: (Note | Expression)[] = []
+        const eventsInActiveLayer: AnyRollEvent[] = []
         const otherNotes = []
         for (const pin of pins) {
             if (copy.events.findIndex(event => event.id === pin.id) !== -1 && !('wasCollatedFrom' in pin)) {
-                notesInActiveLayer.push(pin)
+                eventsInActiveLayer.push(pin)
             }
             else {
                 otherNotes.push(pin)
             }
         }
 
-        if (notesInActiveLayer.length !== 2 || otherNotes.length !== 2) {
+        if (eventsInActiveLayer.length !== 2 || otherNotes.length !== 2) {
             console.log('You have to select exactly 2 + 2 events')
             return
         }
 
-        const from = (event: Note | Expression | CollatedEvent) => {
+        const from = (event: AnyRollEvent | CollatedEvent) => {
             if ('wasCollatedFrom' in event) {
                 const sum = event.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.from, 0)
                 return sum / event.wasCollatedFrom.length
@@ -166,12 +170,12 @@ export const Desk = () => {
 
         const point1 = [
             from(otherNotes[0]),
-            from(notesInActiveLayer[0])
+            from(eventsInActiveLayer[0])
         ]
 
         const point2 = [
             from(otherNotes[1]),
-            from(notesInActiveLayer[1])
+            from(eventsInActiveLayer[1])
         ]
 
         const stretch = (point2[0] - point1[0]) / (point2[1] - point1[1])
@@ -242,6 +246,9 @@ export const Desk = () => {
         // TODO
     }, [])
 
+    const currentCopy = pins.length &&
+        copies.find(copy => copy.events.findIndex(event => event.id === pins[0].id) !== -1)
+
     return (
         <>
             <Grid container m={1} spacing={1}>
@@ -269,23 +276,33 @@ export const Desk = () => {
                                 <AlignHorizontalCenter />
                             </IconButton>
                             <IconButton onClick={async () => {
-                                setCollatedEvents(await collateRolls(copies))
+                                setCollatedEvents(await collateRolls(
+                                    copies,
+                                    assumptions
+                                ))
                             }}>
                                 <CallMerge />
                             </IconButton>
                         </Ribbon>
-                        <Ribbon title='Editorial Actions'>
+                        <Ribbon title='Conjectures'>
                             <Button onClick={() => setUnifyDialogOpen(true)}>
                                 Unify
                             </Button>
                             <Button onClick={() => setSeparateDialogOpen(true)}>
                                 Separate
                             </Button>
-                            <Button onClick={() => setLemmatizeDialogOpen(true)}>
-                                Lemmatize
+                        </Ribbon>
+                        <Ribbon title='Hands'>
+                            <Button onClick={() => setAddHandDialogOpen(true)}>
+                                Add Hand
                             </Button>
-                            <Button>
-                                Place Relatively
+                            <Button onClick={() => setAssignHandDialogOpen(true)}>
+                                Assign Hand
+                            </Button>
+                        </Ribbon>
+                        <Ribbon title='Editorial Actions'>
+                            <Button onClick={() => setRelateDialogOpen(true)}>
+                                Relate
                             </Button>
                             <Button>
                                 Annotate
@@ -293,7 +310,7 @@ export const Desk = () => {
                         </Ribbon>
                         <Ribbon title='Emulation'>
                             <Button>
-                                Adjust Roll Tempo
+                                Adjust Settings
                             </Button>
                             <Button onClick={downloadMIDI}>
                                 Download MIDI
@@ -308,7 +325,12 @@ export const Desk = () => {
                                     }
 
                                     const emulation = new Emulation()
-                                    emulation.emulateFromCollatedRoll(collatedEvents, assumptions)
+                                    emulation.emulateFromCollatedRoll(
+                                        collatedEvents,
+                                        assumptions,
+                                        copies[0]
+                                    )
+
                                     play(emulation.asMIDI())
                                     setIsPlaying(true)
                                 }}>
@@ -349,7 +371,7 @@ export const Desk = () => {
                                 removeAction={(action) => {
                                     setAssumptions(prev => {
                                         const index = prev.findIndex(a => a.id === action.id)
-                                        if (index === -1) return prev 
+                                        if (index === -1) return prev
                                         prev.splice(index, 1)
                                         return [...prev]
                                     })
@@ -382,6 +404,7 @@ export const Desk = () => {
                                                         numberOfRolls={copies.length}
                                                         events={collatedEvents}
                                                         assumptions={assumptions}
+                                                        copies={copies}
                                                         onClick={(event: CollatedEvent) => {
                                                             const existingPin = pins.indexOf(event)
                                                             if (existingPin !== -1) {
@@ -441,11 +464,11 @@ export const Desk = () => {
                 }} />
 
             {
-                pins.length === 1 && isCollatedEvent(pins[0]) && (
+                pins.length === 1 && !isCollatedEvent(pins[0]) && (
                     <SeparateDialog
                         open={separateDialogOpen}
                         onClose={() => setSeparateDialogOpen(false)}
-                        selection={pins[0] as CollatedEvent}
+                        selection={pins[0] as AnyRollEvent}
                         clearSelection={() => setPins([])}
                         breakPoint={fixedX}
                         onDone={pushAssumption}
@@ -455,19 +478,43 @@ export const Desk = () => {
 
             <UnifyDialog
                 open={unifyDialogOpen}
-                selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]}
+                selection={pins.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
                 clearSelection={() => setPins([])}
                 onDone={pushAssumption}
                 onClose={() => setUnifyDialogOpen(false)} />
 
-            <Lemmatize
+            <Relate
                 open={lemmatizeDialogOpen}
                 onDone={(lemma) => {
                     pushAssumption(lemma)
-                    setLemmatizeDialogOpen(false)
+                    setRelateDialogOpen(false)
                 }}
                 clearSelection={() => setPins([])}
                 selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]} />
+
+            {currentCopy && (
+                <AssignHand
+                    open={assignHandDialogOpen}
+                    onDone={(assignment) => {
+                        if (assignment) {
+                            pushAssumption(assignment)
+                        }
+                        setAssignHandDialogOpen(false)
+                    }}
+                    copy={currentCopy}
+                    clearSelection={() => setPins([])}
+                    selection={pins.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
+                />)}
+
+            {currentCopy && (
+                <AddHandDialog
+                    open={addHandDialogOpen}
+                    onDone={(editing) => {
+                        console.log('added', editing)
+                        setAddHandDialogOpen(false)
+                    }}
+                    copy={currentCopy}
+                />)}
         </>
     )
 }

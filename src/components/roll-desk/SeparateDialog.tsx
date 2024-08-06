@@ -1,13 +1,13 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField, TextareaAutosize } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { Unstable_NumberInput as NumberInput } from '@mui/base/Unstable_NumberInput';
-import { Certainty, CollatedEvent, Separation } from "linked-rolls/lib/types"
+import { AnyRollEvent, Certainty, Separation } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
 interface SeparateProps {
     open: boolean
     onClose: () => void
-    selection: CollatedEvent
+    selection: AnyRollEvent
     clearSelection: () => void
     breakPoint: number
     onDone: (separation: Separation) => void
@@ -28,7 +28,7 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                     </div>
                     <FormControl>
                         <FormLabel>
-                            Gap (in {selection.wasCollatedFrom[0]?.hasDimension.hasUnit || 'mm'})
+                            Gap (in {selection.hasDimension.hasUnit || 'mm'})
                         </FormLabel>
                         <NumberInput
                             min={1}
@@ -49,7 +49,7 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                     </FormControl>
                     <FormControl>
                         <FormLabel>Note</FormLabel>
-                        <TextareaAutosize
+                        <TextField
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             minRows={4} />
@@ -59,32 +59,20 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
             <DialogActions>
                 <Button
                     onClick={() => {
-                        const originalStart = selection.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.from, 0) / selection.wasCollatedFrom.length
-                        const originalEnd = selection.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.to, 0) / selection.wasCollatedFrom.length
+                        const originalStart = selection.hasDimension.from
+                        const originalEnd = selection.hasDimension.to
 
-                        const leftEvent: CollatedEvent = {
-                            id: selection.id, // preserve the ID for the left event
-                            isNonMusical: selection.isNonMusical,
-                            wasCollatedFrom: [structuredClone(selection.wasCollatedFrom[0])]
-                        }
+                        const leftEvent = structuredClone(selection)
+                        leftEvent.annotates = undefined
+                        leftEvent.hasDimension.from = originalStart
+                        leftEvent.hasDimension.to = breakPoint - (gap || 0) / 2
+                        leftEvent.id = v4()
 
-                        const virtualLeftEvent = leftEvent.wasCollatedFrom[0]
-                        virtualLeftEvent.annotates = undefined
-                        virtualLeftEvent.hasDimension.from = originalStart
-                        virtualLeftEvent.hasDimension.to = breakPoint - (gap || 0) / 2
-                        virtualLeftEvent.id = v4()
-
-                        const rightEvent: CollatedEvent = {
-                            id: v4(),
-                            isNonMusical: selection.isNonMusical,
-                            wasCollatedFrom: [structuredClone(selection.wasCollatedFrom[0])]
-                        }
-
-                        const virtualRightEvent = rightEvent.wasCollatedFrom[0]
-                        virtualRightEvent.annotates = undefined
-                        virtualRightEvent.hasDimension.from = breakPoint + (gap || 0) / 2
-                        virtualRightEvent.hasDimension.to = originalEnd
-                        virtualRightEvent.id = v4()
+                        const rightEvent = structuredClone(selection)
+                        rightEvent.annotates = undefined
+                        rightEvent.hasDimension.from = breakPoint + (gap || 0) / 2
+                        rightEvent.hasDimension.to = originalEnd
+                        rightEvent.id = v4()
 
                         onDone({
                             type: 'separation',

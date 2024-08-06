@@ -1,8 +1,8 @@
-import { CollatedEvent, Expression, Note } from "linked-rolls/lib/types";
+import { AnyRollEvent, CollatedEvent } from "linked-rolls/lib/types";
 
 interface SelectionProps {
-    pins: (Note | Expression | CollatedEvent)[]
-    remove: (pin: (Note | Expression | CollatedEvent)) => void
+    pins: (AnyRollEvent | CollatedEvent)[]
+    remove: (pin: (AnyRollEvent | CollatedEvent)) => void
 }
 
 export const Selection = ({ pins, remove }: SelectionProps) => {

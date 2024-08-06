@@ -2,7 +2,7 @@ import type { Assumption, CollatedEvent, Expression } from "linked-rolls/lib/typ
 import { useEffect, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, RollCopy } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 
 interface CollatedEventViewerProps {
@@ -112,19 +112,24 @@ interface WorkingPaperProps {
     numberOfRolls: number
     events: CollatedEvent[]
     assumptions: Assumption[]
+    copies: RollCopy[]
     onClick: (event: CollatedEvent) => void
 }
 
-export const WorkingPaper = ({ numberOfRolls, events, assumptions, onClick }: WorkingPaperProps) => {
-    const [emulation, setEmulation] = useState<Emulation>()
+export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onClick }: WorkingPaperProps) => {
+    const [emulations, setEmulations] = useState<Emulation[]>([])
     const { playSingleNote } = usePiano()
 
     useEffect(() => {
         // whenever the events change, update the emulation
-        const newEmulation = new Emulation()
-        newEmulation.emulateFromCollatedRoll(events, assumptions)
-        setEmulation(newEmulation)
-    }, [events, assumptions])
+        const newEmulations = []
+        for (const copy of copies) {
+            const newEmulation = new Emulation()
+            newEmulation.emulateFromCollatedRoll(events, assumptions, copy)
+            newEmulations.push(newEmulation)
+        }
+        setEmulations(newEmulations)
+    }, [events, assumptions, copies])
 
     // smaller durations should be drawn last
     const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
@@ -147,9 +152,9 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, onClick }: Wo
                     subjectOfAssumption={false}
                     highlight={event.wasCollatedFrom?.length !== numberOfRolls}
                     onClick={() => {
-                        if (!emulation) return
+                        if (!emulations.length) return
 
-                        const performingEvents = emulation.findEventsPerforming(event.id)
+                        const performingEvents = emulations[0].findEventsPerforming(event.id)
                         const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
                         const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
                         if (noteOn && noteOff) {
@@ -160,7 +165,11 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, onClick }: Wo
                     }} />
             ))}
 
-            {emulation && <Dynamics forEmulation={emulation} color={'red'} />}
+            {emulations.map((emulation, i) => {
+                return (
+                    <Dynamics key={`emulation_${i}`} forEmulation={emulation} color={'red'} />
+                )
+            })}
         </g>
     )
 }
