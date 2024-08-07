@@ -23,26 +23,30 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
 
     return (
         <Drawer open={open} variant='persistent'>
-            <Stack direction='column'>
-                <Select
-                    value={assignedHand}
-                    onChange={e => setAssignedHand(e.target.value as string)}
-                >
-                    {copy.editings.map((editing) => {
-                        return (
-                            <MenuItem value={editing.id} key={editing.id}>
-                                {editing.carriedOutBy}
-                            </MenuItem>
-                        )
-                    })}
-                    <MenuItem value={''}>
-                        (unknown)
-                    </MenuItem>
-                </Select>
+            <Stack direction='column' sx={{ m: 1 }} spacing={1}>
+                <FormControl>
+                    <FormLabel>Responsible Hand</FormLabel>
+                    <Select
+                        size='small'
+                        value={assignedHand}
+                        onChange={e => setAssignedHand(e.target.value as string)}
+                    >
+                        {copy.editings.map((editing) => {
+                            return (
+                                <MenuItem value={editing.id} key={editing.id}>
+                                    {editing.carriedOutBy}
+                                </MenuItem>
+                            )
+                        })}
+                        <MenuItem value={''}>
+                            (unknown)
+                        </MenuItem>
+                    </Select>
+                </FormControl>
 
                 <FormControl>
                     <FormLabel>Certainty</FormLabel>
-                    <Select label='Certainty' value={cert} onChange={e => {
+                    <Select size='small' value={cert} onChange={e => {
                         setCert(e.target.value as Certainty)
                     }}>
                         <MenuItem value='high'>High</MenuItem>
@@ -54,6 +58,7 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
                 <FormControl>
                     <FormLabel>Note</FormLabel>
                     <TextField
+                        size='small'
                         value={note}
                         onChange={e => setNote(e.target.value)}
                         minRows={4} />
@@ -69,7 +74,7 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
                                 id: v4(),
                                 hand: copy.editings.find(e => e.id === assignedHand)!,
                                 assignedTo: selection,
-                                cert,
+                                certainty: cert,
                                 note
                             })
                         }

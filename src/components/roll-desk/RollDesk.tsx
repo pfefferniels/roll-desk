@@ -246,8 +246,7 @@ export const Desk = () => {
         // TODO
     }, [])
 
-    const currentCopy = pins.length &&
-        copies.find(copy => copy.events.findIndex(event => event.id === pins[0].id) !== -1)
+    const currentCopy = copies.find(copy => copy.physicalItem.id === activeLayer?.id)
 
     return (
         <>
