@@ -19,6 +19,7 @@ import { ActionList } from "./ActionList"
 import { AssignHand } from "./AssignHand"
 import { AddHandDialog } from "./AddHand"
 import { LayeredRolls } from "./LayeredRolls"
+import { insertReadings } from "linked-rolls/lib/Collator"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -235,10 +236,12 @@ export const Desk = () => {
                                 <AlignHorizontalCenter />
                             </IconButton>
                             <IconButton onClick={async () => {
-                                setCollatedEvents(await collateRolls(
+                                const collatedEvents = await collateRolls(
                                     copies,
                                     assumptions
-                                ))
+                                )
+                                setCollatedEvents(collatedEvents)
+                                insertReadings(copies, collatedEvents, assumptions)
                             }}>
                                 <CallMerge />
                             </IconButton>
