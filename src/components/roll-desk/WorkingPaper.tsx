@@ -1,9 +1,10 @@
 import type { Assumption, CollatedEvent, Expression } from "linked-rolls/lib/types"
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, RollCopy } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
+import { roundedHull } from "../../helpers/roundedHull"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -116,9 +117,16 @@ interface WorkingPaperProps {
     onClick: (event: CollatedEvent) => void
 }
 
+// const AssumptionUnderlay = ({ })
+
 export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
+    const [underlays, setUnderlays] = useState<string[]>()
+
+    const { zoom } = usePinchZoom()
     const { playSingleNote } = usePiano()
+
+    const svgRef = useRef<SVGGElement>(null)
 
     useEffect(() => {
         // whenever the events change, update the emulation
@@ -142,8 +150,51 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
         events.sort((a, b) => durationOf(b) - durationOf(a))
     }, [events, assumptions, copies])
 
+    useLayoutEffect(() => {
+        const underlays = []
+        for (const assumption of assumptions) {
+            if (assumption.type === 'relation') {
+                for (const group of assumption.relates) {
+                    const points = group.contains
+                        .map(e => {
+                            return svgRef.current?.querySelector(`[data-id="${e.id}"]`)
+                        })
+                        .filter(el => !!el)
+                        .map(el => {
+                            const bbox = (el as SVGGraphicsElement).getBBox()
+                            return [
+                                [bbox.x, bbox.y] as [number, number],
+                                [bbox.x + bbox.width, bbox.y] as [number, number],
+                                [bbox.x, bbox.y + bbox.height] as [number, number],
+                                [bbox.x + bbox.width, bbox.y + bbox.height] as [number, number]
+                            ]
+                        })
+                        .flat()
+
+                    const hull = roundedHull(points, 2.5)
+                    underlays.push(hull)
+                }
+            }
+        }
+        setUnderlays(underlays)
+    }, [events, assumptions, zoom])
+
+    console.log('underlays=', underlays)
+
     return (
-        <g className='collated-copies'>
+        <g className='collated-copies' ref={svgRef}>
+            {underlays?.map((underlay, i) => {
+                return (
+                    <path
+                        key={`underlay_${i}`}
+                        stroke='black'
+                        fill='white'
+                        strokeWidth={1}
+                        d={underlay}
+                    />
+                )
+            })}
+
             {events.map((event, i) => (
                 <CollatedEventViewer
                     key={`workingPaper_${event.id || i}`}
