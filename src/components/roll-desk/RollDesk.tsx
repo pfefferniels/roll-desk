@@ -1,30 +1,30 @@
 import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import type { CollatedEvent, Note, Expression, Assumption, AnyRollEvent } from "linked-rolls/lib/types.d.ts"
+import type { CollatedEvent, Assumption, AnyRollEvent } from "linked-rolls/lib/types.d.ts"
 import { isCollatedEvent } from "linked-rolls"
-import { RollCopyViewer } from "./RollCopyViewer"
 import { Add, AlignHorizontalCenter, CallMerge, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
-import { WorkingPaper } from "./WorkingPaper"
 import { usePiano } from "react-pianosound"
-import { RollGrid } from "./RollGrid"
-import { Selection } from "./Selection"
-import { Glow } from "./Glow"
-import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { v4 } from "uuid"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
 import { Relate } from "./Relate"
 import { UnifyDialog } from "./UnifyDialog"
-import { Cursor } from "./Cursor"
 import { SeparateDialog } from "./SeparateDialog"
 import { StackList } from "./StackList"
 import { ActionList } from "./ActionList"
 import { AssignHand } from "./AssignHand"
 import { AddHandDialog } from "./AddHand"
+import { LayeredRolls } from "./LayeredRolls"
+
+export interface CollationResult {
+    events: CollatedEvent[]
+}
+
+export type EventSelection = (AnyRollEvent | CollatedEvent)[]
 
 export interface LayerInfo {
     id: 'working-paper' | string,
@@ -63,6 +63,16 @@ export const Desk = () => {
     const [copies, setCopies] = useState<RollCopy[]>([])
     const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
     const [assumptions, setAssumptions] = useState<Assumption[]>([])
+    const [stretch, setStretch] = useState(2)
+
+    const [layers, setLayers] = useState<LayerInfo[]>([{
+        id: 'working-paper',
+        title: 'Working Paper',
+        visible: true,
+        color: 'blue'
+    }])
+    const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
+
 
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [lemmatizeDialogOpen, setRelateDialogOpen] = useState(false)
@@ -71,39 +81,17 @@ export const Desk = () => {
     const [assignHandDialogOpen, setAssignHandDialogOpen] = useState(false)
     const [addHandDialogOpen, setAddHandDialogOpen] = useState(false)
 
-    const [stack, setStack] = useState<LayerInfo[]>([{
-        id: 'working-paper',
-        title: 'Working Paper',
-        visible: true,
-        color: 'blue'
-    }])
-    const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
-
-    const [pins, setPins] = useState<(AnyRollEvent | CollatedEvent)[]>([])
+    const [selection, setSelection] = useState<EventSelection>([])
 
     const [isDragging, setIsDragging] = useState(false)
-    const [shiftX, setShiftX] = useState(0)
-    const [stretch, setStretch] = useState(2)
-    const [cursorX, setCursorX] = useState(-1)
     const [fixedX, setFixedX] = useState(-1)
 
     const [isPlaying, setIsPlaying] = useState(false)
 
-    const svgRef = useRef<SVGGElement>(null)
-
-    // makes sure that the active layer comes last
-    let orderedLayers = [...stack].reverse()
-    const activeLayer = stack.find(layer => layer.id === activeLayerId)
-    if (activeLayer) {
-        orderedLayers.splice(stack.indexOf(activeLayer), 1)
-        orderedLayers.push(activeLayer)
-    }
-
     const downloadXML = useCallback(async () => {
-        const xmlDoc = asXML(copies, collatedEvents, assumptions)
-        if (!xmlDoc) return
+        const xml = asXML(copies, collatedEvents, assumptions)
+        if (!xml.length) return
 
-        const xml = new XMLSerializer().serializeToString(xmlDoc)
         const blob = new Blob([xml], { type: 'application/xml' })
         const a = document.createElement('a')
         a.href = URL.createObjectURL(blob);
@@ -136,7 +124,7 @@ export const Desk = () => {
     }, [collatedEvents, setMessage, assumptions, copies])
 
     const handleAlign = useCallback(() => {
-        if (pins.length !== 4) return
+        if (selection.length !== 4) return
 
         const copy = copies.find(copy => copy.physicalItem.id === activeLayerId)
         if (!copy) {
@@ -146,7 +134,7 @@ export const Desk = () => {
 
         const eventsInActiveLayer: AnyRollEvent[] = []
         const otherNotes = []
-        for (const pin of pins) {
+        for (const pin of selection) {
             if (copy.events.findIndex(event => event.id === pin.id) !== -1 && !('wasCollatedFrom' in pin)) {
                 eventsInActiveLayer.push(pin)
             }
@@ -198,8 +186,8 @@ export const Desk = () => {
         ])
 
         setCopies([...copies])
-        setPins([])
-    }, [activeLayerId, copies, pins])
+        setSelection([])
+    }, [activeLayerId, copies, selection])
 
     const onDragStart = useCallback(() => {
         setIsDragging(true)
@@ -209,34 +197,6 @@ export const Desk = () => {
         setIsDragging(false)
     }, [])
 
-    const onMouseMove = useCallback((event: MouseEvent) => {
-        if (!event.target) return
-
-        if (isDragging) {
-            if (!isDragging) return
-            setShiftX(prev => prev + event.movementX)
-        }
-        else {
-            const rect = (event.target as Element).getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            setCursorX((x - shiftX) / stretch)
-        }
-    }, [shiftX, stretch, isDragging])
-
-    useEffect(() => {
-        const svg = svgRef.current
-        if (!svg) return
-
-        svg.addEventListener('mousedown', onDragStart)
-        svg.addEventListener('mousemove', onMouseMove)
-        svg.addEventListener('mouseup', onDragEnd)
-
-        return () => {
-            svg.removeEventListener('mousemove', onMouseMove)
-            svg.removeEventListener('mousedown', onDragStart)
-            svg.removeEventListener('mouseup', onDragEnd)
-        }
-    }, [onDragEnd, onDragStart, onMouseMove])
 
     const pushAssumption = useCallback((assumption: Assumption) => {
         setAssumptions(prev => [...prev, assumption])
@@ -246,7 +206,7 @@ export const Desk = () => {
         // TODO
     }, [])
 
-    const currentCopy = copies.find(copy => copy.physicalItem.id === activeLayer?.id)
+    const currentCopy = copies.find(copy => copy.physicalItem.id === activeLayerId)
 
     return (
         <>
@@ -270,7 +230,7 @@ export const Desk = () => {
                                 <Undo />
                             </IconButton>
                             <IconButton
-                                disabled={pins.length !== 4}
+                                disabled={selection.length !== 4}
                                 onClick={handleAlign}>
                                 <AlignHorizontalCenter />
                             </IconButton>
@@ -351,8 +311,8 @@ export const Desk = () => {
                     <Stack direction='column' spacing={1}>
                         <Paper sx={{ maxWidth: 360 }}>
                             <StackList
-                                stack={stack}
-                                setStack={setStack}
+                                stack={layers}
+                                setStack={setLayers}
                                 copies={copies}
                                 activeLayerId={activeLayerId}
                                 setActiveLayerId={setActiveLayerId}
@@ -379,73 +339,20 @@ export const Desk = () => {
                     </Stack>
                 </Grid >
                 <Grid item xs={9}>
-                    <Paper>
-                        <svg width="1000" height={6 * 100}>
-                            <Glow />
-                            <g transform={/*`translate(${shiftX}, 0) scale(${stretch}, 1)`*/''} ref={svgRef}>
-                                <PinchZoomProvider pinch={shiftX} zoom={stretch} trackHeight={6}>
-                                    <RollGrid width={10000} />
-                                    <Cursor
-                                        onFix={() => setFixedX(cursorX)}
-                                        x={cursorX} />
-                                    <Cursor
-                                        fixed={true}
-                                        x={fixedX} />
-
-                                    {orderedLayers
-                                        .map((stackItem, i) => {
-                                            if (!stackItem.visible) return null
-
-                                            if (stackItem.id === 'working-paper') {
-                                                return (
-                                                    <WorkingPaper
-                                                        key={`copy_${i}`}
-                                                        numberOfRolls={copies.length}
-                                                        events={collatedEvents}
-                                                        assumptions={assumptions}
-                                                        copies={copies}
-                                                        onClick={(event: CollatedEvent) => {
-                                                            const existingPin = pins.indexOf(event)
-                                                            if (existingPin !== -1) {
-                                                                console.log('removing existing pin', existingPin)
-                                                                setPins(prev => {
-                                                                    prev.splice(existingPin, 1)
-                                                                    return [...prev]
-                                                                })
-                                                            }
-                                                            else {
-                                                                setPins(prev => [...prev, event])
-                                                            }
-                                                        }} />
-                                                )
-                                            }
-
-                                            const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
-                                            if (!copy) return null
-
-                                            return (
-                                                <RollCopyViewer
-                                                    key={`copy_${i}`}
-                                                    copy={copy}
-                                                    onTop={i === 0}
-                                                    color={stackItem.color}
-                                                    onClick={(event) => {
-                                                        setPins(prev => [...prev, event])
-                                                    }} />
-                                            )
-                                        })}
-
-                                    {svgRef.current && (
-                                        <Selection
-                                            pins={pins}
-                                            remove={pinToRemove => {
-                                                setPins(prev => prev.filter(pin => pin.id !== pinToRemove.id))
-                                            }} />
-                                    )}
-                                </PinchZoomProvider>
-                            </g>
-                        </svg>
-                    </Paper>
+                    <div style={{ overflow: 'scroll', width: 950 }}>
+                        <LayeredRolls
+                            copies={copies}
+                            assumptions={assumptions}
+                            activeLayerId={activeLayerId}
+                            stack={layers}
+                            collationResult={{ events: collatedEvents }}
+                            stretch={stretch}
+                            selection={selection}
+                            onUpdateSelection={setSelection}
+                            fixedX={fixedX}
+                            setFixedX={setFixedX}
+                        />
+                    </div>
                 </Grid>
             </Grid>
 
@@ -454,7 +361,7 @@ export const Desk = () => {
                 onClose={() => setRollCopyDialogOpen(false)}
                 onDone={rollCopy => {
                     setCopies(copies => [...copies, rollCopy])
-                    stack.push({
+                    layers.push({
                         id: rollCopy.physicalItem.id,
                         title: `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`,
                         visible: true,
@@ -463,12 +370,12 @@ export const Desk = () => {
                 }} />
 
             {
-                pins.length === 1 && !isCollatedEvent(pins[0]) && (
+                selection.length === 1 && !isCollatedEvent(selection[0]) && (
                     <SeparateDialog
                         open={separateDialogOpen}
                         onClose={() => setSeparateDialogOpen(false)}
-                        selection={pins[0] as AnyRollEvent}
-                        clearSelection={() => setPins([])}
+                        selection={selection[0] as AnyRollEvent}
+                        clearSelection={() => setSelection([])}
                         breakPoint={fixedX}
                         onDone={pushAssumption}
                     />
@@ -477,8 +384,8 @@ export const Desk = () => {
 
             <UnifyDialog
                 open={unifyDialogOpen}
-                selection={pins.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
-                clearSelection={() => setPins([])}
+                selection={selection.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
+                clearSelection={() => setSelection([])}
                 onDone={pushAssumption}
                 onClose={() => setUnifyDialogOpen(false)} />
 
@@ -488,8 +395,8 @@ export const Desk = () => {
                     pushAssumption(lemma)
                     setRelateDialogOpen(false)
                 }}
-                clearSelection={() => setPins([])}
-                selection={pins.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]} />
+                clearSelection={() => setSelection([])}
+                selection={selection.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]} />
 
             {currentCopy && (
                 <AssignHand
@@ -501,8 +408,8 @@ export const Desk = () => {
                         setAssignHandDialogOpen(false)
                     }}
                     copy={currentCopy}
-                    clearSelection={() => setPins([])}
-                    selection={pins.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
+                    clearSelection={() => setSelection([])}
+                    selection={selection.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
                 />)}
 
             {currentCopy && (

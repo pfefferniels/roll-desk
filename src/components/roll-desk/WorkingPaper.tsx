@@ -129,19 +129,18 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
             newEmulations.push(newEmulation)
         }
         setEmulations(newEmulations)
+
+        // and sort them, so that smaller durations will be drawn last
+        const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
+        const durationOf = (event: CollatedEvent) => {
+            const from = avg(event.wasCollatedFrom.map(e => e.hasDimension.from))
+            const to = avg(event.wasCollatedFrom.map(e => e.hasDimension.to))
+
+            return to - from
+        }
+
+        events.sort((a, b) => durationOf(b) - durationOf(a))
     }, [events, assumptions, copies])
-
-    // smaller durations should be drawn last
-    const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
-    const durationOf = (event: CollatedEvent) => {
-        const from = avg(event.wasCollatedFrom.map(e => e.hasDimension.from))
-        const to = avg(event.wasCollatedFrom.map(e => e.hasDimension.to))
-
-        return to - from
-    }
-
-    console.log('sorting')
-    events.sort((a, b) => durationOf(b) - durationOf(a))
 
     return (
         <g className='collated-copies'>

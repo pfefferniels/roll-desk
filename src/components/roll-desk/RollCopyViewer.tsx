@@ -1,5 +1,5 @@
 import { Emulation, RollCopy } from "linked-rolls"
-import type { Expression, Note } from "linked-rolls/lib/types.d.ts"
+import type { AnyRollEvent } from "linked-rolls/lib/types.d.ts"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { useEffect, useState } from "react"
@@ -8,7 +8,7 @@ import { Dynamics } from "./Dynamics.tsx"
 interface RollCopyViewerProps {
     copy: RollCopy
     onTop: boolean
-    onClick: (e: Note | Expression) => void
+    onClick: (e: AnyRollEvent) => void
     color: string
 }
 
@@ -22,7 +22,7 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
         // whenever the events change, update the emulation
         console.log('rerunning emulation')
         const newEmulation = new Emulation()
-        newEmulation?.emulateFromRoll(copy.events)
+        newEmulation?.emulateFromRoll(copy.events.filter(e => e.type === 'note' || e.type === 'expression'))
         setEmulation(newEmulation)
     }, [copy])
 
