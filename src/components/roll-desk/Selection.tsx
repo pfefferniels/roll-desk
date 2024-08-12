@@ -1,8 +1,11 @@
-import { AnyRollEvent, CollatedEvent } from "linked-rolls/lib/types";
+import { UserSelection } from "./RollDesk";
+
+type ArrayElement<ArrayType extends readonly unknown[]> =
+    ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 
 interface SelectionProps {
-    pins: (AnyRollEvent | CollatedEvent)[]
-    remove: (pin: (AnyRollEvent | CollatedEvent)) => void
+    pins: UserSelection
+    remove: (pin: ArrayElement<UserSelection>) => void
 }
 
 export const Selection = ({ pins, remove }: SelectionProps) => {

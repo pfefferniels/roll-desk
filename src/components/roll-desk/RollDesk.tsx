@@ -2,8 +2,8 @@ import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/materi
 import { useCallback, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import type { CollatedEvent, Assumption, AnyRollEvent } from "linked-rolls/lib/types.d.ts"
-import { isCollatedEvent } from "linked-rolls"
+import type { CollatedEvent, Assumption, AnyRollEvent, Relation } from "linked-rolls/lib/types.d.ts"
+import { isRollEvent, isCollatedEvent } from "linked-rolls"
 import { Add, AlignHorizontalCenter, CallMerge, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -11,7 +11,6 @@ import { usePiano } from "react-pianosound"
 import { v4 } from "uuid"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
-import { Relate } from "./Relate"
 import { UnifyDialog } from "./UnifyDialog"
 import { SeparateDialog } from "./SeparateDialog"
 import { StackList } from "./StackList"
@@ -20,12 +19,13 @@ import { AssignHand } from "./AssignHand"
 import { AddHandDialog } from "./AddHand"
 import { LayeredRolls } from "./LayeredRolls"
 import { insertReadings } from "linked-rolls/lib/Collator"
+import { combineRelations } from "./combineRelations"
 
 export interface CollationResult {
     events: CollatedEvent[]
 }
 
-export type EventSelection = (AnyRollEvent | CollatedEvent)[]
+export type UserSelection = (AnyRollEvent | CollatedEvent | Assumption)[]
 
 export interface LayerInfo {
     id: 'working-paper' | string,
@@ -65,6 +65,7 @@ export const Desk = () => {
     const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
     const [assumptions, setAssumptions] = useState<Assumption[]>([])
     const [stretch, setStretch] = useState(2)
+    const [fixedX, setFixedX] = useState(-1)
 
     const [layers, setLayers] = useState<LayerInfo[]>([{
         id: 'working-paper',
@@ -74,19 +75,13 @@ export const Desk = () => {
     }])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
-
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
-    const [lemmatizeDialogOpen, setRelateDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
     const [assignHandDialogOpen, setAssignHandDialogOpen] = useState(false)
     const [addHandDialogOpen, setAddHandDialogOpen] = useState(false)
 
-    const [selection, setSelection] = useState<EventSelection>([])
-
-    const [isDragging, setIsDragging] = useState(false)
-    const [fixedX, setFixedX] = useState(-1)
-
+    const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
     const downloadXML = useCallback(async () => {
@@ -125,7 +120,11 @@ export const Desk = () => {
     }, [collatedEvents, setMessage, assumptions, copies])
 
     const handleAlign = useCallback(() => {
-        if (selection.length !== 4) return
+        if (selection.length !== 4 &&
+            !selection.every(pin => isCollatedEvent(pin) || isRollEvent(pin))
+        ) {
+            return
+        }
 
         const copy = copies.find(copy => copy.physicalItem.id === activeLayerId)
         if (!copy) {
@@ -135,7 +134,7 @@ export const Desk = () => {
 
         const eventsInActiveLayer: AnyRollEvent[] = []
         const otherNotes = []
-        for (const pin of selection) {
+        for (const pin of (selection as (AnyRollEvent | CollatedEvent)[])) {
             if (copy.events.findIndex(event => event.id === pin.id) !== -1 && !('wasCollatedFrom' in pin)) {
                 eventsInActiveLayer.push(pin)
             }
@@ -190,21 +189,8 @@ export const Desk = () => {
         setSelection([])
     }, [activeLayerId, copies, selection])
 
-    const onDragStart = useCallback(() => {
-        setIsDragging(true)
-    }, [])
-
-    const onDragEnd = useCallback(() => {
-        setIsDragging(false)
-    }, [])
-
-
     const pushAssumption = useCallback((assumption: Assumption) => {
         setAssumptions(prev => [...prev, assumption])
-    }, [])
-
-    const importXML = useCallback(() => {
-        // TODO
     }, [])
 
     const currentCopy = copies.find(copy => copy.physicalItem.id === activeLayerId)
@@ -263,8 +249,17 @@ export const Desk = () => {
                             </Button>
                         </Ribbon>
                         <Ribbon title='Editorial Actions'>
-                            <Button onClick={() => setRelateDialogOpen(true)}>
-                                Relate
+                            <Button onClick={() => {
+                                combineRelations(
+                                    copies,
+                                    selection.filter(s => 'type' in s && s.type === 'relation') as Relation[],
+                                    assumptions
+                                )
+
+                                // clear the selection
+                                setSelection([])
+                            }}>
+                                Combine
                             </Button>
                             <Button>
                                 Annotate
@@ -340,7 +335,7 @@ export const Desk = () => {
                                 }} />
                         </Paper>
                     </Stack>
-                </Grid >
+                </Grid>
                 <Grid item xs={9}>
                     <div style={{ overflow: 'scroll', width: 950 }}>
                         <LayeredRolls
@@ -373,7 +368,7 @@ export const Desk = () => {
                 }} />
 
             {
-                selection.length === 1 && !isCollatedEvent(selection[0]) && (
+                selection.length === 1 && isRollEvent(selection[0]) && (
                     <SeparateDialog
                         open={separateDialogOpen}
                         onClose={() => setSeparateDialogOpen(false)}
@@ -387,19 +382,10 @@ export const Desk = () => {
 
             <UnifyDialog
                 open={unifyDialogOpen}
-                selection={selection.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
+                selection={selection.filter(pin => isRollEvent(pin)) as AnyRollEvent[]}
                 clearSelection={() => setSelection([])}
                 onDone={pushAssumption}
                 onClose={() => setUnifyDialogOpen(false)} />
-
-            <Relate
-                open={lemmatizeDialogOpen}
-                onDone={(lemma) => {
-                    pushAssumption(lemma)
-                    setRelateDialogOpen(false)
-                }}
-                clearSelection={() => setSelection([])}
-                selection={selection.filter(pin => isCollatedEvent(pin)) as CollatedEvent[]} />
 
             {currentCopy && (
                 <AssignHand
@@ -412,14 +398,13 @@ export const Desk = () => {
                     }}
                     copy={currentCopy}
                     clearSelection={() => setSelection([])}
-                    selection={selection.filter(pin => !isCollatedEvent(pin)) as AnyRollEvent[]}
+                    selection={selection.filter(pin => isRollEvent(pin)) as AnyRollEvent[]}
                 />)}
 
             {currentCopy && (
                 <AddHandDialog
                     open={addHandDialogOpen}
                     onDone={(editing) => {
-                        console.log('added', editing)
                         setAddHandDialogOpen(false)
                     }}
                     copy={currentCopy}

@@ -1,10 +1,10 @@
-import type { Assumption, CollatedEvent, Expression } from "linked-rolls/lib/types"
+import type { Assumption, CollatedEvent, Expression, Reading, Relation } from "linked-rolls/lib/types"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, RollCopy } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { roundedHull } from "../../helpers/roundedHull"
+import { AssumptionUnderlay } from "./ReadingUnderlay"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -114,14 +114,12 @@ interface WorkingPaperProps {
     events: CollatedEvent[]
     assumptions: Assumption[]
     copies: RollCopy[]
-    onClick: (event: CollatedEvent) => void
+    onClick: (event: CollatedEvent | Assumption) => void
 }
-
-// const AssumptionUnderlay = ({ })
 
 export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
-    const [underlays, setUnderlays] = useState<string[]>()
+    const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
     const { zoom } = usePinchZoom()
     const { playSingleNote } = usePiano()
@@ -153,47 +151,23 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
     useLayoutEffect(() => {
         const underlays = []
         for (const assumption of assumptions) {
-            if (assumption.type === 'relation') {
-                for (const group of assumption.relates) {
-                    const points = group.contains
-                        .map(e => {
-                            return svgRef.current?.querySelector(`[data-id="${e.id}"]`)
-                        })
-                        .filter(el => !!el)
-                        .map(el => {
-                            const bbox = (el as SVGGraphicsElement).getBBox()
-                            return [
-                                [bbox.x, bbox.y] as [number, number],
-                                [bbox.x + bbox.width, bbox.y] as [number, number],
-                                [bbox.x, bbox.y + bbox.height] as [number, number],
-                                [bbox.x + bbox.width, bbox.y + bbox.height] as [number, number]
-                            ]
-                        })
-                        .flat()
-
-                    const hull = roundedHull(points, 2.5)
-                    underlays.push(hull)
-                }
-            }
+            underlays.push((
+                <AssumptionUnderlay
+                    key={`underlay_${assumption.id}`}
+                    assumption={assumption}
+                    svgRef={svgRef}
+                    onClick={onClick}
+                />
+            ))
         }
         setUnderlays(underlays)
-    }, [events, assumptions, zoom])
+    }, [events, assumptions, zoom, onClick])
 
     console.log('underlays=', underlays)
 
     return (
         <g className='collated-copies' ref={svgRef}>
-            {underlays?.map((underlay, i) => {
-                return (
-                    <path
-                        key={`underlay_${i}`}
-                        stroke='black'
-                        fill='white'
-                        strokeWidth={1}
-                        d={underlay}
-                    />
-                )
-            })}
+            {underlays}
 
             {events.map((event, i) => (
                 <CollatedEventViewer

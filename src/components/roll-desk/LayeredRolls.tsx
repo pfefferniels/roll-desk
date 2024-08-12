@@ -1,12 +1,12 @@
 import { useRef } from "react"
 import { Glow } from "./Glow"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
-import { CollationResult, LayerInfo, EventSelection } from "./RollDesk"
+import { CollationResult, LayerInfo, UserSelection } from "./RollDesk"
 import { Cursor, FixedCursor } from "./Cursor"
 import { RollGrid } from "./RollGrid"
 import { WorkingPaper } from "./WorkingPaper"
 import { Assumption, RollCopy } from "linked-rolls"
-import { AnyRollEvent, CollatedEvent } from "linked-rolls/lib/types"
+import { AnyRollEvent, CollatedEvent, Relation } from "linked-rolls/lib/types"
 import { Selection } from "./Selection"
 import { RollCopyViewer } from "./RollCopyViewer"
 
@@ -17,8 +17,8 @@ interface LayeredRollsProps {
     stack: LayerInfo[]
     activeLayerId: string
     stretch: number
-    selection: EventSelection
-    onUpdateSelection: (newSelection: EventSelection) => void
+    selection: UserSelection
+    onUpdateSelection: (newSelection: UserSelection) => void
     fixedX: number
     setFixedX: (fixedX: number) => void
 }
@@ -46,7 +46,7 @@ export const LayeredRolls = ({
         orderedLayers.push(activeLayer)
     }
 
-    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent) => {
+    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent | Assumption) => {
         onUpdateSelection([...selection, clickedEvent])
     }
 
