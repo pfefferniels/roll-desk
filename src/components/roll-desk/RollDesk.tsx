@@ -19,7 +19,8 @@ import { AssignHand } from "./AssignHand"
 import { AddHandDialog } from "./AddHand"
 import { LayeredRolls } from "./LayeredRolls"
 import { insertReadings } from "linked-rolls/lib/Collator"
-import { combineRelations } from "./combineRelations"
+import { combineRelations } from "linked-rolls"
+import { downloadFile } from "../../helpers/downloadFile"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -87,15 +88,7 @@ export const Desk = () => {
     const downloadXML = useCallback(async () => {
         const xml = asXML(copies, collatedEvents, assumptions)
         if (!xml.length) return
-
-        const blob = new Blob([xml], { type: 'application/xml' })
-        const a = document.createElement('a')
-        a.href = URL.createObjectURL(blob);
-        a.download = 'roll.xml';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
+        downloadFile('roll.xml', xml, 'application/xml')
     }, [assumptions, collatedEvents, copies])
 
     const downloadMIDI = useCallback(async () => {
@@ -105,18 +98,9 @@ export const Desk = () => {
             emulation.emulateFromCollatedRoll(collatedEvents, assumptions, copies[0]);
         }
 
-        console.log(emulation.midiEvents)
-
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
-        const blob = new Blob([dataBuf], { type: 'audio/midi' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'output.mid';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
+        downloadFile('output.mid', dataBuf, 'audio/midi')
     }, [collatedEvents, setMessage, assumptions, copies])
 
     const handleAlign = useCallback(() => {
@@ -233,43 +217,62 @@ export const Desk = () => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Conjectures'>
-                            <Button onClick={() => setUnifyDialogOpen(true)}>
+                            <Button
+                                size='small'
+                                onClick={() => setUnifyDialogOpen(true)}
+                            >
                                 Unify
                             </Button>
-                            <Button onClick={() => setSeparateDialogOpen(true)}>
+                            <Button
+                                size='small'
+                                onClick={() => setSeparateDialogOpen(true)}>
                                 Separate
                             </Button>
                         </Ribbon>
                         <Ribbon title='Hands'>
-                            <Button onClick={() => setAddHandDialogOpen(true)}>
+                            <Button
+                                size='small'
+                                onClick={() => setAddHandDialogOpen(true)}>
                                 Add Hand
                             </Button>
-                            <Button onClick={() => setAssignHandDialogOpen(true)}>
+                            <Button
+                                size='small'
+                                onClick={() => setAssignHandDialogOpen(true)}>
                                 Assign Hand
                             </Button>
                         </Ribbon>
                         <Ribbon title='Editorial Actions'>
-                            <Button onClick={() => {
-                                combineRelations(
-                                    copies,
-                                    selection.filter(s => 'type' in s && s.type === 'relation') as Relation[],
-                                    assumptions
-                                )
+                            <Button
+                                size='small'
+                                onClick={() => {
+                                    combineRelations(
+                                        copies,
+                                        selection.filter(s => 'type' in s && s.type === 'relation') as Relation[],
+                                        assumptions
+                                    )
 
-                                // clear the selection
-                                setSelection([])
-                            }}>
-                                Combine
+                                    // clear the selection
+                                    setSelection([])
+                                }}
+                            >
+                                Group Readings
                             </Button>
-                            <Button>
+                            <Button
+                                size='small'
+                            >
                                 Annotate
                             </Button>
                         </Ribbon>
                         <Ribbon title='Emulation'>
-                            <Button>
+                            <Button
+                                size='small'
+                            >
                                 Adjust Settings
                             </Button>
-                            <Button onClick={downloadMIDI}>
+                            <Button
+                                size='small'
+                                onClick={downloadMIDI}
+                            >
                                 Download MIDI
                             </Button>
                             <IconButton
