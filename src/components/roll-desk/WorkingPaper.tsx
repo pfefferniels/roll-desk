@@ -20,8 +20,8 @@ const CollatedEventViewer = ({ event, highlight, subjectOfAssumption, onClick }:
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
 
-    const onsets = collatedFrom.map(e => e.hasDimension.from).sort()
-    const offsets = collatedFrom.map(e => e.hasDimension.to).sort()
+    const onsets = collatedFrom.map(e => e.hasDimension.horizontal.from).sort()
+    const offsets = collatedFrom.map(e => e.hasDimension.horizontal.to!).sort()
 
     if (onsets.length === 0 || offsets.length === 0) return null
 
@@ -34,7 +34,7 @@ const CollatedEventViewer = ({ event, highlight, subjectOfAssumption, onClick }:
     const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
     const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2
 
-    const trackerHole = translateY(100 - collatedFrom[0].trackerHole)
+    const trackerHole = translateY(100 - collatedFrom[0].hasDimension.vertical.from)
 
     return (
         <g
@@ -139,8 +139,8 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
         // and sort them, so that smaller durations will be drawn last
         const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
         const durationOf = (event: CollatedEvent) => {
-            const from = avg(event.wasCollatedFrom.map(e => e.hasDimension.from))
-            const to = avg(event.wasCollatedFrom.map(e => e.hasDimension.to))
+            const from = avg(event.wasCollatedFrom.map(e => e.hasDimension.horizontal.from))
+            const to = avg(event.wasCollatedFrom.map(e => e.hasDimension.horizontal.to!))
 
             return to - from
         }

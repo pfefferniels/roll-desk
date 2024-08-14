@@ -1,9 +1,11 @@
 import { Emulation, RollCopy } from "linked-rolls"
-import type { AnyRollEvent } from "linked-rolls/lib/types.d.ts"
+import type { AnyRollEvent, Cover, EventDimension, Expression, HandwrittenText, MeasurementInfo, Note, Stamp } from "linked-rolls/lib/types.d.ts"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Dynamics } from "./Dynamics.tsx"
+import { RollGrid } from "./RollGrid.tsx"
+import { Cursor, FixedCursor } from "./Cursor.tsx"
 
 interface IIIFInfo {
     '@id': string;
@@ -22,17 +24,23 @@ function pixelsToMM(pixels: number, dpi: number): number {
     return (pixels / dpi) * millimetersPerInch;
 }
 
-async function tilesAsSVGImage(baseUrl: string, info: IIIFInfo, stretchX: number, stretchY: number) {
+async function tilesAsSVGImage(
+    baseUrl: string,
+    iiifInfo: IIIFInfo,
+    measurementInfo: MeasurementInfo,
+    stretchX: number,
+    stretchY: number
+) {
     const dpi = 300.25
     // TODO: Calculate the zoom level that best matches the stretch factors
     const zoomLevel = 0;
 
-    const tileSize = info.tiles[0].width;
-    const scale = info.tiles[0].scaleFactors[zoomLevel];
-    const scaledWidth = info.width / scale;
-    const scaledHeight = info.height / scale;
+    const tileSize = iiifInfo.tiles[0].width;
+    const scale = iiifInfo.tiles[0].scaleFactors[zoomLevel];
+    const scaledWidth = iiifInfo.width / scale;
+    const scaledHeight = iiifInfo.height / scale;
 
-    const totalHeightMM = pixelsToMM(info.width, dpi);
+    // const totalHeightMM = pixelsToMM(iiifInfo.width, dpi);
 
     const rows = Math.ceil(scaledHeight / tileSize);
     const cols = Math.ceil(scaledWidth / tileSize);
@@ -45,9 +53,11 @@ async function tilesAsSVGImage(baseUrl: string, info: IIIFInfo, stretchX: number
             const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
 
             const newX = pixelsToMM(y * tileSize, dpi) * stretchX;
-            const newY = totalHeightMM * stretchY - (pixelsToMM((x + 1) * tileSize, dpi) * stretchY);
+            const xAsTrack = Math.round(((x * tileSize) - measurementInfo.margins.bass) / measurementInfo.holeSeparation)
+            const newY = (74 - xAsTrack) * stretchY + stretchY / 2
+            // console.log('y=', newY)
             const width = pixelsToMM(tileSize, dpi) * stretchX;
-            const height = pixelsToMM(tileSize, dpi) * stretchY;
+            const height = tileSize / measurementInfo.holeSeparation * stretchY;
 
             images.push((
                 <image
@@ -72,28 +82,31 @@ interface RollCopyViewerProps {
     onTop: boolean
     onClick: (e: AnyRollEvent) => void
     color: string
+    onSelectionDone: (dimension: EventDimension) => void
+    fixedX: number
+    setFixedX: (fixedX: number) => void
 }
 
-export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerProps) => {
-    const { translateX, translateY, zoom, trackHeight } = usePinchZoom()
-    const { playSingleNote } = usePiano()
+export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX }: RollCopyViewerProps) => {
+    const { zoom, trackHeight } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
     const [tiles, setTiles] = useState<JSX.Element[]>()
     const [emulation, setEmulation] = useState<Emulation>()
 
     useLayoutEffect(() => {
-        const baseUrl = 'https://stacks.stanford.edu/image/iiif/wv912mm2332%2Fwv912mm2332_0001/'
-
         const renderIIIF = async () => {
             if (!svgRef.current) return
 
+            if (!copy.measurement) return
+
+            const baseUrl = copy.measurement.hasCreated.info.iiifLink
             const info = await fetchIIIFInfo(baseUrl)
-            setTiles(await tilesAsSVGImage(baseUrl, info, zoom, 1.7))
+            setTiles(await tilesAsSVGImage(baseUrl, info, copy.measurement.hasCreated.info, zoom, trackHeight))
         }
 
         renderIIIF()
-    }, [svgRef, trackHeight, zoom])
+    }, [svgRef, trackHeight, zoom, copy.measurement])
 
     useEffect(() => {
         // whenever the events change, update the emulation
@@ -103,40 +116,128 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick }: RollCopyViewerPr
         setEmulation(newEmulation)
     }, [copy])
 
+    console.log(copy, 'onTop:', onTop)
+
     return (
         <>
             <g className='roll-copy' ref={svgRef}>
                 {tiles}
-
-                {copy.events.map((event) => (
-                    <rect
-                        key={event.id}
-                        onClick={(e) => {
-                            if (event.type === 'note') {
-                                playSingleNote(event.hasPitch)
-                            }
-
-                            if (e.metaKey && event.annotates) {
-                                window.open(event.annotates)
-                                return
-                            }
-
-                            onClick(event)
-                        }}
-                        data-id={event.id}
-                        id={event.id}
-                        x={translateX(event.hasDimension.from)}
-                        width={translateX(event.hasDimension.to) - translateX(event.hasDimension.from)}
-                        height={5}
-                        fillOpacity={onTop ? 0.8 : 0.4}
-                        fill={onTop ? color : 'gray'}
-                        y={translateY(100 - event.trackerHole)}>
-                    </rect>
-                ))}
+                {onTop && (
+                    <RollGrid
+                        selectionMode={onTop}
+                        onSelectionDone={onSelectionDone}
+                        width={100000} />
+                )}
+                {copy.events.map((event) => {
+                    if (event.type === 'note' || event.type === 'expression' || event.type === 'cover') {
+                        return (
+                            <PerforatedEvent
+                                key={event.id}
+                                event={event}
+                                onClick={() => onClick(event)}
+                                onTop={onTop}
+                                color={color}
+                            />)
+                    }
+                    else if (event.type === 'handwrittenText' || event.type === 'stamp') {
+                        return (
+                            <TextEvent
+                                key={event.id}
+                                event={event}
+                                onTop={onTop}
+                                onClick={() => onClick(event)}
+                            />
+                        )
+                    }
+                    return null
+                })}
 
                 {emulation && <Dynamics forEmulation={emulation} color={color} />}
             </g>
+
+            <Cursor
+                onFix={(x) => setFixedX(x)}
+                svgRef={svgRef} />
+            <FixedCursor fixedAt={fixedX} />
         </>
     )
 }
 
+interface PerforatedEventProps {
+    event: Note | Expression | Cover
+    onClick: () => void
+    onTop: boolean
+    color: string
+}
+
+const PerforatedEvent = ({ event, onClick, onTop, color }: PerforatedEventProps) => {
+    const { playSingleNote } = usePiano()
+    const { translateX, translateY } = usePinchZoom()
+
+    return (
+        <rect
+            key={event.id}
+            onClick={(e) => {
+                if (event.type === 'note') {
+                    playSingleNote(event.hasPitch)
+                }
+
+                if (e.metaKey && event.annotates) {
+                    window.open(event.annotates)
+                    return
+                }
+
+                onClick()
+            }}
+            data-id={event.id}
+            id={event.id}
+            x={translateX(event.hasDimension.horizontal.from)}
+            width={translateX(event.hasDimension.horizontal.to!) - translateX(event.hasDimension.horizontal.from)}
+            height={5}
+            fillOpacity={onTop ? 0.9 : 0.2}
+            fill={event.type === 'cover' ? 'url(#patchPattern)' : color}
+            y={translateY(100 - event.hasDimension.vertical.from)}>
+        </rect>)
+}
+
+interface TextEventProps {
+    event: HandwrittenText | Stamp
+    onClick: () => void
+    onTop: boolean
+}
+
+const TextEvent = ({ event, onClick, onTop }: TextEventProps) => {
+    const { translateX, translateY } = usePinchZoom()
+
+    const horizontal = event.hasDimension.horizontal
+    const vertical = event.hasDimension.vertical
+
+    const x = translateX(horizontal.from)
+    const y = translateY(100 - vertical.from)
+
+    return (
+        <g className='textEvent' data-id={event.id} onClick={onClick}>
+            <rect
+                fill='white'
+                fillOpacity={0.5}
+                onClick={onClick}
+                strokeWidth={0}
+                x={x}
+                y={y}
+                width={translateX(event.hasDimension.horizontal.to! - event.hasDimension.horizontal.from)}
+                height={translateY((100 - event.hasDimension.vertical.to!) - (100 - event.hasDimension.vertical.from))}
+            />
+            <text
+                fill='black'
+                stroke='black'
+                fillOpacity={onTop ? 0.9 : 0.2}
+                strokeOpacity={onTop ? 0.9 : 0.2}
+                x={translateX(event.hasDimension.horizontal.from)}
+                y={translateY(100 - event.hasDimension.vertical.from)}
+                transform={`rotate(90 ${x} ${y})`}
+                fontSize={12}>
+                {event.text}
+            </text>
+        </g>
+    )
+}

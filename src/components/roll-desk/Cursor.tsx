@@ -59,7 +59,7 @@ export const Cursor = ({ svgRef, onFix }: CursorProps) => {
             y1={0}
             x2={translatedX}
             y2={4000}
-            strokeWidth={1}
+            strokeWidth={0.5}
             stroke='black'
             className='cursor' />
     )

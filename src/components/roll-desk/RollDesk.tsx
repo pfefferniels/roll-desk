@@ -2,9 +2,9 @@ import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/materi
 import { useCallback, useState } from "react"
 import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import type { CollatedEvent, Assumption, AnyRollEvent, Relation } from "linked-rolls/lib/types.d.ts"
+import type { CollatedEvent, Assumption, AnyRollEvent, Relation, EventDimension } from "linked-rolls/lib/types.d.ts"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, Delete, Pause, PlayArrow, PlusOne, Save, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -21,12 +21,13 @@ import { LayeredRolls } from "./LayeredRolls"
 import { insertReadings } from "linked-rolls/lib/Collator"
 import { combineRelations } from "linked-rolls"
 import { downloadFile } from "../../helpers/downloadFile"
+import { AddEventDialog } from "./AddEvent"
 
 export interface CollationResult {
     events: CollatedEvent[]
 }
 
-export type UserSelection = (AnyRollEvent | CollatedEvent | Assumption)[]
+export type UserSelection = (AnyRollEvent | CollatedEvent | Assumption | EventDimension)[]
 
 export interface LayerInfo {
     id: 'working-paper' | string,
@@ -81,6 +82,7 @@ export const Desk = () => {
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
     const [assignHandDialogOpen, setAssignHandDialogOpen] = useState(false)
     const [addHandDialogOpen, setAddHandDialogOpen] = useState(false)
+    const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
 
     const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
@@ -134,10 +136,10 @@ export const Desk = () => {
 
         const from = (event: AnyRollEvent | CollatedEvent) => {
             if ('wasCollatedFrom' in event) {
-                const sum = event.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.from, 0)
+                const sum = event.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.horizontal.from, 0)
                 return sum / event.wasCollatedFrom.length
             }
-            return event.hasDimension.from
+            return event.hasDimension.horizontal.from
         }
 
         const point1 = [
@@ -216,6 +218,14 @@ export const Desk = () => {
                                 <CallMerge />
                             </IconButton>
                         </Ribbon>
+                        <Ribbon title='Roll Events'>
+                            <IconButton
+                                size='small'
+                                onClick={() => setAddEventDialogOpen(true)}
+                            >
+                                <Add />
+                            </IconButton>
+                        </Ribbon>
                         <Ribbon title='Conjectures'>
                             <Button
                                 size='small'
@@ -232,11 +242,13 @@ export const Desk = () => {
                         <Ribbon title='Hands'>
                             <Button
                                 size='small'
+                                disabled={currentCopy === undefined}
                                 onClick={() => setAddHandDialogOpen(true)}>
                                 Add Hand
                             </Button>
                             <Button
                                 size='small'
+                                disabled={selection.findIndex(selection => isRollEvent(selection)) === -1}
                                 onClick={() => setAssignHandDialogOpen(true)}>
                                 Assign Hand
                             </Button>
@@ -326,17 +338,30 @@ export const Desk = () => {
                         </Paper>
 
                         <Paper sx={{ maxWidth: 360 }}>
-                            <ActionList
-                                actions={assumptions}
-                                removeAction={(action) => {
-                                    setAssumptions(prev => {
-                                        const index = prev.findIndex(a => a.id === action.id)
-                                        if (index === -1) return prev
-                                        prev.splice(index, 1)
-                                        return [...prev]
-                                    })
-                                }} />
+                            <div style={{ float: 'left', padding: 8 }}>
+                                <b>{selection.length}</b> events selected
+                            </div>
+                            <div style={{ float: 'right' }}>
+                                <IconButton onClick={() => setSelection([])}>
+                                    <Delete />
+                                </IconButton>
+                            </div>
                         </Paper>
+
+                        {assumptions.length > 0 && (
+                            <Paper sx={{ maxWidth: 360 }}>
+                                <ActionList
+                                    actions={assumptions}
+                                    removeAction={(action) => {
+                                        setAssumptions(prev => {
+                                            const index = prev.findIndex(a => a.id === action.id)
+                                            if (index === -1) return prev
+                                            prev.splice(index, 1)
+                                            return [...prev]
+                                        })
+                                    }} />
+                            </Paper>
+                        )}
                     </Stack>
                 </Grid>
                 <Grid item xs={9}>
@@ -411,7 +436,23 @@ export const Desk = () => {
                         setAddHandDialogOpen(false)
                     }}
                     copy={currentCopy}
-                />)}
+                />)
+            }
+
+            {currentCopy && (
+                <AddEventDialog
+                    open={addEventDialogOpen}
+                    selection={selection.find(selection => 'horizontal' in selection) as EventDimension}
+                    onDone={(newEvent) => {
+                        currentCopy.events.push(newEvent)
+
+                        // TODO: add measurement
+                        setAddEventDialogOpen(false)
+                    }}
+                    onClose={() => setAddEventDialogOpen(false)}
+                />)
+            }
+
         </>
     )
 }

@@ -28,7 +28,7 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                     </div>
                     <FormControl>
                         <FormLabel>
-                            Gap (in {selection.hasDimension.hasUnit || 'mm'})
+                            Gap (in {selection.hasDimension.horizontal.hasUnit || 'mm'})
                         </FormLabel>
                         <NumberInput
                             min={1}
@@ -59,19 +59,19 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
             <DialogActions>
                 <Button
                     onClick={() => {
-                        const originalStart = selection.hasDimension.from
-                        const originalEnd = selection.hasDimension.to
+                        const originalStart = selection.hasDimension.horizontal.from
+                        const originalEnd = selection.hasDimension.horizontal.to
 
                         const leftEvent = structuredClone(selection)
                         leftEvent.annotates = undefined
-                        leftEvent.hasDimension.from = originalStart
-                        leftEvent.hasDimension.to = breakPoint - (gap || 0) / 2
+                        leftEvent.hasDimension.horizontal.from = originalStart
+                        leftEvent.hasDimension.horizontal.to = breakPoint - (gap || 0) / 2
                         leftEvent.id = v4()
 
                         const rightEvent = structuredClone(selection)
                         rightEvent.annotates = undefined
-                        rightEvent.hasDimension.from = breakPoint + (gap || 0) / 2
-                        rightEvent.hasDimension.to = originalEnd
+                        rightEvent.hasDimension.horizontal.from = breakPoint + (gap || 0) / 2
+                        rightEvent.hasDimension.horizontal.to = originalEnd
                         rightEvent.id = v4()
 
                         onDone({

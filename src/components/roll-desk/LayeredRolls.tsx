@@ -9,6 +9,7 @@ import { Assumption, RollCopy } from "linked-rolls"
 import { AnyRollEvent, CollatedEvent, Relation } from "linked-rolls/lib/types"
 import { Selection } from "./Selection"
 import { RollCopyViewer } from "./RollCopyViewer"
+import { PatchPattern } from "./PatchPattern"
 
 interface LayeredRollsProps {
     copies: RollCopy[]
@@ -38,11 +39,14 @@ export const LayeredRolls = ({
     const svgRef = useRef<SVGGElement>(null)
 
     // makes sure that the active layer comes last
-    let orderedLayers = [...stack].reverse()
+    const orderedLayers = [...stack].reverse()
 
     const activeLayer = stack.find(layer => layer.id === activeLayerId)
     if (activeLayer) {
-        orderedLayers.splice(stack.indexOf(activeLayer), 1)
+        const index = orderedLayers.findIndex(info => activeLayer.id === info.id)
+        if (index !== -1) {
+            orderedLayers.splice(index, 1)
+        }
         orderedLayers.push(activeLayer)
     }
 
@@ -53,16 +57,10 @@ export const LayeredRolls = ({
     return (
         <svg width="10000" height={6 * 100}>
             <Glow />
+            <PatchPattern />
+
             <g ref={svgRef}>
                 <PinchZoomProvider zoom={stretch} trackHeight={6}>
-                    <RollGrid width={10000} />
-
-                    <Cursor
-                        onFix={(x) => setFixedX(x)}
-                        svgRef={svgRef} />
-
-                    <FixedCursor fixedAt={fixedX} />
-
                     {orderedLayers
                         .map((stackItem, i) => {
                             if (!stackItem.visible) return null
@@ -86,9 +84,13 @@ export const LayeredRolls = ({
                                 <RollCopyViewer
                                     key={`copy_${i}`}
                                     copy={copy}
-                                    onTop={i === 0}
+                                    onTop={i === orderedLayers.length - 1}
                                     color={stackItem.color}
-                                    onClick={handleUpdateSelection} />
+                                    onClick={handleUpdateSelection}
+                                    onSelectionDone={dimension => { onUpdateSelection([dimension]) }}
+                                    fixedX={fixedX}
+                                    setFixedX={setFixedX}
+                                />
                             )
                         })}
 
