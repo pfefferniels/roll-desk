@@ -22,6 +22,8 @@ import { insertReadings } from "linked-rolls/lib/Collator"
 import { combineRelations } from "linked-rolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { AddEventDialog } from "./AddEvent"
+import { AddNote } from "./AddNote"
+import { ColorDialog } from "./ColorDialog"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -83,6 +85,8 @@ export const Desk = () => {
     const [assignHandDialogOpen, setAssignHandDialogOpen] = useState(false)
     const [addHandDialogOpen, setAddHandDialogOpen] = useState(false)
     const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
+    const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false)
+    const [colorToChange, setColorToChange] = useState<LayerInfo>()
 
     const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
@@ -271,8 +275,9 @@ export const Desk = () => {
                             </Button>
                             <Button
                                 size='small'
+                                onClick={() => setAddNoteDialogOpen(true)}
                             >
-                                Annotate
+                                Add Note
                             </Button>
                         </Ribbon>
                         <Ribbon title='Emulation'>
@@ -329,6 +334,7 @@ export const Desk = () => {
                                 copies={copies}
                                 activeLayerId={activeLayerId}
                                 setActiveLayerId={setActiveLayerId}
+                                onChangeColor={(item) => setColorToChange(item)}
                             />
                             <Box>
                                 <IconButton onClick={() => setRollCopyDialogOpen(true)}>
@@ -349,7 +355,7 @@ export const Desk = () => {
                         </Paper>
 
                         {assumptions.length > 0 && (
-                            <Paper sx={{ maxWidth: 360 }}>
+                            <Paper sx={{ maxWidth: 360, maxHeight: 380, overflow: 'scroll' }}>
                                 <ActionList
                                     actions={assumptions}
                                     removeAction={(action) => {
@@ -427,7 +433,8 @@ export const Desk = () => {
                     copy={currentCopy}
                     clearSelection={() => setSelection([])}
                     selection={selection.filter(pin => isRollEvent(pin)) as AnyRollEvent[]}
-                />)}
+                />)
+            }
 
             {currentCopy && (
                 <AddHandDialog
@@ -453,6 +460,36 @@ export const Desk = () => {
                 />)
             }
 
+            {selection.length >= 1 && (
+                <AddNote
+                    open={addNoteDialogOpen}
+                    onDone={(updatedAssumptions) => {
+                        for (const assumption of updatedAssumptions) {
+                            const index = assumptions.findIndex(a => a.id === assumption.id)
+                            if (index === -1) continue
+                            assumptions.splice(index, 1, assumption)
+                        }
+                        setAssumptions([...assumptions])
+                        setAddNoteDialogOpen(false)
+                    }}
+                    selection={selection.filter(e => 'type' in e && e.type === 'relation')}
+                />)
+            }
+
+            {colorToChange && (
+                <ColorDialog
+                    open={colorToChange !== undefined}
+                    onClose={() => setColorToChange(undefined)}
+                    onSave={(newLayerInfo) => {
+                        const index = layers.findIndex(l => l.id === newLayerInfo.id)
+                        if (index === -1) return
+                        layers.splice(index, 1, newLayerInfo)
+                        console.log('updating layers')
+                        setLayers([...layers])
+                    }}
+                    layerInfo={colorToChange}
+                />)
+            }
         </>
     )
 }
