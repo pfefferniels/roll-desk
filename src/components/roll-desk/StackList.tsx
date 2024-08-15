@@ -9,11 +9,12 @@ interface StackListProps {
     stack: LayerInfo[]
     setStack: (newStack: LayerInfo[]) => void
     copies: RollCopy[]
-    activeLayerId: string 
+    activeLayerId: string
     setActiveLayerId: (newActiveLayerId: string) => void
+    onChangeColor: (item: LayerInfo) => void
 }
 
-export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLayerId }: StackListProps) => {
+export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLayerId, onChangeColor }: StackListProps) => {
     return (
         <List dense>
             {stack.map((stackItem, i) => {
@@ -43,7 +44,11 @@ export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLay
                                     primary={activeLayerId === stackItem.id ? <b>{stackItem.title}</b> : stackItem.title} />
                             </ListItemButton>
                             <ListItemSecondaryAction>
-                                <IconButton edge="end" sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColour(stackItem.id) }}>
+                                <IconButton
+                                    edge="end"
+                                    sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColour(stackItem.id) }}
+                                    onClick={() => onChangeColor(stackItem)}
+                                >
                                     <ColorLens />
                                 </IconButton>
                             </ListItemSecondaryAction>
