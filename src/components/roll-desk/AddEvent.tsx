@@ -3,10 +3,6 @@ import { AnyRollEvent, EventDimension } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
-interface TextProps {
-
-}
-
 interface AddEventProps {
     open: boolean
     selection: EventDimension
