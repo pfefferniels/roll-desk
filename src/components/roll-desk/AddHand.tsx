@@ -12,6 +12,7 @@ interface AddHandDialogProps {
 export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
     const [name, setName] = useState('')
     const [date, setDate] = useState('')
+    const [desc, setDesc] = useState('')
 
     const handleDone = () => {
         copy.addManualEditing({
@@ -21,7 +22,8 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
                 id: v4(),
                 atSomeTimeWithin: date
             },
-            'id': v4()
+            'id': v4(),
+            note: desc
         })
 
         onDone(copy.clone())
@@ -35,16 +37,28 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
             <DialogContent>
                 <Stack direction='column' spacing={1}>
                     <TextField
+                        variant='filled'
+                        size='small'
                         value={name}
                         label='Name'
                         placeholder="Type name of the hand"
                         onChange={(e) => setName(e.target.value)}
                     />
                     <TextField
+                        variant='filled'
+                        size='small'
                         value={date}
                         label='Date'
                         placeholder="(Presumed) date of the editing"
                         onChange={(e) => setDate(e.target.value)}
+                    />
+                    <TextField
+                        variant='filled'
+                        size='small'
+                        value={desc}
+                        label='Description'
+                        placeholder="Hand description ..."
+                        onChange={e => setDesc(e.target.value)}
                     />
                 </Stack>
             </DialogContent>
