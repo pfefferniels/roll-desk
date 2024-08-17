@@ -4,7 +4,6 @@ export const downloadFile = (filename: string, content: string | Uint8Array, mim
     element.href = URL.createObjectURL(file)
     element.download = filename
     element.click()
-    document.body.removeChild(element)
     URL.revokeObjectURL(element.href)
 }
 
