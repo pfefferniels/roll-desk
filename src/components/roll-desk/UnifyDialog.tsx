@@ -15,22 +15,30 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
     const [cert, setCert] = useState<Certainty>('unknown')
     const [note, setNote] = useState('')
 
+    if (selection.length === 0) return null
+
+    const dimensionStart = selection[0].hasDimension.horizontal
+    const dimensionEnd = selection[selection.length - 1].hasDimension.horizontal
+
     return (
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Unify</DialogTitle>
             <DialogContent>
                 <Stack spacing={1} direction='column'>
                     <div>
-                        Unifying
-                        <ul>
-                            {selection.map((e, i) => <li key={`unifyDialog${i}`}>{e.id}</li>)}
-                        </ul>
+                        Unifying <b>{selection.length}</b> events{' '}
+                        from {dimensionStart.from.toFixed(0)}{dimensionStart.hasUnit}{' '}
+                        to {dimensionEnd.to?.toFixed(0)}{dimensionEnd.hasUnit}
                     </div>
                     <FormControl>
                         <FormLabel>Certainty</FormLabel>
-                        <Select label='Certainty' value={cert} onChange={e => {
-                            setCert(e.target.value as Certainty)
-                        }}>
+                        <Select
+                            size='small'
+                            label='Certainty'
+                            value={cert}
+                            onChange={e => {
+                                setCert(e.target.value as Certainty)
+                            }}>
                             <MenuItem value='high'>High</MenuItem>
                             <MenuItem value='medium'>Medium</MenuItem>
                             <MenuItem value='low'>Low</MenuItem>
@@ -40,6 +48,7 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                     <FormControl>
                         <FormLabel>Note</FormLabel>
                         <TextField
+                            size='small'
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             minRows={4} />
