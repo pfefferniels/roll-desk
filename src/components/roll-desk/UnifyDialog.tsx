@@ -57,6 +57,12 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
             </DialogContent>
             <DialogActions>
                 <Button
+                    onClick={onClose}
+                    variant='outlined'
+                >
+                    Cancel
+                </Button>
+                <Button
                     onClick={() => {
                         onDone({
                             type: 'unification',
@@ -69,7 +75,8 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                         clearSelection()
                         onClose()
                     }}
-                    variant='contained'>
+                    variant='contained'
+                >
                     Save
                 </Button>
             </DialogActions>
