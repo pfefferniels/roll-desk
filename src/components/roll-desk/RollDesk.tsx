@@ -1,10 +1,10 @@
 import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
 import { useCallback, useState } from "react"
-import { Emulation, RollCopy, asXML, collateRolls } from 'linked-rolls'
+import { Edition, Emulation, asXML } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
 import type { CollatedEvent, Assumption, AnyRollEvent, Relation, EventDimension } from "linked-rolls/lib/types.d.ts"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, Delete, Pause, PlayArrow, PlusOne, Save, Undo } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, Delete, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -18,12 +18,12 @@ import { ActionList } from "./ActionList"
 import { AssignHand } from "./AssignHand"
 import { AddHandDialog } from "./AddHand"
 import { LayeredRolls } from "./LayeredRolls"
-import { insertReadings } from "linked-rolls/lib/Collator"
 import { combineRelations } from "linked-rolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { AddEventDialog } from "./AddEvent"
 import { AddNote } from "./AddNote"
 import { ColorDialog } from "./ColorDialog"
+import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -66,9 +66,11 @@ export const Desk = () => {
     const { setMessage } = useSnackbar()
     const { play, stop } = usePiano()
 
-    const [copies, setCopies] = useState<RollCopy[]>([])
-    const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
-    const [assumptions, setAssumptions] = useState<Assumption[]>([])
+    const [edition, setEdition] = useState<Edition>(new Edition())
+    // const [copies, setCopies] = useState<RollCopy[]>([])
+    // const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
+    // const [assumptions, setAssumptions] = useState<Assumption[]>([])
+
     const [stretch, setStretch] = useState(2)
     const [fixedX, setFixedX] = useState(-1)
 
@@ -89,27 +91,29 @@ export const Desk = () => {
     const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
     const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false)
     const [colorToChange, setColorToChange] = useState<LayerInfo>()
+    const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
 
     const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
+    const [primarySource, setPrimarySource] = useState('')
+
     const downloadXML = useCallback(async () => {
-        const xml = asXML(copies, collatedEvents, assumptions)
+        const xml = asXML(edition.copies, edition.collationResult.events, edition.assumptions)
         if (!xml.length) return
         downloadFile('roll.xml', xml, 'application/xml')
-    }, [assumptions, collatedEvents, copies])
+    }, [edition])
 
     const downloadMIDI = useCallback(async () => {
         const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
-            setMessage('Running emulation');
-            emulation.emulateFromCollatedRoll(collatedEvents, assumptions, copies[0]);
+            emulation.emulateFromEdition(edition, edition.copies[0]);
         }
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile('output.mid', dataBuf, 'audio/midi')
-    }, [collatedEvents, setMessage, assumptions, copies])
+    }, [edition])
 
     const handleAlign = useCallback(() => {
         if (selection.length !== 4 &&
@@ -118,7 +122,7 @@ export const Desk = () => {
             return
         }
 
-        const copy = copies.find(copy => copy.physicalItem.id === activeLayerId)
+        const copy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
         if (!copy) {
             console.log('No active copy selected')
             return
@@ -177,15 +181,19 @@ export const Desk = () => {
             }
         ])
 
-        setCopies([...copies])
+        setEdition(edition.shallowClone())
         setSelection([])
-    }, [activeLayerId, copies, selection])
+    }, [activeLayerId, edition, selection])
 
     const pushAssumption = useCallback((assumption: Assumption) => {
-        setAssumptions(prev => [...prev, assumption])
+        setEdition(prev => {
+            const clone = prev.shallowClone()
+            clone.assumptions.push(assumption)
+            return clone
+        })
     }, [])
 
-    const currentCopy = copies.find(copy => copy.physicalItem.id === activeLayerId)
+    const currentCopy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
 
     return (
         <>
@@ -200,11 +208,10 @@ export const Desk = () => {
                         </Ribbon>
                         <Ribbon title='Collation'>
                             <IconButton onClick={() => {
-                                const modifiedRolls = [...copies]
-                                const copy = modifiedRolls.find(copy => copy.physicalItem.id === activeLayerId)
+                                const copy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
                                 if (!copy) return
                                 copy.undoOperations()
-                                setCopies(modifiedRolls)
+                                setEdition(edition.shallowClone())
                             }}>
                                 <Undo />
                             </IconButton>
@@ -213,13 +220,9 @@ export const Desk = () => {
                                 onClick={handleAlign}>
                                 <AlignHorizontalCenter />
                             </IconButton>
-                            <IconButton onClick={async () => {
-                                const collatedEvents = await collateRolls(
-                                    copies,
-                                    assumptions
-                                )
-                                setCollatedEvents(collatedEvents)
-                                insertReadings(copies, collatedEvents, assumptions)
+                            <IconButton onClick={() => {
+                                edition.collateCopies(true)
+                                setEdition(edition.shallowClone())
                             }}>
                                 <CallMerge />
                             </IconButton>
@@ -264,12 +267,12 @@ export const Desk = () => {
                                 size='small'
                                 onClick={() => {
                                     combineRelations(
-                                        copies,
+                                        edition.copies,
                                         selection.filter(s => 'type' in s && s.type === 'relation') as Relation[],
-                                        assumptions
+                                        edition.assumptions
                                     )
 
-                                    // clear the selection
+                                    setEdition(edition.shallowClone())
                                     setSelection([])
                                 }}
                             >
@@ -285,6 +288,7 @@ export const Desk = () => {
                         <Ribbon title='Emulation'>
                             <Button
                                 size='small'
+                                onClick={() => setEmulationSettingsDialogOpen(true)}
                             >
                                 Adjust Settings
                             </Button>
@@ -295,7 +299,7 @@ export const Desk = () => {
                                 Download MIDI
                             </Button>
                             <IconButton
-                                disabled={collatedEvents.length === 0}
+                                disabled={edition.collationResult.events.length === 0}
                                 onClick={() => {
                                     if (isPlaying) {
                                         stop()
@@ -304,10 +308,9 @@ export const Desk = () => {
                                     }
 
                                     const emulation = new Emulation()
-                                    emulation.emulateFromCollatedRoll(
-                                        collatedEvents,
-                                        assumptions,
-                                        copies[0]
+                                    emulation.emulateFromEdition(
+                                        edition,
+                                        edition.copies[0]
                                     )
 
                                     play(emulation.asMIDI())
@@ -333,7 +336,7 @@ export const Desk = () => {
                             <StackList
                                 stack={layers}
                                 setStack={setLayers}
-                                copies={copies}
+                                copies={edition.copies}
                                 activeLayerId={activeLayerId}
                                 setActiveLayerId={setActiveLayerId}
                                 onChangeColor={(item) => setColorToChange(item)}
@@ -356,17 +359,16 @@ export const Desk = () => {
                             </div>
                         </Paper>
 
-                        {assumptions.length > 0 && (
+                        {edition.assumptions.length > 0 && (
                             <Paper sx={{ maxWidth: 360, maxHeight: 380, overflow: 'scroll' }}>
                                 <ActionList
-                                    actions={assumptions}
+                                    actions={edition.assumptions}
                                     removeAction={(action) => {
-                                        setAssumptions(prev => {
-                                            const index = prev.findIndex(a => a.id === action.id)
-                                            if (index === -1) return prev
-                                            prev.splice(index, 1)
-                                            return [...prev]
-                                        })
+                                        edition.assumptions.slice(
+                                            edition.assumptions.indexOf(action),
+                                            1
+                                        )
+                                        setEdition(edition.shallowClone())
                                     }} />
                             </Paper>
                         )}
@@ -375,11 +377,9 @@ export const Desk = () => {
                 <Grid item xs={9}>
                     <div style={{ overflow: 'scroll', width: 950 }}>
                         <LayeredRolls
-                            copies={copies}
-                            assumptions={assumptions}
+                            edition={edition}
                             activeLayerId={activeLayerId}
                             stack={layers}
-                            collationResult={{ events: collatedEvents }}
                             stretch={stretch}
                             selection={selection}
                             onUpdateSelection={setSelection}
@@ -394,7 +394,7 @@ export const Desk = () => {
                 open={rollCopyDialogOpen}
                 onClose={() => setRollCopyDialogOpen(false)}
                 onDone={rollCopy => {
-                    setCopies(copies => [...copies, rollCopy])
+                    edition.copies.push(rollCopy)
                     layers.push({
                         id: rollCopy.physicalItem.id,
                         title: `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`,
@@ -402,6 +402,7 @@ export const Desk = () => {
                         color: stringToColour(rollCopy.physicalItem.id),
                         facsimileOpacity: 0
                     })
+                    setEdition(edition.shallowClone())
                 }} />
 
             {
@@ -468,11 +469,11 @@ export const Desk = () => {
                     open={addNoteDialogOpen}
                     onDone={(updatedAssumptions) => {
                         for (const assumption of updatedAssumptions) {
-                            const index = assumptions.findIndex(a => a.id === assumption.id)
+                            const index = edition.assumptions.findIndex(a => a.id === assumption.id)
                             if (index === -1) continue
-                            assumptions.splice(index, 1, assumption)
+                            edition.assumptions.splice(index, 1, assumption)
                         }
-                        setAssumptions([...assumptions])
+                        setEdition(edition.shallowClone())
                         setAddNoteDialogOpen(false)
                     }}
                     selection={selection.filter(e => 'type' in e && e.type === 'relation')}
@@ -492,6 +493,17 @@ export const Desk = () => {
                     }}
                     layerInfo={colorToChange}
                 />)
+            }
+
+            {
+                <EmulationSettingsDialog
+                    open={emulationSettingsDialogOpen}
+                    onClose={() => {
+                        setEmulationSettingsDialogOpen(false)
+                    }}
+                    edition={edition}
+                    onDone={(primaryCopy) => setPrimarySource(primaryCopy)}
+                />
             }
         </>
     )

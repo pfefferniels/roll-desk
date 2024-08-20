@@ -1,20 +1,16 @@
 import { useRef } from "react"
 import { Glow } from "./Glow"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
-import { CollationResult, LayerInfo, UserSelection } from "./RollDesk"
-import { Cursor, FixedCursor } from "./Cursor"
-import { RollGrid } from "./RollGrid"
+import { LayerInfo, UserSelection } from "./RollDesk"
 import { WorkingPaper } from "./WorkingPaper"
-import { Assumption, RollCopy } from "linked-rolls"
-import { AnyRollEvent, CollatedEvent, Relation } from "linked-rolls/lib/types"
+import { Assumption, Edition } from "linked-rolls"
+import { AnyRollEvent, CollatedEvent } from "linked-rolls/lib/types"
 import { Selection } from "./Selection"
 import { RollCopyViewer } from "./RollCopyViewer"
 import { PatchPattern } from "./PatchPattern"
 
 interface LayeredRollsProps {
-    copies: RollCopy[]
-    assumptions: Assumption[]
-    collationResult: CollationResult
+    edition: Edition
     stack: LayerInfo[]
     activeLayerId: string
     stretch: number
@@ -28,9 +24,7 @@ export const LayeredRolls = ({
     stack,
     activeLayerId,
     stretch,
-    copies,
-    assumptions,
-    collationResult,
+    edition,
     selection,
     onUpdateSelection,
     fixedX,
@@ -69,15 +63,13 @@ export const LayeredRolls = ({
                                 return (
                                     <WorkingPaper
                                         key={`copy_${i}`}
-                                        numberOfRolls={copies.length}
-                                        events={collationResult.events}
-                                        assumptions={assumptions}
-                                        copies={copies}
+                                        numberOfRolls={edition.copies.length}
+                                        edition={edition}
                                         onClick={handleUpdateSelection} />
                                 )
                             }
 
-                            const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
+                            const copy = edition.copies.find(copy => copy.physicalItem.id === stackItem.id)
                             if (!copy) return null
 
                             return (

@@ -2,7 +2,7 @@ import type { Assumption, CollatedEvent, Expression, Reading, Relation } from "l
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, RollCopy } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, RollCopy, Edition } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./ReadingUnderlay"
 
@@ -111,13 +111,11 @@ const CollatedEventViewer = ({ event, highlight, subjectOfAssumption, onClick }:
 
 interface WorkingPaperProps {
     numberOfRolls: number
-    events: CollatedEvent[]
-    assumptions: Assumption[]
-    copies: RollCopy[]
+    edition: Edition
     onClick: (event: CollatedEvent | Assumption) => void
 }
 
-export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onClick }: WorkingPaperProps) => {
+export const WorkingPaper = ({ numberOfRolls, edition, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
     const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
@@ -129,9 +127,9 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
     useEffect(() => {
         // whenever the events change, update the emulation
         const newEmulations = []
-        for (const copy of copies) {
+        for (const copy of edition.copies) {
             const newEmulation = new Emulation()
-            newEmulation.emulateFromCollatedRoll(events, assumptions, copy)
+            newEmulation.emulateFromEdition(edition, copy)
             newEmulations.push(newEmulation)
         }
         setEmulations(newEmulations)
@@ -145,12 +143,12 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
             return to - from
         }
 
-        events.sort((a, b) => durationOf(b) - durationOf(a))
-    }, [events, assumptions, copies])
+        edition.collationResult.events.sort((a, b) => durationOf(b) - durationOf(a))
+    }, [edition])
 
     useLayoutEffect(() => {
         const underlays = []
-        for (const assumption of assumptions) {
+        for (const assumption of edition.assumptions) {
             underlays.push((
                 <AssumptionUnderlay
                     key={`underlay_${assumption.id}`}
@@ -161,7 +159,7 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
             ))
         }
         setUnderlays(underlays)
-    }, [events, assumptions, zoom, onClick])
+    }, [edition, zoom, onClick])
 
     console.log('underlays=', underlays)
 
@@ -169,7 +167,7 @@ export const WorkingPaper = ({ numberOfRolls, events, assumptions, copies, onCli
         <g className='collated-copies' ref={svgRef}>
             {underlays}
 
-            {events.map((event, i) => (
+            {edition.collationResult.events.map((event, i) => (
                 <CollatedEventViewer
                     key={`workingPaper_${event.id || i}`}
                     event={event}
