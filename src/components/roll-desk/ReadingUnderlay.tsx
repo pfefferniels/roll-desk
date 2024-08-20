@@ -37,15 +37,14 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
         const overallHull = roundedHull(allPoints, 2)
 
         return (
-            <g>
+            <g onClick={() => onClick(assumption)}>
                 <path
                     id={assumption.id}
                     stroke='black'
                     fill='white'
                     fillOpacity={0.7}
                     strokeWidth={1}
-                    d={overallHull}
-                    onClick={() => onClick(assumption)} />
+                    d={overallHull} />
 
                 {hulls.map((hull, i) => (
                     <path
