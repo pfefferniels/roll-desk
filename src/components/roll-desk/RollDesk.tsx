@@ -36,6 +36,7 @@ export interface LayerInfo {
     title: string,
     visible: boolean,
     color: string
+    facsimileOpacity: number
 }
 
 export const stringToColour = (str: string) => {
@@ -75,7 +76,8 @@ export const Desk = () => {
         id: 'working-paper',
         title: 'Working Paper',
         visible: true,
-        color: 'blue'
+        color: 'blue',
+        facsimileOpacity: 0
     }])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
@@ -397,7 +399,8 @@ export const Desk = () => {
                         id: rollCopy.physicalItem.id,
                         title: `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`,
                         visible: true,
-                        color: stringToColour(rollCopy.physicalItem.id)
+                        color: stringToColour(rollCopy.physicalItem.id),
+                        facsimileOpacity: 0
                     })
                 }} />
 

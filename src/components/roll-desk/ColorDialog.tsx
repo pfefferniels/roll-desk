@@ -5,6 +5,10 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Stack,
+    Box,
+    Slider,
+    Typography,
 } from '@mui/material';
 import { RgbaStringColorPicker } from "react-colorful";
 import { LayerInfo } from './RollDesk';
@@ -18,11 +22,13 @@ interface LayerColorOpacityDialogProps {
 
 export const ColorDialog: React.FC<LayerColorOpacityDialogProps> = ({ open, onClose, layerInfo, onSave }) => {
     const [color, setColor] = useState(layerInfo.color);
+    const [facsimileOpacity, setFacsimileOpacity] = useState(0)
 
     const handleSave = () => {
         onSave({
             ...layerInfo,
-            color
+            color,
+            facsimileOpacity
         });
         onClose();
     };
@@ -31,7 +37,21 @@ export const ColorDialog: React.FC<LayerColorOpacityDialogProps> = ({ open, onCl
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>Layer Color</DialogTitle>
             <DialogContent>
-                <RgbaStringColorPicker color={color} onChange={setColor} />
+                <Stack spacing={1} direction='column'>
+                    <Box>
+                        <RgbaStringColorPicker color={color} onChange={setColor} />
+                    </Box>
+
+                    <Box>
+                        <Typography>Facsimile Opacity</Typography>
+                        <Slider
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={facsimileOpacity}
+                            onChange={(_, value) => setFacsimileOpacity(value as number)} />
+                    </Box>
+                </Stack>
             </DialogContent>
             <DialogActions>
                 <Button variant='outlined' onClick={onClose}>Cancel</Button>

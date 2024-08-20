@@ -29,7 +29,8 @@ async function tilesAsSVGImage(
     iiifInfo: IIIFInfo,
     measurementInfo: MeasurementInfo,
     stretchX: number,
-    stretchY: number
+    stretchY: number,
+    opacity: number
 ) {
     const dpi = 300.25
     // TODO: Calculate the zoom level that best matches the stretch factors
@@ -67,7 +68,7 @@ async function tilesAsSVGImage(
                     y={newY}
                     width={width}
                     height={height}
-                    opacity={0.8}
+                    opacity={opacity}
                     viewBox={[0, 0, width, height].join(' ')}
                     preserveAspectRatio='none'
                 />
@@ -85,9 +86,10 @@ interface RollCopyViewerProps {
     onSelectionDone: (dimension: EventDimension) => void
     fixedX: number
     setFixedX: (fixedX: number) => void
+    facsimileOpacity: number
 }
 
-export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX }: RollCopyViewerProps) => {
+export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimileOpacity }: RollCopyViewerProps) => {
     const { zoom, trackHeight } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
@@ -98,15 +100,17 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
         const renderIIIF = async () => {
             if (!svgRef.current) return
 
-            if (!copy.measurement) return
+            if (copy.measurements.length === 0) return
 
-            const baseUrl = copy.measurement.hasCreated.info.iiifLink
-            const info = await fetchIIIFInfo(baseUrl)
-            setTiles(await tilesAsSVGImage(baseUrl, info, copy.measurement.hasCreated.info, zoom, trackHeight))
+            if (facsimileOpacity > 0) {
+                const baseUrl = copy.measurements[0].hasCreated.info.iiifLink
+                const info = await fetchIIIFInfo(baseUrl)
+                setTiles(await tilesAsSVGImage(baseUrl, info, copy.measurements[0].hasCreated.info, zoom, trackHeight, facsimileOpacity))
+            }
         }
 
         renderIIIF()
-    }, [svgRef, trackHeight, zoom, copy.measurement])
+    }, [svgRef, trackHeight, zoom, copy.measurements, facsimileOpacity])
 
     useEffect(() => {
         // whenever the events change, update the emulation
