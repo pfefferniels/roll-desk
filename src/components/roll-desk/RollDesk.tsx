@@ -105,15 +105,18 @@ export const Desk = () => {
     }, [edition])
 
     const downloadMIDI = useCallback(async () => {
+        if (edition.copies.length === 0) return 
+
+        const primary = edition.copies.find(copy => copy.id === primarySource)        
         const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
-            emulation.emulateFromEdition(edition, edition.copies[0]);
+            emulation.emulateFromEdition(edition, primary || edition.copies[0]);
         }
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile('output.mid', dataBuf, 'audio/midi')
-    }, [edition])
+    }, [edition, primarySource])
 
     const handleAlign = useCallback(() => {
         if (selection.length !== 4 &&

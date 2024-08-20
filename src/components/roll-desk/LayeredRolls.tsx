@@ -49,7 +49,7 @@ export const LayeredRolls = ({
     }
 
     return (
-        <svg width="10000" height={6 * 100}>
+        <svg width="100000" height={6 * 100}>
             <Glow />
             <PatchPattern />
 

@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select } from "@mui/material"
 import { Edition } from "linked-rolls"
 import { useState } from "react"
 
@@ -14,6 +14,9 @@ export const EmulationSettingsDialog = ({ open, edition, onClose, onDone }: Emul
 
     return (
         <Dialog open={open} onClose={onDone}>
+            <DialogTitle>
+                Emulation Settings
+            </DialogTitle>
             <DialogContent>
                 <FormControl>
                     <FormLabel>Primary Source</FormLabel>
