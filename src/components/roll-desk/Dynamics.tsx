@@ -13,7 +13,7 @@ export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
         <>
             <g className='trebleVelocities'>
                 {emulation.trebleVelocities.map((v, i) => {
-                    if (i % 100 !== 0) return null
+                    if (i % 20 !== 0) return null
                     return (
                         <circle
                             key={`treble_${v}_${i}`}
@@ -28,7 +28,7 @@ export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
 
             <g className='bassVelocities'>
                 {emulation.bassVelocities.map((v, i) => {
-                    if (i % 100 !== 0) return null
+                    if (i % 20 !== 0) return null
                     return (
                         <circle
                             key={`bass_${v}_${i}`}
