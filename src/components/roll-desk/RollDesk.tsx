@@ -1,15 +1,14 @@
 import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Edition, Emulation, asXML } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
 import type { CollatedEvent, Assumption, AnyRollEvent, Relation, EventDimension } from "linked-rolls/lib/types.d.ts"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Delete, Download, EditNote, FileOpen, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings, Undo } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Delete, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
 import { v4 } from "uuid"
-import { useSnackbar } from "../../providers/SnackbarContext"
 import { write } from "midifile-ts"
 import { UnifyDialog } from "./UnifyDialog"
 import { SeparateDialog } from "./SeparateDialog"
@@ -53,6 +52,14 @@ export const stringToColour = (str: string) => {
     return colour
 }
 
+const workingPaperLayer: LayerInfo = {
+    id: 'working-paper',
+    title: 'Working Paper',
+    visible: true,
+    color: 'blue',
+    facsimileOpacity: 0
+}
+
 /**
  * Working on piano rolls is imagined like working on a 
  * massive desk (with light from below). There are different
@@ -64,24 +71,14 @@ export const stringToColour = (str: string) => {
  */
 
 export const Desk = () => {
-    const { setMessage } = useSnackbar()
     const { play, stop } = usePiano()
 
     const [edition, setEdition] = useState<Edition>(new Edition())
-    // const [copies, setCopies] = useState<RollCopy[]>([])
-    // const [collatedEvents, setCollatedEvents] = useState<CollatedEvent[]>([])
-    // const [assumptions, setAssumptions] = useState<Assumption[]>([])
 
     const [stretch, setStretch] = useState(2)
     const [fixedX, setFixedX] = useState(-1)
 
-    const [layers, setLayers] = useState<LayerInfo[]>([{
-        id: 'working-paper',
-        title: 'Working Paper',
-        visible: true,
-        color: 'blue',
-        facsimileOpacity: 0
-    }])
+    const [layers, setLayers] = useState<LayerInfo[]>([workingPaperLayer])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
@@ -214,6 +211,25 @@ export const Desk = () => {
         setSelection([...selection])
         setEdition(edition.shallowClone())
     }, [activeLayerId, edition, selection])
+
+    // keeping layers and edition up-to-date
+    useEffect(() => {
+        const newLayers = edition.copies.map(rollCopy => {
+            let title = `${rollCopy.physicalItem.id.slice(0, 8)}...`
+            if (rollCopy.physicalItem.catalogueNumber && rollCopy.physicalItem.rollDate) {
+                title = `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`
+            }
+
+            return {
+                id: rollCopy.physicalItem.id,
+                title,
+                visible: true,
+                color: stringToColour(rollCopy.physicalItem.id),
+                facsimileOpacity: 0
+            }
+        })
+        setLayers([workingPaperLayer, ...newLayers])
+    }, [edition])
 
     const currentCopy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
 
@@ -442,13 +458,6 @@ export const Desk = () => {
                 onClose={() => setRollCopyDialogOpen(false)}
                 onDone={rollCopy => {
                     edition.copies.push(rollCopy)
-                    layers.push({
-                        id: rollCopy.physicalItem.id,
-                        title: `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`,
-                        visible: true,
-                        color: stringToColour(rollCopy.physicalItem.id),
-                        facsimileOpacity: 0
-                    })
                     setEdition(edition.shallowClone())
                 }} />
 
