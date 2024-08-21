@@ -24,6 +24,7 @@ import { AddEventDialog } from "./AddEvent"
 import { AddNote } from "./AddNote"
 import { ColorDialog } from "./ColorDialog"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
+import { ImportButton } from "./ImportButton"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -201,7 +202,7 @@ export const Desk = () => {
         if (!currentCopy) return
 
         for (const selectedEvent of selection) {
-            if (!isRollEvent(selectedEvent)) continue 
+            if (!isRollEvent(selectedEvent)) continue
 
             const index = currentCopy.events.findIndex(e => e.id === selectedEvent.id)
             if (index !== -1) {
@@ -209,7 +210,7 @@ export const Desk = () => {
                 selection.splice(selection.indexOf(selectedEvent))
             }
         }
-        
+
         setSelection([...selection])
         setEdition(edition.shallowClone())
     }, [activeLayerId, edition, selection])
@@ -222,9 +223,7 @@ export const Desk = () => {
                 <Grid item xs={12} md={12} xl={12}>
                     <RibbonGroup>
                         <Ribbon title=' '>
-                            <IconButton size='small' onClick={() => { }}>
-                                <FileOpen />
-                            </IconButton>
+                            <ImportButton onImport={newEdition => setEdition(newEdition)} />
                             <IconButton size='small' onClick={downloadXML}>
                                 <Save />
                             </IconButton>
