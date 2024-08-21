@@ -478,6 +478,7 @@ export const Desk = () => {
                         }
                         setEdition(edition.shallowClone())
                         setAddNoteDialogOpen(false)
+                        setSelection([])
                     }}
                     selection={selection.filter(e => 'type' in e && e.type === 'relation')}
                 />)

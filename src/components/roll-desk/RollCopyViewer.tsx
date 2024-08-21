@@ -33,30 +33,27 @@ async function tilesAsSVGImage(
     opacity: number
 ) {
     const dpi = 300.25
-    // TODO: Calculate the zoom level that best matches the stretch factors
-    const zoomLevel = 0;
 
     const tileSize = iiifInfo.tiles[0].width;
-    const scale = iiifInfo.tiles[0].scaleFactors[zoomLevel];
-    const scaledWidth = iiifInfo.width / scale;
-    const scaledHeight = iiifInfo.height / scale;
 
-    // const totalHeightMM = pixelsToMM(iiifInfo.width, dpi);
+    // TODO: Calculate the zoom level that best matches the stretch factors
+    // Also take into account which part of the roll is visible to the 
+    // user at the moment
+    const scale = 16;
 
-    const rows = Math.ceil(scaledHeight / tileSize);
-    const cols = Math.ceil(scaledWidth / tileSize);
+    const rows = Math.ceil(iiifInfo.height / tileSize);
+    const cols = Math.ceil(iiifInfo.width / tileSize);
 
     const images = [];
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
             const region = `${x * tileSize},${y * tileSize},${tileSize},${tileSize}`;
-            const size = `${tileSize},`;
+            const size = `${iiifInfo.width / scale},`;
             const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
 
             const newX = pixelsToMM(y * tileSize, dpi) * stretchX;
             const xAsTrack = Math.round(((x * tileSize) - measurementInfo.margins.bass) / measurementInfo.holeSeparation)
             const newY = (74 - xAsTrack) * stretchY + stretchY / 2
-            // console.log('y=', newY)
             const width = pixelsToMM(tileSize, dpi) * stretchX;
             const height = tileSize / measurementInfo.holeSeparation * stretchY;
 
