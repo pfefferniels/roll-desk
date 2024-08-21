@@ -4,7 +4,7 @@ import { Edition, Emulation, asXML } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
 import type { CollatedEvent, Assumption, AnyRollEvent, Relation, EventDimension } from "linked-rolls/lib/types.d.ts"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, Delete, Pause, PlayArrow, Save, Undo } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Delete, Download, EditNote, FileOpen, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -105,9 +105,9 @@ export const Desk = () => {
     }, [edition])
 
     const downloadMIDI = useCallback(async () => {
-        if (edition.copies.length === 0) return 
+        if (edition.copies.length === 0) return
 
-        const primary = edition.copies.find(copy => copy.id === primarySource)        
+        const primary = edition.copies.find(copy => copy.id === primarySource)
         const emulation = new Emulation();
         if (emulation.midiEvents.length === 0) {
             emulation.emulateFromEdition(edition, primary || edition.copies[0]);
@@ -204,13 +204,15 @@ export const Desk = () => {
                 <Grid item xs={12} md={12} xl={12}>
                     <RibbonGroup>
                         <Ribbon title=' '>
-                            <IconButton
-                                onClick={downloadXML}>
+                            <IconButton size='small' onClick={() => { }}>
+                                <FileOpen />
+                            </IconButton>
+                            <IconButton size='small' onClick={downloadXML}>
                                 <Save />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Collation'>
-                            <IconButton onClick={() => {
+                            <IconButton size='small' onClick={() => {
                                 const copy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
                                 if (!copy) return
                                 copy.undoOperations()
@@ -218,17 +220,25 @@ export const Desk = () => {
                             }}>
                                 <Undo />
                             </IconButton>
-                            <IconButton
+                            <Button
+                                size='small'
                                 disabled={selection.length !== 4}
-                                onClick={handleAlign}>
-                                <AlignHorizontalCenter />
-                            </IconButton>
-                            <IconButton onClick={() => {
-                                edition.collateCopies(true)
-                                setEdition(edition.shallowClone())
-                            }}>
-                                <CallMerge />
-                            </IconButton>
+                                onClick={handleAlign}
+                                startIcon={<AlignHorizontalCenter />}
+                            >
+                                Adjust
+                            </Button>
+                            <Button
+                                size='small'
+                                onClick={() => {
+                                    edition.collateCopies(true)
+                                    setEdition(edition.shallowClone())
+                                }}
+                                startIcon={<CallMerge />}
+                                disabled={edition.copies.length === 0}
+                            >
+                                Collate
+                            </Button>
                         </Ribbon>
                         <Ribbon title='Roll Events'>
                             <IconButton
@@ -237,17 +247,27 @@ export const Desk = () => {
                             >
                                 <Add />
                             </IconButton>
+                            <IconButton
+                                size='small'
+                            >
+                                <Remove />
+                            </IconButton>
                         </Ribbon>
                         <Ribbon title='Conjectures'>
                             <Button
                                 size='small'
                                 onClick={() => setUnifyDialogOpen(true)}
+                                startIcon={<JoinFull />}
+                                disabled={edition.copies.length === 0}
                             >
                                 Unify
                             </Button>
                             <Button
                                 size='small'
-                                onClick={() => setSeparateDialogOpen(true)}>
+                                onClick={() => setSeparateDialogOpen(true)}
+                                startIcon={<CallSplit />}
+                                disabled={edition.copies.length === 0}
+                            >
                                 Separate
                             </Button>
                         </Ribbon>
@@ -255,7 +275,9 @@ export const Desk = () => {
                             <Button
                                 size='small'
                                 disabled={currentCopy === undefined}
-                                onClick={() => setAddHandDialogOpen(true)}>
+                                onClick={() => setAddHandDialogOpen(true)}
+                                startIcon={<Add />}
+                            >
                                 Add Hand
                             </Button>
                             <Button
@@ -278,29 +300,33 @@ export const Desk = () => {
                                     setEdition(edition.shallowClone())
                                     setSelection([])
                                 }}
+                                startIcon={<GroupWork />}
+                                disabled={activeLayerId !== 'working-paper'}
                             >
                                 Group Readings
                             </Button>
                             <Button
                                 size='small'
                                 onClick={() => setAddNoteDialogOpen(true)}
+                                startIcon={<EditNote />}
+                                disabled={activeLayerId !== 'working-paper'}
                             >
                                 Add Note
                             </Button>
                         </Ribbon>
                         <Ribbon title='Emulation'>
-                            <Button
+                            <IconButton
                                 size='small'
                                 onClick={() => setEmulationSettingsDialogOpen(true)}
                             >
-                                Adjust Settings
-                            </Button>
-                            <Button
+                                <Settings />
+                            </IconButton>
+                            <IconButton
                                 size='small'
                                 onClick={downloadMIDI}
                             >
-                                Download MIDI
-                            </Button>
+                                <Download />
+                            </IconButton>
                             <IconButton
                                 disabled={edition.collationResult.events.length === 0}
                                 onClick={() => {
@@ -324,7 +350,7 @@ export const Desk = () => {
                         </Ribbon>
                         <Ribbon title='Zoom'>
                             <Slider
-                                sx={{ minWidth: 200 }}
+                                sx={{ minWidth: 120 }}
                                 min={0.1}
                                 max={2}
                                 step={0.05}
