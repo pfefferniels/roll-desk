@@ -58,7 +58,7 @@ export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) =
                         value={rollDate}
                         onChange={e => setRollDate(e.target.value)} />
                     <Divider flexItem />
-                    <Button variant="contained" component="label" startIcon={< MusicNote />}>
+                    <Button variant="outlined" component="label" startIcon={< MusicNote />}>
                         Upload Roll Analysis
                         <input
                             type="file"
@@ -71,10 +71,13 @@ export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) =
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={async () => {
-                    handleUpload()
-                    onClose()
-                }}>
+                <Button
+                    variant='contained'
+                    onClick={async () => {
+                        handleUpload()
+                        onClose()
+                    }}
+                >
                     Save
                 </Button>
             </DialogActions>
