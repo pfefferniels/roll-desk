@@ -23,7 +23,7 @@ export const EmulationSettingsDialog = ({ open, edition, onClose, onDone }: Emul
                     <Select value={currentCopy} size='small' onChange={e => setCurrentCopy(e.target.value)}>
                         {edition.copies.map(copy => (
                             <MenuItem key={copy.id} value={copy.id}>
-                                {copy.physicalItem.rollDate}
+                                {copy.physicalItem.rollDate || copy.id}
                             </MenuItem>
                         ))}
                     </Select>
