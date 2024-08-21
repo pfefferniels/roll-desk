@@ -196,6 +196,24 @@ export const Desk = () => {
         })
     }, [])
 
+    const removeEvent = useCallback(() => {
+        const currentCopy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
+        if (!currentCopy) return
+
+        for (const selectedEvent of selection) {
+            if (!isRollEvent(selectedEvent)) continue 
+
+            const index = currentCopy.events.findIndex(e => e.id === selectedEvent.id)
+            if (index !== -1) {
+                currentCopy.events.splice(index, 1)
+                selection.splice(selection.indexOf(selectedEvent))
+            }
+        }
+        
+        setSelection([...selection])
+        setEdition(edition.shallowClone())
+    }, [activeLayerId, edition, selection])
+
     const currentCopy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
 
     return (
@@ -249,6 +267,7 @@ export const Desk = () => {
                             </IconButton>
                             <IconButton
                                 size='small'
+                                onClick={removeEvent}
                             >
                                 <Remove />
                             </IconButton>
