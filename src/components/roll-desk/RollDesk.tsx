@@ -1,10 +1,10 @@
-import { Box, Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { Box, Button, Divider, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
-import { Edition, Emulation, asXML } from 'linked-rolls'
+import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
-import type { CollatedEvent, Assumption, AnyRollEvent, Relation, EventDimension } from "linked-rolls/lib/types.d.ts"
+import type { CollatedEvent, AnyRollEvent, EventDimension } from "linked-rolls/lib/types.d.ts"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Delete, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings, Undo } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Clear, Delete, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -24,12 +24,15 @@ import { AddNote } from "./AddNote"
 import { ColorDialog } from "./ColorDialog"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
+import { Relation } from "linked-rolls/lib/EditorialActions"
+import { AddConjecture } from "./AddConjecture"
+import DownloadDialog from "./DownloadDialog"
 
 export interface CollationResult {
     events: CollatedEvent[]
 }
 
-export type UserSelection = (AnyRollEvent | CollatedEvent | Assumption | EventDimension)[]
+export type UserSelection = (AnyRollEvent | CollatedEvent | AnyEditorialAction | EventDimension)[]
 
 export interface LayerInfo {
     id: 'working-paper' | string,
@@ -81,6 +84,7 @@ export const Desk = () => {
     const [layers, setLayers] = useState<LayerInfo[]>([workingPaperLayer])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
+    const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
@@ -90,17 +94,12 @@ export const Desk = () => {
     const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false)
     const [colorToChange, setColorToChange] = useState<LayerInfo>()
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
+    const [addConjectureOpen, setAddConjectureOpen] = useState(false)
 
     const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [primarySource, setPrimarySource] = useState('')
-
-    const downloadXML = useCallback(async () => {
-        const xml = asXML(edition.copies, edition.collationResult.events, edition.assumptions)
-        if (!xml.length) return
-        downloadFile('roll.xml', xml, 'application/xml')
-    }, [edition])
 
     const downloadMIDI = useCallback(async () => {
         if (edition.copies.length === 0) return
@@ -168,17 +167,21 @@ export const Desk = () => {
 
         if (!copy) return
 
-        copy.applyOperations([
+        copy.applyActions([
             {
                 id: v4(),
-                type: 'stretching',
-                factor: stretch
+                type: 'stretch',
+                factor: stretch,
+                carriedOutBy: '#np',
+                copy: copy.id
             },
             {
                 id: v4(),
-                type: 'shifting',
+                type: 'shift',
                 vertical: 0,
-                horizontal: shift
+                horizontal: shift,
+                carriedOutBy: '#np',
+                copy: copy.id
             }
         ])
 
@@ -186,10 +189,10 @@ export const Desk = () => {
         setSelection([])
     }, [activeLayerId, edition, selection])
 
-    const pushAssumption = useCallback((assumption: Assumption) => {
+    const pushAction = useCallback((action: AnyEditorialAction) => {
         setEdition(prev => {
             const clone = prev.shallowClone()
-            clone.assumptions.push(assumption)
+            clone.addEditorialAction(action)
             return clone
         })
     }, [])
@@ -240,19 +243,11 @@ export const Desk = () => {
                     <RibbonGroup>
                         <Ribbon title=' '>
                             <ImportButton onImport={newEdition => setEdition(newEdition)} />
-                            <IconButton size='small' onClick={downloadXML}>
+                            <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
                                 <Save />
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Collation'>
-                            <IconButton size='small' onClick={() => {
-                                const copy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
-                                if (!copy) return
-                                copy.undoOperations()
-                                setEdition(edition.shallowClone())
-                            }}>
-                                <Undo />
-                            </IconButton>
                             <Button
                                 size='small'
                                 disabled={selection.length !== 4}
@@ -272,6 +267,19 @@ export const Desk = () => {
                             >
                                 Collate
                             </Button>
+                            <IconButton
+                                size='small'
+                                disabled={
+                                    activeLayerId !== 'working-paper'
+                                    || edition.collationResult.events.length === 0
+                                }
+                                onClick={() => {
+                                    edition.collationResult.events = []
+                                    setEdition(edition.shallowClone())
+                                }}
+                            >
+                                <Clear />
+                            </IconButton>
                         </Ribbon>
                         <Ribbon title='Roll Events'>
                             <IconButton
@@ -288,6 +296,14 @@ export const Desk = () => {
                             </IconButton>
                         </Ribbon>
                         <Ribbon title='Conjectures'>
+                            <IconButton
+                                size='small'
+                                onClick={() => setAddConjectureOpen(true)}
+                                disabled={currentCopy === undefined}
+                            >
+                                <Add />
+                            </IconButton>
+                            <Divider orientation='vertical' />
                             <Button
                                 size='small'
                                 onClick={() => setUnifyDialogOpen(true)}
@@ -328,7 +344,7 @@ export const Desk = () => {
                                     combineRelations(
                                         edition.copies,
                                         selection.filter(s => 'type' in s && s.type === 'relation') as Relation[],
-                                        edition.assumptions
+                                        edition.relations
                                     )
 
                                     setEdition(edition.shallowClone())
@@ -422,15 +438,12 @@ export const Desk = () => {
                             </div>
                         </Paper>
 
-                        {edition.assumptions.length > 0 && (
+                        {(currentCopy ?? edition).actions.length > 0 && (
                             <Paper sx={{ maxWidth: 360, maxHeight: 380, overflow: 'scroll' }}>
                                 <ActionList
-                                    actions={edition.assumptions}
+                                    actions={(currentCopy ?? edition).actions}
                                     removeAction={(action) => {
-                                        edition.assumptions.slice(
-                                            edition.assumptions.indexOf(action),
-                                            1
-                                        )
+                                        (currentCopy ?? edition).removeEditorialAction(action)
                                         setEdition(edition.shallowClone())
                                     }} />
                             </Paper>
@@ -469,7 +482,7 @@ export const Desk = () => {
                         selection={selection[0] as AnyRollEvent}
                         clearSelection={() => setSelection([])}
                         breakPoint={fixedX}
-                        onDone={pushAssumption}
+                        onDone={pushAction}
                     />
                 )
             }
@@ -478,15 +491,16 @@ export const Desk = () => {
                 open={unifyDialogOpen}
                 selection={selection.filter(pin => isRollEvent(pin)) as AnyRollEvent[]}
                 clearSelection={() => setSelection([])}
-                onDone={pushAssumption}
-                onClose={() => setUnifyDialogOpen(false)} />
+                onDone={pushAction}
+                onClose={() => setUnifyDialogOpen(false)}
+            />
 
             {currentCopy && (
                 <AssignHand
                     open={assignHandDialogOpen}
                     onDone={(assignment) => {
                         if (assignment) {
-                            pushAssumption(assignment)
+                            pushAction(assignment)
                         }
                         setAssignHandDialogOpen(false)
                     }}
@@ -506,17 +520,17 @@ export const Desk = () => {
                 />)
             }
 
-            {currentCopy && (
+            {(currentCopy && !!selection.find(selection => 'horizontal' in selection)) && (
                 <AddEventDialog
                     open={addEventDialogOpen}
                     selection={selection.find(selection => 'horizontal' in selection) as EventDimension}
-                    onDone={(newEvent) => {
-                        currentCopy.events.push(newEvent)
-
+                    onDone={(modifiedCopy) => {
                         // TODO: add measurement
                         setAddEventDialogOpen(false)
+                        // setModif
                     }}
                     onClose={() => setAddEventDialogOpen(false)}
+                    copy={currentCopy}
                 />)
             }
 
@@ -524,11 +538,12 @@ export const Desk = () => {
                 <AddNote
                     open={addNoteDialogOpen}
                     onDone={(updatedAssumptions) => {
-                        for (const assumption of updatedAssumptions) {
-                            const index = edition.assumptions.findIndex(a => a.id === assumption.id)
-                            if (index === -1) continue
-                            edition.assumptions.splice(index, 1, assumption)
-                        }
+                        // TODO
+                        // for (const assumption of updatedAssumptions) {
+                        //     const index = edition.assumptions.findIndex(a => a.id === assumption.id)
+                        //     if (index === -1) continue
+                        //     edition.assumptions.splice(index, 1, assumption)
+                        // }
                         setEdition(edition.shallowClone())
                         setAddNoteDialogOpen(false)
                         setSelection([])
@@ -552,16 +567,30 @@ export const Desk = () => {
                 />)
             }
 
-            {
-                <EmulationSettingsDialog
-                    open={emulationSettingsDialogOpen}
-                    onClose={() => {
-                        setEmulationSettingsDialogOpen(false)
-                    }}
-                    edition={edition}
-                    onDone={(primaryCopy) => setPrimarySource(primaryCopy)}
+            <EmulationSettingsDialog
+                open={emulationSettingsDialogOpen}
+                onClose={() => {
+                    setEmulationSettingsDialogOpen(false)
+                }}
+                edition={edition}
+                onDone={(primaryCopy) => setPrimarySource(primaryCopy)}
+            />
+
+            {currentCopy && (
+                <AddConjecture
+                    open={addConjectureOpen}
+                    onClose={() => setAddConjectureOpen(false)}
+                    copy={currentCopy}
+                    selection={selection.filter(event => isRollEvent(event)) as AnyRollEvent[]}
+                    clearSelection={() => setSelection([])}
                 />
-            }
+            )}
+
+            <DownloadDialog
+                open={downloadDialogOpen}
+                edition={edition}
+                onClose={() => setDownloadDialogOpen(false)}
+            />
         </>
     )
 }

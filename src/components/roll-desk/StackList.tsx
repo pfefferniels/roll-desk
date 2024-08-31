@@ -40,7 +40,7 @@ export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLay
                                 onClick={() => setActiveLayerId(stackItem.id)}>
                                 <ListItemText
                                     style={{ border: activeLayerId === stackItem.id ? '3px' : '1px' }}
-                                    secondary={copy ? <OperationsAsText operations={copy.operations} /> : null}
+                                    secondary={copy ? <OperationsAsText stretch={copy.stretch} shift={copy.shift} /> : null}
                                     primary={activeLayerId === stackItem.id ? <b>{stackItem.title}</b> : stackItem.title} />
                             </ListItemButton>
                             <ListItemSecondaryAction>

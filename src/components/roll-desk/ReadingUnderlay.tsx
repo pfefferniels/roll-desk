@@ -1,11 +1,11 @@
-import type { Assumption } from "linked-rolls/lib/types";
 import { RefObject } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
+import { AnyEditorialAction } from "linked-rolls";
 
 interface AssumptionUnderlayProps {
-    assumption: Assumption;
+    assumption: AnyEditorialAction;
     svgRef: RefObject<SVGGElement>;
-    onClick: (r: Assumption) => void;
+    onClick: (r: AnyEditorialAction) => void;
 }
 
 export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps) => {

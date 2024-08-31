@@ -1,5 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { AnyRollEvent, Certainty, Unification } from "linked-rolls/lib/types"
+import { Certainty, Conjecture } from "linked-rolls/lib/EditorialActions"
+import { AnyRollEvent } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
@@ -8,7 +9,7 @@ interface UnifyProps {
     onClose: () => void
     selection: AnyRollEvent[]
     clearSelection: () => void
-    onDone: (unification: Unification) => void
+    onDone: (conjecture: Conjecture) => void
 }
 
 export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }: UnifyProps) => {
@@ -17,8 +18,13 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
 
     if (selection.length === 0) return null
 
-    const dimensionStart = selection[0].hasDimension.horizontal
-    const dimensionEnd = selection[selection.length - 1].hasDimension.horizontal
+    const froms = selection.map(e => e.hasDimension.horizontal.from)
+    const tos = selection.map(e => e.hasDimension.horizontal.to).filter(to => to !== undefined)
+
+    const minFrom = Math.min(...froms)
+    const maxTo = Math.max(...tos)
+
+    const unit = selection[0].hasDimension.horizontal.hasUnit
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -27,8 +33,8 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                 <Stack spacing={1} direction='column'>
                     <div>
                         Unifying <b>{selection.length}</b> events{' '}
-                        from {dimensionStart.from.toFixed(0)}{dimensionStart.hasUnit}{' '}
-                        to {dimensionEnd.to?.toFixed(0)}{dimensionEnd.hasUnit}
+                        from {minFrom.toFixed(0)}{unit}{' '}
+                        to {maxTo.toFixed(0)}{unit}
                     </div>
                     <FormControl>
                         <FormLabel>Certainty</FormLabel>
@@ -64,11 +70,18 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                 </Button>
                 <Button
                     onClick={() => {
+                        const copy = structuredClone(selection[0])
+                        copy.id = v4()
+                        copy.hasDimension.horizontal.from = minFrom
+                        copy.hasDimension.horizontal.to = maxTo
+                        copy.annotates = undefined
+
                         onDone({
-                            type: 'unification',
+                            type: 'conjecture',
                             id: v4(),
-                            unified: selection,
-                            carriedOutBy: '',
+                            replaced: selection,
+                            with: [copy],
+                            carriedOutBy: '#np',
                             certainty: cert,
                             note
                         })

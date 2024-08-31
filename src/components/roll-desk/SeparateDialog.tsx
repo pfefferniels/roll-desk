@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { Unstable_NumberInput as NumberInput } from '@mui/base/Unstable_NumberInput';
-import { AnyRollEvent, Certainty, Separation } from "linked-rolls/lib/types"
+import { AnyRollEvent, Certainty, Conjecture } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
@@ -10,7 +10,7 @@ interface SeparateProps {
     selection: AnyRollEvent
     clearSelection: () => void
     breakPoint: number
-    onDone: (separation: Separation) => void
+    onDone: (separation: Conjecture) => void
 }
 
 export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDone, breakPoint }: SeparateProps) => {
@@ -75,10 +75,10 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                         rightEvent.id = v4()
 
                         onDone({
-                            type: 'separation',
+                            type: 'conjecture',
                             id: v4(),
-                            separated: selection,
-                            into: [leftEvent, rightEvent],
+                            replaced: [selection],
+                            with: [leftEvent, rightEvent],
                             carriedOutBy: '',
                             certainty: cert,
                             note

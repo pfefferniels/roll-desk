@@ -17,7 +17,6 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
     const handleDone = () => {
         copy.addManualEditing({
             carriedOutBy: name,
-            hasModified: copy.physicalItem,
             hasTimeSpan: {
                 id: v4(),
                 atSomeTimeWithin: date
@@ -26,7 +25,7 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
             note: desc
         })
 
-        onDone(copy.clone())
+        onDone(copy.shallowClone())
     }
 
     const handleClose = () => onDone(copy)

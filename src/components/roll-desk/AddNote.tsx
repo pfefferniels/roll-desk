@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, TextField } from "@mui/material"
-import { Relation } from "linked-rolls/lib/types"
+import { Relation } from "linked-rolls/lib/EditorialActions"
 import { useState } from "react"
 
 interface AddNoteProps {

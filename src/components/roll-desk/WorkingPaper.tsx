@@ -1,8 +1,8 @@
-import type { Assumption, CollatedEvent, Expression, Reading, Relation } from "linked-rolls/lib/types"
+import type {  CollatedEvent, Expression } from "linked-rolls/lib/types"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, RollCopy, Edition } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAction } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./ReadingUnderlay"
 
@@ -112,7 +112,7 @@ const CollatedEventViewer = ({ event, highlight, subjectOfAssumption, onClick }:
 interface WorkingPaperProps {
     numberOfRolls: number
     edition: Edition
-    onClick: (event: CollatedEvent | Assumption) => void
+    onClick: (event: CollatedEvent | AnyEditorialAction) => void
 }
 
 export const WorkingPaper = ({ numberOfRolls, edition, onClick }: WorkingPaperProps) => {
@@ -148,7 +148,9 @@ export const WorkingPaper = ({ numberOfRolls, edition, onClick }: WorkingPaperPr
 
     useLayoutEffect(() => {
         const underlays = []
-        for (const assumption of edition.assumptions) {
+        for (const assumption of edition.actions) {
+            if (!assumption) continue
+
             underlays.push((
                 <AssumptionUnderlay
                     key={`underlay_${assumption.id}`}

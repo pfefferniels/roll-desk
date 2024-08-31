@@ -1,6 +1,7 @@
 import { Button, Drawer, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { RollCopy } from "linked-rolls"
-import { AnyRollEvent, Certainty, HandAssignment } from "linked-rolls/lib/types"
+import { Certainty, HandAssignment } from "linked-rolls/lib/EditorialActions"
+import { AnyRollEvent } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 

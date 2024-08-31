@@ -1,19 +1,16 @@
-import { Shifting, Stretching } from "linked-rolls"
+import { Shift, Stretch } from "linked-rolls"
 
 interface OperationsAsSecondaryTextProps {
-    operations: (Shifting | Stretching)[]
+    stretch?: Stretch
+    shift?: Shift
 }
 
-export const OperationsAsText = ({ operations }: OperationsAsSecondaryTextProps) => {
+export const OperationsAsText = ({ stretch, shift }: OperationsAsSecondaryTextProps) => {
     return (
         <div>
-            {operations.map((op, i) => (
-                <div key={`op_${i}`}>
-                    {op.type}:{' '}
-                    {op.type === 'shifting' && `${(op as Shifting).horizontal.toFixed(3)}mm, ${(op as Shifting).vertical}`}
-                    {op.type === 'stretching' && `${(((op as Stretching).factor - 1) * 100).toFixed(3)}%`}
-                </div>
-            ))}
+            {shift && `${shift.horizontal.toFixed(3)}mm, ${shift.vertical} track(s)`}
+            <br />
+            {stretch && `${((stretch.factor - 1) * 100).toFixed(3)}%`}
         </div>
     )
 }

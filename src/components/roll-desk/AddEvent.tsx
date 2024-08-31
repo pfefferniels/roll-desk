@@ -1,21 +1,28 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { AnyRollEvent, EventDimension } from "linked-rolls/lib/types"
+import { keyToType, RollCopy } from "linked-rolls"
+import { AnyRollEvent, EventDimension, ExpressionType } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
 interface AddEventProps {
     open: boolean
     selection: EventDimension
-    onDone: (rollEvent: AnyRollEvent) => void
+    copy: RollCopy
+    onDone: (modifiedCopy: RollCopy) => void
     onClose: () => void
 }
 
 const eventTypes = ['note', 'expression', 'handwrittenText', 'stamp', 'cover'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddEventDialog = ({ selection, onDone, onClose, open }: AddEventProps) => {
+export const AddEventDialog = ({ selection, onDone, onClose, open, copy }: AddEventProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
+
+    // TODO: this should be part of the lib
+    const determineScope = (selection: EventDimension) => {
+        return selection.vertical.from < 15 ? 'bass' : 'treble'
+    }
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -49,26 +56,54 @@ export const AddEventDialog = ({ selection, onDone, onClose, open }: AddEventPro
                                 onChange={e => setText(e.target.value)}
                             />
                         </FormControl>)}
+
+                    {(eventType === 'expression' && (
+                        <div>
+                            Scope: {determineScope(selection)}
+                            <br />
+                            Type: {keyToType(selection.vertical.from + 13)}
+                        </div>
+                    ))}
                 </Stack>
             </DialogContent>
 
             <DialogActions>
                 <Button
                     onClick={() => {
+                        let eventToAdd: AnyRollEvent | undefined = undefined
                         if (eventType === 'stamp' || eventType === 'handwrittenText') {
-                            onDone({
+                            eventToAdd = {
                                 type: eventType,
                                 text: text || '[no text]',
                                 hasDimension: selection,
                                 id: v4()
-                            })
+                            }
                         }
                         else if (eventType === 'cover') {
-                            onDone({
+                            eventToAdd = {
                                 type: eventType,
                                 hasDimension: selection,
                                 id: v4()
-                            })
+                            }
+                        }
+                        else if (eventType === 'expression') {
+                            const key = selection.vertical.from + 13
+                            const scope = determineScope(selection)
+                            const type = keyToType(key)
+                            if (!type) return
+
+                            eventToAdd = {
+                                type: 'expression',
+                                P2HasType: type as ExpressionType,
+                                hasScope: scope,
+                                hasDimension: selection,
+                                id: v4()
+                            }
+                        }
+
+                        if (eventToAdd) {
+                            copy.insertEvent(eventToAdd)
+                            onDone(copy.shallowClone())
                         }
                     }}
                     variant='contained'>
