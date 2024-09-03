@@ -1,7 +1,9 @@
-import { MusicNote } from "@mui/icons-material";
-import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Stack, TextField, Typography, Select, MenuItem, Divider } from "@mui/material";
+import { Delete, MusicNote } from "@mui/icons-material";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Grid, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useState } from "react";
 import { RollCopy } from "linked-rolls";
+import { v4 as uuidv4 } from 'uuid';
+import { ConditionAssessment, ConditionState } from "linked-rolls/lib/types";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -16,72 +18,187 @@ interface RollCopyDialogProps {
  */
 export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) => {
     const [file, setFile] = useState<File | null>(null);
-    const [type, setType] = useState<'welte-red' | 'welte-green'>('welte-red')
-    const [catalogueNumber, setCatalogueNumber] = useState('')
-    const [rollDate, setRollDate] = useState('')
+    const [company, setCompany] = useState('');
+    const [system, setSystem] = useState('');
+    const [paper, setPaper] = useState('');
+    const [date, setDate] = useState('');
+    const [conditions, setConditions] = useState<ConditionState[]>([]);
 
     const handleUpload = async () => {
         if (!file) {
-            console.log('No file uploaded yet')
-            return
+            console.log('No file uploaded yet');
+            return;
         }
 
-        const rollCopy = new RollCopy()
-        rollCopy.physicalItem.hasType = type
-        rollCopy.physicalItem.rollDate = rollDate
-        rollCopy.physicalItem.catalogueNumber = catalogueNumber
-        rollCopy.readFromStanfordAton(await file?.text(), true)
-        onDone(rollCopy)
-    }
+        const rollCopy = new RollCopy();
+
+        rollCopy.productionEvent = {
+            company,
+            system,
+            paper,
+            date
+        };
+
+        rollCopy.conditions = conditions;
+
+        rollCopy.readFromStanfordAton(await file?.text(), true);
+        onDone(rollCopy);
+    };
+
+    const handleAddCondition = () => {
+        const newCondition: ConditionState = {
+            id: uuidv4(),
+            note: '',
+            date: '',
+            assessment: {
+                id: uuidv4(),
+                carriedOutBy: '',
+                date: ''
+            }
+        };
+        setConditions([...conditions, newCondition]);
+    };
+
+    const handleConditionChange = (index: number, field: keyof ConditionState, value: string) => {
+        const updatedConditions = [...conditions];
+        updatedConditions[index] = {
+            ...updatedConditions[index],
+            [field]: value
+        };
+        setConditions(updatedConditions);
+    };
+
+    const handleAssessmentChange = (index: number, field: keyof ConditionAssessment, value: string) => {
+        const updatedConditions = [...conditions];
+        updatedConditions[index] = {
+            ...updatedConditions[index],
+            assessment: {
+                ...updatedConditions[index].assessment,
+                [field]: value
+            }
+        };
+        setConditions(updatedConditions);
+    };
+
+    const handleRemoveCondition = (index: number) => {
+        const updatedConditions = conditions.filter((_, i) => i !== index);
+        setConditions(updatedConditions);
+    };
 
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
             <DialogTitle>Add or Edit Roll Copy</DialogTitle>
             <DialogContent>
-                <Stack spacing={2} p={1}>
-                    <Typography>Physical Description</Typography>
-                    <Select
-                        size='small'
-                        value={type}
-                        onChange={(e) => setType(e.target.value as 'welte-red' | 'welte-green')}>
-                        <MenuItem value='welte-red'>Welte red (100)</MenuItem>
-                        <MenuItem value='welte-green'>Welte green</MenuItem>
-                    </Select>
-                    <TextField
-                        size='small'
-                        label='Catalogue Number'
-                        value={catalogueNumber}
-                        onChange={e => setCatalogueNumber(e.target.value)} />
-                    <TextField
-                        size='small'
-                        label='Roll Date'
-                        value={rollDate}
-                        onChange={e => setRollDate(e.target.value)} />
-                    <Divider flexItem />
-                    <Button variant="outlined" component="label" startIcon={< MusicNote />}>
-                        Upload Roll Analysis
-                        <input
-                            type="file"
-                            hidden
-                            accept=".txt"
-                            onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-                        />
-                    </Button>
-                </Stack>
+                <Grid container spacing={2} p={1} sx={{ minWidth: 700 }}>
+                    <Grid item xs={4}>
+                        <Typography>Roll Production</Typography>
+                        <Stack direction="column" spacing={2}>
+                            <TextField
+                                size='small'
+                                value={company}
+                                placeholder="e.g. Welte & Söhne"
+                                onChange={e => setCompany(e.target.value)}
+                                fullWidth
+                            />
+                            <TextField
+                                size='small'
+                                value={system}
+                                placeholder="e.g. T-100"
+                                onChange={e => setSystem(e.target.value)}
+                                fullWidth
+                            />
+                            <TextField
+                                size='small'
+                                value={paper}
+                                placeholder="e.g. red paper, lined"
+                                onChange={e => setPaper(e.target.value)}
+                                fullWidth
+                            />
+                            <TextField
+                                size='small'
+                                label='Roll Date'
+                                value={date}
+                                placeholder="as indicated on the end of the roll"
+                                onChange={e => setDate(e.target.value)}
+                                fullWidth
+                            />
+                            <Divider flexItem />
+                            <Button variant="outlined" component="label" startIcon={<MusicNote />}>
+                                {file ? file.name : 'Upload Roll Analysis'}
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept=".txt"
+                                    onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                                />
+                            </Button>
+                        </Stack>
+                    </Grid>
+                    <Grid item xs={8}>
+                        <Typography>Roll Condition</Typography>
+                        {conditions.map((condition, index) => (
+                            <Grid container m={1} spacing={1} key={condition.id} alignItems="center">
+                                <Grid item xs={6}>
+                                    <TextField
+                                        multiline
+                                        rows={5}
+                                        size='small'
+                                        label='Condition Note'
+                                        value={condition.note}
+                                        onChange={(e) => handleConditionChange(index, 'note', e.target.value)}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={5}>
+                                    <Stack direction="column" spacing={1}>
+                                        <TextField
+                                            size='small'
+                                            label='Condition Date'
+                                            value={condition.date}
+                                            onChange={(e) => handleConditionChange(index, 'date', e.target.value)}
+                                            fullWidth
+                                        />
+                                        <TextField
+                                            size='small'
+                                            label='Assessed By'
+                                            value={condition.assessment.carriedOutBy}
+                                            onChange={(e) => handleAssessmentChange(index, 'carriedOutBy', e.target.value)}
+                                            fullWidth
+                                        />
+                                        <TextField
+                                            size='small'
+                                            label='Assessment Date'
+                                            value={condition.assessment.date}
+                                            onChange={(e) => handleAssessmentChange(index, 'date', e.target.value)}
+                                            fullWidth
+                                        />
+                                    </Stack>
+                                </Grid>
+                                <Grid item xs={1}>
+                                    <IconButton onClick={() => handleRemoveCondition(index)} size="small">
+                                        <Delete />
+                                    </IconButton>
+                                </Grid>
+                            </Grid>
+                        ))}
+                        <Button variant="outlined" onClick={handleAddCondition} sx={{ mt: 2 }}>
+                            Add Condition State
+                        </Button>
+                    </Grid>
+                </Grid>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button
                     variant='contained'
                     onClick={async () => {
-                        handleUpload()
-                        onClose()
+                        handleUpload();
+                        onClose();
                     }}
                 >
                     Save
                 </Button>
             </DialogActions>
         </Dialog>
-    )
-}
-
+    );
+};

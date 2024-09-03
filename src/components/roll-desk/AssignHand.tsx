@@ -32,7 +32,7 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
                         value={assignedHand}
                         onChange={e => setAssignedHand(e.target.value as string)}
                     >
-                        {copy.editings.map((editing) => {
+                        {copy.hands.map((editing) => {
                             return (
                                 <MenuItem value={editing.id} key={editing.id}>
                                     {editing.carriedOutBy}
@@ -73,8 +73,8 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
                                 type: 'handAssignment',
                                 carriedOutBy: '#np',
                                 id: v4(),
-                                hand: copy.editings.find(e => e.id === assignedHand)!,
-                                assignedTo: selection,
+                                hand: copy.hands.find(e => e.id === assignedHand)!,
+                                target: selection,
                                 certainty: cert,
                                 note
                             })

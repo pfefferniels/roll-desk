@@ -15,13 +15,10 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
     const [desc, setDesc] = useState('')
 
     const handleDone = () => {
-        copy.addManualEditing({
+        copy.hands.push({
+            id: v4(),
             carriedOutBy: name,
-            hasTimeSpan: {
-                id: v4(),
-                atSomeTimeWithin: date
-            },
-            'id': v4(),
+            date,
             note: desc
         })
 

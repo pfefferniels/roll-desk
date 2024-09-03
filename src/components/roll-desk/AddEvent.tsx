@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
+import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { keyToType, RollCopy } from "linked-rolls"
 import { AnyRollEvent, EventDimension, ExpressionType } from "linked-rolls/lib/types"
 import { useState } from "react"
@@ -12,12 +12,14 @@ interface AddEventProps {
     onClose: () => void
 }
 
-const eventTypes = ['note', 'expression', 'handwrittenText', 'stamp', 'cover'] as const
+const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
 export const AddEventDialog = ({ selection, onDone, onClose, open, copy }: AddEventProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
+    const [rotation, setRotation] = useState<number>()
+    const [signed, setSigned] = useState<boolean>()
 
     // TODO: this should be part of the lib
     const determineScope = (selection: EventDimension) => {
@@ -45,17 +47,44 @@ export const AddEventDialog = ({ selection, onDone, onClose, open, copy }: AddEv
                         </Select>
                     </FormControl>
 
-                    {(eventType === 'handwrittenText' || eventType === 'stamp') && (
-                        <FormControl>
-                            <FormLabel>Text</FormLabel>
-                            <TextField
-                                size='small'
-                                variant='outlined'
-                                placeholder='Type text here ...'
-                                value={text}
-                                onChange={e => setText(e.target.value)}
-                            />
-                        </FormControl>)}
+                    {(eventType === 'handwrittenText' || eventType === 'stamp' || eventType === 'rollLabel') && (
+                        <>
+                            <FormControl>
+                                <FormLabel>Text</FormLabel>
+                                <TextField
+                                    multiline
+                                    rows={3}
+                                    size='small'
+                                    variant='outlined'
+                                    placeholder='Type text here ...'
+                                    value={text}
+                                    onChange={e => setText(e.target.value)}
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>Rotation</FormLabel>
+                                <TextField
+                                    size='small'
+                                    variant='outlined'
+                                    placeholder='Rotation (in degrees)'
+                                    value={rotation}
+                                    onChange={e => setRotation(+e.target.value)}
+                                />
+                            </FormControl>
+                        </>
+                    )}
+
+                    {(eventType === 'rollLabel') && (
+                        <>
+                            <FormControlLabel control={
+                                <Checkbox
+                                    onChange={(e) => setSigned(e.target.checked)}
+                                    checked={signed}
+                                />
+                            }
+                                label="has signature?" />
+                        </>
+                    )}
 
                     {(eventType === 'expression' && (
                         <div>
@@ -71,10 +100,20 @@ export const AddEventDialog = ({ selection, onDone, onClose, open, copy }: AddEv
                 <Button
                     onClick={() => {
                         let eventToAdd: AnyRollEvent | undefined = undefined
+                        if (eventType === 'rollLabel') {
+                            eventToAdd = {
+                                type: eventType,
+                                text: text || '[no text]',
+                                hasDimension: selection,
+                                signed: signed === undefined ? false : signed,
+                                id: v4()
+                            }
+                        }
                         if (eventType === 'stamp' || eventType === 'handwrittenText') {
                             eventToAdd = {
                                 type: eventType,
                                 text: text || '[no text]',
+                                rotation,
                                 hasDimension: selection,
                                 id: v4()
                             }

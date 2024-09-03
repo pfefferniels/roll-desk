@@ -1,5 +1,5 @@
 import { Emulation, RollCopy } from "linked-rolls"
-import type { AnyRollEvent, Cover, EventDimension, Expression, HandwrittenText, MeasurementInfo, Note, Stamp } from "linked-rolls/lib/types.d.ts"
+import type { AnyRollEvent, Cover, EventDimension, Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/types.d.ts"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
@@ -27,7 +27,8 @@ function pixelsToMM(pixels: number, dpi: number): number {
 async function tilesAsSVGImage(
     baseUrl: string,
     iiifInfo: IIIFInfo,
-    measurementInfo: MeasurementInfo,
+    holeSeparation: number,
+    margins: { treble: number, bass: number },
     stretchX: number,
     stretchY: number,
     opacity: number
@@ -52,10 +53,10 @@ async function tilesAsSVGImage(
             const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
 
             const newX = pixelsToMM(y * tileSize, dpi) * stretchX;
-            const xAsTrack = Math.round(((x * tileSize) - measurementInfo.margins.bass) / measurementInfo.holeSeparation)
+            const xAsTrack = Math.round(((x * tileSize) - margins.bass) / holeSeparation)
             const newY = (74 - xAsTrack) * stretchY + stretchY / 2
             const width = pixelsToMM(tileSize, dpi) * stretchX;
-            const height = tileSize / measurementInfo.holeSeparation * stretchY;
+            const height = tileSize / holeSeparation * stretchY;
 
             images.push((
                 <image
@@ -97,17 +98,26 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
         const renderIIIF = async () => {
             if (!svgRef.current) return
 
-            if (copy.measurements.length === 0) return
+            if (!copy.scan || !copy.measurement) return
 
             if (facsimileOpacity > 0) {
-                const baseUrl = copy.measurements[0].hasCreated.info.iiifLink
+                const baseUrl = copy.scan
                 const info = await fetchIIIFInfo(baseUrl)
-                setTiles(await tilesAsSVGImage(baseUrl, info, copy.measurements[0].hasCreated.info, zoom, trackHeight, facsimileOpacity))
+                setTiles(
+                    await tilesAsSVGImage(
+                        baseUrl,
+                        info,
+                        copy.measurement.holeSeparation.value,
+                        copy.measurement.margins,
+                        zoom,
+                        trackHeight,
+                        facsimileOpacity
+                    ))
             }
         }
 
         renderIIIF()
-    }, [svgRef, trackHeight, zoom, copy.measurements, facsimileOpacity])
+    }, [svgRef, trackHeight, zoom, copy, facsimileOpacity])
 
     useEffect(() => {
         // whenever the events change, update the emulation
@@ -140,7 +150,7 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
                                 color={color}
                             />)
                     }
-                    else if (event.type === 'handwrittenText' || event.type === 'stamp') {
+                    else if (event.type === 'handwrittenText' || event.type === 'stamp' || event.type === 'rollLabel') {
                         return (
                             <TextEvent
                                 key={event.id}
@@ -202,7 +212,7 @@ const PerforatedEvent = ({ event, onClick, onTop, color }: PerforatedEventProps)
 }
 
 interface TextEventProps {
-    event: HandwrittenText | Stamp
+    event: HandwrittenText | Stamp | RollLabel
     onClick: () => void
     onTop: boolean
 }
@@ -215,6 +225,9 @@ const TextEvent = ({ event, onClick, onTop }: TextEventProps) => {
 
     const x = translateX(horizontal.from)
     const y = translateY(100 - vertical.from)
+
+    const width = translateX((event.hasDimension.horizontal.to || 0) - event.hasDimension.horizontal.from)
+    const height = translateY((100 - (event.hasDimension.vertical.to || 0)) - (100 - event.hasDimension.vertical.from))
 
     return (
         <g className='textEvent' data-id={event.id} onClick={onClick}>
@@ -233,11 +246,12 @@ const TextEvent = ({ event, onClick, onTop }: TextEventProps) => {
                 stroke='black'
                 fillOpacity={onTop ? 0.9 : 0.2}
                 strokeOpacity={onTop ? 0.9 : 0.2}
-                x={translateX(event.hasDimension.horizontal.from)}
-                y={translateY(100 - event.hasDimension.vertical.from)}
-                transform={`rotate(90 ${x} ${y})`}
-                fontSize={12}>
-                {event.text}
+                transform={`translate(${x + width}, ${y + height / 2}) rotate(${event.type === 'rollLabel' ? 90 : event.rotation || 90})`}
+                fontSize={12}
+            >
+                {event.text.split('\n').map(line => (
+                    <tspan x={0} dy='1.2em' alignmentBaseline='middle' textAnchor='middle' key={`span_${line}`}>{line}</tspan>
+                ))}
             </text>
         </g>
     )

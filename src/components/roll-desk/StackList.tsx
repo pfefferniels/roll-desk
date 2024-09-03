@@ -2,8 +2,9 @@ import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText, ListItemSecondaryAction, Divider } from "@mui/material"
 import { Fragment } from "react"
 import { OperationsAsText } from "./OperationAsText"
-import { LayerInfo, stringToColour } from "./RollDesk"
+import { LayerInfo } from "./RollDesk"
 import { RollCopy } from "linked-rolls"
+import { stringToColor } from "../../helpers/stringToColor"
 
 interface StackListProps {
     stack: LayerInfo[]
@@ -18,7 +19,7 @@ export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLay
     return (
         <List dense>
             {stack.map((stackItem, i) => {
-                const copy = copies.find(copy => copy.physicalItem.id === stackItem.id)
+                const copy = copies.find(copy => copy.id === stackItem.id)
 
                 return (
                     <Fragment key={`listItem_${i}`}>
@@ -46,7 +47,7 @@ export const StackList = ({ stack, setStack, copies, activeLayerId, setActiveLay
                             <ListItemSecondaryAction>
                                 <IconButton
                                     edge="end"
-                                    sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColour(stackItem.id) }}
+                                    sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColor(stackItem.id) }}
                                     onClick={() => onChangeColor(stackItem)}
                                 >
                                     <ColorLens />

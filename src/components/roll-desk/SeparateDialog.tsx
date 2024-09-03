@@ -1,8 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { Unstable_NumberInput as NumberInput } from '@mui/base/Unstable_NumberInput';
-import { AnyRollEvent, Certainty, Conjecture } from "linked-rolls/lib/types"
+import { AnyRollEvent } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
+import { Certainty, Conjecture } from "linked-rolls/lib/EditorialActions";
 
 interface SeparateProps {
     open: boolean

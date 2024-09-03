@@ -3,7 +3,7 @@ import { Glow } from "./Glow"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { LayerInfo, UserSelection } from "./RollDesk"
 import { WorkingPaper } from "./WorkingPaper"
-import { Assumption, Edition } from "linked-rolls"
+import { AnyEditorialAction, Edition } from "linked-rolls"
 import { AnyRollEvent, CollatedEvent } from "linked-rolls/lib/types"
 import { Selection } from "./Selection"
 import { RollCopyViewer } from "./RollCopyViewer"
@@ -44,7 +44,7 @@ export const LayeredRolls = ({
         orderedLayers.push(activeLayer)
     }
 
-    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent | Assumption) => {
+    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent | AnyEditorialAction) => {
         onUpdateSelection([...selection, clickedEvent])
     }
 
@@ -69,7 +69,7 @@ export const LayeredRolls = ({
                                 )
                             }
 
-                            const copy = edition.copies.find(copy => copy.physicalItem.id === stackItem.id)
+                            const copy = edition.copies.find(copy => copy.id === stackItem.id)
                             if (!copy) return null
 
                             return (
@@ -91,7 +91,11 @@ export const LayeredRolls = ({
                         <Selection
                             pins={selection}
                             remove={eventToRemove => {
-                                onUpdateSelection(selection.filter(event => event.id !== eventToRemove.id))
+                                if (!('id' in eventToRemove)) {
+                                    return
+                                }
+
+                                onUpdateSelection(selection.filter(event => 'id' in event && event.id !== eventToRemove.id))
                             }} />
                     )}
                 </PinchZoomProvider>

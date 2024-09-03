@@ -4,7 +4,7 @@ import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
 import { RollCopyDialog } from "./RollCopyDialog"
 import type { CollatedEvent, AnyRollEvent, EventDimension } from "linked-rolls/lib/types.d.ts"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Clear, Delete, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Clear, ClearAll, Create, Delete, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -27,6 +27,8 @@ import { ImportButton } from "./ImportButton"
 import { Relation } from "linked-rolls/lib/EditorialActions"
 import { AddConjecture } from "./AddConjecture"
 import DownloadDialog from "./DownloadDialog"
+import { stringToColor } from "../../helpers/stringToColor"
+import CreateEdition from "./CreateEdition"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -42,22 +44,9 @@ export interface LayerInfo {
     facsimileOpacity: number
 }
 
-export const stringToColour = (str: string) => {
-    let hash = 0;
-    str.split('').forEach(char => {
-        hash = char.charCodeAt(0) + ((hash << 5) - hash)
-    })
-    let colour = '#'
-    for (let i = 0; i < 3; i++) {
-        const value = (hash >> (i * 8)) & 0xff
-        colour += value.toString(16).padStart(2, '0')
-    }
-    return colour
-}
-
 const workingPaperLayer: LayerInfo = {
     id: 'working-paper',
-    title: 'Working Paper',
+    title: 'Collation Result',
     visible: true,
     color: 'blue',
     facsimileOpacity: 0
@@ -95,6 +84,7 @@ export const Desk = () => {
     const [colorToChange, setColorToChange] = useState<LayerInfo>()
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
     const [addConjectureOpen, setAddConjectureOpen] = useState(false)
+    const [createEditionDialogOpen, setCreateEditionDialogOpen] = useState(true)
 
     const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
@@ -122,7 +112,7 @@ export const Desk = () => {
             return
         }
 
-        const copy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
+        const copy = edition.copies.find(copy => copy.id === activeLayerId)
         if (!copy) {
             console.log('No active copy selected')
             return
@@ -172,16 +162,14 @@ export const Desk = () => {
                 id: v4(),
                 type: 'stretch',
                 factor: stretch,
-                carriedOutBy: '#np',
-                copy: copy.id
+                carriedOutBy: '#np'
             },
             {
                 id: v4(),
                 type: 'shift',
                 vertical: 0,
                 horizontal: shift,
-                carriedOutBy: '#np',
-                copy: copy.id
+                carriedOutBy: '#np'
             }
         ])
 
@@ -198,13 +186,13 @@ export const Desk = () => {
     }, [])
 
     const removeEvent = useCallback(() => {
-        const currentCopy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
+        const currentCopy = edition.copies.find(copy => copy.id === activeLayerId)
         if (!currentCopy) return
 
         for (const selectedEvent of selection) {
             if (!isRollEvent(selectedEvent)) continue
 
-            const index = currentCopy.events.findIndex(e => e.id === selectedEvent.id)
+            const index = currentCopy.events.findIndex(e => e.id === (selectedEvent as AnyRollEvent).id)
             if (index !== -1) {
                 currentCopy.events.splice(index, 1)
                 selection.splice(selection.indexOf(selectedEvent))
@@ -218,23 +206,23 @@ export const Desk = () => {
     // keeping layers and edition up-to-date
     useEffect(() => {
         const newLayers = edition.copies.map(rollCopy => {
-            let title = `${rollCopy.physicalItem.id.slice(0, 8)}...`
-            if (rollCopy.physicalItem.catalogueNumber && rollCopy.physicalItem.rollDate) {
-                title = `${rollCopy.physicalItem.catalogueNumber} (${rollCopy.physicalItem.rollDate})`
+            let title = `${rollCopy.id.slice(0, 8)}...`
+            if (edition.roll.catalogueNumber && rollCopy.productionEvent.date) {
+                title = `${edition.roll.catalogueNumber} (${rollCopy.productionEvent.date})`
             }
 
             return {
-                id: rollCopy.physicalItem.id,
+                id: rollCopy.id,
                 title,
                 visible: true,
-                color: stringToColour(rollCopy.physicalItem.id),
+                color: stringToColor(rollCopy.id),
                 facsimileOpacity: 0
             }
         })
         setLayers([workingPaperLayer, ...newLayers])
     }, [edition])
 
-    const currentCopy = edition.copies.find(copy => copy.physicalItem.id === activeLayerId)
+    const currentCopy = edition.copies.find(copy => copy.id === activeLayerId)
 
     return (
         <>
@@ -411,7 +399,30 @@ export const Desk = () => {
                 </Grid>
                 <Grid item xs={3}>
                     <Stack direction='column' spacing={1}>
-                        <Paper sx={{ maxWidth: 360 }}>
+                        <Paper sx={{ maxWidth: 360 }} elevation={0}>
+                            <div style={{ float: 'left', padding: 8, width: '80%' }}>
+                                <b>{edition.title}</b><br />
+                                {edition.roll.catalogueNumber} ({edition.roll.recordingEvent.date})
+                            </div>
+                            <div style={{ float: 'right' }}>
+                                <IconButton onClick={() => setCreateEditionDialogOpen(true)}>
+                                    <Create />
+                                </IconButton>
+                            </div>
+                        </Paper>
+
+                        <Paper sx={{ maxWidth: 360 }} elevation={0}>
+                            <div style={{ float: 'left', padding: 8 }}>
+                                <b>{selection.length}</b> events selected
+                            </div>
+                            <div style={{ float: 'right' }}>
+                                <IconButton onClick={() => setSelection([])}>
+                                    <ClearAll />
+                                </IconButton>
+                            </div>
+                        </Paper>
+
+                        <Paper sx={{ maxWidth: 360 }} elevation={2}>
                             <StackList
                                 stack={layers}
                                 setStack={setLayers}
@@ -427,19 +438,9 @@ export const Desk = () => {
                             </Box>
                         </Paper>
 
-                        <Paper sx={{ maxWidth: 360 }}>
-                            <div style={{ float: 'left', padding: 8 }}>
-                                <b>{selection.length}</b> events selected
-                            </div>
-                            <div style={{ float: 'right' }}>
-                                <IconButton onClick={() => setSelection([])}>
-                                    <Delete />
-                                </IconButton>
-                            </div>
-                        </Paper>
 
                         {(currentCopy ?? edition).actions.length > 0 && (
-                            <Paper sx={{ maxWidth: 360, maxHeight: 380, overflow: 'scroll' }}>
+                            <Paper sx={{ maxWidth: 360, maxHeight: 290, overflow: 'scroll' }}>
                                 <ActionList
                                     actions={(currentCopy ?? edition).actions}
                                     removeAction={(action) => {
@@ -590,6 +591,15 @@ export const Desk = () => {
                 open={downloadDialogOpen}
                 edition={edition}
                 onClose={() => setDownloadDialogOpen(false)}
+            />
+
+            <CreateEdition
+                onDone={(edition) => {
+                    setEdition(edition)
+                }}
+                onClose={() => setCreateEditionDialogOpen(false)}
+                open={createEditionDialogOpen}
+                edition={edition}
             />
         </>
     )
