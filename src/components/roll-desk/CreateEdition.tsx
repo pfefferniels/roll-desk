@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { TextField, Button, MenuItem, IconButton, Dialog, DialogContent, DialogTitle, DialogActions, Divider, Stack } from '@mui/material';
-import { Save as SaveIcon, FolderOpen as FolderOpenIcon } from '@mui/icons-material';
+import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Divider, Stack } from '@mui/material';
+import { Save as SaveIcon } from '@mui/icons-material';
 import { Edition } from 'linked-rolls';
+import { ImportButton } from './ImportButton';
 
 interface CreateEditionProps {
   edition: Edition
@@ -113,9 +114,12 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
         >
           Create
         </Button>
-        <IconButton color="secondary" onClick={() => { }} sx={{ ml: 2 }}>
-          <FolderOpenIcon />
-        </IconButton>
+        <ImportButton
+          onImport={(newEdition) => {
+            onDone(newEdition)
+            onClose()
+          }}
+        />
       </DialogActions>
     </Dialog>
   );
