@@ -31,7 +31,9 @@ async function tilesAsSVGImage(
     margins: { treble: number, bass: number },
     stretchX: number,
     stretchY: number,
-    opacity: number
+    opacity: number,
+    shiftOp: number,
+    stretchOp: number
 ) {
     const dpi = 300.25
 
@@ -52,10 +54,10 @@ async function tilesAsSVGImage(
             const size = `${iiifInfo.width / scale},`;
             const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
 
-            const newX = pixelsToMM(y * tileSize, dpi) * stretchX;
+            const newX = (pixelsToMM(y * tileSize, dpi) + shiftOp) * stretchX * stretchOp;
             const xAsTrack = Math.round(((x * tileSize) - margins.bass) / holeSeparation)
             const newY = (74 - xAsTrack) * stretchY + stretchY / 2
-            const width = pixelsToMM(tileSize, dpi) * stretchX;
+            const width = pixelsToMM(tileSize, dpi) * stretchX * stretchOp;
             const height = tileSize / holeSeparation * stretchY;
 
             images.push((
@@ -111,7 +113,9 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
                         copy.measurement.margins,
                         zoom,
                         trackHeight,
-                        facsimileOpacity
+                        facsimileOpacity,
+                        copy.shift?.horizontal || 0,
+                        copy.stretch?.factor || 1
                     ))
             }
         }
