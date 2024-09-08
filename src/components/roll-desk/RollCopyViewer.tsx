@@ -2,7 +2,7 @@ import { Emulation, RollCopy } from "linked-rolls"
 import type { AnyRollEvent, Cover, EventDimension, Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/types.d.ts"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Dynamics } from "./Dynamics.tsx"
 import { RollGrid } from "./RollGrid.tsx"
 import { Cursor, FixedCursor } from "./Cursor.tsx"
@@ -89,7 +89,7 @@ interface RollCopyViewerProps {
     facsimileOpacity: number
 }
 
-export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimileOpacity }: RollCopyViewerProps) => {
+export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimileOpacity }: RollCopyViewerProps) => {
     const { zoom, trackHeight } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
@@ -176,7 +176,7 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
             <FixedCursor fixedAt={fixedX} />
         </>
     )
-}
+})
 
 interface PerforatedEventProps {
     event: Note | Expression | Cover

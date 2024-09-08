@@ -1,5 +1,5 @@
 import type {  CollatedEvent, Expression } from "linked-rolls/lib/types"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAction } from "linked-rolls"
@@ -115,7 +115,7 @@ interface WorkingPaperProps {
     onClick: (event: CollatedEvent | AnyEditorialAction) => void
 }
 
-export const WorkingPaper = ({ numberOfRolls, edition, onClick }: WorkingPaperProps) => {
+export const WorkingPaper = memo(({ numberOfRolls, edition, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
     const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
@@ -196,4 +196,4 @@ export const WorkingPaper = ({ numberOfRolls, edition, onClick }: WorkingPaperPr
             })}
         </g>
     )
-}
+})

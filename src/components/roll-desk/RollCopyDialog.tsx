@@ -1,12 +1,13 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Grid, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RollCopy } from "linked-rolls";
 import { v4 as uuidv4 } from 'uuid';
 import { ConditionAssessment, ConditionState } from "linked-rolls/lib/types";
 
 interface RollCopyDialogProps {
     open: boolean
+    copy?: RollCopy
     onClose: () => void
     onDone: (rollCopy: RollCopy) => void
 }
@@ -16,13 +17,24 @@ interface RollCopyDialogProps {
  * expressions and creates an expression if none
  * exists yet.
  */
-export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) => {
+export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [company, setCompany] = useState('');
     const [system, setSystem] = useState('');
     const [paper, setPaper] = useState('');
     const [date, setDate] = useState('');
     const [conditions, setConditions] = useState<ConditionState[]>([]);
+    const [location, setLocation] = useState('') // P55 has current location
+
+    useEffect(() => {
+        if (!copy) return
+
+        setCompany(copy.productionEvent.company)
+        setSystem(copy.productionEvent.system)
+        setPaper(copy.productionEvent.paper)
+        setConditions(copy.conditions)
+        setLocation(copy.location)
+    }, [copy])
 
     const handleUpload = async () => {
         if (!file) {
@@ -30,7 +42,7 @@ export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) =
             return;
         }
 
-        const rollCopy = new RollCopy();
+        const rollCopy = copy || new RollCopy()
 
         rollCopy.productionEvent = {
             company,
@@ -39,9 +51,10 @@ export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) =
             date
         };
 
-        rollCopy.conditions = conditions;
+        rollCopy.location = location
+        rollCopy.conditions = conditions
 
-        rollCopy.readFromStanfordAton(await file?.text(), true);
+        if (file) rollCopy.readFromStanfordAton(await file.text(), true);
         onDone(rollCopy);
     };
 
@@ -121,6 +134,14 @@ export const RollCopyDialog = ({ open, onClose, onDone }: RollCopyDialogProps) =
                                 placeholder="as indicated on the end of the roll"
                                 onChange={e => setDate(e.target.value)}
                                 fullWidth
+                            />
+                            <Typography>Physical Location</Typography>
+                            <TextField
+                                size='small'
+                                value={location}
+                                onChange={e => setLocation(e.target.value)}
+                                placeholder='e. g. Stanford University Archive'
+                                label='Physical location'
                             />
                             <Divider flexItem />
                             <Button variant="outlined" component="label" startIcon={<MusicNote />}>

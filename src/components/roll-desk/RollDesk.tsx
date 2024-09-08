@@ -74,7 +74,6 @@ export const Desk = () => {
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
-    const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
     const [assignHandDialogOpen, setAssignHandDialogOpen] = useState(false)
@@ -205,10 +204,11 @@ export const Desk = () => {
 
     // keeping layers and edition up-to-date
     useEffect(() => {
+        console.log('edition chaged')
         const newLayers = edition.copies.map(rollCopy => {
             let title = `${rollCopy.id.slice(0, 8)}...`
-            if (edition.roll.catalogueNumber && rollCopy.productionEvent.date) {
-                title = `${edition.roll.catalogueNumber} (${rollCopy.productionEvent.date})`
+            if (rollCopy.productionEvent.date) {
+                title = `${rollCopy.productionEvent.date}`
             }
 
             return {
@@ -422,21 +422,17 @@ export const Desk = () => {
                             </div>
                         </Paper>
 
-                        <Paper sx={{ maxWidth: 360 }} elevation={2}>
-                            <StackList
-                                stack={layers}
-                                setStack={setLayers}
-                                copies={edition.copies}
-                                activeLayerId={activeLayerId}
-                                setActiveLayerId={setActiveLayerId}
-                                onChangeColor={(item) => setColorToChange(item)}
-                            />
-                            <Box>
-                                <IconButton onClick={() => setRollCopyDialogOpen(true)}>
-                                    <Add />
-                                </IconButton>
-                            </Box>
-                        </Paper>
+                        <StackList
+                            stack={layers}
+                            setStack={setLayers}
+                            edition={edition}
+                            activeLayerId={activeLayerId}
+                            setActiveLayerId={setActiveLayerId}
+                            onChangeColor={(item) => setColorToChange(item)}
+                            onChangeEdition={newEdition => {
+                                setEdition(newEdition)
+                            }}
+                        />
 
 
                         {(currentCopy ?? edition).actions.length > 0 && (
@@ -466,14 +462,6 @@ export const Desk = () => {
                     </div>
                 </Grid>
             </Grid>
-
-            <RollCopyDialog
-                open={rollCopyDialogOpen}
-                onClose={() => setRollCopyDialogOpen(false)}
-                onDone={rollCopy => {
-                    edition.copies.push(rollCopy)
-                    setEdition(edition.shallowClone())
-                }} />
 
             {
                 selection.length === 1 && isRollEvent(selection[0]) && (
