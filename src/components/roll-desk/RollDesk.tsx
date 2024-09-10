@@ -1,10 +1,9 @@
-import { Box, Button, Divider, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
-import { useCallback, useEffect, useState } from "react"
+import { Button, Divider, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
-import { RollCopyDialog } from "./RollCopyDialog"
-import type { CollatedEvent, AnyRollEvent, EventDimension } from "linked-rolls/lib/types.d.ts"
+import { type CollatedEvent, type AnyRollEvent, type EventDimension, type SoftwareExecution } from "linked-rolls/lib/types"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Clear, ClearAll, Create, Delete, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -89,6 +88,11 @@ export const Desk = () => {
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [primarySource, setPrimarySource] = useState('')
+
+    const execution = useRef<SoftwareExecution>({
+        software: 'https://github.com/pfefferniels/roll-desk',
+        date: new Date(Date.now()).toISOString()
+    })
 
     const downloadMIDI = useCallback(async () => {
         if (edition.copies.length === 0) return
@@ -191,11 +195,8 @@ export const Desk = () => {
         for (const selectedEvent of selection) {
             if (!isRollEvent(selectedEvent)) continue
 
-            const index = currentCopy.events.findIndex(e => e.id === (selectedEvent as AnyRollEvent).id)
-            if (index !== -1) {
-                currentCopy.events.splice(index, 1)
-                selection.splice(selection.indexOf(selectedEvent))
-            }
+            currentCopy.removeEvent((selectedEvent as AnyRollEvent).id)
+            selection.splice(selection.indexOf(selectedEvent))
         }
 
         setSelection([...selection])
@@ -520,6 +521,7 @@ export const Desk = () => {
                     }}
                     onClose={() => setAddEventDialogOpen(false)}
                     copy={currentCopy}
+                    execution={execution.current}
                 />)
             }
 

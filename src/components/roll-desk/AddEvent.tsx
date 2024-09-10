@@ -1,6 +1,6 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { keyToType, RollCopy } from "linked-rolls"
-import { AnyRollEvent, EventDimension, ExpressionType } from "linked-rolls/lib/types"
+import { AnyRollEvent, EventDimension, ExpressionType, SoftwareExecution } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
@@ -8,6 +8,7 @@ interface AddEventProps {
     open: boolean
     selection: EventDimension
     copy: RollCopy
+    execution: SoftwareExecution
     onDone: (modifiedCopy: RollCopy) => void
     onClose: () => void
 }
@@ -15,7 +16,7 @@ interface AddEventProps {
 const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddEventDialog = ({ selection, onDone, onClose, open, copy }: AddEventProps) => {
+export const AddEventDialog = ({ selection, onDone, onClose, open, copy, execution }: AddEventProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -141,7 +142,7 @@ export const AddEventDialog = ({ selection, onDone, onClose, open, copy }: AddEv
                         }
 
                         if (eventToAdd) {
-                            copy.insertEvent(eventToAdd)
+                            copy.insertEvent(eventToAdd, execution)
                             onDone(copy.shallowClone())
                         }
                     }}
