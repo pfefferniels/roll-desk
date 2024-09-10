@@ -91,7 +91,6 @@ export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLa
                 copy={rollCopyDialogOpen}
                 onClose={() => setRollCopyDialogOpen(undefined)}
                 onDone={rollCopy => {
-                    console.log('on done: ', rollCopy)
                     const index = edition.copies.findIndex(copy => copy.id === rollCopy.id)
                     if (index === -1) {
                         edition.copies.push(rollCopy)
@@ -100,6 +99,13 @@ export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLa
                         edition.copies.splice(index, 1, rollCopy)
                     }
                     console.log(edition.copies)
+                    onChangeEdition(edition.shallowClone())
+                }}
+                onRemove={rollCopy => {
+                    const index = edition.copies.findIndex(copy => copy.id === rollCopy.id)
+                    if (index !== -1) {
+                        edition.copies.splice(index, 1)
+                    }
                     onChangeEdition(edition.shallowClone())
                 }}
             />

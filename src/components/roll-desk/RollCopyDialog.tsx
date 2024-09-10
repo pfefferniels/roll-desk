@@ -10,6 +10,7 @@ interface RollCopyDialogProps {
     copy?: RollCopy
     onClose: () => void
     onDone: (rollCopy: RollCopy) => void
+    onRemove: (rollCopy: RollCopy) => void
 }
 
 /**
@@ -17,7 +18,7 @@ interface RollCopyDialogProps {
  * expressions and creates an expression if none
  * exists yet.
  */
-export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogProps) => {
+export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCopyDialogProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [company, setCompany] = useState('');
     const [system, setSystem] = useState('');
@@ -219,6 +220,14 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 >
                     Save
                 </Button>
+                <IconButton color='secondary' onClick={() => {
+                    if (copy) {
+                        onRemove(copy)
+                        onClose()
+                    }
+                }}>
+                    <Delete />
+                </IconButton>
             </DialogActions>
         </Dialog>
     );
