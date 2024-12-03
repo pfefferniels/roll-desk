@@ -7,5 +7,5 @@ function hashCode(str: string) {
 }
 
 export const stringToColor = (str: string) => {
-    return `hsl(${hashCode(str) % 360}, 100%, 80%)`;
+    return `hsl(${hashCode(str) % 360}, 100%, 50%)`;
 }
