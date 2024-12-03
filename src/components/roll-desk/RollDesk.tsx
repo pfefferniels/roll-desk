@@ -1,9 +1,9 @@
 import { Button, Divider, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
-import { type CollatedEvent, type AnyRollEvent, type EventDimension, type SoftwareExecution } from "linked-rolls/lib/types"
+import { AnyEditorialAction, Edition, Emulation, keyToType } from 'linked-rolls'
+import { type CollatedEvent, type AnyRollEvent, type EventDimension, type SoftwareExecution, ExpressionType } from "linked-rolls/lib/types"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -28,6 +28,7 @@ import { AddConjecture } from "./AddConjecture"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import CreateEdition from "./CreateEdition"
+import { typeToKey } from "linked-rolls/lib/keyToType"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -283,6 +284,30 @@ export const Desk = () => {
                             >
                                 <Remove />
                             </IconButton>
+                            <IconButton
+                                size='small'
+                                onClick={() => {
+                                    if (!currentCopy) return
+
+                                    const ids = selection.filter(isRollEvent).map(event => event.id)
+                                    currentCopy.shiftEventsVertically(ids, 1)
+                                    setEdition(edition.shallowClone())
+                                }}
+                            >
+                                <ArrowUpward />
+                            </IconButton>
+                            <IconButton
+                                size='small'
+                                onClick={() => {
+                                    if (!currentCopy) return
+
+                                    const ids = selection.filter(isRollEvent).map(event => event.id)
+                                    currentCopy.shiftEventsVertically(ids, -1)
+                                    setEdition(edition.shallowClone())
+                                }}
+                            >
+                                <ArrowDownward />
+                            </IconButton>
                         </Ribbon>
                         <Ribbon title='Conjectures'>
                             <IconButton
@@ -317,13 +342,13 @@ export const Desk = () => {
                                 onClick={() => setAddHandDialogOpen(true)}
                                 startIcon={<Add />}
                             >
-                                Add Hand
+                                Add
                             </Button>
                             <Button
                                 size='small'
                                 disabled={selection.findIndex(selection => isRollEvent(selection)) === -1}
                                 onClick={() => setAssignHandDialogOpen(true)}>
-                                Assign Hand
+                                Assign
                             </Button>
                         </Ribbon>
                         <Ribbon title='Editorial Actions'>
@@ -342,7 +367,7 @@ export const Desk = () => {
                                 startIcon={<GroupWork />}
                                 disabled={activeLayerId !== 'working-paper'}
                             >
-                                Group Readings
+                                Group Variants
                             </Button>
                             <Button
                                 size='small'
