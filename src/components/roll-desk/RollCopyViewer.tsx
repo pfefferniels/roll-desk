@@ -173,10 +173,32 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
             <Cursor
                 onFix={(x) => setFixedX(x)}
                 svgRef={svgRef} />
+            
             <FixedCursor fixedAt={fixedX} />
+
+            <KeyboardDivision />
         </>
     )
 })
+
+const KeyboardDivision = () => {
+    const { translateY } = usePinchZoom()
+
+    const division = 54
+    const y = translateY(100 - division + 1)
+
+    return (
+        <line
+            x1={0}
+            y1={y}
+            x2={100000}
+            y2={y}
+            stroke='black'
+            strokeWidth={1}
+            strokeDasharray={"5 5"}
+        />
+    )
+}
 
 interface PerforatedEventProps {
     event: Note | Expression | Cover
@@ -204,6 +226,7 @@ const PerforatedEvent = ({ event, onClick, onTop, color }: PerforatedEventProps)
 
                 onClick()
             }}
+            data-tracker-hole={event.hasDimension.vertical.from}
             data-id={event.id}
             id={event.id}
             x={translateX(event.hasDimension.horizontal.from)}
