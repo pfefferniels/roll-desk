@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
 import { type CollatedEvent, type AnyRollEvent, type EventDimension, type SoftwareExecution } from "linked-rolls/lib/types"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Label, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -26,6 +26,7 @@ import { AddConjecture } from "./AddConjecture"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import CreateEdition from "./CreateEdition"
+import { EditLabelDialog } from "./EditLabelDialog"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -71,6 +72,7 @@ export const Desk = () => {
     const [layers, setLayers] = useState<LayerInfo[]>([workingPaperLayer])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
+    const [editLabelDialogOpen, setEditLabelDialogOpen] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
@@ -350,54 +352,70 @@ export const Desk = () => {
                             </Button>
                         </Ribbon>
                         <Ribbon title='Editing Process'>
-                            <Button
-                                size='small'
-                                onClick={() => {
-                                    selection
-                                        .filter(s => 'type' in s && s.type === 'editGroup')
-                                        .forEach((group, i, arr) => {
-                                            if (i === 0) return
-                                            arr[0].contains.push(...group.contains)
+                            <Stack direction='column'>
+                                <Button
+                                    size='small'
+                                    sx={{ justifyContent: 'flex-start' }}
+                                    onClick={() => {
+                                        selection
+                                            .filter(s => 'type' in s && s.type === 'editGroup')
+                                            .forEach((group, i, arr) => {
+                                                if (i === 0) return
+                                                arr[0].contains.push(...group.contains)
 
-                                            const index = edition.editGroups.findIndex(g => g.id === group.id)
-                                            if (index === -1) return
-                                            edition.editGroups.splice(index, 1)
-                                        })
+                                                const index = edition.editGroups.findIndex(g => g.id === group.id)
+                                                if (index === -1) return
+                                                edition.editGroups.splice(index, 1)
+                                            })
 
-                                    setEdition(edition.shallowClone())
-                                    setSelection([])
-                                }}
-                                startIcon={<GroupWork />}
-                                disabled={activeLayerId !== 'working-paper'}
-                            >
-                                Group
-                            </Button>
-                            <Button
-                                size='small'
-                                onClick={() => {
-                                    selection
-                                        .filter(s => 'type' in s && s.type === 'editGroup')
-                                        .forEach((group, i, arr) => {
-                                            if (i === 0) return
-                                            group.follows = arr[i-1]
-                                        })
+                                        setEdition(edition.shallowClone())
+                                        setSelection([])
+                                    }}
+                                    startIcon={<GroupWork />}
+                                    disabled={activeLayerId !== 'working-paper'}
+                                >
+                                    Group
+                                </Button>
+                                <Button
+                                    size='small'
+                                    sx={{ justifyContent: 'flex-start' }}
+                                    onClick={() => setEditLabelDialogOpen(true)}
+                                    startIcon={<Label />}
+                                    disabled={activeLayerId !== 'working-paper'}
+                                >
+                                    Label
+                                </Button>
+                            </Stack>
+                            <Stack direction='column' sx={{ textAlign: 'left'}}>
+                                <Button
+                                    size='small'
+                                    sx={{ justifyContent: 'flex-start' }}
+                                    onClick={() => {
+                                        selection
+                                            .filter(s => 'type' in s && s.type === 'editGroup')
+                                            .forEach((group, i, arr) => {
+                                                if (i === 0) return
+                                                group.follows = arr[i - 1]
+                                            })
 
-                                    setEdition(edition.shallowClone())
-                                    setSelection([])
-                                }}
-                                startIcon={<Link />}
-                                disabled={activeLayerId !== 'working-paper'}
-                            >
-                                Chain
-                            </Button>
-                            <Button
-                                size='small'
-                                onClick={() => setAddNoteDialogOpen(true)}
-                                startIcon={<EditNote />}
-                                disabled={activeLayerId !== 'working-paper'}
-                            >
-                                Comment
-                            </Button>
+                                        setEdition(edition.shallowClone())
+                                        setSelection([])
+                                    }}
+                                    startIcon={<Link />}
+                                    disabled={activeLayerId !== 'working-paper'}
+                                >
+                                    Chain
+                                </Button>
+                                <Button
+                                    size='small'
+                                    sx={{ justifyContent: 'flex-start' }}
+                                    onClick={() => setAddNoteDialogOpen(true)}
+                                    startIcon={<EditNote />}
+                                    disabled={activeLayerId !== 'working-paper'}
+                                >
+                                    Comment
+                                </Button>
+                            </Stack>
                         </Ribbon>
                         <Ribbon title='Emulation'>
                             <IconButton
@@ -644,6 +662,15 @@ export const Desk = () => {
                 open={createEditionDialogOpen}
                 edition={edition}
             />
+
+            {selection.find(s => 'type' in s && s.type === 'editGroup') && (
+                <EditLabelDialog
+                    open={editLabelDialogOpen}
+                    onClose={() => setEditLabelDialogOpen(false)}
+                    selection={selection.filter(s => 'type' in s && s.type === 'editGroup')}
+                    clearSelection={() => setSelection([])}
+                />
+            )}
         </>
     )
 }

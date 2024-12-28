@@ -69,7 +69,7 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                 {
                     padStart: 1,
                     padEnd: arrowHeadSize,
-                    controlPointStretch: 10
+                    controlPointStretch: 20
                 }
             )
             arrowPath = `M${sx},${sy} C${c1x},${c1y} ${c2x},${c2y} ${ex},${ey}`;
