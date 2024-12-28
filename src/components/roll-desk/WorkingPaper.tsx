@@ -4,7 +4,7 @@ import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAction } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { AssumptionUnderlay } from "./ReadingUnderlay"
+import { AssumptionUnderlay } from "./AssumptionUnderlay"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
