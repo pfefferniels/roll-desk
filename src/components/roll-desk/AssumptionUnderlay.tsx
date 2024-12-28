@@ -104,6 +104,17 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                         {arrowHead}
                     </>
                 )}
+
+                {(assumption.action && points.length > 0) && (
+                    <text
+                        x={points[0][0]}
+                        y={points[0][1]}
+                        fontSize={10}
+                        fill='black'
+                    >
+                        {assumption.action}
+                    </text>
+                )}
             </g>
         );
     }
