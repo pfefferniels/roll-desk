@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
-import { Edition, importXML, importJsonLd } from "linked-rolls";
+import { Edition, importJsonLd } from "linked-rolls";
 
 interface ImportButtonProps {
     onImport: (newEdition: Edition) => void;
@@ -20,16 +20,12 @@ export const ImportButton = ({ onImport }: ImportButtonProps) => {
 
             try {
                 let newEdition: Edition;
-                
-                if (fileExtension === 'xml') {
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(fileContent, "application/xml");
-                    newEdition = importXML(xmlDoc);
-                } else if (fileExtension === 'json') {
+
+                if (fileExtension === 'json') {
                     const jsonDoc = JSON.parse(fileContent);
                     newEdition = importJsonLd(jsonDoc);
                 } else {
-                    console.log("Unsupported file format. Please select an XML or JSON file.");
+                    console.log("Unsupported file format. Please select a JSON file.");
                     return;
                 }
 
