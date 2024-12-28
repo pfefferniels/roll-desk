@@ -15,6 +15,7 @@
     "@types/react": "^17.0.38",
     "@types/react-dom": "^18.2.1",
     "@types/slate": "^0.47.11",
+    "curved-arrows": "^0.3.0",
     "d3": "^7.8.4",
     "lexical": "^0.12.2",
     "linked-rolls": "file:../linked-rolls",

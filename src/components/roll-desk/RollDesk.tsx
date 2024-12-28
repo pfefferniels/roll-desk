@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
 import { type CollatedEvent, type AnyRollEvent, type EventDimension, type SoftwareExecution } from "linked-rolls/lib/types"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -349,7 +349,7 @@ export const Desk = () => {
                                 Assign
                             </Button>
                         </Ribbon>
-                        <Ribbon title='Editorial Actions'>
+                        <Ribbon title='Editing Process'>
                             <Button
                                 size='small'
                                 onClick={() => {
@@ -370,7 +370,25 @@ export const Desk = () => {
                                 startIcon={<GroupWork />}
                                 disabled={activeLayerId !== 'working-paper'}
                             >
-                                Group Edits
+                                Group
+                            </Button>
+                            <Button
+                                size='small'
+                                onClick={() => {
+                                    selection
+                                        .filter(s => 'type' in s && s.type === 'editGroup')
+                                        .forEach((group, i, arr) => {
+                                            if (i === 0) return
+                                            group.follows = arr[i-1]
+                                        })
+
+                                    setEdition(edition.shallowClone())
+                                    setSelection([])
+                                }}
+                                startIcon={<Link />}
+                                disabled={activeLayerId !== 'working-paper'}
+                            >
+                                Chain
                             </Button>
                             <Button
                                 size='small'
@@ -378,7 +396,7 @@ export const Desk = () => {
                                 startIcon={<EditNote />}
                                 disabled={activeLayerId !== 'working-paper'}
                             >
-                                Add Note
+                                Comment
                             </Button>
                         </Ribbon>
                         <Ribbon title='Emulation'>
