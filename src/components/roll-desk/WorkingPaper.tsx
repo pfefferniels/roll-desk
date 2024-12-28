@@ -5,6 +5,7 @@ import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAction } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
+import { sourcesOf } from "linked-rolls/lib/Collator"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -13,7 +14,7 @@ interface CollatedEventViewerProps {
     onClick: () => void
 }
 
-const CollatedEventViewer = ({ event, highlight, subjectOfAssumption, onClick }: CollatedEventViewerProps) => {
+const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
     const [displayDetails, setDisplayDetails] = useState(false)
     const { translateX, translateY, trackHeight } = usePinchZoom()
 
@@ -157,6 +158,14 @@ export const WorkingPaper = memo(({ numberOfRolls, edition, onClick }: WorkingPa
                     assumption={assumption}
                     svgRef={svgRef}
                     onClick={onClick}
+                    retrieveSigla={collatedEvents => {
+                        return Array
+                            .from(sourcesOf(edition.copies, collatedEvents))
+                            .map(id => {
+                                const copy = edition.copies.find(copy => copy.id === id)
+                                return copy ? copy.siglum : id
+                            })
+                    }}
                 />
             ))
         }

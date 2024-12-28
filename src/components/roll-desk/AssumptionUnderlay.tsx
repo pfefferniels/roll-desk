@@ -3,6 +3,7 @@ import { roundedHull } from "../../helpers/roundedHull";
 import { AnyEditorialAction } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
 import { EditGroup } from "linked-rolls/lib/EditorialActions";
+import { CollatedEvent } from "linked-rolls/lib/types";
 
 const getHull = (assumption: EditGroup, svg: SVGGElement) => {
     const points = assumption.contains
@@ -42,20 +43,21 @@ interface AssumptionUnderlayProps {
     assumption: AnyEditorialAction;
     svgRef: RefObject<SVGGElement>;
     onClick: (r: AnyEditorialAction) => void;
+    retrieveSigla: (events: CollatedEvent[]) => string[]
 }
 
-export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps) => {
+export const AssumptionUnderlay = ({ assumption, svgRef, onClick, retrieveSigla }: AssumptionUnderlayProps) => {
     if (!svgRef.current) return null;
 
     if (assumption.type === 'editGroup') {
         const { points, hull } = getHull(assumption, svgRef.current);
+        const bbox2 = getBoundingBox(points);
 
         let arrowPath, arrowHead
         if (assumption.follows) {
             const arrowHeadSize = 3;
 
             const bbox1 = getBoundingBox(getHull(assumption.follows, svgRef.current).points);
-            const bbox2 = getBoundingBox(points);
 
             const [sx, sy, c1x, c1y, c2x, c2y, ex, ey, ae] = getBoxToBoxArrow(
                 bbox1.x,
@@ -84,6 +86,8 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
             )
         }
 
+        const sigla = retrieveSigla(assumption.contains);
+
         return (
             <g onClick={() => onClick(assumption)}>
                 <path
@@ -93,6 +97,17 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                     fillOpacity={0.1}
                     strokeWidth={1}
                     d={hull} />
+
+                {points.length > 0 && (
+                    <text
+                        x={bbox2.x}
+                        y={bbox2.y + bbox2.height + 10}
+                        fontSize={8}
+                        fill='black'
+                    >
+                        {sigla.join(', ')}
+                    </text>
+                )}
 
                 {arrowPath && (
                     <>
@@ -107,8 +122,8 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
 
                 {(assumption.action && points.length > 0) && (
                     <text
-                        x={points[0][0]}
-                        y={points[0][1]}
+                        x={bbox2.x}
+                        y={bbox2.y}
                         fontSize={10}
                         fill='black'
                     >

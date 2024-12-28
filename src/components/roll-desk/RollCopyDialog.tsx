@@ -20,6 +20,7 @@ interface RollCopyDialogProps {
  */
 export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCopyDialogProps) => {
     const [file, setFile] = useState<File | null>(null);
+    const [siglum, setSiglum] = useState('');
     const [company, setCompany] = useState('');
     const [system, setSystem] = useState('');
     const [paper, setPaper] = useState('');
@@ -30,6 +31,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
     useEffect(() => {
         if (!copy) return
 
+        setSiglum(copy.siglum)
         setCompany(copy.productionEvent.company)
         setSystem(copy.productionEvent.system)
         setPaper(copy.productionEvent.paper)
@@ -52,6 +54,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
             date
         };
 
+        rollCopy.siglum = siglum
         rollCopy.location = location
         rollCopy.conditions = conditions
 
@@ -105,6 +108,14 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
             <DialogContent>
                 <Grid container spacing={2} p={1} sx={{ minWidth: 700 }}>
                     <Grid item xs={4}>
+                        <Typography>Siglum</Typography>
+                        <TextField
+                            size='small'
+                            value={siglum}
+                            onChange={e => setSiglum(e.target.value)}
+                            placeholder='e. g. A3'
+                            label='Siglum'
+                        />
                         <Typography>Roll Production</Typography>
                         <Stack direction="column" spacing={2}>
                             <TextField

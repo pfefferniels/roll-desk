@@ -30,7 +30,7 @@ export const ColorDialog: React.FC<LayerColorOpacityDialogProps> = ({ open, onCl
             ...layerInfo,
             color,
             facsimileOpacity,
-            image: uploadedImage
+            image: uploadedImage || undefined
         });
         onClose();
     };

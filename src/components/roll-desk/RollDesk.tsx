@@ -208,14 +208,9 @@ export const Desk = () => {
     useEffect(() => {
         console.log('edition chaged')
         const newLayers = edition.copies.map(rollCopy => {
-            let title = `${rollCopy.id.slice(0, 8)}...`
-            if (rollCopy.productionEvent.date) {
-                title = `${rollCopy.productionEvent.date}`
-            }
-
             return {
                 id: rollCopy.id,
-                title,
+                title: rollCopy.siglum,
                 visible: true,
                 color: stringToColor(rollCopy.id),
                 facsimileOpacity: 0
