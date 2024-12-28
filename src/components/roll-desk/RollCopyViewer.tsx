@@ -86,10 +86,11 @@ interface RollCopyViewerProps {
     onSelectionDone: (dimension: EventDimension) => void
     fixedX: number
     setFixedX: (fixedX: number) => void
+    facsimile?: File
     facsimileOpacity: number
 }
 
-export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimileOpacity }: RollCopyViewerProps) => {
+export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimile, facsimileOpacity }: RollCopyViewerProps) => {
     const { zoom, trackHeight } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
@@ -103,25 +104,37 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
             if (!copy.scan || !copy.measurement) return
 
             if (facsimileOpacity > 0) {
-                const baseUrl = copy.scan
-                const info = await fetchIIIFInfo(baseUrl)
-                setTiles(
-                    await tilesAsSVGImage(
-                        baseUrl,
-                        info,
-                        copy.measurement.holeSeparation.value,
-                        copy.measurement.margins,
-                        zoom,
-                        trackHeight,
-                        facsimileOpacity,
-                        copy.shift?.horizontal || 0,
-                        copy.stretch?.factor || 1
-                    ))
+                if (!facsimile) {
+                    const baseUrl = copy.scan
+                    const info = await fetchIIIFInfo(baseUrl)
+                    setTiles(
+                        await tilesAsSVGImage(
+                            baseUrl,
+                            info,
+                            copy.measurement.holeSeparation.value,
+                            copy.measurement.margins,
+                            zoom,
+                            trackHeight,
+                            facsimileOpacity,
+                            copy.shift?.horizontal || 0,
+                            copy.stretch?.factor || 1
+                        ))
+                }
+                else {
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                        const url = reader.result as string
+                        console.log('url=', url)
+                        setTiles([<image className='facsimile' key='facsimile' xlinkHref={url} x={0} y={0} width={1000} height={500} />])
+                    }
+                    console.log('reading facsimile', facsimile)
+                    reader.readAsDataURL(facsimile)
+                }
             }
         }
 
         renderIIIF()
-    }, [svgRef, trackHeight, zoom, copy, facsimileOpacity])
+    }, [svgRef, trackHeight, zoom, copy, facsimileOpacity, facsimile])
 
     useEffect(() => {
         // whenever the events change, update the emulation
@@ -173,7 +186,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
             <Cursor
                 onFix={(x) => setFixedX(x)}
                 svgRef={svgRef} />
-            
+
             <FixedCursor fixedAt={fixedX} />
 
             <KeyboardDivision />

@@ -78,6 +78,7 @@ export const LayeredRolls = ({
                                     copy={copy}
                                     onTop={i === orderedLayers.length - 1}
                                     color={stackItem.color}
+                                    facsimile={stackItem.image}
                                     facsimileOpacity={stackItem.facsimileOpacity}
                                     onClick={handleUpdateSelection}
                                     onSelectionDone={dimension => { onUpdateSelection([dimension]) }}

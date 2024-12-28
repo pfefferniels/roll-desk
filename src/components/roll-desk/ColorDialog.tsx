@@ -22,15 +22,23 @@ interface LayerColorOpacityDialogProps {
 
 export const ColorDialog: React.FC<LayerColorOpacityDialogProps> = ({ open, onClose, layerInfo, onSave }) => {
     const [color, setColor] = useState(layerInfo.color);
-    const [facsimileOpacity, setFacsimileOpacity] = useState(0)
+    const [facsimileOpacity, setFacsimileOpacity] = useState(0);
+    const [uploadedImage, setUploadedImage] = useState<File | null>(null);
 
     const handleSave = () => {
         onSave({
             ...layerInfo,
             color,
-            facsimileOpacity
+            facsimileOpacity,
+            image: uploadedImage
         });
         onClose();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            setUploadedImage(event.target.files[0]);
+        }
     };
 
     return (
@@ -40,6 +48,12 @@ export const ColorDialog: React.FC<LayerColorOpacityDialogProps> = ({ open, onCl
                 <Stack spacing={1} direction='column'>
                     <Box>
                         <RgbaStringColorPicker color={color} onChange={setColor} />
+                    </Box>
+
+                    <Box>
+                        <Typography>Upload Facsimile</Typography>
+                        <input type='file' onChange={handleFileChange} />
+                        {uploadedImage && <Typography>Selected file: {uploadedImage.name}</Typography>}
                     </Box>
 
                     <Box>

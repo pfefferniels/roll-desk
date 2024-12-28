@@ -11,11 +11,11 @@ interface AssumptionUnderlayProps {
 export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps) => {
     if (!svgRef.current) return null;
 
-    if (assumption.type === 'relation') {
+    if (assumption.type === 'editGroup') {
         const allPoints = []
         const hulls: string[] = []
-        for (const reading of assumption.relates) {
-            const points = reading.contains
+        //for (const reading of assumption.relates) {
+            const points = assumption.contains
                 .map(e => {
                     return svgRef.current?.querySelector(`[data-id="${e.id}"]`);
                 })
@@ -33,7 +33,7 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
             const hull = roundedHull(points, 0.2);
             hulls.push(hull)
             allPoints.push(...points)
-        }
+        //}
         const overallHull = roundedHull(allPoints, 2)
 
         return (
