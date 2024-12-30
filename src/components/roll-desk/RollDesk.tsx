@@ -1,9 +1,9 @@
-import { Button, Divider, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AnyEditorialAction, Edition, Emulation } from 'linked-rolls'
 import { type CollatedEvent, type AnyRollEvent, type EventDimension, type SoftwareExecution } from "linked-rolls/lib/types"
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Label, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -26,7 +26,9 @@ import { AddConjecture } from "./AddConjecture"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import CreateEdition from "./CreateEdition"
-import { EditLabelDialog } from "./EditLabelDialog"
+import { StageCreationDialog } from "./StageCreationDialog"
+import { Edit, Stage } from "linked-rolls/lib/EditorialActions"
+// import { EditGroup } from "linked-rolls/lib/EditorialActions"
 
 export interface CollationResult {
     events: CollatedEvent[]
@@ -72,7 +74,7 @@ export const Desk = () => {
     const [layers, setLayers] = useState<LayerInfo[]>([workingPaperLayer])
     const [activeLayerId, setActiveLayerId] = useState<string>('working-paper')
 
-    const [editLabelDialogOpen, setEditLabelDialogOpen] = useState(false)
+    const [stageCreationDialogOpen, setStageCreationDialogOpen] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [unifyDialogOpen, setUnifyDialogOpen] = useState(false)
     const [separateDialogOpen, setSeparateDialogOpen] = useState(false)
@@ -88,6 +90,7 @@ export const Desk = () => {
     const [selection, setSelection] = useState<UserSelection>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
+    const [currentStage, setCurrentStage] = useState<Stage>()
     const [primarySource, setPrimarySource] = useState('')
 
     const execution = useRef<SoftwareExecution>({
@@ -244,7 +247,7 @@ export const Desk = () => {
                             <Button
                                 size='small'
                                 onClick={() => {
-                                    edition.collateCopies(true)
+                                    edition.collateCopies()
                                     setEdition(edition.shallowClone())
                                 }}
                                 startIcon={<CallMerge />}
@@ -266,152 +269,206 @@ export const Desk = () => {
                                 <Clear />
                             </IconButton>
                         </Ribbon>
-                        <Ribbon title='Roll Events'>
-                            <IconButton
-                                size='small'
-                                onClick={() => setAddEventDialogOpen(true)}
-                            >
-                                <Add />
-                            </IconButton>
-                            <IconButton
-                                size='small'
-                                onClick={removeEvent}
-                            >
-                                <Remove />
-                            </IconButton>
-                            <IconButton
-                                size='small'
-                                onClick={() => {
-                                    if (!currentCopy) return
+                        {activeLayerId !== 'working-paper' && (
+                            <>
+                                <Ribbon title='Roll Events'>
+                                    <IconButton
+                                        size='small'
+                                        onClick={() => setAddEventDialogOpen(true)}
+                                    >
+                                        <Add />
+                                    </IconButton>
+                                    <IconButton
+                                        size='small'
+                                        onClick={removeEvent}
+                                    >
+                                        <Remove />
+                                    </IconButton>
+                                    <IconButton
+                                        size='small'
+                                        onClick={() => {
+                                            if (!currentCopy) return
 
-                                    const ids = selection.filter(isRollEvent).map(event => event.id)
-                                    currentCopy.shiftEventsVertically(ids, 1)
-                                    setEdition(edition.shallowClone())
-                                }}
-                            >
-                                <ArrowUpward />
-                            </IconButton>
-                            <IconButton
-                                size='small'
-                                onClick={() => {
-                                    if (!currentCopy) return
+                                            const ids = selection.filter(isRollEvent).map(event => event.id)
+                                            currentCopy.shiftEventsVertically(ids, 1)
+                                            setEdition(edition.shallowClone())
+                                        }}
+                                    >
+                                        <ArrowUpward />
+                                    </IconButton>
+                                    <IconButton
+                                        size='small'
+                                        onClick={() => {
+                                            if (!currentCopy) return
 
-                                    const ids = selection.filter(isRollEvent).map(event => event.id)
-                                    currentCopy.shiftEventsVertically(ids, -1)
-                                    setEdition(edition.shallowClone())
-                                }}
-                            >
-                                <ArrowDownward />
-                            </IconButton>
-                        </Ribbon>
-                        <Ribbon title='Conjectures'>
-                            <IconButton
-                                size='small'
-                                onClick={() => setAddConjectureOpen(true)}
-                                disabled={currentCopy === undefined}
-                            >
-                                <Add />
-                            </IconButton>
-                            <Divider orientation='vertical' />
-                            <Button
-                                size='small'
-                                onClick={() => setUnifyDialogOpen(true)}
-                                startIcon={<JoinFull />}
-                                disabled={edition.copies.length === 0}
-                            >
-                                Unify
-                            </Button>
-                            <Button
-                                size='small'
-                                onClick={() => setSeparateDialogOpen(true)}
-                                startIcon={<CallSplit />}
-                                disabled={edition.copies.length === 0}
-                            >
-                                Separate
-                            </Button>
-                        </Ribbon>
-                        <Ribbon title='Hands'>
-                            <Button
-                                size='small'
-                                disabled={currentCopy === undefined}
-                                onClick={() => setAddHandDialogOpen(true)}
-                                startIcon={<Add />}
-                            >
-                                Add
-                            </Button>
-                            <Button
-                                size='small'
-                                disabled={selection.findIndex(selection => isRollEvent(selection)) === -1}
-                                onClick={() => setAssignHandDialogOpen(true)}>
-                                Assign
-                            </Button>
-                        </Ribbon>
-                        <Ribbon title='Editing Process'>
-                            <Stack direction='column'>
-                                <Button
-                                    size='small'
-                                    sx={{ justifyContent: 'flex-start' }}
-                                    onClick={() => {
-                                        selection
-                                            .filter(s => 'type' in s && s.type === 'editGroup')
-                                            .forEach((group, i, arr) => {
-                                                if (i === 0) return
-                                                arr[0].contains.push(...group.contains)
+                                            const ids = selection.filter(isRollEvent).map(event => event.id)
+                                            currentCopy.shiftEventsVertically(ids, -1)
+                                            setEdition(edition.shallowClone())
+                                        }}
+                                    >
+                                        <ArrowDownward />
+                                    </IconButton>
+                                </Ribbon>
+                                <Ribbon title='Conjectures'>
+                                    <IconButton
+                                        size='small'
+                                        onClick={() => setAddConjectureOpen(true)}
+                                        disabled={currentCopy === undefined}
+                                    >
+                                        <Add />
+                                    </IconButton>
+                                    <Divider orientation='vertical' />
+                                    <Button
+                                        size='small'
+                                        onClick={() => setUnifyDialogOpen(true)}
+                                        startIcon={<JoinFull />}
+                                        disabled={edition.copies.length === 0}
+                                    >
+                                        Unify
+                                    </Button>
+                                    <Button
+                                        size='small'
+                                        onClick={() => setSeparateDialogOpen(true)}
+                                        startIcon={<CallSplit />}
+                                        disabled={edition.copies.length === 0}
+                                    >
+                                        Separate
+                                    </Button>
+                                </Ribbon>
+                                <Ribbon title='Hands'>
+                                    <Button
+                                        size='small'
+                                        disabled={currentCopy === undefined}
+                                        onClick={() => setAddHandDialogOpen(true)}
+                                        startIcon={<Add />}
+                                    >
+                                        Add
+                                    </Button>
+                                    <Button
+                                        size='small'
+                                        disabled={selection.findIndex(selection => isRollEvent(selection)) === -1}
+                                        onClick={() => setAssignHandDialogOpen(true)}>
+                                        Assign
+                                    </Button>
+                                </Ribbon>
+                            </>
+                        )}
+                        {activeLayerId === 'working-paper' && (
+                            <>
+                                <Ribbon title='Editing Process'>
+                                    <Button
+                                        size='small'
+                                        sx={{ justifyContent: 'flex-start' }}
+                                        onClick={() => {
+                                            if (!currentStage) return
 
-                                                const index = edition.editGroups.findIndex(g => g.id === group.id)
-                                                if (index === -1) return
-                                                edition.editGroups.splice(index, 1)
-                                            })
+                                            const events = selection.filter(s => isCollatedEvent(s))
+                                            if (events.length === 0) return
 
-                                        setEdition(edition.shallowClone())
-                                        setSelection([])
-                                    }}
-                                    startIcon={<GroupWork />}
-                                    disabled={activeLayerId !== 'working-paper'}
-                                >
-                                    Group
-                                </Button>
-                                <Button
-                                    size='small'
-                                    sx={{ justifyContent: 'flex-start' }}
-                                    onClick={() => setEditLabelDialogOpen(true)}
-                                    startIcon={<Label />}
-                                    disabled={activeLayerId !== 'working-paper'}
-                                >
-                                    Label
-                                </Button>
-                            </Stack>
-                            <Stack direction='column' sx={{ textAlign: 'left'}}>
-                                <Button
-                                    size='small'
-                                    sx={{ justifyContent: 'flex-start' }}
-                                    onClick={() => {
-                                        selection
-                                            .filter(s => 'type' in s && s.type === 'editGroup')
-                                            .forEach((group, i, arr) => {
-                                                if (i === 0) return
-                                                group.follows = arr[i - 1]
-                                            })
+                                            const creation = edition.stages.find(stage => stage.created === currentStage)
+                                            const witnesses = currentStage.witnesses
+                                            if (!creation) return
 
-                                        setEdition(edition.shallowClone())
-                                        setSelection([])
-                                    }}
-                                    startIcon={<Link />}
-                                    disabled={activeLayerId !== 'working-paper'}
-                                >
-                                    Chain
-                                </Button>
-                                <Button
-                                    size='small'
-                                    sx={{ justifyContent: 'flex-start' }}
-                                    onClick={() => setAddNoteDialogOpen(true)}
-                                    startIcon={<EditNote />}
-                                    disabled={activeLayerId !== 'working-paper'}
-                                >
-                                    Comment
-                                </Button>
-                            </Stack>
-                        </Ribbon>
+                                            // determine the action
+                                            let action: 'insert' | 'delete' | undefined = undefined
+                                            for (const event of events) {
+                                                // find out if the stage included the event. If yes, 
+                                                // the action was insert, otherwise delete
+                                                if (witnesses.findIndex(witness => witness.events.findIndex(e => e.id === event.id) !== -1) === -1) {
+                                                    action = 'insert'
+                                                    break
+                                                }
+                                                else {
+                                                    action = 'delete'
+                                                    break
+                                                }
+                                            }
+
+                                            if (!action) return
+
+                                            const edit: Edit = {
+                                                type: 'edit',
+                                                id: v4(),
+                                                contains: events,
+                                                carriedOutBy: '#np',
+                                                action
+                                            }
+                                            creation.edits.push(edit)
+
+                                            setEdition(edition.shallowClone())
+                                            setSelection([])
+                                        }}
+                                        startIcon={<Add />}
+                                        disabled={activeLayerId !== 'working-paper'}
+                                    >
+                                        Add
+                                    </Button>
+                                    <Button
+                                        size='small'
+                                        sx={{ justifyContent: 'flex-start' }}
+                                        onClick={() => {
+                                            selection
+                                                .filter(s => 'type' in s && s.type === 'edit')
+                                                .forEach((group, i, arr) => {
+                                                    if (i === 0) return
+                                                    group.follows = arr[i - 1]
+                                                })
+
+                                            setEdition(edition.shallowClone())
+                                            setSelection([])
+                                        }}
+                                        startIcon={<Link />}
+                                        disabled={activeLayerId !== 'working-paper'}
+                                    >
+                                        Chain
+                                    </Button>
+                                    <Button
+                                        size='small'
+                                        sx={{ justifyContent: 'flex-start' }}
+                                        onClick={() => setAddNoteDialogOpen(true)}
+                                        startIcon={<EditNote />}
+                                        disabled={activeLayerId !== 'working-paper'}
+                                    >
+                                        Comment
+                                    </Button>
+                                </Ribbon>
+                                <Divider orientation="vertical" />
+                                <Ribbon title="Stages">
+                                    <ToggleButtonGroup
+                                        size="small"
+                                        value={currentStage?.siglum || 'all'}
+                                        exclusive
+                                        onChange={(event, newSiglum) => setCurrentStage(
+                                            edition.stages.find(stage => stage.created.siglum === newSiglum)?.created
+                                        )}
+                                        aria-label="text alignment"
+                                    >
+                                        {edition.stages.map(stage => {
+                                            const siglum = stage.created.siglum
+
+                                            return (
+                                                <ToggleButton
+                                                    key={`siglum_${siglum}`}
+                                                    value={siglum}>
+                                                    {siglum}
+                                                </ToggleButton>
+                                            )
+                                        })}
+                                        <ToggleButton
+                                            value={'all'}>
+                                            All
+                                        </ToggleButton>
+                                    </ToggleButtonGroup>
+                                    <Button
+                                        size='small'
+                                        onClick={() => setStageCreationDialogOpen(true)}
+                                        startIcon={<Add />}
+                                    >
+                                        Add Stage
+                                    </Button>
+                                </Ribbon>
+                            </>
+                        )}
                         <Ribbon title='Emulation'>
                             <IconButton
                                 size='small'
@@ -602,7 +659,7 @@ export const Desk = () => {
                             setAddNoteDialogOpen(false)
                             setSelection([])
                         }}
-                        selection={selection.filter(e => 'type' in e && e.type === 'editGroup')}
+                        selection={selection.filter(e => 'type' in e && e.type === 'edit')}
                     />)
             }
 
@@ -658,14 +715,15 @@ export const Desk = () => {
                 edition={edition}
             />
 
-            {selection.find(s => 'type' in s && s.type === 'editGroup') && (
-                <EditLabelDialog
-                    open={editLabelDialogOpen}
-                    onClose={() => setEditLabelDialogOpen(false)}
-                    selection={selection.filter(s => 'type' in s && s.type === 'editGroup')}
+            {
+                <StageCreationDialog
+                    open={stageCreationDialogOpen}
+                    onClose={() => setStageCreationDialogOpen(false)}
+                    onDone={(creation) => edition.stages.push(creation)}
                     clearSelection={() => setSelection([])}
+                    edition={edition}
                 />
-            )}
+            }
         </>
     )
 }

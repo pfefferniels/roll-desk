@@ -2,10 +2,10 @@ import { RefObject } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
 import { AnyEditorialAction } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
-import { EditGroup } from "linked-rolls/lib/EditorialActions";
+import { Edit } from "linked-rolls/lib/EditorialActions";
 import { CollatedEvent } from "linked-rolls/lib/types";
 
-const getHull = (assumption: EditGroup, svg: SVGGElement) => {
+const getHull = (assumption: Edit, svg: SVGGElement) => {
     const points = assumption.contains
         .map(e => {
             return svg.querySelector(`[data-id="${e.id}"]`);
@@ -49,7 +49,7 @@ interface AssumptionUnderlayProps {
 export const AssumptionUnderlay = ({ assumption, svgRef, onClick, retrieveSigla }: AssumptionUnderlayProps) => {
     if (!svgRef.current) return null;
 
-    if (assumption.type === 'editGroup') {
+    if (assumption.type === 'edit') {
         const { points, hull } = getHull(assumption, svgRef.current);
         const bbox2 = getBoundingBox(points);
 
@@ -105,7 +105,7 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick, retrieveSigla 
                         fontSize={8}
                         fill='black'
                     >
-                        {sigla.join(', ')}
+                        {sigla.join('|')}
                     </text>
                 )}
 

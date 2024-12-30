@@ -1,10 +1,10 @@
-import { Delete, Remove } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
 import { IconButton, List, ListItem, ListItemSecondaryAction, ListItemText } from "@mui/material";
-import { Assumption } from "linked-rolls";
+import { AnyEditorialAction } from "linked-rolls";
 
 interface ActionListProps {
-    actions: Assumption[]
-    removeAction: (action: Assumption) => void
+    actions: AnyEditorialAction[]
+    removeAction: (action: AnyEditorialAction) => void
 }
 
 export const ActionList = ({ actions, removeAction }: ActionListProps) => {
