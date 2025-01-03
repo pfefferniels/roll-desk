@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
-import { EventDimension } from 'linked-rolls/lib/types';
 import { v4 } from 'uuid';
+import { EventDimension } from 'linked-rolls';
+import { WithId } from 'linked-rolls/lib/WithId';
 
 interface RollGridProps {
     width: number;
-    onSelectionDone: (dimension: EventDimension) => void;
+    onSelectionDone: (dimension: EventDimension & WithId) => void;
     selectionMode: boolean
 }
 
@@ -16,7 +17,7 @@ export const RollGrid = ({
 }: RollGridProps) => {
     const { trackHeight, zoom } = usePinchZoom();
 
-    const [rect, setRect] = useState<EventDimension>();
+    const [rect, setRect] = useState<EventDimension & WithId>();
     const [isDrawing, setIsDrawing] = useState(false);
     const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
 

@@ -1,9 +1,8 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, Stack } from "@mui/material"
 import { Unstable_NumberInput as NumberInput } from '@mui/base/Unstable_NumberInput';
-import { AnyRollEvent } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
-import { Certainty, Conjecture } from "linked-rolls/lib/EditorialActions";
+import { AnyRollEvent, Conjecture } from "linked-rolls";
 
 interface SeparateProps {
     open: boolean
@@ -16,8 +15,6 @@ interface SeparateProps {
 
 export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDone, breakPoint }: SeparateProps) => {
     const [gap, setGap] = useState<number>()
-    const [cert, setCert] = useState<Certainty>('unknown')
-    const [note, setNote] = useState('')
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -36,24 +33,6 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                             max={10}
                             value={gap}
                             onChange={(_, value) => setGap(value)} />
-                    </FormControl>
-                    <FormControl>
-                        <FormLabel>Certainty</FormLabel>
-                        <Select label='Certainty' value={cert} onChange={e => {
-                            setCert(e.target.value as Certainty)
-                        }}>
-                            <MenuItem value='high'>High</MenuItem>
-                            <MenuItem value='medium'>Medium</MenuItem>
-                            <MenuItem value='low'>Low</MenuItem>
-                            <MenuItem value='Unknown'>Unknown</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <FormControl>
-                        <FormLabel>Note</FormLabel>
-                        <TextField
-                            value={note}
-                            onChange={e => setNote(e.target.value)}
-                            minRows={4} />
                     </FormControl>
                 </Stack>
             </DialogContent>
@@ -80,14 +59,17 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                             id: v4(),
                             replaced: [selection],
                             with: [leftEvent, rightEvent],
-                            carriedOutBy: '',
-                            certainty: cert,
-                            note
+                            certainty: 'likely',
+                            argumentation: {
+                                actor: '#np',
+                                premises: []
+                            },
                         })
                         clearSelection()
                         onClose()
                     }}
-                    variant='contained'>
+                    variant='contained'
+                >
                     Save
                 </Button>
             </DialogActions>

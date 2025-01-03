@@ -1,9 +1,8 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Grid, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
-import { RollCopy } from "linked-rolls";
+import { ConditionAssessment, ConditionState, RollCopy } from "linked-rolls";
 import { v4 as uuidv4 } from 'uuid';
-import { ConditionAssessment, ConditionState } from "linked-rolls/lib/types";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -58,7 +57,15 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
         rollCopy.location = location
         rollCopy.conditions = conditions
 
-        if (file) rollCopy.readFromStanfordAton(await file.text(), true);
+        if (file) {
+            if (file.name.endsWith('midi') || file.name.endsWith('mid')) {
+                rollCopy.readFromSpencerMIDI(await file.arrayBuffer());
+            }
+            else if (file.name.endsWith('txt')) {
+                rollCopy.readFromStanfordAton(await file.text(), true);
+            }
+        }
+
         onDone(rollCopy);
     };
 
@@ -161,7 +168,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
                                 <input
                                     type="file"
                                     hidden
-                                    accept=".txt"
+                                    accept=".txt,.mid,.midi"
                                     onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                                 />
                             </Button>

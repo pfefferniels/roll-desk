@@ -1,11 +1,11 @@
-import { Emulation, RollCopy } from "linked-rolls"
-import type { AnyRollEvent, Cover, EventDimension, Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/types.d.ts"
+import { AnyRollEvent, Cover, Emulation, EventDimension, Expression, HandwrittenText, Note, RollCopy, RollLabel, Stamp } from "linked-rolls"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Dynamics } from "./Dynamics.tsx"
 import { RollGrid } from "./RollGrid.tsx"
 import { Cursor, FixedCursor } from "./Cursor.tsx"
+import { AssumptionUnderlay } from "./AssumptionUnderlay.tsx"
 
 interface IIIFInfo {
     '@id': string;
@@ -101,7 +101,9 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
         const renderIIIF = async () => {
             if (!svgRef.current) return
 
-            if (!copy.scan || !copy.measurement) return
+            if (!copy.scan) return
+            const measurement = copy.measurements.find(m => m.holeSeparation && m.margins)
+            if (!measurement) return
 
             if (facsimileOpacity > 0) {
                 if (!facsimile) {
@@ -111,8 +113,8 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                         await tilesAsSVGImage(
                             baseUrl,
                             info,
-                            copy.measurement.holeSeparation.value,
-                            copy.measurement.margins,
+                            measurement.holeSeparation!.value,
+                            measurement.margins!,
                             zoom,
                             trackHeight,
                             facsimileOpacity,
@@ -140,7 +142,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
         // whenever the events change, update the emulation
         console.log('rerunning emulation')
         const newEmulation = new Emulation()
-        newEmulation?.emulateFromRoll(copy.events.filter(e => e.type === 'note' || e.type === 'expression'))
+        newEmulation?.emulateFromRoll(copy.getEvents().filter(e => e.type === 'note' || e.type === 'expression'))
         setEmulation(newEmulation)
     }, [copy])
 
@@ -156,7 +158,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                         onSelectionDone={onSelectionDone}
                         width={100000} />
                 )}
-                {copy.events.map((event) => {
+                {copy.getEvents().map((event) => {
                     if (event.type === 'note' || event.type === 'expression' || event.type === 'cover') {
                         return (
                             <PerforatedEvent
@@ -182,6 +184,16 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
 
                 {emulation && <Dynamics forEmulation={emulation} color={color} />}
             </g>
+
+            {copy.actions.map((action, i) => (
+                <AssumptionUnderlay
+                    assumption={action}
+                    key={`underlay_${action.id}`}
+                    svgRef={svgRef}
+                    onClick={() => { }}
+                />
+            ))
+            }
 
             <Cursor
                 onFix={(x) => setFixedX(x)}

@@ -3,8 +3,7 @@ import { Glow } from "./Glow"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { LayerInfo, UserSelection } from "./RollDesk"
 import { WorkingPaper } from "./WorkingPaper"
-import { AnyEditorialAction, Edition } from "linked-rolls"
-import { AnyRollEvent, CollatedEvent } from "linked-rolls/lib/types"
+import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition } from "linked-rolls"
 import { Selection } from "./Selection"
 import { RollCopyViewer } from "./RollCopyViewer"
 import { PatchPattern } from "./PatchPattern"
@@ -44,7 +43,7 @@ export const LayeredRolls = ({
         orderedLayers.push(activeLayer)
     }
 
-    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent | AnyEditorialAction) => {
+    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent | AnyEditorialAssumption) => {
         onUpdateSelection([...selection, clickedEvent])
     }
 

@@ -1,6 +1,6 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { keyToType, RollCopy } from "linked-rolls"
-import { AnyRollEvent, EventDimension, ExpressionType, SoftwareExecution } from "linked-rolls/lib/types"
+import { keyToType, RollCopy, AnyRollEvent, EventDimension, ExpressionType } from "linked-rolls"
+import { RollMeasurement } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
 
@@ -8,15 +8,14 @@ interface AddEventProps {
     open: boolean
     selection: EventDimension
     copy: RollCopy
-    execution: SoftwareExecution
-    onDone: (modifiedCopy: RollCopy) => void
+    measurement: RollMeasurement
     onClose: () => void
 }
 
 const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddEventDialog = ({ selection, onDone, onClose, open, copy, execution }: AddEventProps) => {
+export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: AddEventProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -107,7 +106,8 @@ export const AddEventDialog = ({ selection, onDone, onClose, open, copy, executi
                                 text: text || '[no text]',
                                 hasDimension: selection,
                                 signed: signed === undefined ? false : signed,
-                                id: v4()
+                                id: v4(),
+                                measurement
                             }
                         }
                         if (eventType === 'stamp' || eventType === 'handwrittenText') {
@@ -116,14 +116,16 @@ export const AddEventDialog = ({ selection, onDone, onClose, open, copy, executi
                                 text: text || '[no text]',
                                 rotation,
                                 hasDimension: selection,
-                                id: v4()
+                                id: v4(),
+                                measurement
                             }
                         }
                         else if (eventType === 'cover') {
                             eventToAdd = {
                                 type: eventType,
                                 hasDimension: selection,
-                                id: v4()
+                                id: v4(),
+                                measurement
                             }
                         }
                         else if (eventType === 'expression') {
@@ -137,14 +139,16 @@ export const AddEventDialog = ({ selection, onDone, onClose, open, copy, executi
                                 P2HasType: type as ExpressionType,
                                 hasScope: scope,
                                 hasDimension: selection,
-                                id: v4()
+                                id: v4(),
+                                measurement
                             }
                         }
 
                         if (eventToAdd) {
-                            copy.insertEvent(eventToAdd, execution)
-                            onDone(copy.shallowClone())
+                            copy.insertEvent(eventToAdd)
                         }
+
+                        onClose()
                     }}
                     variant='contained'>
                     Done

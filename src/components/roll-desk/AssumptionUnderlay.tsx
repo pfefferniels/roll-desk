@@ -1,14 +1,18 @@
 import { RefObject } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
-import { AnyEditorialAction } from "linked-rolls";
+import { AnyEditorialAssumption } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
-import { Edit } from "linked-rolls/lib/EditorialActions";
-import { CollatedEvent } from "linked-rolls/lib/types";
 
-const getHull = (assumption: Edit, svg: SVGGElement) => {
-    const points = assumption.contains
-        .map(e => {
-            return svg.querySelector(`[data-id="${e.id}"]`);
+/**
+ * 
+ * @param ids SVG must contain elements with matching data-id attributes
+ * @param svg SVG to search for elements in
+ * @returns points and hull of the convex hull of the elements
+ */
+const getHull = (ids: string[], svg: SVGGElement) => {
+    const points = ids
+        .map(id => {
+            return svg.querySelector(`[data-id="${id}"]`);
         })
         .filter(el => !!el)
         .map(el => {
@@ -40,24 +44,74 @@ const getBoundingBox = (points: [number, number][]) => {
 };
 
 interface AssumptionUnderlayProps {
-    assumption: AnyEditorialAction;
+    assumption: AnyEditorialAssumption;
     svgRef: RefObject<SVGGElement>;
-    onClick: (r: AnyEditorialAction) => void;
-    retrieveSigla: (events: CollatedEvent[]) => string[]
+    onClick: (r: AnyEditorialAssumption) => void;
+    witnessSigla?: Set<string>;
 }
 
-export const AssumptionUnderlay = ({ assumption, svgRef, onClick, retrieveSigla }: AssumptionUnderlayProps) => {
+export const AssumptionUnderlay = ({ assumption, svgRef, onClick, witnessSigla }: AssumptionUnderlayProps) => {
     if (!svgRef.current) return null;
 
-    if (assumption.type === 'edit') {
-        const { points, hull } = getHull(assumption, svgRef.current);
+    if (assumption.type === 'handAssignment') {
+        const { points, hull } = getHull(assumption.target.map(e => e.id), svgRef.current);
+        const bbox = getBoundingBox(points);
+
+        return (
+            <g onClick={() => onClick(assumption)}>
+                <path
+                    id={assumption.id}
+                    stroke='black'
+                    fill='white'
+                    fillOpacity={0.1}
+                    strokeWidth={1}
+                    d={hull} />
+
+                <text
+                    x={bbox.x}
+                    y={bbox.y + bbox.height + 10}
+                    fontSize={8}
+                    fill='black'
+                >
+                    {assumption.hand.carriedOutBy}
+                </text>
+            </g>
+        );
+    }
+    else if (assumption.type === 'conjecture') {
+        const { points, hull } = getHull(assumption.with.map(e => e.id), svgRef.current);
+        const bbox = getBoundingBox(points);
+
+        return (
+            <g onClick={() => onClick(assumption)}>
+                <path
+                    id={assumption.id}
+                    stroke='black'
+                    fill='white'
+                    fillOpacity={0.1}
+                    strokeWidth={1}
+                    d={hull} />
+
+                <text
+                    x={bbox.x}
+                    y={bbox.y + bbox.height + 10}
+                    fontSize={8}
+                    fill='black'
+                >
+                    {assumption.certainty}
+                </text>
+            </g>
+        );
+    }
+    else if (assumption.type === 'edit') {
+        const { points, hull } = getHull(assumption.contains.map(e => e.id), svgRef.current);
         const bbox2 = getBoundingBox(points);
 
         let arrowPath, arrowHead
         if (assumption.follows) {
             const arrowHeadSize = 3;
 
-            const bbox1 = getBoundingBox(getHull(assumption.follows, svgRef.current).points);
+            const bbox1 = getBoundingBox(getHull(assumption.follows.contains.map(e => e.id), svgRef.current).points);
 
             const [sx, sy, c1x, c1y, c2x, c2y, ex, ey, ae] = getBoxToBoxArrow(
                 bbox1.x,
@@ -86,8 +140,6 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick, retrieveSigla 
             )
         }
 
-        const sigla = retrieveSigla(assumption.contains);
-
         return (
             <g onClick={() => onClick(assumption)}>
                 <path
@@ -98,14 +150,14 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick, retrieveSigla 
                     strokeWidth={1}
                     d={hull} />
 
-                {points.length > 0 && (
+                {(points.length > 0 && witnessSigla) && (
                     <text
                         x={bbox2.x}
                         y={bbox2.y + bbox2.height + 10}
                         fontSize={8}
                         fill='black'
                     >
-                        {sigla.join('|')}
+                        {[...witnessSigla].join('|')}
                     </text>
                 )}
 

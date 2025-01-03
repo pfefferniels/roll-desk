@@ -1,11 +1,11 @@
-import type {  CollatedEvent, Expression } from "linked-rolls/lib/types"
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAction } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, Stage, RollCopy } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
 import { sourcesOf } from "linked-rolls/lib/Collator"
+import { findWitnessesWithinStage, StageCreation } from "linked-rolls/lib/Stage"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -112,11 +112,12 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 
 interface WorkingPaperProps {
     numberOfRolls: number
+    currentStage: StageCreation
     edition: Edition
-    onClick: (event: CollatedEvent | AnyEditorialAction) => void
+    onClick: (event: CollatedEvent | AnyEditorialAssumption) => void
 }
 
-export const WorkingPaper = memo(({ numberOfRolls, edition, onClick }: WorkingPaperProps) => {
+export const WorkingPaper = memo(({ numberOfRolls, currentStage, edition, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
     const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
@@ -144,7 +145,7 @@ export const WorkingPaper = memo(({ numberOfRolls, edition, onClick }: WorkingPa
             return to - from
         }
 
-        edition.collationResult.events.sort((a, b) => durationOf(b) - durationOf(a))
+        edition.collation.events.sort((a, b) => durationOf(b) - durationOf(a))
     }, [edition])
 
     useLayoutEffect(() => {
@@ -152,33 +153,47 @@ export const WorkingPaper = memo(({ numberOfRolls, edition, onClick }: WorkingPa
         for (const assumption of edition.actions) {
             if (!assumption) continue
 
+            let witnessSigla: Set<string> = new Set()
+            if (assumption.type === 'edit') {
+                if (assumption.action === 'insert') {
+                    witnessSigla = new Set(
+                        assumption.contains
+                            .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
+                            .flat()
+                            .map(copy => copy.siglum))
+                }
+                else if (assumption.action === 'delete') {
+                    const original = currentStage.basedOn.original
+                    if ('siglum' in original) {
+                        witnessSigla = new Set(
+                            assumption.contains
+                                .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
+                                .flat()
+                                .map(copy => copy.siglum))
+                    }
+                }
+            }
+
             underlays.push((
                 <AssumptionUnderlay
                     key={`underlay_${assumption.id}`}
                     assumption={assumption}
                     svgRef={svgRef}
                     onClick={onClick}
-                    retrieveSigla={collatedEvents => {
-                        return Array
-                            .from(sourcesOf(edition.copies, collatedEvents))
-                            .map(id => {
-                                const copy = edition.copies.find(copy => copy.id === id)
-                                return copy ? copy.siglum : id
-                            })
-                    }}
+                    witnessSigla={witnessSigla}
                 />
             ))
         }
         setUnderlays(underlays)
-    }, [edition, zoom, onClick])
+    }, [edition, zoom, onClick, currentStage])
 
-    console.log('underlays=', underlays)
+    // console.log('underlays=', underlays)
 
     return (
         <g className='collated-copies' ref={svgRef}>
             {underlays}
 
-            {edition.collationResult.events.map((event, i) => (
+            {edition.collation.events.map((event, i) => (
                 <CollatedEventViewer
                     key={`workingPaper_${event.id || i}`}
                     event={event}

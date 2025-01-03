@@ -9,34 +9,60 @@ interface DynamicsProps {
 export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
     const { translateX } = usePinchZoom()
 
+    const treblePositions: [number, number][] = emulation.trebleVelocities
+        .reduce((acc, v, i) => {
+            if (i % 20 !== 0) return acc
+            acc.push([translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v])
+            return acc
+        }, [] as [number, number][])
+
+    const bassPositions: [number, number][] = emulation.bassVelocities
+        .reduce((acc, v, i) => {
+            if (i % 20 !== 0) return acc
+            acc.push([translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v + 450])
+            return acc
+        }, [] as [number, number][])
+
     return (
         <>
             <g className='trebleVelocities'>
-                {emulation.trebleVelocities.map((v, i) => {
-                    if (i % 20 !== 0) return null
+                {treblePositions.map(([x, y], i, arr) => {
+                    if (i === arr.length - 1) return null
+                    const [x2, y2] = arr[i + 1]
+
                     return (
-                        <circle
-                            key={`treble_${v}_${i}`}
+                        <line
+                            key={`treble_${x}_${y}`}
                             className='velocity'
-                            cy={127 - v}
                             fill={color}
-                            cx={translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)}
-                            r={1} />
+                            x1={x}
+                            y1={y}
+                            x2={x2}
+                            y2={y2}
+                            strokeWidth={1}
+                            stroke={color}
+                        />
                     )
                 })}
             </g>
 
             <g className='bassVelocities'>
-                {emulation.bassVelocities.map((v, i) => {
-                    if (i % 20 !== 0) return null
+                {bassPositions.map(([x, y], i, arr) => {
+                    if (i === arr.length - 1) return null
+                    const [x2, y2] = arr[i + 1]
+
                     return (
-                        <circle
-                            key={`bass_${v}_${i}`}
+                        <line
+                            key={`bass_${x}_${y}`}
                             className='velocity'
-                            cy={127 - v + 450}
                             fill={color}
-                            cx={translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)}
-                            r={1} />
+                            x1={x}
+                            y1={y}
+                            x2={x2}
+                            y2={y2}
+                            strokeWidth={1}
+                            stroke={color}
+                        />
                     )
                 })}
             </g>

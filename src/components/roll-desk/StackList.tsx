@@ -18,9 +18,8 @@ interface StackListProps {
 }
 
 export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLayerId, onChangeEdition, onChangeColor }: StackListProps) => {
-    const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState<RollCopy>()
-
-    console.log('copies=', edition.copies)
+    const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
+    const [selectedCopy, setSelectedCopy] = useState<RollCopy>()
 
     return (
         <>
@@ -56,7 +55,7 @@ export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLa
                                         {stackItem.id !== 'working-paper' && (
                                             <IconButton
                                                 edge="end"
-                                                onClick={() => setRollCopyDialogOpen(edition.copies.find(copy => copy.id === stackItem.id))}
+                                                onClick={() => setSelectedCopy(copy)}
                                             >
                                                 <Edit />
                                             </IconButton>
@@ -76,39 +75,33 @@ export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLa
                     })}
                 </List>
                 <Box>
-                    <IconButton onClick={() => {
-                        const newCopy = new RollCopy()
-                        edition.copies.push(newCopy)
-                        setRollCopyDialogOpen(newCopy)
-                    }}>
+                    <IconButton onClick={() => setRollCopyDialogOpen(true)}>
                         <Add />
                     </IconButton>
                 </Box>
             </Paper>
 
-            <RollCopyDialog
-                open={!!rollCopyDialogOpen}
-                copy={rollCopyDialogOpen}
-                onClose={() => setRollCopyDialogOpen(undefined)}
-                onDone={rollCopy => {
-                    const index = edition.copies.findIndex(copy => copy.id === rollCopy.id)
-                    if (index === -1) {
-                        edition.copies.push(rollCopy)
-                    }
-                    else {
-                        edition.copies.splice(index, 1, rollCopy)
-                    }
-                    console.log(edition.copies)
-                    onChangeEdition(edition.shallowClone())
-                }}
-                onRemove={rollCopy => {
-                    const index = edition.copies.findIndex(copy => copy.id === rollCopy.id)
-                    if (index !== -1) {
-                        edition.copies.splice(index, 1)
-                    }
-                    onChangeEdition(edition.shallowClone())
-                }}
-            />
+            {rollCopyDialogOpen && (
+                <RollCopyDialog
+                    open={rollCopyDialogOpen}
+                    copy={selectedCopy}
+                    onClose={() => setRollCopyDialogOpen(false)}
+                    onDone={rollCopy => {
+                        const index = edition.copies.indexOf(rollCopy)
+                        if (index === -1) {
+                            edition.copies.push(rollCopy)
+                        }
+                        onChangeEdition(edition.shallowClone())
+                    }}
+                    onRemove={rollCopy => {
+                        const index = edition.copies.findIndex(copy => copy.id === rollCopy.id)
+                        if (index !== -1) {
+                            edition.copies.splice(index, 1)
+                        }
+                        onChangeEdition(edition.shallowClone())
+                    }}
+                />
+            )}
         </>
     )
 }

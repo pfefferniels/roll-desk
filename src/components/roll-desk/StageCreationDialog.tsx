@@ -1,9 +1,8 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, SelectChangeEvent, Stack, TextField } from "@mui/material"
 import { StageCreation } from "linked-rolls/lib/Stage";
-import { Edition } from "linked-rolls";
+import { Edition, ObjectUsage, Stage } from "linked-rolls";
 import { useState } from "react";
 import { v4 } from "uuid";
-import { ObjectUsage, Stage } from "linked-rolls/lib/EditorialActions";
 
 interface StageCreationDialogProps {
     open: boolean
@@ -88,7 +87,11 @@ export const StageCreationDialog = ({ open, edition, onClose, onDone, clearSelec
                             id: v4(),
                             type: 'objectUsage',
                             original: prev || { 'id': 'preliminary' },
-                            carriedOutBy: 'unknown'
+                            certainty: 'likely',
+                            argumentation: {
+                                actor: resp,
+                                premises: []
+                            }
                         }
 
                         onDone(new StageCreation(stage, basedOn))
