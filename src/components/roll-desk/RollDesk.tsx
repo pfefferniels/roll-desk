@@ -2,7 +2,7 @@ import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, EventDimension, isEditorialAssumption, RollMeasurement } from 'linked-rolls'
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -409,7 +409,7 @@ export const Desk = () => {
                                             setEdition(edition.shallowClone())
                                             setSelection([])
                                         }}
-                                        startIcon={<Add />}
+                                        startIcon={<GroupWork />}
                                         disabled={activeLayerId !== 'working-paper'}
                                     >
                                         Group
