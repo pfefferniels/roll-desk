@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { RollCopy } from "linked-rolls"
 import { useState } from "react"
 import { v4 } from "uuid"
@@ -13,13 +13,15 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
     const [name, setName] = useState('')
     const [date, setDate] = useState('')
     const [desc, setDesc] = useState('')
+    const [authorised, setAuthorised] = useState<boolean | null>(null)
 
     const handleDone = () => {
         copy.hands.push({
             id: v4(),
             carriedOutBy: name,
             date,
-            note: desc
+            note: desc,
+            authorised: authorised || undefined
         })
 
         onDone(copy.shallowClone())
@@ -56,6 +58,21 @@ export const AddHandDialog = ({ copy, onDone, open }: AddHandDialogProps) => {
                         placeholder="Hand description ..."
                         onChange={e => setDesc(e.target.value)}
                     />
+                    <FormControl variant="filled" size="small">
+                        <FormLabel>Authorised?</FormLabel>
+                        <Select
+                            value={authorised === true ? 'yes' : authorised === false ? 'no' : 'unknown'}
+                            onChange={(e) => {
+                                if (e.target.value === 'yes') setAuthorised(true)
+                                else if (e.target.value === 'no') setAuthorised(false)
+                                else setAuthorised(null)
+                            }}
+                        >
+                            <MenuItem value="yes">Yes</MenuItem>
+                            <MenuItem value="no">No</MenuItem>
+                            <MenuItem value="unknown">Unknown</MenuItem>
+                        </Select>
+                    </FormControl>
                 </Stack>
             </DialogContent>
             <DialogActions>
