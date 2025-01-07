@@ -142,6 +142,17 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick, witnessSigla }
 
         return (
             <g onClick={() => onClick(assumption)}>
+                {(assumption.action && points.length > 0) && (
+                    <text
+                        x={bbox2.x}
+                        y={bbox2.y}
+                        fontSize={10}
+                        fill='black'
+                    >
+                        {assumption.action}
+                    </text>
+                )}
+
                 <path
                     id={assumption.id}
                     stroke='black'
@@ -170,17 +181,6 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick, witnessSigla }
                             d={arrowPath} />
                         {arrowHead}
                     </>
-                )}
-
-                {(assumption.action && points.length > 0) && (
-                    <text
-                        x={bbox2.x}
-                        y={bbox2.y}
-                        fontSize={10}
-                        fill='black'
-                    >
-                        {assumption.action}
-                    </text>
                 )}
             </g>
         );

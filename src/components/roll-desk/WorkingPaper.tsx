@@ -1,11 +1,9 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, Stage, RollCopy } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
-import { sourcesOf } from "linked-rolls/lib/Collator"
-import { findWitnessesWithinStage, StageCreation } from "linked-rolls/lib/Stage"
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -112,7 +110,7 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 
 interface WorkingPaperProps {
     numberOfRolls: number
-    currentStage: StageCreation
+    currentStage?: StageCreation
     edition: Edition
     onClick: (event: CollatedEvent | AnyEditorialAssumption) => void
 }
@@ -154,7 +152,7 @@ export const WorkingPaper = memo(({ numberOfRolls, currentStage, edition, onClic
             if (!assumption) continue
 
             let witnessSigla: Set<string> = new Set()
-            if (assumption.type === 'edit') {
+            if (assumption.type === 'edit' && currentStage) {
                 if (assumption.action === 'insert') {
                     witnessSigla = new Set(
                         assumption.contains

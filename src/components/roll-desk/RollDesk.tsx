@@ -1,6 +1,6 @@
 import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, EventDimension, isEditorialAssumption, RollMeasurement } from 'linked-rolls'
+import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, EventDimension, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage } from 'linked-rolls'
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
 import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -26,8 +26,6 @@ import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import CreateEdition from "./CreateEdition"
 import { StageCreationDialog } from "./StageCreationDialog"
-import { Edit, Stage } from "linked-rolls/lib/EditorialActions"
-import { PlaceTimeConversion } from "linked-rolls/lib/PlaceTimeConversion"
 import { WithId } from "linked-rolls/lib/WithId"
 
 export interface CollationResult {

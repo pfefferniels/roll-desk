@@ -3,10 +3,11 @@ import { Glow } from "./Glow"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { LayerInfo, UserSelection } from "./RollDesk"
 import { WorkingPaper } from "./WorkingPaper"
-import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition } from "linked-rolls"
+import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, StageCreation } from "linked-rolls"
 import { Selection } from "./Selection"
 import { RollCopyViewer } from "./RollCopyViewer"
 import { PatchPattern } from "./PatchPattern"
+import { v4 } from "uuid"
 
 interface LayeredRollsProps {
     edition: Edition
@@ -17,6 +18,7 @@ interface LayeredRollsProps {
     onUpdateSelection: (newSelection: UserSelection) => void
     fixedX: number
     setFixedX: (fixedX: number) => void
+    currentStage?: StageCreation
 }
 
 export const LayeredRolls = ({
@@ -27,7 +29,8 @@ export const LayeredRolls = ({
     selection,
     onUpdateSelection,
     fixedX,
-    setFixedX }: LayeredRollsProps
+    setFixedX,
+    currentStage }: LayeredRollsProps
 ) => {
     const svgRef = useRef<SVGGElement>(null)
 
@@ -64,7 +67,8 @@ export const LayeredRolls = ({
                                         key={`copy_${i}`}
                                         numberOfRolls={edition.copies.length}
                                         edition={edition}
-                                        onClick={handleUpdateSelection} />
+                                        onClick={handleUpdateSelection}
+                                        currentStage={currentStage} />
                                 )
                             }
 
@@ -80,7 +84,10 @@ export const LayeredRolls = ({
                                     facsimile={stackItem.image}
                                     facsimileOpacity={stackItem.facsimileOpacity}
                                     onClick={handleUpdateSelection}
-                                    onSelectionDone={dimension => { onUpdateSelection([dimension]) }}
+                                    onSelectionDone={dimension => onUpdateSelection([{
+                                        ...dimension,
+                                        id: v4()
+                                    }])}
                                     fixedX={fixedX}
                                     setFixedX={setFixedX}
                                 />
