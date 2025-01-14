@@ -1,8 +1,19 @@
 import { Delete, Edit } from "@mui/icons-material";
 import { IconButton, List, ListItem, ListItemButton, ListItemSecondaryAction, ListItemText } from "@mui/material";
-import { AnyEditorialAssumption } from "linked-rolls";
+import { AnyEditorialAssumption, Stage } from "linked-rolls";
 import { EditArgumentation } from "./EditArgumentation";
 import { useEffect, useRef, useState } from "react";
+
+const titleFor = (assumption: AnyEditorialAssumption) => {
+    let title: string = assumption.type 
+    if (assumption.type === 'handAssignment') {
+        title = `Hand Assignment → ${assumption.hand.carriedOutBy}`
+    }
+    else if (assumption.type === 'objectUsage') {
+        title = `Using → ${('siglum' in assumption.original) && assumption.original.siglum}`
+    }
+    return title
+}
 
 interface AssumptionListProps {
     assumptions: AnyEditorialAssumption[]
@@ -33,9 +44,9 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
                             <ListItemText
                                 primary={
                                     <div>
-                                        <b>{assumption.type}</b>{' '}
+                                        <b>{titleFor(assumption)}</b>{' '}<br/>
                                         {assumption.certainty && (
-                                            <span style={{ color: 'gray' }}>(certainty: {assumption.certainty})</span>
+                                            <span style={{ color: 'gray' }}>certainty: {assumption.certainty}</span>
                                         )}
                                     </div>
                                 }
@@ -44,7 +55,7 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
                                         maxWidth: '70%'
                                     }}
                                     >
-                                        <b>Premises</b>
+                                        <b>{assumption.argumentation.premises.length === 0 ? 'No premises' : 'Premises'}</b>
                                         <ul>
                                             {assumption.argumentation.premises.map((premise, i) => {
                                                 return (
