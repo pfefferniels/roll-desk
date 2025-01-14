@@ -40,16 +40,23 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
                                     </div>
                                 }
                                 secondary={
-                                    <p>
+                                    <p style={{
+                                        maxWidth: '70%'
+                                    }}
+                                    >
+                                        <b>Premises</b>
                                         <ul>
                                             {assumption.argumentation.premises.map((premise, i) => {
                                                 return (
                                                     <li key={`premise${i}`}>
-                                                        {premise}<sup>{assumption.argumentation.actor}</sup>
+                                                        {typeof premise === 'string' ? premise : `${premise.type}: ${premise.argumentation.note}`}<sup>{assumption.argumentation.actor}</sup>
+
                                                     </li>
                                                 )
                                             })}
                                         </ul>
+                                        <b>Note: </b>
+                                        {assumption.argumentation.note}
                                     </p>
                                 } />
                             <ListItemSecondaryAction>
@@ -69,6 +76,7 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
 
             {assumptionToEdit && (
                 <EditArgumentation
+                    existingPremises={assumptions}
                     open={assumptionToEdit !== undefined}
                     onClose={() => {
                         setAssumptionToEdit(undefined)

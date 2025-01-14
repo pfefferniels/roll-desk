@@ -1,4 +1,4 @@
-import { Button, Drawer, FormControl, FormLabel, MenuItem, Select, Stack } from "@mui/material"
+import { Button, Dialog, FormControl, FormLabel, MenuItem, Select, Stack } from "@mui/material"
 import { AnyRollEvent, HandAssignment, RollCopy } from "linked-rolls"
 import { useState } from "react"
 import { v4 } from "uuid"
@@ -19,7 +19,7 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
     const [assignedHand, setAssignedHand] = useState<string>('')
 
     return (
-        <Drawer open={open} variant='persistent'>
+        <Dialog open={open} onClose={() => onDone()}>
             <Stack direction='column' sx={{ m: 1 }} spacing={1}>
                 <FormControl>
                     <FormLabel>Responsible Hand</FormLabel>
@@ -62,6 +62,6 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
                     Done
                 </Button>
             </Stack>
-        </Drawer>
+        </Dialog>
     )
 }

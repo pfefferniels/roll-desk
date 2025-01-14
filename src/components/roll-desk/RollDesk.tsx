@@ -670,6 +670,7 @@ export const Desk = () => {
             {
                 editArgumentationDialogOpen && (
                     <EditArgumentation
+                        existingPremises={edition.actions.filter(isEditorialAssumption)}
                         open={editArgumentationDialogOpen}
                         onClose={() => {
                             setEdition(edition.shallowClone())
