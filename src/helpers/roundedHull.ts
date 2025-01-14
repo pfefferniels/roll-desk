@@ -27,7 +27,7 @@ const unitNormal = function (p0: Point, p1: Point) {
 }
 
 // Returns the path for a rounded hull around a single point (a circle).
-var roundedHull1 = function (polyPoints: Point[], hullPadding: number) {
+const roundedHull1 = function (polyPoints: Point[], hullPadding: number) {
   const p1 = [polyPoints[0][0], polyPoints[0][1] - hullPadding]
   const p2 = [polyPoints[0][0], polyPoints[0][1] + hullPadding]
 
@@ -38,15 +38,15 @@ var roundedHull1 = function (polyPoints: Point[], hullPadding: number) {
 }
 
 // Returns the path for a rounded hull around two points (a "capsule" shape).
-var roundedHull2 = function (polyPoints: Point[], hullPadding: number) {
-  var offsetVector = vecScale(hullPadding, unitNormal(polyPoints[0], polyPoints[1]))
-  var invOffsetVector = vecScale(-1, offsetVector)
+const roundedHull2 = function (polyPoints: Point[], hullPadding: number) {
+  const offsetVector = vecScale(hullPadding, unitNormal(polyPoints[0], polyPoints[1]))
+  const invOffsetVector = vecScale(-1, offsetVector)
   // around that note coordinates are not at the centroids
 
-  var p0 = vecSum(polyPoints[0], offsetVector)
-  var p1 = vecSum(polyPoints[1], offsetVector)
-  var p2 = vecSum(polyPoints[1], invOffsetVector)
-  var p3 = vecSum(polyPoints[0], invOffsetVector)
+  const p0 = vecSum(polyPoints[0], offsetVector)
+  const p1 = vecSum(polyPoints[1], offsetVector)
+  const p2 = vecSum(polyPoints[1], invOffsetVector)
+  const p3 = vecSum(polyPoints[0], invOffsetVector)
 
   return `M ${p0} L ${p1} A `
     + [hullPadding, hullPadding, '0,0,0', p2].join(',')
@@ -62,20 +62,20 @@ var roundedHullN = function (polyPoints: Point[], hullPadding: number) {
   if (polyPoints.length === 1) return roundedHull1(polyPoints, hullPadding)
   if (polyPoints.length === 2) return roundedHull2(polyPoints, hullPadding)
 
-  var segments = new Array(polyPoints.length)
+  let segments = new Array(polyPoints.length)
 
   // Calculate each offset (outwards) segment of the convex hull.
-  for (var segmentIndex = 0; segmentIndex < segments.length; ++segmentIndex) {
-    var p0 = (segmentIndex === 0) ? polyPoints[polyPoints.length - 1] : polyPoints[segmentIndex - 1]
-    var p1 = polyPoints[segmentIndex]
+  for (let segmentIndex = 0; segmentIndex < segments.length; ++segmentIndex) {
+    const p0 = (segmentIndex === 0) ? polyPoints[polyPoints.length - 1] : polyPoints[segmentIndex - 1]
+    const p1 = polyPoints[segmentIndex]
 
     // Compute the offset vector for the line segment, with length = hullPadding.
-    var offset = vecScale(hullPadding, unitNormal(p0, p1))
+    const offset = vecScale(hullPadding, unitNormal(p0, p1))
 
     segments[segmentIndex] = [vecSum(p0, offset), vecSum(p1, offset)]
   }
 
-  var arcData = 'A ' + [hullPadding, hullPadding, '0,0,0,'].join(',')
+  const arcData = 'A ' + [hullPadding, hullPadding, '0,0,0,'].join(',')
 
   segments = segments.map(function (segment, index) {
     let pathFragment = ''
