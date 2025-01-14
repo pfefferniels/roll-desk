@@ -22,7 +22,9 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
     const [rotation, setRotation] = useState<number>()
     const [signed, setSigned] = useState<boolean>()
 
-    const perforationMeaning = new WelteT100().meaningOf(selection.vertical.from)
+    const perforationMeaning = eventType === 'perforation'
+        ? new WelteT100().meaningOf(selection.vertical.from)
+        : undefined
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -84,7 +86,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         </>
                     )}
 
-                    {(perforationMeaning.type === 'expression' && (
+                    {(perforationMeaning?.type === 'expression' && (
                         <ul>
                             <li>
                                 Scope: {perforationMeaning.scope}
@@ -95,7 +97,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         </ul>
                     ))}
 
-                    {(perforationMeaning.type === 'note' && (
+                    {(perforationMeaning?.type === 'note' && (
                         <ul>
                             <li>
                                 Note: {perforationMeaning.pitch}
@@ -138,7 +140,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                             }
                         }
 
-                        else if (eventType === 'perforation') {
+                        else if (eventType === 'perforation' && perforationMeaning) {
                             eventToAdd = {
                                 ...perforationMeaning,
                                 ...selection,
