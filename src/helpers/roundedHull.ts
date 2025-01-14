@@ -78,9 +78,9 @@ var roundedHullN = function (polyPoints: Point[], hullPadding: number) {
   var arcData = 'A ' + [hullPadding, hullPadding, '0,0,0,'].join(',')
 
   segments = segments.map(function (segment, index) {
-    var pathFragment = ''
+    let pathFragment = ''
     if (index === 0) {
-      var pathFragment = 'M ' + segments[segments.length - 1][1] + ' '
+      pathFragment = 'M ' + segments[segments.length - 1][1] + ' '
     }
     pathFragment += arcData + segment[0] + ' L ' + segment[1]
 
@@ -96,9 +96,9 @@ var roundedHullN = function (polyPoints: Point[], hullPadding: number) {
  * of SVG objects.
  */
 export function roundedHull(points: Point[], hullPadding = 200) {
-  if (points.length == 1) {
+  if (points.length === 1) {
     return roundedHull1(points, hullPadding)
-  } else if (points.length == 2) {
+  } else if (points.length === 2) {
     return roundedHull2(points, hullPadding)
   } else {
     return roundedHullN(polygonHull(points)!, hullPadding)

@@ -98,7 +98,7 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick, witnessSigla }
                     fontSize={8}
                     fill='black'
                 >
-                    {assumption.certainty}
+                    {assumption.type} ({assumption.certainty})
                 </text>
             </g>
         );

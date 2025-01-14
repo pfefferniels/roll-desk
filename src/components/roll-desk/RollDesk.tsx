@@ -1,6 +1,6 @@
 import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, EventDimension, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage } from 'linked-rolls'
+import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, HorizontalSpan, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage, VerticalSpan } from 'linked-rolls'
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
 import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -30,6 +30,11 @@ import { WithId } from "linked-rolls/lib/WithId"
 
 export interface CollationResult {
     events: CollatedEvent[]
+}
+
+export type EventDimension = {
+    vertical: VerticalSpan,
+    horizontal: HorizontalSpan
 }
 
 export type UserSelection = (AnyRollEvent | CollatedEvent | AnyEditorialAssumption | (EventDimension & WithId))[]
@@ -133,7 +138,7 @@ export const Desk = () => {
         const eventsInActiveLayer: AnyRollEvent[] = []
         const otherNotes = []
         for (const pin of (selection as (AnyRollEvent | CollatedEvent)[])) {
-            if (copy.getEvents().findIndex(event => event.id === pin.id) !== -1 && !('wasCollatedFrom' in pin)) {
+            if (copy.getOriginalEvents().findIndex(event => event.id === pin.id) !== -1 && !('wasCollatedFrom' in pin)) {
                 eventsInActiveLayer.push(pin)
             }
             else {
@@ -148,10 +153,10 @@ export const Desk = () => {
 
         const from = (event: AnyRollEvent | CollatedEvent) => {
             if ('wasCollatedFrom' in event) {
-                const sum = event.wasCollatedFrom.reduce((acc, curr) => acc + curr.hasDimension.horizontal.from, 0)
+                const sum = event.wasCollatedFrom.reduce((acc, curr) => acc + curr.horizontal.from, 0)
                 return sum / event.wasCollatedFrom.length
             }
-            return event.hasDimension.horizontal.from
+            return event.horizontal.from
         }
 
         const point1 = [
@@ -237,6 +242,8 @@ export const Desk = () => {
     }, [edition])
 
     const currentCopy = edition.copies.find(copy => copy.id === activeLayerId)
+
+    console.log('test current stage=', currentStage)
 
     return (
         <>
@@ -393,7 +400,7 @@ export const Desk = () => {
                                             const events = selection
                                                 .filter(s => isEditorialAssumption(s))
                                                 .filter(s => s.type === 'edit')
-                                            
+                                            console.log('events', events)
                                             if (events.length < 2) return
 
                                             events.slice(1).forEach((edit) => {
@@ -595,6 +602,7 @@ export const Desk = () => {
                             onUpdateSelection={setSelection}
                             fixedX={fixedX}
                             setFixedX={setFixedX}
+                            currentStage={edition.stages.find(stage => stage.created === currentStage)}
                         />
                     </div>
                 </Grid>

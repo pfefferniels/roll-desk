@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
-import { EventDimension } from 'linked-rolls';
 import { WithId } from 'linked-rolls/lib/WithId';
+import { EventDimension } from './RollDesk.tsx';
 
 interface RollGridProps {
     width: number;
@@ -38,12 +38,12 @@ export const RollGrid = ({
             horizontal: {
                 from: startPoint.x / zoom,
                 to: offsetX / zoom,
-                hasUnit: 'mm'
+                unit: 'mm'
             },
             vertical: {
                 from: 100 - Math.round(startPoint.y / trackHeight),
                 to: 100 - Math.round((offsetY) / trackHeight),
-                hasUnit: 'track'
+                unit: 'track'
             }
         });
     }, [isDrawing, startPoint, trackHeight, zoom]);
@@ -104,7 +104,7 @@ export const RollGrid = ({
                 <rect
                     x={rect.horizontal.from * zoom}
                     y={(100 - rect.vertical.from) * trackHeight}
-                    width={(rect.horizontal.to! - rect.horizontal.from) * zoom}
+                    width={(rect.horizontal.to - rect.horizontal.from) * zoom}
                     height={((100 - rect.vertical.to!) - (100 - rect.vertical.from)) * trackHeight}
                     fill="rgba(0, 0, 255, 0.3)"
                     stroke="blue"

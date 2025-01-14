@@ -1,25 +1,31 @@
-import { Emulation } from "linked-rolls"
+import { Emulation, Shift, Stretch } from "linked-rolls"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
 interface DynamicsProps {
     forEmulation: Emulation
     color: string
+    shift?: Shift
+    stretch?: Stretch
 }
 
-export const Dynamics = ({ forEmulation: emulation, color }: DynamicsProps) => {
+export const Dynamics = ({ forEmulation: emulation, color, shift, stretch }: DynamicsProps) => {
     const { translateX } = usePinchZoom()
+
+    const translate = (x: number) => {
+        return translateX(x * (stretch?.factor || 1) + (shift?.horizontal || 0))
+    }
 
     const treblePositions: [number, number][] = emulation.trebleVelocities
         .reduce((acc, v, i) => {
             if (i % 20 !== 0) return acc
-            acc.push([translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v])
+            acc.push([translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v])
             return acc
         }, [] as [number, number][])
 
     const bassPositions: [number, number][] = emulation.bassVelocities
         .reduce((acc, v, i) => {
             if (i % 20 !== 0) return acc
-            acc.push([translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v + 450])
+            acc.push([translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v + 450])
             return acc
         }, [] as [number, number][])
 

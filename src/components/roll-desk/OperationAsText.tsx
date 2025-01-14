@@ -8,7 +8,7 @@ interface OperationsAsSecondaryTextProps {
 export const OperationsAsText = ({ stretch, shift }: OperationsAsSecondaryTextProps) => {
     return (
         <div>
-            {shift && `${shift.horizontal.toFixed(3)}mm, ${shift.vertical} track(s)`}
+            {shift && `${(shift.horizontal / 10).toFixed(2)}cm, ${shift.vertical} track(s)`}
             <br />
             {stretch && `${((stretch.factor - 1) * 100).toFixed(3)}%`}
         </div>

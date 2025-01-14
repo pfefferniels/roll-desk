@@ -1,8 +1,9 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { keyToType, RollCopy, AnyRollEvent, EventDimension, ExpressionType } from "linked-rolls"
+import { RollCopy, AnyRollEvent, WelteT100 } from "linked-rolls"
 import { RollMeasurement } from "linked-rolls/lib/types"
 import { useState } from "react"
 import { v4 } from "uuid"
+import { EventDimension } from "./RollDesk"
 
 interface AddEventProps {
     open: boolean
@@ -12,7 +13,7 @@ interface AddEventProps {
     onClose: () => void
 }
 
-const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
+const eventTypes = ['perforation', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
 export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: AddEventProps) => {
@@ -21,10 +22,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
     const [rotation, setRotation] = useState<number>()
     const [signed, setSigned] = useState<boolean>()
 
-    // TODO: this should be part of the lib
-    const determineScope = (selection: EventDimension) => {
-        return selection.vertical.from < 15 ? 'bass' : 'treble'
-    }
+    const perforationMeaning = new WelteT100().meaningOf(selection.vertical.from)
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -86,12 +84,23 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         </>
                     )}
 
-                    {(eventType === 'expression' && (
-                        <div>
-                            Scope: {determineScope(selection)}
-                            <br />
-                            Type: {keyToType(selection.vertical.from + 13)}
-                        </div>
+                    {(perforationMeaning.type === 'expression' && (
+                        <ul>
+                            <li>
+                                Scope: {perforationMeaning.scope}
+                            </li>
+                            <li>
+                                Type: {perforationMeaning.expressionType}
+                            </li>
+                        </ul>
+                    ))}
+
+                    {(perforationMeaning.type === 'note' && (
+                        <ul>
+                            <li>
+                                Note: {perforationMeaning.pitch}
+                            </li>
+                        </ul>
                     ))}
                 </Stack>
             </DialogContent>
@@ -104,7 +113,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                             eventToAdd = {
                                 type: eventType,
                                 text: text || '[no text]',
-                                hasDimension: selection,
+                                ...selection,
                                 signed: signed === undefined ? false : signed,
                                 id: v4(),
                                 measurement
@@ -115,7 +124,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 type: eventType,
                                 text: text || '[no text]',
                                 rotation,
-                                hasDimension: selection,
+                                ...selection,
                                 id: v4(),
                                 measurement
                             }
@@ -123,22 +132,16 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         else if (eventType === 'cover') {
                             eventToAdd = {
                                 type: eventType,
-                                hasDimension: selection,
+                                ...selection,
                                 id: v4(),
                                 measurement
                             }
                         }
-                        else if (eventType === 'expression') {
-                            const key = selection.vertical.from + 13
-                            const scope = determineScope(selection)
-                            const type = keyToType(key)
-                            if (!type) return
 
+                        else if (eventType === 'perforation') {
                             eventToAdd = {
-                                type: 'expression',
-                                P2HasType: type as ExpressionType,
-                                hasScope: scope,
-                                hasDimension: selection,
+                                ...perforationMeaning,
+                                ...selection,
                                 id: v4(),
                                 measurement
                             }
@@ -149,7 +152,8 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         }
 
                         onClose()
-                    }}
+                    }
+                    }
                     variant='contained'>
                     Done
                 </Button>

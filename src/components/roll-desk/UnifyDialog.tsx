@@ -1,6 +1,5 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack } from "@mui/material"
 import { AnyRollEvent, Conjecture } from "linked-rolls"
-import { useState } from "react"
 import { v4 } from "uuid"
 
 interface UnifyProps {
@@ -14,13 +13,13 @@ interface UnifyProps {
 export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }: UnifyProps) => {
     if (selection.length === 0) return null
 
-    const froms = selection.map(e => e.hasDimension.horizontal.from)
-    const tos = selection.map(e => e.hasDimension.horizontal.to).filter(to => to !== undefined)
+    const froms = selection.map(e => e.horizontal.from)
+    const tos = selection.map(e => e.horizontal.to).filter(to => to !== undefined)
 
     const minFrom = Math.min(...froms)
     const maxTo = Math.max(...tos)
 
-    const unit = selection[0].hasDimension.horizontal.hasUnit
+    const unit = selection[0].horizontal.unit
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -45,8 +44,8 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                     onClick={() => {
                         const copy = structuredClone(selection[0])
                         copy.id = v4()
-                        copy.hasDimension.horizontal.from = minFrom
-                        copy.hasDimension.horizontal.to = maxTo
+                        copy.horizontal.from = minFrom
+                        copy.horizontal.to = maxTo
                         copy.annotates = undefined
 
                         onDone({

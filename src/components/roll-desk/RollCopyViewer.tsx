@@ -1,4 +1,4 @@
-import { AnyRollEvent, Cover, Emulation, EventDimension, Expression, HandwrittenText, Note, RollCopy, RollLabel, Stamp } from "linked-rolls"
+import { AnyRollEvent, Cover, Emulation, Expression, HandwrittenText, Note, RollCopy, RollLabel, Shift, Stamp, Stretch } from "linked-rolls"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
@@ -6,6 +6,7 @@ import { Dynamics } from "./Dynamics.tsx"
 import { RollGrid } from "./RollGrid.tsx"
 import { Cursor, FixedCursor } from "./Cursor.tsx"
 import { AssumptionUnderlay } from "./AssumptionUnderlay.tsx"
+import { EventDimension } from "./RollDesk.tsx"
 
 interface IIIFInfo {
     '@id': string;
@@ -142,7 +143,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
         // whenever the events change, update the emulation
         console.log('rerunning emulation')
         const newEmulation = new Emulation()
-        newEmulation?.emulateFromRoll(copy.getEvents().filter(e => e.type === 'note' || e.type === 'expression'))
+        newEmulation?.emulateFromRoll(copy.getOriginalEvents().filter(e => e.type === 'note' || e.type === 'expression'))
         setEmulation(newEmulation)
     }, [copy])
 
@@ -158,7 +159,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                         onSelectionDone={onSelectionDone}
                         width={100000} />
                 )}
-                {copy.getEvents().map((event) => {
+                {[...copy.conjectures.map(c => c.with).flat(), ...copy.getOriginalEvents()].map((event) => {
                     if (event.type === 'note' || event.type === 'expression' || event.type === 'cover') {
                         return (
                             <PerforatedEvent
@@ -167,6 +168,8 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                                 onClick={() => onClick(event)}
                                 onTop={onTop}
                                 color={color}
+                                stretch={copy.stretch}
+                                shift={copy.shift}
                             />)
                     }
                     else if (event.type === 'handwrittenText' || event.type === 'stamp' || event.type === 'rollLabel') {
@@ -176,13 +179,24 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                                 event={event}
                                 onTop={onTop}
                                 onClick={() => onClick(event)}
+                                stretch={copy.stretch}
+                                shift={copy.shift}
                             />
                         )
                     }
                     return null
                 })}
 
-                {emulation && <Dynamics forEmulation={emulation} color={color} />}
+                {}
+
+                {emulation && (
+                    <Dynamics
+                        forEmulation={emulation}
+                        color={color}
+                        shift={copy.shift}
+                        stretch={copy.stretch}
+                    />
+                )}
             </g>
 
             {copy.actions.map((action, i) => (
@@ -197,9 +211,15 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
 
             <Cursor
                 onFix={(x) => setFixedX(x)}
-                svgRef={svgRef} />
+                svgRef={svgRef}
+                shift={copy.shift}
+                stretch={copy.stretch}
+            />
 
-            <FixedCursor fixedAt={fixedX} />
+            <FixedCursor
+                fixedAt={fixedX}
+                shift={copy.shift}
+                stretch={copy.stretch} />
 
             <KeyboardDivision />
         </>
@@ -230,56 +250,131 @@ interface PerforatedEventProps {
     onClick: () => void
     onTop: boolean
     color: string
+    stretch?: Stretch
+    shift?: Shift
 }
 
-const PerforatedEvent = ({ event, onClick, onTop, color }: PerforatedEventProps) => {
+const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: PerforatedEventProps) => {
+    const [mouseOver, setMouseOver] = useState(false)
+
     const { playSingleNote } = usePiano()
     const { translateX, translateY } = usePinchZoom()
 
+    const x = translateX(event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))
+    const width =
+        translateX(event.horizontal.to * (stretch?.factor || 1))
+        - translateX(event.horizontal.from * (stretch?.factor || 1))
+
+    const y = translateY(100 - event.vertical.from + (shift?.vertical || 0))
+
+    console.log(shift, stretch)
+
     return (
-        <rect
-            key={event.id}
-            onClick={(e) => {
-                if (event.type === 'note') {
-                    playSingleNote(event.hasPitch)
-                }
+        <>
+            <rect
+                key={event.id}
+                onMouseOver={() => setMouseOver(true)}
+                onMouseOut={() => setMouseOver(false)}
+                onClick={(e) => {
+                    if (event.type === 'note') {
+                        playSingleNote(event.pitch)
+                    }
 
-                if (e.metaKey && event.annotates) {
-                    window.open(event.annotates)
-                    return
-                }
+                    if (e.metaKey && event.annotates) {
+                        window.open(event.annotates)
+                        return
+                    }
 
-                onClick()
-            }}
-            data-tracker-hole={event.hasDimension.vertical.from}
-            data-id={event.id}
-            id={event.id}
-            x={translateX(event.hasDimension.horizontal.from)}
-            width={translateX(event.hasDimension.horizontal.to!) - translateX(event.hasDimension.horizontal.from)}
-            height={5}
-            fillOpacity={onTop ? 0.9 : 0.2}
-            fill={event.type === 'cover' ? 'url(#patchPattern)' : color}
-            y={translateY(100 - event.hasDimension.vertical.from)}>
-        </rect>)
+                    onClick()
+                }}
+                data-tracker-hole={event.vertical.from}
+                data-id={event.id}
+                id={event.id}
+                x={x}
+                width={width}
+                height={5}
+                fillOpacity={onTop ? 0.9 : 0.2}
+                fill={event.type === 'cover' ? 'url(#patchPattern)' : color}
+                y={y}>
+            </rect>
+            {mouseOver && (
+                <>
+                    <rect
+                        x={x}
+                        y={translateY(100 - event.vertical.from) - 60}
+                        width={100}
+                        height={50}
+                        fill='white'
+                    />
+                    <text
+                        x={x}
+                        y={translateY(100 - event.vertical.from) - 50}
+                        fontSize={10}
+                        fill='black'
+                        fillOpacity={mouseOver ? 0.9 : 0.2}
+                        strokeOpacity={mouseOver ? 0.9 : 0.2}
+                    >
+                        {event.type === 'note' && (
+                            <>
+                                <tspan x={x}>
+                                    Track <tspan fontWeight='bold'>{event.type === 'note' ? event.vertical.from : '[unknown]'}</tspan>
+                                </tspan>
+                                <tspan x={x} dy='1.2em'>
+                                    Pitch: <tspan fontWeight='bold'>{event.pitch}</tspan>
+                                </tspan>
+                            </>
+                        )}
+                        {event.type === 'expression' && (
+                            <tspan x={x} dy='1.2em'>
+                                Expression: <tspan fontWeight='bold'>{event.expressionType}</tspan>
+                            </tspan>
+                        )}
+                        <tspan x={x} dy='1.2em'>
+                            starts at: {(event.horizontal.from / 10).toFixed(2)}cm{' '}
+                            {(shift && stretch) && (
+                                <tspan>
+                                    ({((event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0)) / 10).toFixed(2)}cm)
+                                </tspan>
+                            )}
+                        </tspan>
+                        <tspan x={x} dy='1.2em'>
+                            spans: {((event.horizontal.to - event.horizontal.from) / 10).toFixed(2)}cm{' '}
+                            {(shift && stretch) && (
+                                <tspan>
+                                    ({
+                                        (((event.horizontal.to * (stretch?.factor || 1) + (shift?.horizontal || 0)) - 
+                                        (event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))) / 10).toFixed(2)}cm)
+                                </tspan>
+                            )}
+                        </tspan>
+                    </text>
+                </>
+            )}
+        </>
+    )
 }
 
 interface TextEventProps {
     event: HandwrittenText | Stamp | RollLabel
     onClick: () => void
     onTop: boolean
+    shift?: Shift
+    stretch?: Stretch
 }
 
-const TextEvent = ({ event, onClick, onTop }: TextEventProps) => {
+const TextEvent = ({ event, onClick, onTop, shift, stretch }: TextEventProps) => {
     const { translateX, translateY } = usePinchZoom()
 
-    const horizontal = event.hasDimension.horizontal
-    const vertical = event.hasDimension.vertical
+    const horizontal = event.horizontal
+    const vertical = event.vertical
 
-    const x = translateX(horizontal.from)
-    const y = translateY(100 - vertical.from)
+    const x = translateX(horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))
+    const y = translateY(100 - vertical.from + (shift?.vertical || 0))
 
-    const width = translateX((event.hasDimension.horizontal.to || 0) - event.hasDimension.horizontal.from)
-    const height = translateY((100 - (event.hasDimension.vertical.to || 0)) - (100 - event.hasDimension.vertical.from))
+    const width = translateX(
+        ((event.horizontal.to || 0) - event.horizontal.from) * (stretch?.factor || 1)
+    )
+    const height = translateY((100 - (event.vertical.to || 0)) - (100 - event.vertical.from))
 
     return (
         <g className='textEvent' data-id={event.id} onClick={onClick}>
@@ -290,8 +385,8 @@ const TextEvent = ({ event, onClick, onTop }: TextEventProps) => {
                 strokeWidth={0}
                 x={x}
                 y={y}
-                width={translateX(event.hasDimension.horizontal.to! - event.hasDimension.horizontal.from)}
-                height={translateY((100 - event.hasDimension.vertical.to!) - (100 - event.hasDimension.vertical.from))}
+                width={width}
+                height={height}
             />
             <text
                 fill='black'

@@ -19,12 +19,12 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
 
-    const onsets = collatedFrom.map(e => e.hasDimension.horizontal.from).sort()
-    const offsets = collatedFrom.map(e => e.hasDimension.horizontal.to!).sort()
+    const onsets = collatedFrom.map(e => e.horizontal.from).sort()
+    const offsets = collatedFrom.map(e => e.horizontal.to).sort()
 
     if (onsets.length === 0 || offsets.length === 0) return null
 
-    const type = collatedFrom[0].type === 'expression' && (collatedFrom[0] as Expression).P2HasType
+    const type = collatedFrom[0].type === 'expression' && (collatedFrom[0] as Expression).expressionType
 
     const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(translateX)
     const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(translateX)
@@ -33,7 +33,7 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
     const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
     const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2
 
-    const trackerHole = translateY(100 - collatedFrom[0].hasDimension.vertical.from)
+    const trackerHole = translateY(100 - collatedFrom[0].vertical.from)
 
     return (
         <g
@@ -115,7 +115,7 @@ interface WorkingPaperProps {
     onClick: (event: CollatedEvent | AnyEditorialAssumption) => void
 }
 
-export const WorkingPaper = memo(({ numberOfRolls, currentStage, edition, onClick }: WorkingPaperProps) => {
+export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
     const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
@@ -137,8 +137,8 @@ export const WorkingPaper = memo(({ numberOfRolls, currentStage, edition, onClic
         // and sort them, so that smaller durations will be drawn last
         const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
         const durationOf = (event: CollatedEvent) => {
-            const from = avg(event.wasCollatedFrom.map(e => e.hasDimension.horizontal.from))
-            const to = avg(event.wasCollatedFrom.map(e => e.hasDimension.horizontal.to!))
+            const from = avg(event.wasCollatedFrom.map(e => e.horizontal.from))
+            const to = avg(event.wasCollatedFrom.map(e => e.horizontal.to))
 
             return to - from
         }
@@ -185,31 +185,38 @@ export const WorkingPaper = memo(({ numberOfRolls, currentStage, edition, onClic
         setUnderlays(underlays)
     }, [edition, zoom, onClick, currentStage])
 
-    // console.log('underlays=', underlays)
-
     return (
         <g className='collated-copies' ref={svgRef}>
             {underlays}
 
-            {edition.collation.events.map((event, i) => (
-                <CollatedEventViewer
-                    key={`workingPaper_${event.id || i}`}
-                    event={event}
-                    subjectOfAssumption={false}
-                    highlight={event.wasCollatedFrom?.length !== numberOfRolls}
-                    onClick={() => {
-                        if (!emulations.length) return
+            {edition.collation.events
+                .filter(event => {
+                    if (currentStage?.edits.find(edit => edit.contains.includes(event))) return true
 
-                        const performingEvents = emulations[0].findEventsPerforming(event.id)
-                        const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
-                        const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
-                        if (noteOn && noteOff) {
-                            playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
-                        }
+                    return currentStage
+                        ? findWitnessesWithinStage(event, currentStage.created).size > 0
+                        : true
+                }
+                )
+                .map((event, i) => (
+                    <CollatedEventViewer
+                        key={`workingPaper_${event.id || i}`}
+                        event={event}
+                        subjectOfAssumption={false}
+                        highlight={event.wasCollatedFrom?.length !== numberOfRolls}
+                        onClick={() => {
+                            if (!emulations.length) return
 
-                        onClick(event)
-                    }} />
-            ))}
+                            const performingEvents = emulations[0].findEventsPerforming(event.id)
+                            const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
+                            const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
+                            if (noteOn && noteOff) {
+                                playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                            }
+
+                            onClick(event)
+                        }} />
+                ))}
 
             {emulations.map((emulation, i) => {
                 return (
@@ -218,4 +225,4 @@ export const WorkingPaper = memo(({ numberOfRolls, currentStage, edition, onClic
             })}
         </g>
     )
-})
+}

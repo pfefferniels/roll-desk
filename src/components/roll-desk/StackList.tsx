@@ -55,7 +55,10 @@ export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLa
                                         {stackItem.id !== 'working-paper' && (
                                             <IconButton
                                                 edge="end"
-                                                onClick={() => setSelectedCopy(copy)}
+                                                onClick={() => {
+                                                    setRollCopyDialogOpen(true)
+                                                    setSelectedCopy(copy)
+                                                }}
                                             >
                                                 <Edit />
                                             </IconButton>
