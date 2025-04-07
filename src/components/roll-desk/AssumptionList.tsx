@@ -1,6 +1,6 @@
 import { Delete, Edit } from "@mui/icons-material";
 import { IconButton, List, ListItem, ListItemButton, ListItemSecondaryAction, ListItemText } from "@mui/material";
-import { AnyEditorialAssumption, Stage } from "linked-rolls";
+import { AnyEditorialAssumption } from "linked-rolls";
 import { EditArgumentation } from "./EditArgumentation";
 import { useEffect, useRef, useState } from "react";
 

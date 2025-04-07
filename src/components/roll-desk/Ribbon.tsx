@@ -1,4 +1,4 @@
-import { Box, Paper, Stack } from "@mui/material"
+import { Stack } from "@mui/material"
 
 interface RibbonProps {
     title: string
