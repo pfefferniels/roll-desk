@@ -148,34 +148,32 @@ export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: 
 
     useLayoutEffect(() => {
         const underlays = []
-        for (const assumption of edition.actions) {
-            if (!assumption) continue
+        if (!currentStage) return
 
+        for (const edit of currentStage.edits) {
             let witnessSigla: Set<string> = new Set()
-            if (assumption.type === 'edit' && currentStage) {
-                if (assumption.action === 'insert') {
+            if (edit.action === 'insert') {
+                witnessSigla = new Set(
+                    edit.contains
+                        .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
+                        .flat()
+                        .map(copy => copy.siglum))
+            }
+            else if (edit.action === 'delete') {
+                const original = currentStage.basedOn.original
+                if ('siglum' in original) {
                     witnessSigla = new Set(
-                        assumption.contains
+                        edit.contains
                             .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
                             .flat()
                             .map(copy => copy.siglum))
-                }
-                else if (assumption.action === 'delete') {
-                    const original = currentStage.basedOn.original
-                    if ('siglum' in original) {
-                        witnessSigla = new Set(
-                            assumption.contains
-                                .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
-                                .flat()
-                                .map(copy => copy.siglum))
-                    }
                 }
             }
 
             underlays.push((
                 <AssumptionUnderlay
-                    key={`underlay_${assumption.id}`}
-                    assumption={assumption}
+                    key={`underlay_${edit.id}`}
+                    assumption={edit}
                     svgRef={svgRef}
                     onClick={onClick}
                     witnessSigla={witnessSigla}
