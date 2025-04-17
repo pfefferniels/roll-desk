@@ -125,9 +125,12 @@ export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: 
     const svgRef = useRef<SVGGElement>(null)
 
     useEffect(() => {
-        // whenever the events change, update the emulation
         const newEmulations = []
+
         for (const copy of edition.copies) {
+            // only include the copies that are witnessing the current stage
+            if (currentStage && !currentStage?.created.witnesses.includes(copy)) continue
+
             const newEmulation = new Emulation()
             newEmulation.emulateFromEdition(edition, copy)
             newEmulations.push(newEmulation)
@@ -144,7 +147,7 @@ export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: 
         }
 
         edition.collation.events.sort((a, b) => durationOf(b) - durationOf(a))
-    }, [edition])
+    }, [edition, currentStage])
 
     useLayoutEffect(() => {
         const underlays = []
