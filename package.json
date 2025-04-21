@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "dependencies": {
+  "main": "dist/measuring-early-records.js",
+  "types": "dist/index.d.ts",
+    "dependencies": {
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@lexical/react": "^0.12.2",
