@@ -21,6 +21,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
     const [signed, setSigned] = useState<boolean>()
+    const [material, setMaterial] = useState<string>()
 
     const perforationMeaning = eventType === 'perforation'
         ? new WelteT100().meaningOf(selection.vertical.from)
@@ -104,6 +105,19 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                             </li>
                         </ul>
                     ))}
+
+                    {(eventType === 'cover') && (
+                        <FormControl>
+                            <FormLabel>Material, color, ...</FormLabel>
+                            <TextField
+                                size='small'
+                                variant='outlined'
+                                placeholder='Material'
+                                value={material}
+                                onChange={e => setMaterial(e.target.value)}
+                            />
+                        </FormControl>
+                    )}
                 </Stack>
             </DialogContent>
 
@@ -136,7 +150,8 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 type: eventType,
                                 ...selection,
                                 id: v4(),
-                                measurement
+                                measurement,
+                                note: material
                             }
                         }
 
