@@ -1,9 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { usePiano } from "react-pianosound"
+// import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, RollCopy, Stage, PreliminaryRoll } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
+
+const isWitnessOf = (witness: RollCopy, stage: Stage | PreliminaryRoll) => {
+    if (!('witnesses' in stage)) return false
+    return stage.witnesses.includes(witness)
+}
 
 interface CollatedEventViewerProps {
     event: CollatedEvent
@@ -109,25 +114,37 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
 }
 
 interface WorkingPaperProps {
-    numberOfRolls: number
     currentStage?: StageCreation
     edition: Edition
-    onClick: (event: CollatedEvent | AnyEditorialAssumption) => void
+    onClick?: (event: CollatedEvent | AnyEditorialAssumption) => void
 }
 
-export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: WorkingPaperProps) => {
+export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperProps) => {
     const [emulations, setEmulations] = useState<Emulation[]>([])
     const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
     const { zoom } = usePinchZoom()
-    const { playSingleNote } = usePiano()
+    // const { playSingleNote } = usePiano()
 
     const svgRef = useRef<SVGGElement>(null)
+
+    const numberOfRolls = edition.copies.length
 
     useEffect(() => {
         // whenever the events change, update the emulation
         const newEmulations = []
         for (const copy of edition.copies) {
+            // console.log(copy.id, currentStage?.basedOn.original.witnesses[0].id)
+            if (
+                currentStage && 
+                !isWitnessOf(copy, currentStage.created) && 
+                !isWitnessOf(copy, currentStage.basedOn.original)
+            ) {
+                // if the user selected a stage, only show the 
+                // emulations which are related to it
+                continue
+            }
+
             const newEmulation = new Emulation()
             newEmulation.emulateFromEdition(edition, copy)
             newEmulations.push(newEmulation)
@@ -144,42 +161,20 @@ export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: 
         }
 
         edition.collation.events.sort((a, b) => durationOf(b) - durationOf(a))
-    }, [edition])
+    }, [edition, currentStage])
 
     useLayoutEffect(() => {
-        const underlays = []
         if (!currentStage) return
 
-        for (const edit of currentStage.edits) {
-            let witnessSigla: Set<string> = new Set()
-            if (edit.action === 'insert') {
-                witnessSigla = new Set(
-                    edit.contains
-                        .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
-                        .flat()
-                        .map(copy => copy.siglum))
-            }
-            else if (edit.action === 'delete') {
-                const original = currentStage.basedOn.original
-                if ('siglum' in original) {
-                    witnessSigla = new Set(
-                        edit.contains
-                            .map(e => [...findWitnessesWithinStage(e, currentStage.created)])
-                            .flat()
-                            .map(copy => copy.siglum))
-                }
-            }
+        const underlays = currentStage.edits.map(edit => (
+            <AssumptionUnderlay
+                key={`underlay_${edit.id}`}
+                assumption={edit}
+                svgRef={svgRef}
+                onClick={onClick || (() => { })}
+            />
+        ))
 
-            underlays.push((
-                <AssumptionUnderlay
-                    key={`underlay_${edit.id}`}
-                    assumption={edit}
-                    svgRef={svgRef}
-                    onClick={onClick}
-                    witnessSigla={witnessSigla}
-                />
-            ))
-        }
         setUnderlays(underlays)
     }, [edition, zoom, onClick, currentStage])
 
@@ -189,13 +184,16 @@ export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: 
 
             {edition.collation.events
                 .filter(event => {
-                    if (currentStage?.edits.find(edit => edit.contains.includes(event))) return true
+                    if (currentStage?.edits
+                        .find(edit => [...(edit.insert || []), ...(edit.delete || [])].includes(event))
+                    ) {
+                        return true
+                    }
 
                     return currentStage
                         ? findWitnessesWithinStage(event, currentStage.created).size > 0
                         : true
-                }
-                )
+                })
                 .map((event, i) => (
                     <CollatedEventViewer
                         key={`workingPaper_${event.id || i}`}
@@ -209,11 +207,12 @@ export const WorkingPaper = ({ numberOfRolls, currentStage, edition, onClick }: 
                             const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
                             const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
                             if (noteOn && noteOff) {
-                                playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                                // playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
                             }
 
-                            onClick(event)
-                        }} />
+                            onClick && onClick(event)
+                        }}
+                    />
                 ))}
 
             {emulations.map((emulation, i) => {

@@ -377,6 +377,7 @@ export const Desk = () => {
                                             const creation = edition.stages.find(stage => stage.created === currentStage)
                                             if (!creation) return 
 
+                                            creation.edits = []
                                             creation.fillEdits(edition.collation)
                                         }}
                                         >
@@ -394,11 +395,18 @@ export const Desk = () => {
                                             const events = selection
                                                 .filter(s => isEditorialAssumption(s))
                                                 .filter(s => s.type === 'edit')
-                                            console.log('events', events)
                                             if (events.length < 2) return
 
                                             events.slice(1).forEach((edit) => {
-                                                events[0].contains.push(...edit.contains)
+                                                if (edit.insert) {
+                                                    events[0].insert = events[0].insert || []
+                                                    events[0].insert.push(...edit.insert)
+                                                }
+                                                if (edit.delete) {
+                                                    events[0].delete = events[0].delete || []
+                                                    events[0].delete.push(...edit.delete)
+                                                }
+
                                                 const index = stageCreation.edits.indexOf(edit)
                                                 if (index !== -1) {
                                                     stageCreation.edits.splice(index, 1)
@@ -406,31 +414,12 @@ export const Desk = () => {
                                             })
 
                                             setEdition(edition.shallowClone())
-                                            setSelection([])
+                                            setSelection([events[0]])
                                         }}
                                         startIcon={<GroupWork />}
                                         disabled={activeLayerId !== 'working-paper'}
                                     >
                                         Group
-                                    </Button>
-                                    <Button
-                                        size='small'
-                                        sx={{ justifyContent: 'flex-start' }}
-                                        onClick={() => {
-                                            selection
-                                                .filter(s => 'type' in s && s.type === 'edit')
-                                                .forEach((group, i, arr) => {
-                                                    if (i === 0) return
-                                                    group.follows = arr[i - 1]
-                                                })
-
-                                            setEdition(edition.shallowClone())
-                                            setSelection([])
-                                        }}
-                                        startIcon={<Link />}
-                                        disabled={activeLayerId !== 'working-paper'}
-                                    >
-                                        Chain
                                     </Button>
                                     <Button
                                         size='small'
@@ -576,7 +565,10 @@ export const Desk = () => {
                                 <AssumptionList
                                     assumptions={(currentCopy ?? edition).actions}
                                     selection={selection.filter(isEditorialAssumption)}
-                                    onUpdate={() => setEdition(edition.shallowClone())}
+                                    onUpdate={() => {
+                                        setSelection([])
+                                        setEdition(edition.shallowClone())
+                                    }}
                                     removeAction={(action) => {
                                         (currentCopy ?? edition).removeEditorialAction(action)
                                         setEdition(edition.shallowClone())
