@@ -17,7 +17,7 @@ import { AddHandDialog } from "./AddHand"
 import { LayeredRolls } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { AddEventDialog } from "./AddEvent"
-import { EditArgumentation } from "./EditArgumentation"
+import { EditAssumption } from "./EditAssumption"
 import { ColorDialog } from "./ColorDialog"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
@@ -663,7 +663,7 @@ export const Desk = () => {
 
             {
                 editArgumentationDialogOpen && (
-                    <EditArgumentation
+                    <EditAssumption
                         existingPremises={edition.actions.filter(isEditorialAssumption)}
                         open={editArgumentationDialogOpen}
                         onClose={() => {

@@ -1,7 +1,7 @@
 import { Delete, Edit } from "@mui/icons-material";
 import { IconButton, List, ListItem, ListItemButton, ListItemSecondaryAction, ListItemText } from "@mui/material";
 import { AnyEditorialAssumption } from "linked-rolls";
-import { EditArgumentation } from "./EditArgumentation";
+import { EditAssumption } from "./EditAssumption";
 import { useEffect, useRef, useState } from "react";
 
 const titleFor = (assumption: AnyEditorialAssumption) => {
