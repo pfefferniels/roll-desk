@@ -11,7 +11,7 @@ interface SelectionProps {
 export const Selection = ({ pins, remove }: SelectionProps) => {
     return (
         <g className="selection">
-            {pins.map((pin, i) => {
+            {pins.map(pin => {
                 return (
                     <use
                         key={`selected_${pin.id}`}
