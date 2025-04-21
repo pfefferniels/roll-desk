@@ -50,10 +50,7 @@ export const AssignHand = ({ copy, selection, clearSelection, onDone, open }: As
                                 hand: copy.hands.find(e => e.id === assignedHand)!,
                                 target: selection,
                                 certainty: 'likely',
-                                argumentation: {
-                                    actor: '#np',
-                                    premises: []
-                                }
+                                argumentation: {}
                             })
                         }
                         clearSelection()

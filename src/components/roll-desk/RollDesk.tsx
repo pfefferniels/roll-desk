@@ -180,10 +180,7 @@ export const Desk = () => {
                 type: 'stretch',
                 factor: stretch,
                 certainty: 'likely',
-                argumentation: {
-                    actor: '#np',
-                    premises: []
-                }
+                argumentation: {}
             },
             {
                 id: v4(),
@@ -191,10 +188,7 @@ export const Desk = () => {
                 vertical: 0,
                 horizontal: shift,
                 certainty: 'likely',
-                argumentation: {
-                    actor: '#np',
-                    premises: []
-                }
+                argumentation: {}
             }
         ])
 
