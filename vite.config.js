@@ -13,7 +13,7 @@ export default defineConfig(() => {
             isLib
                 ? {
                     lib: {
-                        entry: path.resolve(__dirname, 'src/components/index.ts'),
+                        entry: path.resolve(__dirname, 'src/index.ts'),
                         formats: ['es']
                     },
                     rollupOptions: {
@@ -34,7 +34,7 @@ export default defineConfig(() => {
             react(),
             eslint(),
             dts({
-                include: 'src/components',
+                include: 'src',
                 tsconfigPath: path.resolve(__dirname, 'tsconfig.json'),
             })
         ],

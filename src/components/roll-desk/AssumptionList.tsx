@@ -1,16 +1,24 @@
 import { Delete, Edit } from "@mui/icons-material";
 import { IconButton, List, ListItem, ListItemButton, ListItemSecondaryAction, ListItemText } from "@mui/material";
 import { AnyEditorialAssumption } from "linked-rolls";
-import { EditArgumentation } from "./EditArgumentation";
+import { EditAssumption } from "./EditAssumption";
 import { useEffect, useRef, useState } from "react";
 
-const titleFor = (assumption: AnyEditorialAssumption) => {
-    let title: string = assumption.type 
+const scrollIntoView = (assumption: AnyEditorialAssumption) => {
+    const el = document.getElementById(`assumptionItem_${assumption.id}`)
+    el && el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+export const titleFor = (assumption: AnyEditorialAssumption) => {
+    let title: string = assumption.type
     if (assumption.type === 'handAssignment') {
         title = `Hand Assignment → ${assumption.hand.carriedOutBy}`
     }
     else if (assumption.type === 'objectUsage') {
         title = `Using → ${('siglum' in assumption.original) && assumption.original.siglum}`
+    }
+    else if (assumption.type === 'edit') {
+        title = `Edit ${assumption.motivation ? `(${assumption.motivation})` : ''}`
     }
     return title
 }
@@ -28,10 +36,7 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
 
     useEffect(() => {
         if (selection.length > 0 && listRef.current) {
-            const firstSelectedItem = document.getElementById(`assumptionItem_${selection[0].id}`)
-            if (firstSelectedItem) {
-                firstSelectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-            }
+            scrollIntoView(selection[0])
         }
     }, [selection])
 
@@ -44,31 +49,51 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
                             <ListItemText
                                 primary={
                                     <div>
-                                        <b>{titleFor(assumption)}</b>{' '}<br/>
+                                        <div><b>{titleFor(assumption)}</b>{' '}</div>
+                                        <div style={{ color: 'gray' }}>{assumption.id.slice(0, 8)}</div>
+                                        {assumption.type === 'intention' && (
+                                            <div>{assumption.description}</div>
+                                        )}
                                         {assumption.certainty && (
-                                            <span style={{ color: 'gray' }}>certainty: {assumption.certainty}</span>
+                                            <div>certainty: {assumption.certainty}</div>
                                         )}
                                     </div>
                                 }
                                 secondary={
-                                    <p style={{
+                                    <div style={{
                                         maxWidth: '70%'
                                     }}
                                     >
-                                        <b>{assumption.argumentation.premises.length === 0 ? 'No premises' : 'Premises'}</b>
-                                        <ul>
-                                            {assumption.argumentation.premises.map((premise, i) => {
-                                                return (
-                                                    <li key={`premise${i}`}>
-                                                        {typeof premise === 'string' ? premise : `${premise.type}: ${premise.argumentation.note}`}<sup>{assumption.argumentation.actor}</sup>
+                                        {(assumption.reasons || []).map(reason => {
+                                            return (
+                                                <div>
+                                                    <b>{reason.type}</b>
+                                                    {reason.note && <div>{reason.note}</div>}
+                                                    <br />
+                                                    {reason.type === 'inference' && (
+                                                        <ul>
+                                                            {reason.premises.map((premise, i) => {
+                                                                return (
+                                                                    <li
+                                                                        key={`premise${i}`}
+                                                                        onClick={() => {
+                                                                            scrollIntoView(premise)
+                                                                        }}
+                                                                    >
+                                                                        {typeof premise === 'string' ? premise : titleFor(premise)}
+                                                                    </li>
+                                                                )
+                                                            })}
+                                                        </ul>
+                                                    )}
 
-                                                    </li>
-                                                )
-                                            })}
-                                        </ul>
-                                        <b>Note: </b>
-                                        {assumption.argumentation.note}
-                                    </p>
+                                                    {reason.type === 'observation' && (
+                                                        <span>{(reason.observed || []).length}</span>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 } />
                             <ListItemSecondaryAction>
                                 <>
@@ -86,7 +111,7 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
             })}
 
             {assumptionToEdit && (
-                <EditArgumentation
+                <EditAssumption
                     existingPremises={assumptions}
                     open={assumptionToEdit !== undefined}
                     onClose={() => {

@@ -88,10 +88,7 @@ export const StageCreationDialog = ({ open, edition, onClose, onDone, clearSelec
                             type: 'objectUsage',
                             original: prev || { 'id': 'preliminary' },
                             certainty: 'likely',
-                            argumentation: {
-                                actor: resp,
-                                premises: []
-                            }
+                            argumentation: {}
                         }
 
                         onDone(new StageCreation(stage, basedOn))

@@ -54,10 +54,7 @@ export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }
                             replaced: selection,
                             with: [copy],
                             certainty: 'likely',
-                            argumentation: {
-                                actor: '#np',
-                                premises: []
-                            }
+                            argumentation: {}
                         })
                         clearSelection()
                         onClose()

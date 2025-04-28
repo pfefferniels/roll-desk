@@ -96,7 +96,7 @@ export const Cursor = ({ svgRef, onFix, shift, stretch }: CursorProps) => {
                 x={translatedX}
                 y={10}
                 fontSize={12}
-                textAnchor='middle'
+                textAnchor='left'
                 fill='black'
                 className='cursor'
             >

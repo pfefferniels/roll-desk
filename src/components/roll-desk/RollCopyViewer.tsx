@@ -1,7 +1,7 @@
 import { AnyRollEvent, Cover, Emulation, Expression, HandwrittenText, Note, RollCopy, RollLabel, Shift, Stamp, Stretch } from "linked-rolls"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
-import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Dynamics } from "./Dynamics.tsx"
 import { RollGrid } from "./RollGrid.tsx"
 import { Cursor, FixedCursor } from "./Cursor.tsx"
@@ -38,50 +38,48 @@ async function tilesAsSVGImage(
 ) {
     const dpi = 300.25
 
-    const tileSize = iiifInfo.tiles[0].width;
+    const tileWidth = iiifInfo.width;
+    const tileHeight = iiifInfo.tiles[0].height * 4;
 
     // TODO: Calculate the zoom level that best matches the stretch factors
     // Also take into account which part of the roll is visible to the 
     // user at the moment
-    const scale = 16;
+    const scale = 8;
 
-    const rows = Math.ceil(iiifInfo.height / tileSize);
-    const cols = Math.ceil(iiifInfo.width / tileSize);
+    const rows = Math.ceil(iiifInfo.height / tileHeight);
 
     const images = [];
     for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-            const region = `${x * tileSize},${y * tileSize},${tileSize},${tileSize}`;
-            const size = `${iiifInfo.width / scale},`;
-            const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
+        const region = `${0},${y * tileHeight},${iiifInfo.width},${tileHeight}`;
+        const size = `${iiifInfo.width / scale},`;
+        const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
 
-            const newX = (pixelsToMM(y * tileSize, dpi) + shiftOp) * stretchX * stretchOp;
-            const xAsTrack = Math.round(((x * tileSize) - margins.bass) / holeSeparation)
-            const newY = (74 - xAsTrack) * stretchY + stretchY / 2
-            const width = pixelsToMM(tileSize, dpi) * stretchX * stretchOp;
-            const height = tileSize / holeSeparation * stretchY;
+        const newX = (pixelsToMM(y * tileHeight, dpi) + shiftOp) * stretchX * stretchOp;
+        const xAsTrack = 74/* Math.round(margins.bass / holeSeparation)*/
+        const newY = (74 - xAsTrack) * stretchY + stretchY / 2
+        const width = pixelsToMM(tileHeight, dpi) * stretchX * stretchOp;
+        const height = tileWidth / holeSeparation * stretchY;
 
-            images.push((
-                <image
-                    key={`tile_${y}${x}`}
-                    xlinkHref={tileUrl}
-                    x={newX}
-                    y={newY}
-                    width={width}
-                    height={height}
-                    opacity={opacity}
-                    viewBox={[0, 0, width, height].join(' ')}
-                    preserveAspectRatio='none'
-                />
-            ));
-        }
+        images.push((
+            <image
+                key={`tile_${y}`}
+                xlinkHref={tileUrl}
+                x={newX}
+                y={newY}
+                width={width}
+                height={height}
+                opacity={opacity}
+                viewBox={[0, 0, width, height].join(' ')}
+                preserveAspectRatio='none'
+            />
+        ));
     }
     return images;
 }
 
 interface RollCopyViewerProps {
     copy: RollCopy
-    onTop: boolean
+    onTop?: boolean
     onClick: (e: AnyRollEvent) => void
     color: string
     onSelectionDone: (dimension: EventDimension) => void
@@ -91,7 +89,7 @@ interface RollCopyViewerProps {
     facsimileOpacity: number
 }
 
-export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimile, facsimileOpacity }: RollCopyViewerProps) => {
+export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, fixedX, setFixedX, facsimile, facsimileOpacity }: RollCopyViewerProps) => {
     const { zoom, trackHeight } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
@@ -134,6 +132,9 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                     reader.readAsDataURL(facsimile)
                 }
             }
+            else {
+                setTiles([])
+            }
         }
 
         renderIIIF()
@@ -141,13 +142,10 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
 
     useEffect(() => {
         // whenever the events change, update the emulation
-        console.log('rerunning emulation')
         const newEmulation = new Emulation()
         newEmulation?.emulateFromRoll(copy.getOriginalEvents().filter(e => e.type === 'note' || e.type === 'expression'))
         setEmulation(newEmulation)
     }, [copy])
-
-    console.log(copy, 'onTop:', onTop)
 
     return (
         <>
@@ -159,6 +157,15 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                         onSelectionDone={onSelectionDone}
                         width={100000} />
                 )}
+                {copy.actions.map((action, i) => (
+                    <AssumptionUnderlay
+                        assumption={action}
+                        key={`underlay_${action.id}`}
+                        svgRef={svgRef}
+                        onClick={() => { }}
+                    />
+                ))}
+
                 {[...copy.conjectures.map(c => c.with).flat(), ...copy.getOriginalEvents()].map((event) => {
                     if (event.type === 'note' || event.type === 'expression' || event.type === 'cover') {
                         return (
@@ -166,7 +173,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                                 key={event.id}
                                 event={event}
                                 onClick={() => onClick(event)}
-                                onTop={onTop}
+                                onTop={onTop === undefined ? true : onTop}
                                 color={color}
                                 stretch={copy.stretch}
                                 shift={copy.shift}
@@ -177,7 +184,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                             <TextEvent
                                 key={event.id}
                                 event={event}
-                                onTop={onTop}
+                                onTop={onTop === undefined ? true : onTop}
                                 onClick={() => onClick(event)}
                                 stretch={copy.stretch}
                                 shift={copy.shift}
@@ -187,7 +194,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                     return null
                 })}
 
-                {}
+                { }
 
                 {emulation && (
                     <Dynamics
@@ -198,16 +205,6 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
                     />
                 )}
             </g>
-
-            {copy.actions.map((action, i) => (
-                <AssumptionUnderlay
-                    assumption={action}
-                    key={`underlay_${action.id}`}
-                    svgRef={svgRef}
-                    onClick={() => { }}
-                />
-            ))
-            }
 
             <Cursor
                 onFix={(x) => setFixedX(x)}
@@ -224,7 +221,7 @@ export const RollCopyViewer = memo(({ copy, onTop, color, onClick, onSelectionDo
             <KeyboardDivision />
         </>
     )
-})
+}
 
 const KeyboardDivision = () => {
     const { translateY } = usePinchZoom()
@@ -257,7 +254,7 @@ interface PerforatedEventProps {
 const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: PerforatedEventProps) => {
     const [mouseOver, setMouseOver] = useState(false)
 
-    const { playSingleNote } = usePiano()
+    // const { playSingleNote } = usePiano()
     const { translateX, translateY } = usePinchZoom()
 
     const x = translateX(event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))
@@ -267,8 +264,6 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
 
     const y = translateY(100 - event.vertical.from + (shift?.vertical || 0))
 
-    console.log(shift, stretch)
-
     return (
         <>
             <rect
@@ -277,7 +272,7 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
                 onMouseOut={() => setMouseOver(false)}
                 onClick={(e) => {
                     if (event.type === 'note') {
-                        playSingleNote(event.pitch)
+                        // playSingleNote(event.pitch)
                     }
 
                     if (e.metaKey && event.annotates) {
@@ -342,8 +337,8 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
                             {(shift && stretch) && (
                                 <tspan>
                                     ({
-                                        (((event.horizontal.to * (stretch?.factor || 1) + (shift?.horizontal || 0)) - 
-                                        (event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))) / 10).toFixed(2)}cm)
+                                        (((event.horizontal.to * (stretch?.factor || 1) + (shift?.horizontal || 0)) -
+                                            (event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))) / 10).toFixed(2)}cm)
                                 </tspan>
                             )}
                         </tspan>
