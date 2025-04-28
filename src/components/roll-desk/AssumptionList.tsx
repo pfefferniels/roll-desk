@@ -17,6 +17,9 @@ export const titleFor = (assumption: AnyEditorialAssumption) => {
     else if (assumption.type === 'objectUsage') {
         title = `Using → ${('siglum' in assumption.original) && assumption.original.siglum}`
     }
+    else if (assumption.type === 'edit') {
+        title = `Edit ${assumption.motivation ? `(${assumption.motivation})` : ''}`
+    }
     return title
 }
 
@@ -40,16 +43,19 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
     return (
         <List ref={listRef}>
             {assumptions.map(assumption => {
-                // const beliefsAndObservations = (assumption.argumentation.adoptedBeliefs || []).concat(assumption.argumentation.observations || [])
                 return (
                     <ListItem key={`assumptionItem_${assumption.id}`} id={`assumptionItem_${assumption.id}`}>
                         <ListItemButton selected={selection.includes(assumption)}>
                             <ListItemText
                                 primary={
                                     <div>
-                                        <b>{titleFor(assumption)}</b>{' '}<br />
+                                        <div><b>{titleFor(assumption)}</b>{' '}</div>
+                                        <div style={{ color: 'gray' }}>{assumption.id.slice(0, 8)}</div>
+                                        {assumption.type === 'intention' && (
+                                            <div>{assumption.description}</div>
+                                        )}
                                         {assumption.certainty && (
-                                            <span style={{ color: 'gray' }}>certainty: {assumption.certainty}</span>
+                                            <div>certainty: {assumption.certainty}</div>
                                         )}
                                     </div>
                                 }
@@ -58,73 +64,35 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
                                         maxWidth: '70%'
                                     }}
                                     >
-                                        <b>{(assumption.argumentation.premises || []).length === 0 ? 'No premises' : 'Premises'}</b>
-                                        <ul>
-                                            {(assumption.argumentation.premises || []).map((premise, i) => {
-                                                return (
-                                                    <li
-                                                        key={`premise${i}`}
-                                                        onClick={() => {
-                                                            scrollIntoView(premise)
-                                                        }}
-                                                    >
-                                                        {typeof premise === 'string' ? premise : titleFor(premise)}
-                                                    </li>
-                                                )
-                                            })}
-                                        </ul>
+                                        {(assumption.reasons || []).map(reason => {
+                                            return (
+                                                <div>
+                                                    <b>{reason.type}</b>
+                                                    {reason.note && <div>{reason.note}</div>}
+                                                    <br />
+                                                    {reason.type === 'inference' && (
+                                                        <ul>
+                                                            {reason.premises.map((premise, i) => {
+                                                                return (
+                                                                    <li
+                                                                        key={`premise${i}`}
+                                                                        onClick={() => {
+                                                                            scrollIntoView(premise)
+                                                                        }}
+                                                                    >
+                                                                        {typeof premise === 'string' ? premise : titleFor(premise)}
+                                                                    </li>
+                                                                )
+                                                            })}
+                                                        </ul>
+                                                    )}
 
-                                        {assumption.argumentation.observations && (
-                                            <>
-                                                <b>{assumption.argumentation.observations.length > 0 && 'Observations'}</b>
-                                                <ul>
-                                                    {assumption.argumentation.observations.map((observation, i) => {
-                                                        return (
-                                                            <li
-                                                                key={`observation${i}`}
-                                                            >
-                                                                {observation}
-                                                            </li>
-                                                        )
-                                                    })}
-                                                </ul>
-                                            </>
-                                        )}
-
-                                        {assumption.argumentation.adoptedBeliefs && (
-                                            <>
-                                                <b>{assumption.argumentation.adoptedBeliefs.length > 0 && 'Adopted beliefs'}</b>
-                                                <ul>
-                                                    {assumption.argumentation.adoptedBeliefs.map((belief, i) => {
-                                                        return (
-                                                            <li
-                                                                key={`belief${i}`}
-                                                            >
-                                                                {belief}
-                                                            </li>
-                                                        )
-                                                    })}
-                                                </ul>
-                                            </>
-                                        )}
-
-                                        {assumption.questions && (
-                                            <>
-                                                <b>{assumption.questions.length > 0 && 'Questions'}</b>
-                                                <ul>
-                                                    {assumption.questions.map((question, i) => {
-                                                        return (
-                                                            <li
-                                                                key={`question${i}`}
-                                                            >
-                                                                {question}
-                                                            </li>
-                                                        )
-                                                    })}
-                                                </ul>
-                                            </>
-                                        )}
-                                        {assumption.argumentation.note}
+                                                    {reason.type === 'observation' && (
+                                                        <span>{(reason.observed || []).length}</span>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 } />
                             <ListItemSecondaryAction>

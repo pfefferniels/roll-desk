@@ -264,8 +264,6 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
 
     const y = translateY(100 - event.vertical.from + (shift?.vertical || 0))
 
-    console.log(shift, stretch)
-
     return (
         <>
             <rect

@@ -27,10 +27,6 @@ export const AddConjecture = ({ selection, copy, open, onClose, clearSelection }
                 certainty: 'likely',
                 replaced: original,
                 with: correction,
-                argumentation: {
-                    actor: '#np',
-                    premises: []
-                },
                 id: v4()
             }
         ])

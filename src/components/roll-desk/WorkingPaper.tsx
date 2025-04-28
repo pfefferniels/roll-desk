@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
-// import { usePiano } from "react-pianosound"
+import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, RollCopy, Stage, PreliminaryRoll } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
@@ -136,8 +136,8 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
         for (const copy of edition.copies) {
             // console.log(copy.id, currentStage?.basedOn.original.witnesses[0].id)
             if (
-                currentStage && 
-                !isWitnessOf(copy, currentStage.created) && 
+                currentStage &&
+                !isWitnessOf(copy, currentStage.created) &&
                 !isWitnessOf(copy, currentStage.basedOn.original)
             ) {
                 // if the user selected a stage, only show the 
@@ -166,7 +166,7 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
     useLayoutEffect(() => {
         if (!currentStage) return
 
-        const underlays = currentStage.edits.map(edit => (
+        const underlays = ([...currentStage.edits, ...currentStage.intentions]).map(edit => (
             <AssumptionUnderlay
                 key={`underlay_${edit.id}`}
                 assumption={edit}

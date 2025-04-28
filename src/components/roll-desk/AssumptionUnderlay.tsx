@@ -49,24 +49,27 @@ interface HullProps {
     label?: ReactNode;
     onClick: MouseEventHandler
     soft?: boolean
+    fillOpacity?: number
+    fill?: string
 }
 
-const Hull = ({ id, hull, onClick, label, soft }: HullProps) => {
+const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: HullProps) => {
     return (
         <g
             className='hull'
             onClick={onClick}
         >
-            {label}
             <path
                 data-id={id}
                 id={id}
                 stroke={soft ? 'none' : 'black'}
-                fill={soft ? 'gray' : 'white'}
-                fillOpacity={0.2}
-                strokeWidth={soft ? 0 : 1}
+                fill={fill || (soft ? 'gray' : 'white')}
+                fillOpacity={fillOpacity || (soft ? 0.2 : 0.8)}
+                strokeWidth={0.3}
+                strokeDasharray={soft ? 'none' : '5 1'}
                 d={hull}
             />
+            {label}
         </g>
     );
 }
@@ -124,6 +127,45 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
             />
         );
     }
+    else if (assumption.type === 'intention') {
+        const inferences = assumption.reasons?.filter(reason => reason.type === 'inference') || []
+        const allIds: string[] = []
+        // collect IDs of collated events
+        for (const inference of inferences) {
+            for (const premise of inference.premises) {
+                if (premise.type === 'edit') {
+                    allIds.push(
+                        ...(premise.insert || []).map(({ id }) => id),
+                        ...(premise.delete || []).map(({ id }) => id)
+                    );
+                }
+            }
+        }
+
+        const { points, hull } = getHull(allIds, svgRef.current, 25)
+        const bbox = getBoundingBox(points);
+
+        return (
+            <Hull
+                hull={hull}
+                id={assumption.id}
+                onClick={() => onClick(assumption)}
+                fillOpacity={0.05}
+                fill='red'
+                label={
+                    <text
+                        dominantBaseline='top'
+                        x={bbox.x}
+                        y={bbox.y + bbox.height + 25}
+                        fontSize={8}
+                        fill='black'
+                    >
+                        {assumption.description}
+                    </text>
+                }
+            />
+        )
+    }
     else if (assumption.type === 'edit') {
         const hulls = []
 
@@ -156,7 +198,9 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                 {
                     padStart: 1,
                     padEnd: arrowHeadSize,
-                    controlPointStretch: 20
+                    controlPointStretch: Math.max(8, Math.abs(bbox1.x - bbox2.x) * 0.5),
+                    allowedStartSides: ['top'],
+                    allowedEndSides: ['top']
                 }
             )
             const arrowPath = `M${sx},${sy} C${c1x},${c1y} ${c2x},${c2y} ${ex},${ey}`;
@@ -183,7 +227,7 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                                 fontSize={8}
                                 fill='black'
                             >
-                                {assumption.motivation || 'insert'}
+
                             </text>
                         }
                         soft={true}
@@ -219,11 +263,11 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                         !(assumption.insert && assumption.delete) && ( // don't show label if there is an overall hull
                             <text
                                 x={bbox.x}
-                                y={bbox.y + bbox.height + 10}
-                                fontSize={8}
+                                y={bbox.y + bbox.height + 2}
+                                fontSize={10}
                                 fill='black'
                             >
-                                {assumption.motivation || 'insert'}
+                                +
                             </text>
                         )
                     }
@@ -246,11 +290,11 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                         !(assumption.insert && assumption.delete) && ( // don't show label if there is an overall hull
                             <text
                                 x={bbox.x}
-                                y={bbox.y + bbox.height + 10}
-                                fontSize={8}
+                                y={bbox.y + bbox.height + 2}
+                                fontSize={10}
                                 fill='black'
                             >
-                                {assumption.motivation || 'delete'}
+                                -
                             </text>
                         )
                     }

@@ -1,85 +1,74 @@
-import { Delete } from "@mui/icons-material"
-import { Button, Dialog, DialogActions, DialogContent, Divider, FormControl, FormLabel, IconButton, MenuItem, Select, SelectChangeEvent, Stack, TextField } from "@mui/material"
-import { AnyEditorialAssumption, Certainty, EditMotivation, editMotivations } from "linked-rolls"
+import { Add, Delete } from "@mui/icons-material"
+import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, IconButton, MenuItem, Paper, Select, Stack, TextField } from "@mui/material"
+import { AnyArgumentation, AnyEditorialAssumption, Certainty, EditMotivation, editMotivations, Inference, Reference } from "linked-rolls"
 import { useEffect, useState } from "react"
-import { titleFor } from "./AssumptionList"
+import { PremiseSelect } from "./PremiseSelect"
 
-interface StringListProps {
-    title: string
-    strings: string[]
-    onChange: (strings: string[]) => void
+interface EditInferenceProps {
+    existingPremises: AnyEditorialAssumption[]
+    inference: Inference
+    onChange: (inference: Inference) => void
+    onRemove: () => void
 }
 
-const StringList = ({ title, strings, onChange }: StringListProps) => {
+const EditInference = ({ inference, onChange, existingPremises, onRemove }: EditInferenceProps) => {
+    const setField = <K extends keyof Inference>(key: K) => (value: Inference[K]) => {
+        onChange({ ...inference, [key]: value })
+    }
+
     return (
-        <FormControl>
-            <FormLabel>{title}</FormLabel>
+        <Paper sx={{ p: 1 }}>
+            <IconButton onClick={onRemove}>
+                <Delete />
+            </IconButton>
             <Stack direction='column' spacing={1}>
-                {strings.map((string, index) => {
-                    return (
-                        <Stack direction='row' spacing={1} key={index}>
-                            <TextField
-                                key={index}
-                                value={string}
-                                onChange={e => {
-                                    const newStrings = [...strings]
-                                    newStrings[index] = e.target.value
-                                    onChange(newStrings)
-                                }}
-                            />
-                            <IconButton onClick={() => {
-                                const newStrings = [...strings]
-                                newStrings.splice(index, 1)
-                                onChange(newStrings)
-                            }
-                            }>
-                                <Delete />
-                            </IconButton>
-                        </Stack>
-                    )
-                })}
-                <Button
-                    variant='contained'
-                    onClick={() => onChange([...strings, ''])}
-                >
-                    Add
-                </Button>
+                <PremiseSelect
+                    existingPremises={existingPremises}
+                    premises={inference.premises}
+                    onChange={setField('premises')}
+                />
+                <Stack direction='row' spacing={1}>
+                    <TextField
+                        label="Logic"
+                        variant="filled"
+                        size="small"
+                        value={inference.logic ?? ''}
+                        onChange={e => setField('logic')(e.target.value)}
+                    />
+                    <TextField
+                        label="Note"
+                        variant="filled"
+                        size="small"
+                        value={inference.note ?? ''}
+                        onChange={e => setField('note')(e.target.value)}
+                    />
+                </Stack>
             </Stack>
-        </FormControl>
+        </Paper>
+
     )
 }
 
-interface PremiseSelectProps {
-    existingPremises: AnyEditorialAssumption[]
-    premises: AnyEditorialAssumption[]
-    onChange: (premises: AnyEditorialAssumption[]) => void
+interface EditReferenceProps {
+    reference: Reference
+    onChange: (reference: Reference) => void
 }
 
-const PremiseSelect = ({ existingPremises, premises, onChange }: PremiseSelectProps) => {
+const EditReference = ({ reference, onChange }: EditReferenceProps) => {
+    const setField = <K extends keyof Inference>(key: K) => (value: Inference[K]) => {
+        onChange({ ...reference, [key]: value })
+    }
+
     return (
-        <FormControl>
-            <FormLabel>Premises</FormLabel>
-            <Select
-                multiple
-                label='Witnesses'
-                value={premises.map(p => p.id)}
-                onChange={(event: SelectChangeEvent<string[]>) => {
-                    const value = event.target.value
-                    const newPremiseIds = typeof value === 'string'
-                        ? value.split(',')
-                        : value
-                    onChange(newPremiseIds.map(id => existingPremises.find(p => p.id === id)!))
-                }}
-            >
-                {existingPremises.map(premise => {
-                    return (
-                        <MenuItem key={premise.id} value={premise.id}>
-                            [{premise.certainty}] {titleFor(premise)}
-                        </MenuItem>
-                    )
-                })}
-            </Select>
-        </FormControl>
+        <div>
+            <TextField
+                label='Note'
+                variant='filled'
+                size='small'
+                value={reference.note || ''}
+                onChange={e => setField('note')(e.target.value)}
+            />
+        </div>
     )
 }
 
@@ -91,14 +80,13 @@ interface AddArgumentationProps {
 }
 
 export const EditAssumption = ({ existingPremises, selection, onClose, open }: AddArgumentationProps) => {
-    const [actor, setActor] = useState<string | null | undefined>()
-    const [premises, setPremises] = useState<AnyEditorialAssumption[]>([])
-    const [observations, setObservations] = useState<string[]>([])
-    const [beliefAdoptions, setBeliefAdoptions] = useState<string[]>([])
-    const [questions, setQuestions] = useState<string[]>([])
-    const [note, setNote] = useState<string | null | undefined>()
+    const [reasons, setReasons] = useState<AnyArgumentation[]>([])
     const [cert, setCert] = useState<Certainty | null | undefined>()
+
+    // TODO: these states are type-specific. Move them to separate components
     const [editMotivation, setEditMotivation] = useState<EditMotivation | null | undefined>()
+    const [description, setDescription] = useState<string | null | undefined>()
+    const [question, setQuestion] = useState<string | null | undefined>()
 
     useEffect(() => {
         function unify<T>(arr: Array<T | undefined>): T | null | undefined {
@@ -107,17 +95,22 @@ export const EditAssumption = ({ existingPremises, selection, onClose, open }: A
             return rest.every(v => v === first) ? first : null
         }
 
-        setActor(unify(selection.map(item => item.argumentation.actor)))
-        setNote(unify(selection.map(item => item.argumentation.note)))
-        if (selection.length > 0) {
-            setPremises(selection[0].argumentation.premises || [])
-            setObservations(selection[0].argumentation.observations || [])
-            setBeliefAdoptions(selection[0].argumentation.adoptedBeliefs || [])
-        }
         setCert(unify(selection.map(item => item.certainty)))
 
         if (selection.every(assumption => assumption.type === 'edit')) {
             setEditMotivation(unify(selection.map(edit => edit.motivation)))
+        }
+
+        if (selection.every(assumption => assumption.type === 'intention')) {
+            setDescription(unify(selection.map(intention => intention.description)))
+        }
+
+        if (selection.every(assumption => assumption.type === 'question')) {
+            setQuestion(unify(selection.map(question => question.question)))
+        }
+
+        if (selection.length === 1) {
+            setReasons(selection[0].reasons || [])
         }
     }, [selection])
 
@@ -154,36 +147,6 @@ export const EditAssumption = ({ existingPremises, selection, onClose, open }: A
                         </FormControl>
                     )}
                     <FormControl>
-                        <FormLabel>Actor</FormLabel>
-                        <TextField
-                            label='Actor'
-                            variant='filled'
-                            size='small'
-                            value={actor === null ? 'multiple' : actor || ''}
-                            onChange={e => setActor(e.target.value)}
-                        />
-                    </FormControl>
-                    <Divider />
-                    <PremiseSelect
-                        premises={premises}
-                        onChange={(premises) => setPremises(premises)}
-                        existingPremises={existingPremises}
-                    />
-                    <Stack direction='row' spacing={1}>
-                        <StringList title='Observations' strings={observations} onChange={setObservations} />
-                        <StringList title='References' strings={beliefAdoptions} onChange={setBeliefAdoptions} />
-                    </Stack>
-                    <FormControl>
-                        <FormLabel>Note</FormLabel>
-                        <TextField
-                            label='Note'
-                            variant='filled'
-                            size='small'
-                            value={note === null ? 'multiple' : note || ''}
-                            onChange={e => setNote(e.target.value)}
-                        />
-                    </FormControl>
-                    <FormControl>
                         <FormLabel>Certainty</FormLabel>
                         <Select
                             label='Certainty'
@@ -201,13 +164,93 @@ export const EditAssumption = ({ existingPremises, selection, onClose, open }: A
                             {cert === undefined && <MenuItem disabled value='unset'><i>not set</i></MenuItem>}
                         </Select>
                     </FormControl>
+
                     <FormControl>
-                        <StringList
-                            title='Open questions'
-                            strings={questions}
-                            onChange={setQuestions}
-                        />
+                        <FormLabel>Reasons</FormLabel>
+                        <Stack direction='column' spacing={2}>
+                            {reasons.map((reason, index) => {
+                                if (reason.type === 'inference') {
+                                    return (
+                                        <EditInference
+                                            inference={reason}
+                                            onChange={(newReason) => {
+                                                const newReasons = [...reasons]
+                                                newReasons[index] = newReason
+                                                setReasons(newReasons)
+                                            }}
+                                            existingPremises={existingPremises}
+                                            onRemove={() => {
+                                                reasons.splice(index, 1)
+                                                setReasons([...reasons])
+                                            }}
+                                        />
+                                    )
+                                }
+                                else if (reason.type === 'reference') {
+                                    return (
+                                        <EditReference
+                                            reference={reason}
+                                            onChange={(newReason) => {
+                                                const newReasons = [...reasons]
+                                                newReasons[index] = newReason
+                                                setReasons(newReasons)
+                                            }}
+                                        />
+                                    )
+                                }
+
+                                return null
+                            })}
+
+                            <Stack direction='row'>
+                                <Button
+                                    onClick={() => {
+                                        setReasons([...reasons, { type: 'inference', premises: [] }])
+                                    }}
+                                    startIcon={<Add />}
+                                >
+                                    Inference
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        setReasons([...reasons, { type: 'reference', note: '' }])
+                                    }}
+                                    startIcon={<Add />}
+                                >
+                                    Reference
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        setReasons([...reasons, { type: 'observation', note: '' }])
+                                    }}
+                                    startIcon={<Add />}
+                                >
+                                    Observation
+                                </Button>
+                            </Stack>
+                        </Stack>
                     </FormControl>
+
+                    {selection.every(assumption => assumption.type === 'intention') && (
+                        <FormControl>
+                            <FormLabel>Intention Description</FormLabel>
+                            <TextField
+                                value={description || ''}
+                                onChange={e => setDescription(e.target.value)}
+                            />
+                        </FormControl>
+                    )}
+
+                    {selection.every(assumption => assumption.type === 'question') && (
+                        <FormControl>
+                            <FormLabel>Question</FormLabel>
+                            <TextField
+                                value={question || ''}
+                                onChange={e => setQuestion(e.target.value)}
+                            />
+                        </FormControl>
+                    )}
+
                 </Stack>
             </DialogContent>
             <DialogActions>
@@ -216,14 +259,15 @@ export const EditAssumption = ({ existingPremises, selection, onClose, open }: A
                     onClick={() => {
                         selection.forEach(selection => {
                             if (cert) selection.certainty = cert
-                            if (actor) selection.argumentation.actor = actor
-                            if (premises.length) selection.argumentation.premises = premises
-                            if (observations.length) selection.argumentation.observations = observations
-                            if (beliefAdoptions.length) selection.argumentation.adoptedBeliefs = beliefAdoptions
-                            if (questions.length) selection.questions = questions
-                            if (note) selection.argumentation.note = note
+                            if (reasons.length) selection.reasons = reasons
                             if (editMotivation && selection.type === 'edit') {
                                 selection.motivation = editMotivation
+                            }
+                            if (description && selection.type === 'intention') {
+                                selection.description = description
+                            }
+                            if (question && selection.type === 'question') {
+                                selection.question = question
                             }
                         })
                         onClose()

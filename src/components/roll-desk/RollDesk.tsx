@@ -1,6 +1,6 @@
 import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, HorizontalSpan, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage, VerticalSpan } from 'linked-rolls'
+import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, HorizontalSpan, Intention, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage, VerticalSpan } from 'linked-rolls'
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
 import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Link, Pause, PlayArrow, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -180,7 +180,6 @@ export const Desk = () => {
                 type: 'stretch',
                 factor: stretch,
                 certainty: 'likely',
-                argumentation: {}
             },
             {
                 id: v4(),
@@ -188,7 +187,6 @@ export const Desk = () => {
                 vertical: 0,
                 horizontal: shift,
                 certainty: 'likely',
-                argumentation: {}
             }
         ])
 
@@ -371,18 +369,18 @@ export const Desk = () => {
                         {activeLayerId === 'working-paper' && (
                             <>
                                 <Ribbon title='Editing Process'>
-                                    <Button 
+                                    <Button
                                         size='small'
                                         onClick={() => {
                                             const creation = edition.stages.find(stage => stage.created === currentStage)
-                                            if (!creation) return 
+                                            if (!creation) return
 
                                             creation.edits = []
                                             creation.fillEdits(edition.collation)
                                         }}
-                                        >
-                                            Fill
-                                        </Button>
+                                    >
+                                        Fill
+                                    </Button>
                                     <Button
                                         size='small'
                                         sx={{ justifyContent: 'flex-start' }}
@@ -429,6 +427,59 @@ export const Desk = () => {
                                         disabled={!selection.find(isEditorialAssumption)}
                                     >
                                         Comment
+                                    </Button>
+                                    <Button
+                                        size='small'
+                                        sx={{ justifyContent: 'flex-start' }}
+                                        onClick={() => {
+                                            const creation = edition.stages.find(stage => stage.created === currentStage)
+                                            if (!creation) return
+
+                                            const intention: Intention = {
+                                                type: 'intention',
+                                                certainty: 'true',
+                                                id: v4(),
+                                                description: '',
+                                            }
+                                            creation.intentions.push(intention)
+
+                                            const premises = selection
+                                                .filter(s => isEditorialAssumption(s) && s.type === 'edit')
+                                            if (premises.length) {
+                                                intention.reasons = [
+                                                    {
+                                                        type: 'inference',
+                                                        premises
+                                                    }
+                                                ]
+                                            }
+
+                                            setEdition(edition.shallowClone())
+                                        }}
+                                    >
+                                        Assume Intention
+                                    </Button>
+                                    <Button
+                                        size='small'
+                                        sx={{ justifyContent: 'flex-start' }}
+                                        onClick={() => {
+                                            edition.addEditorialAction({
+                                                type: 'question',
+                                                id: v4(),
+                                                certainty: 'true',
+                                                question: '',
+                                                reasons: [
+                                                    {
+                                                        type: 'inference',
+                                                        premises: selection.filter(s => isEditorialAssumption(s))
+                                                    }
+                                                ]
+                                            })
+
+                                            setEdition(edition.shallowClone())
+                                        }}
+                                    >
+                                        Raise Question
                                     </Button>
                                 </Ribbon>
                                 <Divider orientation="vertical" />
@@ -570,7 +621,7 @@ export const Desk = () => {
                                         setEdition(edition.shallowClone())
                                     }}
                                     removeAction={(action) => {
-                                        (currentCopy ?? edition).removeEditorialAction(action)
+                                        edition.removeEditorialAction(action)
                                         setEdition(edition.shallowClone())
                                     }} />
                             </Paper>
