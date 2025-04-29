@@ -11,66 +11,53 @@ interface DynamicsProps {
 export const Dynamics = ({ forEmulation: emulation, color, shift, stretch }: DynamicsProps) => {
     const { translateX } = usePinchZoom()
 
-    const translate = (x: number) => {
-        return translateX(x * (stretch?.factor || 1) + (shift?.horizontal || 0))
+    const translate = (x: number) =>
+        translateX(x * (stretch?.factor || 1) + (shift?.horizontal || 0))
+
+    const bassShift = 450
+    const reducerFor = (scope: 'treble' | 'bass') => {
+        return (acc: [number, number][], v: number, i: number) => {
+            if (i % 20 !== 0) return acc
+            const x = translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)
+            const y = 127 - v + (scope === 'bass' ? bassShift : 0)
+            acc.push([x, y])
+            return acc
+        }
     }
 
-    const treblePositions: [number, number][] = emulation.trebleVelocities
-        .reduce((acc, v, i) => {
-            if (i % 20 !== 0) return acc
-            acc.push([translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v])
-            return acc
-        }, [] as [number, number][])
+    const treblePositions = emulation.trebleVelocities
+        .reduce(reducerFor('treble'), [])
 
-    const bassPositions: [number, number][] = emulation.bassVelocities
-        .reduce((acc, v, i) => {
-            if (i % 20 !== 0) return acc
-            acc.push([translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10), 127 - v + 450])
-            return acc
-        }, [] as [number, number][])
+    const bassPositions = emulation.bassVelocities
+        .reduce(reducerFor('bass'), [])
+
+    const makePath = (pts: [number, number][]) => {
+        if (pts.length === 0) return ""
+        return pts
+            .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
+            .join(" ")
+    }
+
+    const trebleD = makePath(treblePositions)
+    const bassD = makePath(bassPositions)
 
     return (
         <>
-            <g className='trebleVelocities'>
-                {treblePositions.map(([x, y], i, arr) => {
-                    if (i === arr.length - 1) return null
-                    const [x2, y2] = arr[i + 1]
-
-                    return (
-                        <line
-                            key={`treble_${x}_${y}`}
-                            className='velocity'
-                            fill={color}
-                            x1={x}
-                            y1={y}
-                            x2={x2}
-                            y2={y2}
-                            strokeWidth={1}
-                            stroke={color}
-                        />
-                    )
-                })}
+            <g className="trebleVelocities">
+                <path
+                    d={trebleD}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1}
+                />
             </g>
-
-            <g className='bassVelocities'>
-                {bassPositions.map(([x, y], i, arr) => {
-                    if (i === arr.length - 1) return null
-                    const [x2, y2] = arr[i + 1]
-
-                    return (
-                        <line
-                            key={`bass_${x}_${y}`}
-                            className='velocity'
-                            fill={color}
-                            x1={x}
-                            y1={y}
-                            x2={x2}
-                            y2={y2}
-                            strokeWidth={1}
-                            stroke={color}
-                        />
-                    )
-                })}
+            <g className="bassVelocities">
+                <path
+                    d={bassD}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1}
+                />
             </g>
         </>
     )
