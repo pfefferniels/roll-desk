@@ -9,17 +9,19 @@ interface DynamicsProps {
 }
 
 export const Dynamics = ({ forEmulation: emulation, color, shift, stretch }: DynamicsProps) => {
-    const { translateX } = usePinchZoom()
+    const { translateX, trackToY } = usePinchZoom()
 
     const translate = (x: number) =>
         translateX(x * (stretch?.factor || 1) + (shift?.horizontal || 0))
 
-    const bassShift = 450
+    const bassShift = trackToY(33)
+    const trebleShift = trackToY(97)
+
     const reducerFor = (scope: 'treble' | 'bass') => {
         return (acc: [number, number][], v: number, i: number) => {
-            if (i % 20 !== 0) return acc
+            if (i % 25 !== 0) return acc
             const x = translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)
-            const y = 127 - v + (scope === 'bass' ? bassShift : 0)
+            const y = 127 - v + (scope === 'bass' ? bassShift : trebleShift)
             acc.push([x, y])
             return acc
         }
