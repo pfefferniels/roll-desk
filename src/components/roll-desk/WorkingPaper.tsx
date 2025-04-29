@@ -131,8 +131,8 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
     const numberOfRolls = edition.copies.length
 
     useEffect(() => {
-        // whenever the events change, update the emulation
         const newEmulations = []
+
         for (const copy of edition.copies) {
             // console.log(copy.id, currentStage?.basedOn.original.witnesses[0].id)
             if (

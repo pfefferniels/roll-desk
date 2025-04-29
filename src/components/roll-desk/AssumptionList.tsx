@@ -54,6 +54,9 @@ export const AssumptionList = ({ assumptions, selection, removeAction, onUpdate 
                                         {assumption.type === 'intention' && (
                                             <div>{assumption.description}</div>
                                         )}
+                                        {assumption.type === 'question' && (
+                                            <div>{assumption.question}</div>
+                                        )}
                                         {assumption.certainty && (
                                             <div>certainty: {assumption.certainty}</div>
                                         )}
