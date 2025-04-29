@@ -19,7 +19,7 @@ interface CollatedEventViewerProps {
 
 const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerProps) => {
     const [displayDetails, setDisplayDetails] = useState(false)
-    const { translateX, translateY, trackHeight } = usePinchZoom()
+    const { translateX, trackToY, trackHeight } = usePinchZoom()
 
     const collatedFrom = event.wasCollatedFrom
     if (!collatedFrom) return null
@@ -38,19 +38,21 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
     const meanOnset = (onsetStretch[0] + onsetStretch[1]) / 2
     const meanOffset = (offsetStretch[0] + offsetStretch[1]) / 2
 
-    const trackerHole = translateY(100 - collatedFrom[0].vertical.from)
+    const y = trackToY(collatedFrom[0].vertical.from)
+    const height = event.wasCollatedFrom[0].type === 'note' ? trackHeight.note : trackHeight.expression
 
     return (
         <g
             data-id={event.id}
             id={event.id}
-            className='collated-event'>
+            className='collated-event'
+        >
             <rect
                 x={innerBoundaries[0]}
                 width={innerBoundaries[1] - innerBoundaries[0]}
-                y={trackerHole}
-                height={5}
-                fill={highlight ? 'red' : 'blue'}
+                y={y}
+                height={height}
+                fill={highlight ? 'red' : 'black'}
                 fillOpacity={0.5}
                 onClick={onClick}
                 onMouseEnter={() => setDisplayDetails(true)}
@@ -60,32 +62,39 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                     <line
                         x1={meanOnset}
                         x2={meanOnset}
-                        y1={translateY(10)}
-                        y2={translateY(90)}
+                        y1={trackToY(11)}
+                        y2={trackToY(89)}
                         stroke='darkred'
-                        strokeWidth={0.5} />
+                        strokeWidth={1} />
                     <line
                         x1={meanOnset}
                         x2={meanOnset + (type === 'SustainPedalOn' ? 10 : -10)}
-                        y1={translateY(10)}
-                        y2={translateY(10)}
+                        y1={trackToY(11)}
+                        y2={trackToY(11)}
                         stroke='darkred'
-                        strokeWidth={0.5} />
+                        strokeWidth={1} />
+                    <line
+                        x1={meanOnset}
+                        x2={meanOnset + (type === 'SustainPedalOn' ? 10 : -10)}
+                        y1={trackToY(89)}
+                        y2={trackToY(89)}
+                        stroke='darkred'
+                        strokeWidth={1} />
                 </>
                 : (
                     <>
                         <line
                             x1={meanOnset}
                             x2={meanOnset}
-                            y1={displayDetails ? 0 : (trackerHole - 5)}
-                            y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
+                            y1={displayDetails ? trackToY(100) : y - 10}
+                            y2={displayDetails ? trackToY(0) : y + 20}
                             stroke='black'
                             strokeWidth={0.2} />
                         <line
                             x1={meanOffset}
                             x2={meanOffset}
-                            y1={displayDetails ? 0 : (trackerHole - 5)}
-                            y2={displayDetails ? 100 * trackHeight : trackerHole + 10}
+                            y1={displayDetails ? trackToY(100) : y - 10}
+                            y2={displayDetails ? trackToY(0) : y + 20}
                             stroke='black'
                             strokeWidth={0.2} />
 
@@ -95,16 +104,16 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 onClick={onClick}
                 fill='red'
                 fillOpacity={0.5}
-                points={`${onsetStretch[0]},${trackerHole + 2.5} ${onsetStretch[1]},${trackerHole} ${onsetStretch[1]},${trackerHole + 5}`} />
+                points={`${onsetStretch[0]},${y + height / 2} ${onsetStretch[1]},${y} ${onsetStretch[1]},${y + height}`} />
             <polygon
                 onClick={onClick}
                 fill='red'
                 fillOpacity={0.5}
-                points={`${offsetStretch[1]},${trackerHole + 2.5} ${offsetStretch[0]},${trackerHole} ${offsetStretch[0]},${trackerHole + 5}`} />
+                points={`${offsetStretch[1]},${y + height / 2} ${offsetStretch[0]},${y} ${offsetStretch[0]},${y + height}`} />
             {displayDetails && (
                 <text
                     x={innerBoundaries[0]}
-                    y={trackerHole - 2}
+                    y={y - 2}
                     fontSize={12}>
                     <tspan>{type}</tspan>
                 </text>
@@ -166,7 +175,11 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
     useLayoutEffect(() => {
         if (!currentStage) return
 
-        const underlays = ([...currentStage.edits, ...currentStage.intentions]).map(edit => (
+        const underlays = ([
+            ...currentStage.intentions,
+            ...edition.questions,
+            ...currentStage.edits
+        ]).map(edit => (
             <AssumptionUnderlay
                 key={`underlay_${edit.id}`}
                 assumption={edit}
@@ -199,7 +212,7 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
                         key={`workingPaper_${event.id || i}`}
                         event={event}
                         subjectOfAssumption={false}
-                        highlight={event.wasCollatedFrom?.length !== numberOfRolls}
+                        highlight={currentStage ? false : (event.wasCollatedFrom?.length !== numberOfRolls)}
                         onClick={() => {
                             if (!emulations.length) return
 
@@ -217,7 +230,7 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
 
             {emulations.map((emulation, i) => {
                 return (
-                    <Dynamics key={`emulation_${i}`} forEmulation={emulation} color={'red'} />
+                    <Dynamics key={`emulation_${i}`} forEmulation={emulation} color={'blue'} />
                 )
             })}
         </g>

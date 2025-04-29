@@ -50,16 +50,16 @@ export const LayeredRolls = ({
         onUpdateSelection([...selection, clickedEvent])
     }
 
-    const margin = 75
+    const margin = 140
 
     return (
         <svg width="100000" height={6 * 100 + margin * 2}>
-            <g transform="translate(0 75)">
+            <g transform={`translate(0 ${margin})`}>
                 <Glow />
                 <PatchPattern />
 
                 <g ref={svgRef}>
-                    <PinchZoomProvider zoom={stretch} trackHeight={6}>
+                    <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
                         {orderedLayers
                             .map((stackItem, i) => {
                                 if (!stackItem.visible) return null

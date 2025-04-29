@@ -115,7 +115,7 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
                             measurement.holeSeparation!.value,
                             measurement.margins!,
                             zoom,
-                            trackHeight,
+                            trackHeight.note,
                             facsimileOpacity,
                             copy.shift?.horizontal || 0,
                             copy.stretch?.factor || 1
@@ -224,10 +224,10 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
 }
 
 const KeyboardDivision = () => {
-    const { translateY } = usePinchZoom()
+    const { trackToY } = usePinchZoom()
 
     const division = 54
-    const y = translateY(100 - division + 1)
+    const y = trackToY(division)
 
     return (
         <line
@@ -255,14 +255,14 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
     const [mouseOver, setMouseOver] = useState(false)
 
     // const { playSingleNote } = usePiano()
-    const { translateX, translateY } = usePinchZoom()
+    const { translateX, trackToY } = usePinchZoom()
 
     const x = translateX(event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))
     const width =
         translateX(event.horizontal.to * (stretch?.factor || 1))
         - translateX(event.horizontal.from * (stretch?.factor || 1))
 
-    const y = translateY(100 - event.vertical.from + (shift?.vertical || 0))
+    const y = trackToY(event.vertical.from + (shift?.vertical || 0))
 
     return (
         <>
@@ -296,14 +296,14 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
                 <>
                     <rect
                         x={x}
-                        y={translateY(100 - event.vertical.from) - 60}
+                        y={trackToY(event.vertical.from) - 60}
                         width={100}
                         height={50}
                         fill='white'
                     />
                     <text
                         x={x}
-                        y={translateY(100 - event.vertical.from) - 50}
+                        y={trackToY(event.vertical.from) - 50}
                         fontSize={10}
                         fill='black'
                         fillOpacity={mouseOver ? 0.9 : 0.2}
@@ -358,18 +358,18 @@ interface TextEventProps {
 }
 
 const TextEvent = ({ event, onClick, onTop, shift, stretch }: TextEventProps) => {
-    const { translateX, translateY } = usePinchZoom()
+    const { translateX, trackToY } = usePinchZoom()
 
     const horizontal = event.horizontal
     const vertical = event.vertical
 
     const x = translateX(horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))
-    const y = translateY(100 - vertical.from + (shift?.vertical || 0))
+    const y = trackToY(vertical.from + (shift?.vertical || 0))
 
     const width = translateX(
         ((event.horizontal.to || 0) - event.horizontal.from) * (stretch?.factor || 1)
     )
-    const height = translateY((100 - (event.vertical.to || 0)) - (100 - event.vertical.from))
+    const height = trackToY((event.vertical.to || 0)) - trackToY(event.vertical.from)
 
     return (
         <g className='textEvent' data-id={event.id} onClick={onClick}>
