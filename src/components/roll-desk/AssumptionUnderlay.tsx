@@ -1,4 +1,4 @@
-import { MouseEventHandler, ReactNode, RefObject } from "react";
+import { MouseEventHandler, ReactNode, RefObject, useState } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
 import { AnyEditorialAssumption } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
@@ -54,6 +54,8 @@ interface HullProps {
 }
 
 const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: HullProps) => {
+    const [hovered, setHovered] = useState(false);
+
     return (
         <g
             className='hull'
@@ -64,12 +66,19 @@ const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: HullProps) 
                 id={id}
                 stroke={soft ? 'none' : 'black'}
                 fill={fill || (soft ? 'gray' : 'white')}
-                fillOpacity={fillOpacity || (soft ? 0.2 : 0.8)}
+                fillOpacity={(fillOpacity || (soft ? 0.2 : 0.8)) + (hovered ? 0.1 : 0)}
                 strokeWidth={0.3}
                 strokeDasharray={soft ? 'none' : '5 1'}
                 d={hull}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
             />
-            {label}
+            <g style={{
+                fillOpacity: hovered ? 1 : 0.5,
+                strokeOpacity: hovered ? 1 : 0.5,
+            }}>
+                {label}
+            </g>
         </g>
     );
 }
@@ -156,8 +165,8 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                     <text
                         dominantBaseline='top'
                         x={bbox.x}
-                        y={bbox.y + bbox.height + 25}
-                        fontSize={8}
+                        y={bbox.y + bbox.height + 35}
+                        fontSize={11}
                         fill='black'
                     >
                         {assumption.description}
@@ -307,5 +316,99 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                 {...hulls}
             </g>
         );
+    }
+    else if (assumption.type === 'question') {
+        const parseAssumption = (assumption: AnyEditorialAssumption): string[] => {
+            if (assumption.type === 'edit') {
+                return [
+                    ...(assumption.insert || []).map(e => e.id),
+                    ...(assumption.delete || []).map(e => e.id)
+                ]
+            }
+            else if (assumption.type === 'intention' || assumption.type === 'question') {
+                if (!assumption.reasons) return []
+
+                return assumption.reasons
+                    .map(r => {
+                        if (r.type !== 'inference') {
+                            return []
+                        }
+
+                        return r.premises
+                            .map(parseAssumption)
+                            .flat()
+                    })
+                    .flat()
+            }
+            return []
+        }
+
+        if (!assumption.reasons) return null
+
+        const bboxes = assumption.reasons
+            .map(r => {
+                if (r.type !== 'inference') return []
+
+                return r.premises.map(p => parseAssumption(p))
+            })
+            .flat()
+            .map(ids => {
+                const { points } = getHull(ids, svgRef.current!);
+                return getBoundingBox(points)
+            })
+
+        const xs = bboxes.map(bbox => bbox.x)
+        const xDist = Math.max(...xs) - Math.min(...xs)
+        const cx = xs.reduce((acc, x) => acc + x, 0) / xs.length
+        const cy = (bboxes.reduce((acc, bbox) => acc + bbox.y, 0) / bboxes.length) - xDist / 7
+
+        const arrows = bboxes
+            .map(bbox => {
+                const [sx, sy, c1x, c1y, c2x, c2y, ex, ey] = getBoxToBoxArrow(
+                    cx,
+                    cy,
+                    0,
+                    0,
+                    bbox.x,
+                    bbox.y,
+                    bbox.width,
+                    bbox.height,
+                    {
+                        padStart: 3,
+                        padEnd: 15,
+                        allowedStartSides: ['bottom'],
+                        allowedEndSides: ['top']
+                    }
+                )
+
+                const arrowPath = `M${sx},${sy} C${c1x},${c1y} ${c2x},${c2y} ${ex},${ey}`;
+
+                return (
+                    <path
+                        key={bbox.x}
+                        stroke="black"
+                        strokeWidth={0.5}
+                        fill="none"
+                        d={arrowPath}
+                    />
+                )
+            })
+
+        return (
+            <g>
+                {arrows}
+
+                <text
+                    className='question'
+                    x={cx}
+                    y={cy}
+                    fontSize={12}
+                    fill='black'
+                    textAnchor='middle'
+                >
+                    {assumption.question}
+                </text>
+            </g>
+        )
     }
 };
