@@ -8,13 +8,15 @@ interface UnifyProps {
     selection: AnyRollEvent[]
     clearSelection: () => void
     onDone: (conjecture: Conjecture) => void
+    currentStretch: number
+    currentShift: number
 }
 
-export const UnifyDialog = ({ open, onClose, selection, clearSelection, onDone }: UnifyProps) => {
+export const UnifyDialog = ({ open, onClose, selection, clearSelection, currentShift, currentStretch, onDone }: UnifyProps) => {
     if (selection.length === 0) return null
 
-    const froms = selection.map(e => e.horizontal.from)
-    const tos = selection.map(e => e.horizontal.to).filter(to => to !== undefined)
+    const froms = selection.map(e => (e.horizontal.from - currentShift) / currentStretch)
+    const tos = selection.map(e => (e.horizontal.to - currentShift) / currentStretch).filter(to => to !== undefined)
 
     const minFrom = Math.min(...froms)
     const maxTo = Math.max(...tos)
