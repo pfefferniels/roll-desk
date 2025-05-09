@@ -1,6 +1,6 @@
 import { Add, Delete } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, IconButton, MenuItem, Paper, Select, Stack, TextField } from "@mui/material"
-import { AnyArgumentation, AnyEditorialAssumption, Certainty, EditMotivation, editMotivations, Inference, Reference } from "linked-rolls"
+import { AnyArgumentation, AnyEditorialAssumption, Certainty, EditMotivation, editMotivations, Inference, Observation, Reference } from "linked-rolls"
 import { useEffect, useState } from "react"
 import { PremiseSelect } from "./PremiseSelect"
 
@@ -55,7 +55,7 @@ interface EditReferenceProps {
 }
 
 const EditReference = ({ reference, onChange }: EditReferenceProps) => {
-    const setField = <K extends keyof Inference>(key: K) => (value: Inference[K]) => {
+    const setField = <K extends keyof Reference>(key: K) => (value: Reference[K]) => {
         onChange({ ...reference, [key]: value })
     }
 
@@ -66,6 +66,29 @@ const EditReference = ({ reference, onChange }: EditReferenceProps) => {
                 variant='filled'
                 size='small'
                 value={reference.note || ''}
+                onChange={e => setField('note')(e.target.value)}
+            />
+        </div>
+    )
+}
+
+interface EditObservationProps {
+    observation: Observation
+    onChange: (observation: Observation) => void
+}
+
+const EditObservation = ({ observation, onChange }: EditObservationProps) => {
+    const setField = <K extends keyof Observation>(key: K) => (value: Observation[K]) => {
+        onChange({ ...observation, [key]: value })
+    }
+
+    return (
+        <div>
+            <TextField
+                label='Note'
+                variant='filled'
+                size='small'
+                value={observation.note || ''}
                 onChange={e => setField('note')(e.target.value)}
             />
         </div>
@@ -190,6 +213,18 @@ export const EditAssumption = ({ existingPremises, selection, onClose, open }: A
                                     return (
                                         <EditReference
                                             reference={reason}
+                                            onChange={(newReason) => {
+                                                const newReasons = [...reasons]
+                                                newReasons[index] = newReason
+                                                setReasons(newReasons)
+                                            }}
+                                        />
+                                    )
+                                }
+                                else if (reason.type === 'observation') {
+                                    return (
+                                        <EditObservation
+                                            observation={reason}
                                             onChange={(newReason) => {
                                                 const newReasons = [...reasons]
                                                 newReasons[index] = newReason

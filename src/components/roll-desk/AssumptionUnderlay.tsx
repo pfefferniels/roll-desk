@@ -2,6 +2,7 @@ import { MouseEventHandler, ReactNode, RefObject, useState } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
 import { AnyEditorialAssumption } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
+import { MultilineText } from "./MultilineText";
 
 /**
  * 
@@ -29,7 +30,14 @@ const getHull = (ids: string[], svg: SVGGElement, hullPadding = 3) => {
     return { points, hull };
 };
 
-const getBoundingBox = (points: [number, number][]) => {
+type BBox = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+const getBoundingBox = (points: [number, number][]): BBox => {
     const minX = Math.min(...points.map(p => p[0]));
     const minY = Math.min(...points.map(p => p[1]));
     const maxX = Math.max(...points.map(p => p[0]));
@@ -138,9 +146,11 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
     }
     else if (assumption.type === 'intention') {
         const inferences = assumption.reasons?.filter(reason => reason.type === 'inference') || []
-        const allIds: string[] = []
-        // collect IDs of collated events
+
+        const hulls = []
         for (const inference of inferences) {
+            // collect IDs of collated events
+            const allIds: string[] = []
             for (const premise of inference.premises) {
                 if (premise.type === 'edit') {
                     allIds.push(
@@ -149,31 +159,34 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                     );
                 }
             }
+
+            const { points, hull } = getHull(allIds, svgRef.current, 25)
+            const bbox = getBoundingBox(points);
+
+            hulls.push((
+                <Hull
+                    key={`intention_${assumption.id}`}
+                    hull={hull}
+                    id={assumption.id}
+                    onClick={() => onClick(assumption)}
+                    fillOpacity={0.05}
+                    fill='red'
+                    label={
+                        <MultilineText
+                            text={assumption.description}
+                            maxWidth={200}
+                            svgProps={{
+                                x: bbox.x,
+                                y: bbox.y + bbox.height + 35,
+                                fontSize: 11,
+                            }}
+                        />
+                    }
+                />
+            ))
         }
 
-        const { points, hull } = getHull(allIds, svgRef.current, 25)
-        const bbox = getBoundingBox(points);
-
-        return (
-            <Hull
-                hull={hull}
-                id={assumption.id}
-                onClick={() => onClick(assumption)}
-                fillOpacity={0.05}
-                fill='red'
-                label={
-                    <text
-                        dominantBaseline='top'
-                        x={bbox.x}
-                        y={bbox.y + bbox.height + 35}
-                        fontSize={11}
-                        fill='black'
-                    >
-                        {assumption.description}
-                    </text>
-                }
-            />
-        )
+        return hulls
     }
     else if (assumption.type === 'edit') {
         const hulls = []
@@ -318,49 +331,63 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
         );
     }
     else if (assumption.type === 'question') {
-        const parseAssumption = (assumption: AnyEditorialAssumption): string[] => {
+        if (!assumption.reasons) return null
+
+        const inferencesOf = (assumption: AnyEditorialAssumption) => {
+            if (!assumption.reasons) return []
+            return assumption.reasons
+                .filter(r => r.type === 'inference')
+                .flat()
+        }
+
+        const unpack = (acc: BBox[], assumption: AnyEditorialAssumption) => {
             if (assumption.type === 'edit') {
-                return [
+                const ids = [
                     ...(assumption.insert || []).map(e => e.id),
                     ...(assumption.delete || []).map(e => e.id)
                 ]
+                const { points } = getHull(ids, svgRef.current!);
+                const bbox = getBoundingBox(points);
+                acc.push(bbox);
             }
-            else if (assumption.type === 'intention' || assumption.type === 'question') {
-                if (!assumption.reasons) return []
-
-                return assumption.reasons
-                    .map(r => {
-                        if (r.type !== 'inference') {
-                            return []
+            else if (assumption.type === 'intention') {
+                const inferences = inferencesOf(assumption)
+                for (const inference of inferences) {
+                    // get one bbox for every inference
+                    const premises = inference.premises
+                    const ids = []
+                    for (const premise of premises) {
+                        if (premise.type === 'edit') {
+                            ids.push(
+                                ...(premise.insert || []).map(e => e.id),
+                                ...(premise.delete || []).map(e => e.id)
+                            )
                         }
+                    }
 
-                        return r.premises
-                            .map(parseAssumption)
-                            .flat()
-                    })
-                    .flat()
+                    const { points } = getHull(ids, svgRef.current!);
+                    const bbox = getBoundingBox(points);
+                    acc.push(bbox);
+                }
             }
-            return []
+            else if (assumption.type === 'question') {
+                const inferences = inferencesOf(assumption)
+                for (const inference of inferences) {
+                    const premises = inference.premises
+                    for (const premise of premises) {
+                        unpack(acc, premise)
+                    }
+                }
+            }
+            return acc
         }
 
-        if (!assumption.reasons) return null
-
-        const bboxes = assumption.reasons
-            .map(r => {
-                if (r.type !== 'inference') return []
-
-                return r.premises.map(p => parseAssumption(p))
-            })
-            .flat()
-            .map(ids => {
-                const { points } = getHull(ids, svgRef.current!);
-                return getBoundingBox(points)
-            })
+        const bboxes: BBox[] = []
+        unpack(bboxes, assumption)
 
         const xs = bboxes.map(bbox => bbox.x)
-        const xDist = Math.max(...xs) - Math.min(...xs)
         const cx = xs.reduce((acc, x) => acc + x, 0) / xs.length
-        const cy = (bboxes.reduce((acc, bbox) => acc + bbox.y, 0) / bboxes.length) - xDist / 7
+        const cy = (bboxes.reduce((acc, bbox) => acc + bbox.y, 0) / bboxes.length) - 100
 
         const arrows = bboxes
             .map(bbox => {
@@ -397,17 +424,16 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
         return (
             <g>
                 {arrows}
-
-                <text
-                    className='question'
-                    x={cx}
-                    y={cy}
-                    fontSize={12}
-                    fill='black'
-                    textAnchor='middle'
-                >
-                    {assumption.question}
-                </text>
+                <MultilineText
+                    text={assumption.question}
+                    maxWidth={200}
+                    svgProps={{
+                        x: cx,
+                        y: cy,
+                        fontSize: 12,
+                        textAnchor: 'middle'
+                    }}
+                />
             </g>
         )
     }

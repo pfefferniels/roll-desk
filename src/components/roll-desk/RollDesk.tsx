@@ -219,23 +219,31 @@ export const Desk = () => {
 
     // keeping layers and edition up-to-date
     useEffect(() => {
-        console.log('edition chaged')
-        workingPaperLayer.title = `Collation (${edition.collation.measured.length} roll${edition.collation.measured.length === 1 ? '' : 's'})`
-        const newLayers = edition.copies.map(rollCopy => {
-            return {
-                id: rollCopy.id,
-                title: rollCopy.siglum,
-                visible: true,
-                color: stringToColor(rollCopy.id),
-                facsimileOpacity: 0
-            }
+        setLayers(layers => {
+            workingPaperLayer.title = `Collation (${edition.collation.measured.length} roll${edition.collation.measured.length === 1 ? '' : 's'})`
+
+            const newLayers = edition.copies.map(rollCopy => {
+                const existingLayer = layers.find(layer => layer.id === rollCopy.id)
+
+                // make sure to keep existing layer settings
+                if (existingLayer) {
+                    existingLayer.title = rollCopy.siglum
+                    return existingLayer
+                }
+    
+                return {
+                    id: rollCopy.id,
+                    title: rollCopy.siglum,
+                    visible: true,
+                    color: stringToColor(rollCopy.id),
+                    facsimileOpacity: 0
+                }
+            })
+            return [workingPaperLayer, ...newLayers]
         })
-        setLayers([workingPaperLayer, ...newLayers])
     }, [edition])
 
     const currentCopy = edition.copies.find(copy => copy.id === activeLayerId)
-
-    console.log('test current stage=', currentStage)
 
     return (
         <>
@@ -454,6 +462,8 @@ export const Desk = () => {
                                                 ]
                                             }
 
+                                            setSelection([intention])
+                                            setEditArgumentationDialogOpen(true)
                                             setEdition(edition.shallowClone())
                                         }}
                                     >
@@ -731,7 +741,6 @@ export const Desk = () => {
                             const index = layers.findIndex(l => l.id === newLayerInfo.id)
                             if (index === -1) return
                             layers.splice(index, 1, newLayerInfo)
-                            console.log('updating layers')
                             setLayers([...layers])
                         }}
                         layerInfo={colorToChange}

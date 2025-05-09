@@ -5,11 +5,6 @@ import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEdi
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
 
-const isWitnessOf = (witness: RollCopy, stage: Stage | PreliminaryRoll) => {
-    if (!('witnesses' in stage)) return false
-    return stage.witnesses.includes(witness)
-}
-
 interface CollatedEventViewerProps {
     event: CollatedEvent
     subjectOfAssumption: boolean
@@ -142,18 +137,18 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
     useEffect(() => {
         const newEmulations = []
 
-        for (const copy of edition.copies) {
-            // console.log(copy.id, currentStage?.basedOn.original.witnesses[0].id)
-            if (
-                currentStage &&
-                !isWitnessOf(copy, currentStage.created) &&
-                !isWitnessOf(copy, currentStage.basedOn.original)
-            ) {
-                // if the user selected a stage, only show the 
-                // emulations which are related to it
-                continue
+        let relevantCopies = []
+        if (currentStage) {
+            relevantCopies.push(...currentStage.created.witnesses)
+            if ('witnesses' in currentStage.basedOn.original) {
+                relevantCopies.push(...currentStage.basedOn.original.witnesses)
             }
+        }
+        else {
+            relevantCopies = edition.copies
+        }
 
+        for (const copy of relevantCopies) {
             const newEmulation = new Emulation()
             newEmulation.emulateFromEdition(edition, copy)
             newEmulations.push(newEmulation)
@@ -230,7 +225,15 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
 
             {emulations.map((emulation, i) => {
                 return (
-                    <Dynamics key={`emulation_${i}`} forEmulation={emulation} color={'blue'} />
+                    <Dynamics
+                        key={`emulation_${i}`}
+                        forEmulation={emulation}
+                        pathProps={{
+                            stroke: 'darkblue',
+                            strokeWidth: 1 / (i + 1) + 0.5,
+                            strokeOpacity: 1 / (i + 1)
+                        }}
+                    />
                 )
             })}
         </g>

@@ -199,7 +199,10 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
                 {emulation && (
                     <Dynamics
                         forEmulation={emulation}
-                        color={color}
+                        pathProps={{
+                            color,
+                            strokeWidth: 1
+                        }}
                         shift={copy.shift}
                         stretch={copy.stretch}
                     />

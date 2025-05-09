@@ -1,14 +1,14 @@
 import { Emulation, Shift, Stretch } from "linked-rolls"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
-interface DynamicsProps {
+type DynamicsProps ={
     forEmulation: Emulation
-    color: string
     shift?: Shift
     stretch?: Stretch
-}
+    pathProps: React.SVGProps<SVGPathElement>
+} 
 
-export const Dynamics = ({ forEmulation: emulation, color, shift, stretch }: DynamicsProps) => {
+export const Dynamics = ({ forEmulation: emulation, shift, stretch, pathProps }: DynamicsProps) => {
     const { translateX, trackToY } = usePinchZoom()
 
     const translate = (x: number) =>
@@ -49,16 +49,14 @@ export const Dynamics = ({ forEmulation: emulation, color, shift, stretch }: Dyn
                 <path
                     d={trebleD}
                     fill="none"
-                    stroke={color}
-                    strokeWidth={1}
+                    {...pathProps}
                 />
             </g>
             <g className="bassVelocities">
                 <path
                     d={bassD}
                     fill="none"
-                    stroke={color}
-                    strokeWidth={1}
+                    {...pathProps}
                 />
             </g>
         </>

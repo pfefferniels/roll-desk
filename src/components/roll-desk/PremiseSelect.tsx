@@ -42,11 +42,15 @@ export const PremiseSelect = ({ existingPremises, premises, onChange }: PremiseS
                 {existingPremises.map(premise => {
                     return (
                         <MenuItem key={premise.id} value={premise.id}>
-                            [{premise.id.slice(0, 8)}] {titleFor(premise)}
+                            [{premise.id.slice(0, 8)}] {titleFor(premise)}&nbsp;
                             {premise.type === 'edit' && (
                                 <span>
-                                    {' '}({premise.motivation})
-                                    {' '}@{startOfEdit(premise)} mm
+                                    @{startOfEdit(premise)} mm
+                                </span>
+                            )}
+                            {premise.type === 'intention' && (
+                                <span>
+                                    {premise.description.slice(0, 80)} [...]
                                 </span>
                             )}
                         </MenuItem>
