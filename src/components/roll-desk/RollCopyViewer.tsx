@@ -257,7 +257,7 @@ interface PerforatedEventProps {
 const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: PerforatedEventProps) => {
     const [mouseOver, setMouseOver] = useState(false)
 
-    // const { playSingleNote } = usePiano()
+    const { playSingleNote } = usePiano()
     const { translateX, trackToY } = usePinchZoom()
 
     const x = translateX(event.horizontal.from * (stretch?.factor || 1) + (shift?.horizontal || 0))
@@ -275,7 +275,7 @@ const PerforatedEvent = ({ event, onClick, onTop, color, stretch, shift }: Perfo
                 onMouseOut={() => setMouseOver(false)}
                 onClick={(e) => {
                     if (event.type === 'note') {
-                        // playSingleNote(event.pitch)
+                        playSingleNote(event.pitch)
                     }
 
                     if (e.metaKey && event.annotates) {

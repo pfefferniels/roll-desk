@@ -2,7 +2,7 @@ import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, HorizontalSpan, Intention, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage, VerticalSpan } from 'linked-rolls'
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
-import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, HelpOutline, JoinFull, Link, Pause, PlayArrow, PsychologyAlt, QuestionMark, Remove, Save, Settings } from "@mui/icons-material"
+import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, PsychologyAlt, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -230,7 +230,7 @@ export const Desk = () => {
                     existingLayer.title = rollCopy.siglum
                     return existingLayer
                 }
-    
+
                 return {
                     id: rollCopy.id,
                     title: rollCopy.siglum,
@@ -604,6 +604,10 @@ export const Desk = () => {
                         <Paper sx={{ maxWidth: 360 }} elevation={0}>
                             <div style={{ float: 'left', padding: 8 }}>
                                 <b>{selection.length}</b> events selected
+                                <br />
+                                <span style={{ color: 'gray', fontSize: '8pt' }}>
+                                    {selection.map(e => e.id.slice(0, 8)).join(', ')}
+                                </span>
                             </div>
                             <div style={{ float: 'right' }}>
                                 <IconButton onClick={() => setSelection([])}>
@@ -678,6 +682,8 @@ export const Desk = () => {
                 clearSelection={() => setSelection([])}
                 onDone={pushAction}
                 onClose={() => setUnifyDialogOpen(false)}
+                currentShift={currentCopy?.shift?.horizontal || 0}
+                currentStretch={currentCopy?.stretch?.factor || 1}
             />}
 
             {
@@ -779,14 +785,16 @@ export const Desk = () => {
                 onClose={() => setDownloadDialogOpen(false)}
             />}
 
-            {createEditionDialogOpen && <CreateEdition
-                onDone={(edition) => {
-                    setEdition(edition)
-                }}
-                onClose={() => setCreateEditionDialogOpen(false)}
-                open={createEditionDialogOpen}
-                edition={edition}
-            />}
+            {
+                <CreateEdition
+                    onDone={(edition) => {
+                        setEdition(edition)
+                    }}
+                    onClose={() => setCreateEditionDialogOpen(false)}
+                    open={createEditionDialogOpen}
+                    edition={edition}
+                />
+            }
 
             {stageCreationDialogOpen && (
                 <StageCreationDialog

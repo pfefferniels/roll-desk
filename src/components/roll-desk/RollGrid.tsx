@@ -15,7 +15,7 @@ export const RollGrid = ({
     selectionMode,
     onSelectionDone
 }: RollGridProps) => {
-    const { trackHeight, zoom } = usePinchZoom();
+    const { trackHeight, zoom, yToTrack, trackToY } = usePinchZoom();
 
     const [rect, setRect] = useState<EventDimension & WithId>();
     const [isDrawing, setIsDrawing] = useState(false);
@@ -33,6 +33,12 @@ export const RollGrid = ({
         if (!isDrawing || !startPoint) return;
 
         const { offsetX, offsetY } = e;
+        const from = yToTrack(startPoint.y);
+        const to = yToTrack(offsetY);
+
+        // Ignore if the selection was made in the gap
+        if (from === 'gap' || to === 'gap') return;
+
         setRect({
             id: v4(),
             horizontal: {
@@ -41,8 +47,8 @@ export const RollGrid = ({
                 unit: 'mm'
             },
             vertical: {
-                from: 100 - Math.round(startPoint.y / trackHeight),
-                to: 100 - Math.round((offsetY) / trackHeight),
+                from,
+                to,
                 unit: 'track'
             }
         });
@@ -75,7 +81,7 @@ export const RollGrid = ({
 
     const lines = [];
     for (let i = 0; i < 100; i++) {
-        const y = i * trackHeight + trackHeight / 2;
+        const y = trackToY(i);
         lines.push(
             <line
                 key={`gridLine_${i}`}
@@ -96,16 +102,16 @@ export const RollGrid = ({
                 fillOpacity={0}
                 x={0}
                 y={0}
-                height={100 * trackHeight}
+                height={100 * trackHeight.note}
                 width={width}
             ></rect>
             {lines}
             {rect && (
                 <rect
                     x={rect.horizontal.from * zoom}
-                    y={(100 - rect.vertical.from) * trackHeight}
+                    y={(100 - rect.vertical.from) * trackHeight.note}
                     width={(rect.horizontal.to - rect.horizontal.from) * zoom}
-                    height={((100 - rect.vertical.to!) - (100 - rect.vertical.from)) * trackHeight}
+                    height={((100 - rect.vertical.to!) - (100 - rect.vertical.from)) * trackHeight.note}
                     fill="rgba(0, 0, 255, 0.3)"
                     stroke="blue"
                     strokeWidth={0.5}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import { Edition, importJsonLd } from "linked-rolls";
@@ -8,7 +8,7 @@ interface ImportButtonProps {
 }
 
 export const ImportButton = ({ onImport }: ImportButtonProps) => {
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -36,7 +36,7 @@ export const ImportButton = ({ onImport }: ImportButtonProps) => {
         };
 
         reader.readAsText(file);
-    };
+    }, [onImport]);
 
     return (
         <>
