@@ -13,9 +13,9 @@ interface RollGridProps {
 export const RollGrid = ({
     width,
     selectionMode,
-    onSelectionDone
+    onSelectionDone,
 }: RollGridProps) => {
-    const { trackHeight, zoom, yToTrack, trackToY } = usePinchZoom();
+    const { zoom, yToTrack, trackToY, height } = usePinchZoom();
 
     const [rect, setRect] = useState<EventDimension & WithId>();
     const [isDrawing, setIsDrawing] = useState(false);
@@ -24,7 +24,10 @@ export const RollGrid = ({
     const handleMouseDown = useCallback((e: MouseEvent) => {
         if (!selectionMode) return
 
-        const { offsetX, offsetY } = e;
+        const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
+        const offsetX = e.clientX - rect.left
+        const offsetY = e.clientY - rect.top;
+
         setStartPoint({ x: offsetX, y: offsetY });
         setIsDrawing(true);
     }, [selectionMode]);
@@ -32,7 +35,10 @@ export const RollGrid = ({
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isDrawing || !startPoint) return;
 
-        const { offsetX, offsetY } = e;
+        const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
+        const offsetX = e.clientX - rect.left
+        const offsetY = e.clientY - rect.top
+
         const from = yToTrack(startPoint.y);
         const to = yToTrack(offsetY);
 
@@ -52,7 +58,7 @@ export const RollGrid = ({
                 unit: 'track'
             }
         });
-    }, [isDrawing, startPoint, trackHeight, zoom]);
+    }, [isDrawing, startPoint, zoom, yToTrack]);
 
     const handleMouseUp = useCallback(() => {
         setIsDrawing(false);
@@ -102,16 +108,16 @@ export const RollGrid = ({
                 fillOpacity={0}
                 x={0}
                 y={0}
-                height={100 * trackHeight.note}
+                height={height}
                 width={width}
             ></rect>
             {lines}
             {rect && (
                 <rect
                     x={rect.horizontal.from * zoom}
-                    y={(100 - rect.vertical.from) * trackHeight.note}
+                    y={trackToY(rect.vertical.from)}
                     width={(rect.horizontal.to - rect.horizontal.from) * zoom}
-                    height={((100 - rect.vertical.to!) - (100 - rect.vertical.from)) * trackHeight.note}
+                    height={trackToY(rect.vertical.to!) - trackToY(rect.vertical.from)}
                     fill="rgba(0, 0, 255, 0.3)"
                     stroke="blue"
                     strokeWidth={0.5}

@@ -125,11 +125,23 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                 <Button
                     onClick={() => {
                         let eventToAdd: AnyRollEvent | undefined = undefined
+                        const rollSelection = structuredClone(selection) as EventDimension
+
+                        // Apply shift and stretch to the user's selection
+                        if (copy.shift) {
+                            rollSelection.horizontal.from -= copy.shift.horizontal
+                            rollSelection.horizontal.to -= copy.shift.horizontal
+                        }
+                        if (copy.stretch) {
+                            rollSelection.horizontal.from /= copy.stretch.factor
+                            rollSelection.horizontal.to /= copy.stretch.factor
+                        }
+
                         if (eventType === 'rollLabel') {
                             eventToAdd = {
                                 type: eventType,
                                 text: text || '[no text]',
-                                ...selection,
+                                ...rollSelection,
                                 signed: signed === undefined ? false : signed,
                                 id: v4(),
                                 measurement
@@ -140,7 +152,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 type: eventType,
                                 text: text || '[no text]',
                                 rotation,
-                                ...selection,
+                                ...rollSelection,
                                 id: v4(),
                                 measurement
                             }
@@ -148,7 +160,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         else if (eventType === 'cover') {
                             eventToAdd = {
                                 type: eventType,
-                                ...selection,
+                                ...rollSelection,
                                 id: v4(),
                                 measurement,
                                 note: material
@@ -158,7 +170,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         else if (eventType === 'perforation' && perforationMeaning) {
                             eventToAdd = {
                                 ...perforationMeaning,
-                                ...selection,
+                                ...rollSelection,
                                 id: v4(),
                                 measurement
                             }

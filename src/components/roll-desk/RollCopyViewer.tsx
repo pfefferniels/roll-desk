@@ -155,7 +155,8 @@ export const RollCopyViewer = ({ copy, onTop, color, onClick, onSelectionDone, f
                     <RollGrid
                         selectionMode={onTop}
                         onSelectionDone={onSelectionDone}
-                        width={100000} />
+                        width={100000}
+                    />
                 )}
                 {copy.actions.map((action, i) => (
                     <AssumptionUnderlay

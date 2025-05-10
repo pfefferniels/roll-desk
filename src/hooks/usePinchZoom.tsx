@@ -10,6 +10,7 @@ interface PinchZoomContextProps {
         expression: number
     }
     zoom: number
+    height: number
 }
 
 const PinchZoomContext = createContext<PinchZoomContextProps>({
@@ -17,7 +18,8 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     translateX: (x: number) => x,
     trackToY: (track: number) => track,
     yToTrack: (y: number) => y,
-    zoom: 0
+    zoom: 0,
+    height: 0
 });
 
 interface PinchZoomProviderProps {
@@ -31,43 +33,68 @@ interface PinchZoomProviderProps {
 export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, noteHeight, expressionHeight, children, spacing: userSpacing }) => {
     const spacing = userSpacing || 40
 
+    const areas = {
+        'bass-expression': [0, 9],
+        'notes': [10, 89],
+        'treble-expression': [90, 99]
+    }
+
+    const areaOf = (track: number) => {
+        const area = Object
+            .entries(areas)
+            .find(([_, range]) => track >= range[0] && track <= range[1])
+        if (!area) {
+            return null
+        }
+        return area[0]
+    }
+
     const translateX = (x: number) => {
         return zoom * x
     }
 
+    const height = 20 * expressionHeight + 80 * noteHeight + 2 * spacing
+
     const trackToY = (track: number) => {
-        const inverse = 99 - track
-        const spacing = 40
-        if (inverse >= 90) {
-            return spacing * 2 + 10 * expressionHeight + 80 * noteHeight + (inverse - 90) * expressionHeight
+        const name = areaOf(track)
+        if (name === null) return 0
+
+        if (name === 'bass-expression') {
+            return height - (track * expressionHeight)
         }
-        if (inverse >= 10) {
-            return spacing + 10 * expressionHeight + (inverse - 10) * noteHeight
+        if (name === 'notes') {
+            const noteArea = track - 10
+            return height - (spacing + 10 * expressionHeight + noteArea * noteHeight)
         }
-        return inverse * expressionHeight
+        if (name === 'treble-expression') {
+            const expressionArea = track - 90
+            return height - (spacing * 2 + 10 * expressionHeight + 80 * noteHeight + expressionArea * expressionHeight)
+        }
+        else {
+            return 0
+        }
     }
 
     const yToTrack = (y: number): number | 'gap' => {
-        const spacing = 40
+        const inverse = height - y
+        console.log('y to track', 'nverse', inverse, 'height', height, 'y', y)
 
         const seg1Max = 10 * expressionHeight
         const seg2Min = spacing + 10 * expressionHeight
         const seg2Max = spacing + 10 * expressionHeight + 80 * noteHeight
         const seg3Min = spacing * 2 + 10 * expressionHeight + 80 * noteHeight
 
-        let inverse: number
-
-        if (y < seg1Max) {
-            inverse = y / expressionHeight
-        } else if (y >= seg2Min && y < seg2Max) {
-            inverse = ((y - seg2Min) / noteHeight) + 10
-        } else if (y >= seg3Min) {
-            inverse = ((y - seg3Min) / expressionHeight) + 90
-        } else {
-            return 'gap'
+        if (inverse < seg1Max) {
+            return Math.floor(inverse / expressionHeight)
+        }
+        else if (inverse >= seg2Min && inverse < seg2Max) {
+            return Math.floor((inverse - seg2Min) / noteHeight) + 10
+        }
+        else if (inverse >= seg3Min) {
+            return Math.floor((inverse - seg3Min) / expressionHeight) + 90
         }
 
-        return 99 - inverse
+        return 'gap'
     }
 
     return (
@@ -79,7 +106,8 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
             trackHeight: {
                 note: noteHeight,
                 expression: expressionHeight
-            }
+            },
+            height
         }}>
             {children}
         </PinchZoomContext.Provider>
