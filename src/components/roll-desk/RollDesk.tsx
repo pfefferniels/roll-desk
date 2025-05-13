@@ -1,6 +1,6 @@
 import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, HorizontalSpan, Intention, isEditorialAssumption, PlaceTimeConversion, RollMeasurement, Stage, VerticalSpan } from 'linked-rolls'
+import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, Emulation, HorizontalSpan, Intention, isEditorialAssumption, PlaceTimeConversion, RollCopy, RollMeasurement, Stage, VerticalSpan } from 'linked-rolls'
 import { isRollEvent, isCollatedEvent } from "linked-rolls"
 import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, PsychologyAlt, Remove, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -28,6 +28,7 @@ import CreateEdition from "./CreateEdition"
 import { StageCreationDialog } from "./StageCreationDialog"
 import { WithId } from "linked-rolls/lib/WithId"
 
+
 export interface CollationResult {
     events: CollatedEvent[]
 }
@@ -54,6 +55,39 @@ const workingPaperLayer: LayerInfo = {
     visible: true,
     color: 'blue',
     facsimileOpacity: 0
+}
+
+const mmToPixels = (mm: number, dpi: number): number => {
+    const inchesPerMM = 1 / 25.4;
+    return mm * dpi * inchesPerMM;
+}
+
+const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) => {
+    const dpi = 300.25
+
+    const { horizontal } = selection
+    let { from, to } = horizontal
+    if (copy.shift) {
+        from -= copy.shift.horizontal
+        to -= copy.shift.horizontal
+    }
+    if (copy.stretch) {
+        from /= copy.stretch.factor
+        to /= copy.stretch.factor
+    }
+
+    let x1 = mmToPixels(from, dpi)
+    let x2 = mmToPixels(to, dpi)
+
+    let y1 = (selection.vertical.to || selection.vertical.from + 1)
+        * (copy.measurements.at(0)?.holeSeparation?.value || 1)
+        + (copy.measurements.at(0)?.margins?.bass || 0)
+    let y2 = selection.vertical.from
+        * (copy.measurements.at(0)?.holeSeparation?.value || 1)
+        + (copy.measurements.at(0)?.margins?.bass || 0)
+
+    const region = `${Math.floor(y1)},${Math.floor(x1)},${Math.floor(Math.abs(y2 - y1))},${Math.floor(x2 - x1)}`
+    return `${copy.scan}/${region}/full/0/default.jpg`
 }
 
 /**
@@ -721,6 +755,11 @@ export const Desk = () => {
                         onClose={() => setAddEventDialogOpen(false)}
                         copy={currentCopy}
                         measurement={manualMeasurement.current}
+                        iiifUrl={
+                            selectionAsIIIFLink(
+                                selection.find(selection => 'horizontal' in selection) as EventDimension,
+                                currentCopy
+                            )}
                     />)
             }
 

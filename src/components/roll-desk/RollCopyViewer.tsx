@@ -49,7 +49,7 @@ async function tilesAsSVGImage(
     stretchOp: number
 ) {
     const dpi = 300.25;
-    const width = iiifInfo.height / 3;
+    const width = iiifInfo.height;
     const stepSize = 10000
 
     const images: JSX.Element[] = [];
@@ -67,9 +67,6 @@ async function tilesAsSVGImage(
                 continue
             }
             const svgHeight = trackToY(track) - trackToY(track + 1);
-
-            console.log(
-                `tileUrl=${tileUrl}, track=${track} svgX=${svgX}, svgWidth=${svgWidth}`)
 
             images.push(
                 <image

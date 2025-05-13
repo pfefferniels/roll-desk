@@ -30,6 +30,11 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement, ii
     return (
         <Dialog open={open} onClose={onClose}>
             <DialogContent>
+                <img
+                    src={iiifUrl}
+                    alt="IIIF"
+                    width='300px'
+                />
                 <Stack direction='column' sx={{ m: 1 }} spacing={1}>
                     <FormControl>
                         <FormLabel>Type</FormLabel>
@@ -155,7 +160,7 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement, ii
                                 rotation,
                                 ...rollSelection,
                                 id: v4(),
-                                measurement, 
+                                measurement,
                                 annotates: iiifUrl
                             }
                         }
