@@ -1,6 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { RollCopy, AnyRollEvent, WelteT100 } from "linked-rolls"
-import { RollMeasurement } from "linked-rolls/lib/types"
+import { RollCopy, RollMeasurement, AnyRollEvent, WelteT100 } from "linked-rolls"
 import { useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
@@ -10,13 +9,14 @@ interface AddEventProps {
     selection: EventDimension
     copy: RollCopy
     measurement: RollMeasurement
+    iiifUrl?: string
     onClose: () => void
 }
 
 const eventTypes = ['perforation', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: AddEventProps) => {
+export const AddEventDialog = ({ selection, onClose, open, copy, measurement, iiifUrl }: AddEventProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -144,7 +144,8 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 ...rollSelection,
                                 signed: signed === undefined ? false : signed,
                                 id: v4(),
-                                measurement
+                                measurement,
+                                annotates: iiifUrl
                             }
                         }
                         if (eventType === 'stamp' || eventType === 'handwrittenText') {
@@ -154,7 +155,8 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 rotation,
                                 ...rollSelection,
                                 id: v4(),
-                                measurement
+                                measurement, 
+                                annotates: iiifUrl
                             }
                         }
                         else if (eventType === 'cover') {
@@ -163,7 +165,8 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 ...rollSelection,
                                 id: v4(),
                                 measurement,
-                                note: material
+                                note: material,
+                                annotates: iiifUrl
                             }
                         }
 
@@ -172,7 +175,8 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                                 ...perforationMeaning,
                                 ...rollSelection,
                                 id: v4(),
-                                measurement
+                                measurement,
+                                annotates: iiifUrl
                             }
                         }
 
@@ -181,9 +185,9 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement }: 
                         }
 
                         onClose()
-                    }
-                    }
-                    variant='contained'>
+                    }}
+                    variant='contained'
+                >
                     Done
                 </Button>
             </DialogActions>
