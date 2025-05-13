@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Divider, Stack } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { Edition } from 'linked-rolls';
@@ -27,7 +27,17 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
   const [recordingDate, setRecordingDate] = useState<string>('');
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
-  const [publicationDate, setPublicationDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [publicationDate, setPublicationDate] = useState<string>(new Date().toLocaleDateString('de-DE'));
+
+  useEffect(() => {
+    setTitle(edition.title);
+    setLicense(edition.license);
+    setPublisherName(edition.publicationEvent.publisher.name);
+    setPublicationDate(edition.publicationEvent.publicationDate);
+    setCatalogueNumber(edition.roll.catalogueNumber);
+    setRecordingDate(edition.roll.recordingEvent.date);
+    setRecordingPlace(edition.roll.recordingEvent.tookPlaceAt);
+  }, [edition])
 
   const handleCreate = () => {
     const selectedLicense = licenses.find((l) => l.name === license);
@@ -35,7 +45,7 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
     const newEdition = edition.shallowClone()
     newEdition.title = title
     newEdition.license = selectedLicense?.url || license
-    newEdition.publicationEvent.publisher = publisherName
+    newEdition.publicationEvent.publisher.name = publisherName
     newEdition.publicationEvent.publicationDate = publicationDate
     newEdition.roll.catalogueNumber = catalogueNumber
     newEdition.roll.recordingEvent.date = recordingDate
@@ -66,7 +76,7 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
             onChange={(e) => setLicense(e.target.value)}
           >
             {licenses.map((license) => (
-              <MenuItem key={license.url} value={license.name}>
+              <MenuItem key={license.url} value={license.url}>
                 {license.name}
               </MenuItem>
             ))}
