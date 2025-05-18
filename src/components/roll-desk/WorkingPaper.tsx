@@ -48,10 +48,8 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 y={y}
                 height={height}
                 fill={highlight ? 'red' : 'black'}
-                fillOpacity={0.5}
                 onClick={onClick}
-                onMouseEnter={() => setDisplayDetails(true)}
-                onMouseLeave={() => setDisplayDetails(false)} />
+            />
             {type === 'SustainPedalOn' || type === 'SustainPedalOff' ?
                 <>
                     <line
@@ -93,26 +91,32 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                             stroke='black'
                             strokeWidth={0.2} />
 
+                        <polygon
+                            onClick={onClick}
+                            onMouseEnter={() => setDisplayDetails(true)}
+                            onMouseLeave={() => setDisplayDetails(false)}
+                            fill='red'
+                            fillOpacity={0.2}
+                            points={`
+                        ${onsetStretch[0]},${y + height / 2}
+                        ${innerBoundaries[0]},${y}
+                        ${innerBoundaries[1]},${y}
+                        ${offsetStretch[1]},${y + height / 2}
+                        ${innerBoundaries[1]},${y + height}
+                        ${innerBoundaries[0]},${y + height}
+                    `}
+                        />
+                        {displayDetails && (
+                            <text
+                                x={innerBoundaries[0]}
+                                y={y - 2}
+                                fontSize={12}
+                            >
+                                <tspan>{type}</tspan>
+                            </text>
+                        )}
                     </>
                 )}
-            <polygon
-                onClick={onClick}
-                fill='red'
-                fillOpacity={0.5}
-                points={`${onsetStretch[0]},${y + height / 2} ${onsetStretch[1]},${y} ${onsetStretch[1]},${y + height}`} />
-            <polygon
-                onClick={onClick}
-                fill='red'
-                fillOpacity={0.5}
-                points={`${offsetStretch[1]},${y + height / 2} ${offsetStretch[0]},${y} ${offsetStretch[0]},${y + height}`} />
-            {displayDetails && (
-                <text
-                    x={innerBoundaries[0]}
-                    y={y - 2}
-                    fontSize={12}>
-                    <tspan>{type}</tspan>
-                </text>
-            )}
         </g>
     )
 }
@@ -124,7 +128,8 @@ interface WorkingPaperProps {
 }
 
 export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperProps) => {
-    const [emulations, setEmulations] = useState<Emulation[]>([])
+    const [emulation, setEmulation] = useState<Emulation>()
+    const [prevEmulation, setPrevEmulation] = useState<Emulation>()
     const [underlays, setUnderlays] = useState<JSX.Element[]>()
 
     const { zoom } = usePinchZoom()
@@ -132,30 +137,23 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
 
     const svgRef = useRef<SVGGElement>(null)
 
-    const numberOfRolls = edition.copies.length
+    const numberOfRolls = edition.collation.measured.length
 
     useEffect(() => {
-        const newEmulations = []
+        if (!currentStage) return
 
-        let relevantCopies = []
-        if (currentStage) {
-            relevantCopies.push(...currentStage.created.witnesses)
-            if ('witnesses' in currentStage.basedOn.original) {
-                relevantCopies.push(...currentStage.basedOn.original.witnesses)
-            }
-        }
-        else {
-            relevantCopies = edition.copies
+        const emulation = new Emulation()
+        emulation.emulateFromEdition(edition, currentStage.created)
+        setEmulation(emulation)
+
+        const prevStage = currentStage.basedOn.original
+        if ('witnesses' in prevStage) {
+            const prevEmulation = new Emulation()
+            prevEmulation.emulateFromEdition(edition, prevStage)
+            setPrevEmulation(prevEmulation)
         }
 
-        for (const copy of relevantCopies) {
-            const newEmulation = new Emulation()
-            newEmulation.emulateFromEdition(edition, copy)
-            newEmulations.push(newEmulation)
-        }
-        setEmulations(newEmulations)
-
-        // and sort them, so that smaller durations will be drawn last
+        // sort events, so that smaller durations will be drawn last
         const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length
         const durationOf = (event: CollatedEvent) => {
             const from = avg(event.wasCollatedFrom.map(e => e.horizontal.from))
@@ -209,9 +207,9 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
                         subjectOfAssumption={false}
                         highlight={currentStage ? false : (event.wasCollatedFrom?.length !== numberOfRolls)}
                         onClick={() => {
-                            if (!emulations.length) return
+                            if (!emulation) return
 
-                            const performingEvents = emulations[0].findEventsPerforming(event.id)
+                            const performingEvents = emulation.findEventsPerforming(event.id)
                             const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
                             const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
                             if (noteOn && noteOff) {
@@ -223,19 +221,26 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
                     />
                 ))}
 
-            {emulations.map((emulation, i) => {
-                return (
-                    <Dynamics
-                        key={`emulation_${i}`}
-                        forEmulation={emulation}
-                        pathProps={{
-                            stroke: 'darkblue',
-                            strokeWidth: 1 / (i + 1) + 0.5,
-                            strokeOpacity: 1 / (i + 1)
-                        }}
-                    />
-                )
-            })}
+            {prevEmulation && (
+                <Dynamics
+                    forEmulation={prevEmulation}
+                    pathProps={{
+                        stroke: 'gray',
+                        strokeWidth: 3,
+                        strokeOpacity: 0.4
+                    }}
+                />
+            )}
+
+            {emulation && (
+                <Dynamics
+                    forEmulation={emulation}
+                    pathProps={{
+                        stroke: 'black',
+                        strokeWidth: 1.5
+                    }}
+                />
+            )}
         </g>
     )
 }
