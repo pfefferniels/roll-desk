@@ -128,7 +128,6 @@ export const Desk = () => {
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [currentStage, setCurrentStage] = useState<Stage>()
-    const [primarySource, setPrimarySource] = useState('')
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
 
     const manualMeasurement = useRef<RollMeasurement>({
@@ -138,9 +137,8 @@ export const Desk = () => {
     })
 
     const downloadMIDI = useCallback(async () => {
-        if (edition.copies.length === 0) return
+        if (!currentStage) return
 
-        const primary = edition.copies.find(copy => copy.id === primarySource)
         const emulation = new Emulation();
 
         if (conversionMethod) {
@@ -148,13 +146,13 @@ export const Desk = () => {
         }
 
         if (emulation.midiEvents.length === 0) {
-            emulation.emulateFromEdition(edition, primary || edition.copies[0]);
+            emulation.emulateFromEdition(edition, currentStage);
         }
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile('output.mid', dataBuf, 'audio/midi')
-    }, [edition, primarySource, conversionMethod])
+    }, [edition, currentStage, conversionMethod])
 
     const handleAlign = useCallback(() => {
         if (selection.length !== 4 &&
@@ -581,8 +579,10 @@ export const Desk = () => {
                                 <Download />
                             </IconButton>
                             <IconButton
-                                disabled={edition.collation.events.length === 0}
+                                disabled={edition.collation.events.length === 0 || !currentStage}
                                 onClick={() => {
+                                    if (!currentStage) return
+
                                     if (isPlaying) {
                                         stop()
                                         setIsPlaying(false)
@@ -600,7 +600,7 @@ export const Desk = () => {
                                     }
                                     emulation.emulateFromEdition(
                                         edition,
-                                        edition.copies.find(copy => copy.id === primarySource) || edition.copies[0],
+                                        currentStage,
                                         true
                                     )
 
@@ -799,8 +799,7 @@ export const Desk = () => {
                         setEmulationSettingsDialogOpen(false)
                     }}
                     edition={edition}
-                    onDone={(primaryCopy, conversion) => {
-                        setPrimarySource(primaryCopy)
+                    onDone={(conversion) => {
                         setConversionMethod(conversion)
                     }}
                 />

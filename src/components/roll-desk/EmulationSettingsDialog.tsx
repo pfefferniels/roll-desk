@@ -7,14 +7,13 @@ interface EmulationSettingsDialogProps {
     open: boolean
     edition: Edition
     onClose: () => void
-    onDone: (primaryCopy: string, conversion: PlaceTimeConversion) => void
+    onDone: (conversion: PlaceTimeConversion) => void
 }
 
 const methods = ['gottschewski', 'kinematic', 'no-acceleration'] as const
 type Method = typeof methods[number]
 
 export const EmulationSettingsDialog = ({ open, edition, onClose, onDone }: EmulationSettingsDialogProps) => {
-    const [currentCopy, setCurrentCopy] = useState('')
     const [method, setMethod] = useState<Method>('kinematic')
     const [conversion, setConversion] = useState<PlaceTimeConversion>(new KinematicConversion())
 
@@ -25,17 +24,6 @@ export const EmulationSettingsDialog = ({ open, edition, onClose, onDone }: Emul
             </DialogTitle>
             <DialogContent>
                 <Stack direction='column'>
-                    <FormControl>
-                        <FormLabel>Primary Source</FormLabel>
-                        <Select value={currentCopy} size='small' onChange={e => setCurrentCopy(e.target.value)}>
-                            {edition.copies.map(copy => (
-                                <MenuItem key={copy.id} value={copy.id}>
-                                    {copy.siglum}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <Divider />
                     <Typography>Speed and Acceleration</Typography>
                     <FormControl>
                         <FormLabel>Method</FormLabel>
@@ -69,7 +57,7 @@ export const EmulationSettingsDialog = ({ open, edition, onClose, onDone }: Emul
                 <Button
                     variant='contained'
                     onClick={() => {
-                        onDone(currentCopy, conversion)
+                        onDone(conversion)
                         onClose()
                     }}
                 >
