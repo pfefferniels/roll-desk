@@ -51,16 +51,18 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 onClick={onClick}
             />
             {type === 'SustainPedalOn' || type === 'SustainPedalOff' ?
-                <polygon
-                    fill="none"
+                <path
+                    d={`
+                        M${meanOnset},${trackToY(11)}
+                        L${meanOnset},${trackToY(89)}
+                        M${meanOnset},${trackToY(11)}
+                        L${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(11)}
+                        M${meanOnset},${trackToY(89)}
+                        L${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(89)}
+                    `}
                     stroke="darkred"
                     strokeWidth={1}
-                    points={`
-                            ${meanOnset},${trackToY(11)}
-                            ${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(11)}
-                            ${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(89)}
-                            ${meanOnset},${trackToY(89)}
-                        `}
+                    fill="none"
                 />
                 : (
                     <>
