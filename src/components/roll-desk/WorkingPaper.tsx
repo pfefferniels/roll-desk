@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, RollCopy, Stage, PreliminaryRoll } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
 
@@ -51,29 +51,17 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 onClick={onClick}
             />
             {type === 'SustainPedalOn' || type === 'SustainPedalOff' ?
-                <>
-                    <line
-                        x1={meanOnset}
-                        x2={meanOnset}
-                        y1={trackToY(11)}
-                        y2={trackToY(89)}
-                        stroke='darkred'
-                        strokeWidth={1} />
-                    <line
-                        x1={meanOnset}
-                        x2={meanOnset + (type === 'SustainPedalOn' ? 10 : -10)}
-                        y1={trackToY(11)}
-                        y2={trackToY(11)}
-                        stroke='darkred'
-                        strokeWidth={1} />
-                    <line
-                        x1={meanOnset}
-                        x2={meanOnset + (type === 'SustainPedalOn' ? 10 : -10)}
-                        y1={trackToY(89)}
-                        y2={trackToY(89)}
-                        stroke='darkred'
-                        strokeWidth={1} />
-                </>
+                <polygon
+                    fill="none"
+                    stroke="darkred"
+                    strokeWidth={1}
+                    points={`
+                            ${meanOnset},${trackToY(11)}
+                            ${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(11)}
+                            ${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(89)}
+                            ${meanOnset},${trackToY(89)}
+                        `}
+                />
                 : (
                     <>
                         <line
