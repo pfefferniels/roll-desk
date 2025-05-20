@@ -59,8 +59,7 @@ export const SeparateDialog = ({ open, onClose, selection, clearSelection, onDon
                             id: v4(),
                             replaced: [selection],
                             with: [leftEvent, rightEvent],
-                            certainty: 'likely',
-                            argumentation: {},
+                            certainty: 'likely'
                         })
                         clearSelection()
                         onClose()
