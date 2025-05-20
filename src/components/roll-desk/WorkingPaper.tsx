@@ -1,13 +1,45 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { usePiano } from "react-pianosound"
+// import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
 
+interface SustainPedalProps {
+    on: CollatedEvent
+    off: CollatedEvent
+}
+
+const SustainPedal = ({ on, off }: SustainPedalProps) => {
+    const { translateX, trackToY } = usePinchZoom()
+
+    const onsets = on.wasCollatedFrom.map(e => e.horizontal.from).sort()
+    const offsets = off.wasCollatedFrom.map(e => e.horizontal.to).sort()
+
+    if (onsets.length === 0 || offsets.length === 0) return null
+
+    const innerBoundaries = [onsets[0], offsets[0]].map(translateX)
+    const y1 = trackToY(88)
+    const y2 = trackToY(12)
+    const height = y2 - y1
+
+    return (
+        <rect
+            className='pedal'
+            x={innerBoundaries[0]}
+            width={innerBoundaries[1] - innerBoundaries[0]}
+            y={y1}
+            height={height}
+            fill='gray'
+            fillOpacity={0.2}
+            stroke='black'
+            strokeWidth={0.4}
+        />
+    )
+}
+
 interface CollatedEventViewerProps {
     event: CollatedEvent
-    subjectOfAssumption: boolean
     highlight: boolean
     onClick: () => void
 }
@@ -50,44 +82,28 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 fill={highlight ? 'red' : 'black'}
                 onClick={onClick}
             />
-            {type === 'SustainPedalOn' || type === 'SustainPedalOff' ?
-                <path
-                    d={`
-                        M${meanOnset},${trackToY(11)}
-                        L${meanOnset},${trackToY(89)}
-                        M${meanOnset},${trackToY(11)}
-                        L${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(11)}
-                        M${meanOnset},${trackToY(89)}
-                        L${meanOnset + (type === 'SustainPedalOn' ? 10 : -10)},${trackToY(89)}
-                    `}
-                    stroke="darkred"
-                    strokeWidth={1}
-                    fill="none"
-                />
-                : (
-                    <>
-                        <line
-                            x1={meanOnset}
-                            x2={meanOnset}
-                            y1={displayDetails ? trackToY(100) : y - 10}
-                            y2={displayDetails ? trackToY(0) : y + 20}
-                            stroke='black'
-                            strokeWidth={0.2} />
-                        <line
-                            x1={meanOffset}
-                            x2={meanOffset}
-                            y1={displayDetails ? trackToY(100) : y - 10}
-                            y2={displayDetails ? trackToY(0) : y + 20}
-                            stroke='black'
-                            strokeWidth={0.2} />
+            <line
+                x1={meanOnset}
+                x2={meanOnset}
+                y1={displayDetails ? trackToY(100) : y - 10}
+                y2={displayDetails ? trackToY(0) : y + 20}
+                stroke='black'
+                strokeWidth={0.2} />
+            <line
+                x1={meanOffset}
+                x2={meanOffset}
+                y1={displayDetails ? trackToY(100) : y - 10}
+                y2={displayDetails ? trackToY(0) : y + 20}
+                stroke='black'
+                strokeWidth={0.2} />
 
-                        <polygon
-                            onClick={onClick}
-                            onMouseEnter={() => setDisplayDetails(true)}
-                            onMouseLeave={() => setDisplayDetails(false)}
-                            fill='red'
-                            fillOpacity={0.2}
-                            points={`
+            <polygon
+                onClick={onClick}
+                onMouseEnter={() => setDisplayDetails(true)}
+                onMouseLeave={() => setDisplayDetails(false)}
+                fill='red'
+                fillOpacity={0.2}
+                points={`
                         ${onsetStretch[0]},${y + height / 2}
                         ${innerBoundaries[0]},${y}
                         ${innerBoundaries[1]},${y}
@@ -95,18 +111,16 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                         ${innerBoundaries[1]},${y + height}
                         ${innerBoundaries[0]},${y + height}
                     `}
-                        />
-                        {displayDetails && (
-                            <text
-                                x={innerBoundaries[0]}
-                                y={y - 2}
-                                fontSize={12}
-                            >
-                                <tspan>{type}</tspan>
-                            </text>
-                        )}
-                    </>
-                )}
+            />
+            {displayDetails && (
+                <text
+                    x={innerBoundaries[0]}
+                    y={y - 2}
+                    fontSize={12}
+                >
+                    <tspan>{type}</tspan>
+                </text>
+            )}
         </g>
     )
 }
@@ -190,26 +204,50 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
                         ? findWitnessesWithinStage(event, currentStage.created).size > 0
                         : true
                 })
-                .map((event, i) => (
-                    <CollatedEventViewer
-                        key={`workingPaper_${event.id || i}`}
-                        event={event}
-                        subjectOfAssumption={false}
-                        highlight={currentStage ? false : (event.wasCollatedFrom?.length !== numberOfRolls)}
-                        onClick={() => {
-                            if (!emulation) return
+                .map((event, i) => {
+                    const rep = event.wasCollatedFrom[0]
+                    if (rep.type === 'expression' && rep.expressionType === 'SustainPedalOn') {
+                        const later = edition.collation.events
+                            .filter(e => {
+                                const rep2 = e.wasCollatedFrom[0]
+                                return rep2.type === 'expression' && rep2.expressionType === 'SustainPedalOff' &&
+                                    rep2.horizontal.from > rep.horizontal.from
+                            })
+                        const offEvent = later.reduce((min, curr) => {
+                            const minFrom = (min.wasCollatedFrom[0] as Expression).horizontal.from
+                            const currFrom = (curr.wasCollatedFrom[0] as Expression).horizontal.from
+                            return currFrom < minFrom ? curr : min
+                        }, later[0])
 
-                            const performingEvents = emulation.findEventsPerforming(event.id)
-                            const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
-                            const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
-                            if (noteOn && noteOff) {
-                                // playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
-                            }
+                        return (
+                            <SustainPedal
+                                key={`sustain_${event.id || i}`}
+                                on={event}
+                                off={offEvent}
+                            />
+                        )
+                    }
 
-                            onClick && onClick(event)
-                        }}
-                    />
-                ))}
+                    return (
+                        <CollatedEventViewer
+                            key={`workingPaper_${event.id || i}`}
+                            event={event}
+                            highlight={currentStage ? false : (event.wasCollatedFrom?.length !== numberOfRolls)}
+                            onClick={() => {
+                                if (!emulation) return
+
+                                const performingEvents = emulation.findEventsPerforming(event.id)
+                                const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
+                                const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
+                                if (noteOn && noteOff) {
+                                    // playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                                }
+
+                                onClick && onClick(event)
+                            }}
+                        />
+                    )
+                })}
 
             {prevEmulation && (
                 <Dynamics
