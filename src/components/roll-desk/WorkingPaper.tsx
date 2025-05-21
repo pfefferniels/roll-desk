@@ -1,9 +1,28 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 // import { usePiano } from "react-pianosound"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, Question, Stage, Inference } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { AssumptionUnderlay } from "./AssumptionUnderlay"
+
+
+const isRelatedTo = (assumption: AnyEditorialAssumption, stageCreation: StageCreation) => {
+    if (assumption.type === 'edit' || assumption.type === 'intention') {
+        return stageCreation.actions.includes(assumption)
+    }
+    else {
+        if (!assumption.reasons) return false
+        for (const reason of assumption.reasons) {
+            if (reason.type === 'inference') {
+                for (const premise of reason.premises) {
+                    if (isRelatedTo(premise, stageCreation)) return true
+                }
+            }
+        }
+    }
+    return false
+}
+
 
 interface SustainPedalProps {
     on: CollatedEvent
@@ -176,14 +195,21 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
             ...currentStage.intentions,
             ...edition.questions,
             ...currentStage.edits
-        ]).map(edit => (
-            <AssumptionUnderlay
-                key={`underlay_${edit.id}`}
-                assumption={edit}
-                svgRef={svgRef}
-                onClick={onClick || (() => { })}
-            />
-        ))
+        ]).map(assumption => {
+            if (assumption.type === 'question' && !isRelatedTo(assumption, currentStage)) {
+                return null
+            }
+
+            return (
+                <AssumptionUnderlay
+                    key={`underlay_${assumption.id}`}
+                    assumption={assumption}
+                    svgRef={svgRef}
+                    onClick={onClick || (() => { })}
+                />
+            )
+        })
+        .filter(e => e !== null)
 
         setUnderlays(underlays)
     }, [edition, zoom, onClick, currentStage])
