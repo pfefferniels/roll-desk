@@ -5,5 +5,5 @@ export interface AssumptionProps<T extends AnyEditorialAssumption> {
     assumption: T;
     svgRef: RefObject<SVGGElement>;
     onClick: (assumption: T) => void;
+    highlight: boolean
 }
-

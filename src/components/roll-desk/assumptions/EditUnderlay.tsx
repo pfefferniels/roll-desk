@@ -4,7 +4,7 @@ import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
 import { AssumptionProps } from "./AssumptionProps";
 
-export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionProps<Edit>) => {
+export const EditUnderlay = ({ assumption, svgRef, onClick, highlight }: AssumptionProps<Edit>) => {
     if (!svgRef.current) return null
 
     const hulls = []
@@ -57,7 +57,7 @@ export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionProps<Ed
                 <Hull
                     key={assumption.id}
                     id={assumption.id}
-                    fillOpacity={0.05}
+                    fillOpacity={highlight ? 0.5 : 0.05}
                     fill='red'
                     hull={hull}
                     onClick={() => onClick(assumption)}
@@ -87,7 +87,7 @@ export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionProps<Ed
                 key={`${assumption.id}-insert`}
                 id={assumption.id}
                 hull={hull}
-                fillOpacity={0.05}
+                fillOpacity={highlight ? 0.5 : 0.05}
                 fill='red'
                 onClick={() => {
                     onClick(assumption)
@@ -119,7 +119,7 @@ export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionProps<Ed
                 key={`${assumption.id}-delete`}
                 id={assumption.id}
                 hull={hull}
-                fillOpacity={0.05}
+                fillOpacity={highlight ? 0.5 : 0.05}
                 fill='red'
                 onClick={() => onClick(assumption)}
                 label={

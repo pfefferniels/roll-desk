@@ -299,6 +299,8 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
                     }}
                 />
             )}
+
+            <g className='overlayContainer' />
         </g>
     )
 }

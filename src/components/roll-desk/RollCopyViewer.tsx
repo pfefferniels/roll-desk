@@ -17,8 +17,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dynamics } from "./Dynamics.tsx";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor, FixedCursor } from "./Cursor.tsx";
-import { Assumption } from "./assumptions/Assumption.tsx";
 import { EventDimension } from "./RollDesk.tsx";
+import { AllAssumptions } from "./assumptions/AllAssumptions.tsx";
 
 interface IIIFInfo {
     "@id": string;
@@ -194,15 +194,13 @@ export const RollCopyViewer = ({
                         width={100000}
                     />
                 )}
-                {copy.actions.map((action, i) => (
-                    <Assumption
-                        assumption={action}
-                        key={`underlay_${action.id}`}
-                        svgRef={svgRef}
-                        onClick={() => { }}
-                    />
-                ))}
-
+                <AllAssumptions
+                    assumptions={copy.actions}
+                    svgRef={svgRef}
+                    onClick={() => { }}
+                    svgWidth={svgRef.current?.getBoundingClientRect().width || 0}
+                    svgHeight={svgRef.current?.getBoundingClientRect().height || 0}
+                />
                 {[
                     ...copy.conjectures.map((c) => c.with).flat(),
                     ...copy.getOriginalEvents(),

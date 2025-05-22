@@ -14,6 +14,16 @@ const inferencesOf = (assumption: AnyEditorialAssumption) => {
         .flat()
 }
 
+const traceInferences = (assumption: AnyEditorialAssumption, callback: (assumption: AnyEditorialAssumption) => void) => {
+    callback(assumption)
+    for (const inference of inferencesOf(assumption)) {
+        const premises = inference.premises
+        for (const premise of premises) {
+            traceInferences(premise, callback)
+        }
+    }
+}
+
 const unpack = (acc: BBox[], assumption: AnyEditorialAssumption, svgEl: SVGGElement) => {
     if (assumption.type === 'edit') {
         const ids = [
@@ -70,9 +80,11 @@ export interface Node extends d3.SimulationNodeDatum {
     x: number;
     y: number;
     radius?: number;
+    highlight?: boolean;
 }
 
 export interface Link extends d3.SimulationLinkDatum<Node> {
+    highlight?: boolean
 }
 
 const calculateLinks = (assumption: AnyEditorialAssumption) => {
@@ -116,8 +128,6 @@ export const AllAssumptions = ({ assumptions, svgRef, svgWidth, svgHeight, onCli
             node.x = bbox.reduce((sum, b) => sum + (b.x + b.width / 2), 0) / bbox.length;
             node.y = bbox.reduce((sum, b) => sum + (b.y + b.height / 2), 0) / bbox.length;
 
-            console.log('node', node.assumption.type, node)
-
             // edits and conjectures should always remain in the same place
             if (['edit', 'conjecture'].includes(node.assumption.type)) {
                 node.fx = node.x
@@ -125,23 +135,29 @@ export const AllAssumptions = ({ assumptions, svgRef, svgWidth, svgHeight, onCli
             }
         }
 
-        console.log('nodes', nodes)
-        console.log('svgWidth', svgWidth)
-        console.log('svgHeight', svgHeight)
-
         const simulation = d3
             .forceSimulation(nodes)
-            .force("position", d3.forceY(svgHeight / 2).strength(0.1))
+            .force("position", d3
+                .forceY((d: any) => {
+                    if (d.assumption.type === 'intention') {
+                        return svgHeight / 4
+                    }
+                    else if (d.assumption.type === 'question') {
+                        return svgHeight / 2
+                    }
+                    return 0
+                })
+                .strength(0.2))
             .force("charge", d3.forceManyBody())
             .force("collide", d3.forceCollide<Node>(d => {
                 if (d.radius) return d.radius;
                 if (d.assumption.type === 'intention') return 50;
                 if (d.assumption.type === 'question') return 70;
-                return 30;
+                return 5;
             }).strength(0.4))
 
         simulation.restart();
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 1000; i++) {
             simulation.tick();
         }
 
@@ -177,10 +193,10 @@ export const AllAssumptions = ({ assumptions, svgRef, svgWidth, svgHeight, onCli
 
         return (
             <path
-                key={` link_${i}`}
+                key={`link_${i}`}
                 stroke="black"
-                strokeWidth={2}
-                strokeOpacity={0.4}
+                strokeWidth={link.highlight ? 2 : 1}
+                strokeOpacity={link.highlight ? 0.8 : 0.4}
                 fill="none"
                 d={arrowPath}
             />
@@ -199,6 +215,7 @@ export const AllAssumptions = ({ assumptions, svgRef, svgWidth, svgHeight, onCli
                             assumption={node.assumption}
                             svgRef={svgRef}
                             onClick={onClick}
+                            highlight={node.highlight || false}
                         />)
                 }
 
@@ -209,6 +226,32 @@ export const AllAssumptions = ({ assumptions, svgRef, svgWidth, svgHeight, onCli
                             assumption={node.assumption}
                             x={node.x}
                             y={node.y}
+                            highlight={node.highlight || false}
+                            onMouseEnter={() => {
+                                traceInferences(node.assumption, (assumption) => {
+                                    const node = nodes.find(n => n.assumption === assumption)
+                                    if (!node) return
+
+                                    node.highlight = true
+                                    links
+                                        .filter(l => l.source === node.id)
+                                        .forEach(l => {
+                                            l.highlight = true
+                                        })
+                                })
+                                setNodes([...nodes])
+                            }}
+                            onMouseLeave={() => {
+                                setNodes(prev => prev.map(n => {
+                                    n.highlight = false
+                                    return n
+                                }))
+
+                                setLinks(prev => prev.map(l => {
+                                    l.highlight = false
+                                    return l
+                                }))
+                            }}
                         />
                     )
                 }
