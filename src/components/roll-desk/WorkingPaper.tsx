@@ -99,6 +99,7 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 y={y}
                 height={height}
                 fill={highlight ? 'red' : 'black'}
+                fillOpacity={0.4}
                 onClick={onClick}
             />
             <line
@@ -107,14 +108,18 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 y1={displayDetails ? trackToY(100) : y - 10}
                 y2={displayDetails ? trackToY(0) : y + 20}
                 stroke='black'
-                strokeWidth={0.2} />
+                strokeWidth={0.2}
+                strokeOpacity={0.7}
+            />
             <line
                 x1={meanOffset}
                 x2={meanOffset}
                 y1={displayDetails ? trackToY(100) : y - 10}
                 y2={displayDetails ? trackToY(0) : y + 20}
                 stroke='black'
-                strokeWidth={0.2} />
+                strokeWidth={0.2}
+                strokeOpacity={0.7}
+            />
 
             <polygon
                 onClick={onClick}
@@ -209,7 +214,7 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
                 />
             )
         })
-        .filter(e => e !== null)
+            .filter(e => e !== null)
 
         setUnderlays(underlays)
     }, [edition, zoom, onClick, currentStage])
