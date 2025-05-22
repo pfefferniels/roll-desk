@@ -1,4 +1,3 @@
-import { RefObject } from "react";
 import { AnyEditorialAssumption } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
 import { MultilineText } from "../MultilineText";
@@ -6,6 +5,7 @@ import { getHull, Hull } from "./Hull";
 import { BBox, getBoundingBox } from "../../../helpers/getBoundingBox";
 import { EditUnderlay } from "./EditUnderlay";
 import { ConjectureUnderlay } from "./ConjectureUnderlay";
+import { AssumptionProps } from "./AssumptionProps";
 
 const inferencesOf = (assumption: AnyEditorialAssumption) => {
     if (!assumption.reasons) return []
@@ -56,13 +56,7 @@ const unpack = (acc: BBox[], assumption: AnyEditorialAssumption, svgEl: SVGGElem
     return acc
 }
 
-interface AssumptionUnderlayProps {
-    assumption: AnyEditorialAssumption;
-    svgRef: RefObject<SVGGElement>;
-    onClick: (r: AnyEditorialAssumption) => void;
-}
-
-export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps) => {
+export const Assumption = ({ assumption, svgRef, onClick }: AssumptionProps<AnyEditorialAssumption>) => {
     if (!svgRef.current) return null;
 
     if (assumption.type === 'handAssignment') {

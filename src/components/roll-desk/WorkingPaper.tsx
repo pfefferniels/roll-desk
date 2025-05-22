@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, Question, Stage, Inference } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { AssumptionUnderlay } from "./underlays/AssumptionUnderlay"
+import { Assumption } from "./underlays/Assumption"
 
 
 const isRelatedTo = (assumption: AnyEditorialAssumption, stageCreation: StageCreation) => {
@@ -206,7 +206,7 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
             }
 
             return (
-                <AssumptionUnderlay
+                <Assumption
                     key={`underlay_${assumption.id}`}
                     assumption={assumption}
                     svgRef={svgRef}

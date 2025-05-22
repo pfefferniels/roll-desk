@@ -1,9 +1,9 @@
 import { Conjecture } from "linked-rolls";
-import { AssumptionUnderlayProps } from "./AssumptionUnderlayProps";
+import { AssumptionProps } from "./AssumptionProps";
 import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getHull, Hull } from "./Hull";
 
-export const ConjectureUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps<Conjecture>) => {
+export const ConjectureUnderlay = ({ assumption, svgRef, onClick }: AssumptionProps<Conjecture>) => {
     if (!svgRef.current) return null;
 
     const { points, hull } = getHull(assumption.with.map(e => e.id), svgRef.current);

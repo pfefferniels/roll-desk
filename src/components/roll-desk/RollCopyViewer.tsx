@@ -17,7 +17,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dynamics } from "./Dynamics.tsx";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor, FixedCursor } from "./Cursor.tsx";
-import { AssumptionUnderlay } from "./underlays/AssumptionUnderlay.tsx";
+import { Assumption } from "./underlays/Assumption.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 
 interface IIIFInfo {
@@ -195,7 +195,7 @@ export const RollCopyViewer = ({
                     />
                 )}
                 {copy.actions.map((action, i) => (
-                    <AssumptionUnderlay
+                    <Assumption
                         assumption={action}
                         key={`underlay_${action.id}`}
                         svgRef={svgRef}

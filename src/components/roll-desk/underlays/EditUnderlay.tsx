@@ -2,9 +2,9 @@ import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
-import { AssumptionUnderlayProps } from "./AssumptionUnderlayProps";
+import { AssumptionProps } from "./AssumptionProps";
 
-export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps<Edit>) => {
+export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionProps<Edit>) => {
     if (!svgRef.current) return null
 
     const hulls = []
