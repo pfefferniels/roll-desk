@@ -17,7 +17,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dynamics } from "./Dynamics.tsx";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor, FixedCursor } from "./Cursor.tsx";
-import { Assumption } from "./underlays/Assumption.tsx";
+import { Assumption } from "./assumptions/Assumption.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 
 interface IIIFInfo {

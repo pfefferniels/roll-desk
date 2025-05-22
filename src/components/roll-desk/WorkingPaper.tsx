@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, Question, Stage, Inference } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { Assumption } from "./underlays/Assumption"
+import { Assumption } from "./assumptions/Assumption"
 
 
 const isRelatedTo = (assumption: AnyEditorialAssumption, stageCreation: StageCreation) => {
