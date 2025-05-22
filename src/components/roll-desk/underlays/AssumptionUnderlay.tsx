@@ -5,6 +5,7 @@ import { MultilineText } from "../MultilineText";
 import { getHull, Hull } from "./Hull";
 import { BBox, getBoundingBox } from "../../../helpers/getBoundingBox";
 import { EditUnderlay } from "./EditUnderlay";
+import { ConjectureUnderlay } from "./ConjectureUnderlay";
 
 const inferencesOf = (assumption: AnyEditorialAssumption) => {
     if (!assumption.reasons) return []
@@ -87,26 +88,7 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
         )
     }
     else if (assumption.type === 'conjecture') {
-        const { points, hull } = getHull(assumption.with.map(e => e.id), svgRef.current);
-        const bbox = getBoundingBox(points);
-
-        return (
-            <Hull
-                id={assumption.id}
-                hull={hull}
-                onClick={() => onClick(assumption)}
-                label={
-                    <text
-                        x={bbox.x}
-                        y={bbox.y + bbox.height + 10}
-                        fontSize={8}
-                        fill='black'
-                    >
-                        {assumption.type} ({assumption.certainty})
-                    </text>
-                }
-            />
-        );
+        return <ConjectureUnderlay {...{ assumption, svgRef, onClick }} />
     }
     else if (assumption.type === 'intention') {
         const inferences = assumption.reasons?.filter(reason => reason.type === 'inference') || []

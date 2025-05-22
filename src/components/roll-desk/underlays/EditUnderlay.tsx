@@ -1,14 +1,8 @@
-import { AnyEditorialAssumption, Edit } from "linked-rolls";
-import { RefObject } from "react";
+import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
-
-interface AssumptionUnderlayProps<T extends AnyEditorialAssumption> {
-    assumption: T;
-    svgRef: RefObject<SVGGElement>;
-    onClick: (r: T) => void;
-}
+import { AssumptionUnderlayProps } from "./AssumptionUnderlayProps";
 
 export const EditUnderlay = ({ assumption, svgRef, onClick }: AssumptionUnderlayProps<Edit>) => {
     if (!svgRef.current) return null
