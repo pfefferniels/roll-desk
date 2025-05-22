@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, Question, Stage, Inference } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { Assumption } from "./assumptions/Assumption"
+import { AllAssumptions } from "./assumptions/AllAssumptions"
 
 
 const isRelatedTo = (assumption: AnyEditorialAssumption, stageCreation: StageCreation) => {
@@ -158,7 +158,7 @@ interface WorkingPaperProps {
 export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperProps) => {
     const [emulation, setEmulation] = useState<Emulation>()
     const [prevEmulation, setPrevEmulation] = useState<Emulation>()
-    const [underlays, setUnderlays] = useState<JSX.Element[]>()
+    const [underlays, setUnderlays] = useState<JSX.Element>()
 
     const { zoom } = usePinchZoom()
     // const { playSingleNote } = usePiano()
@@ -196,25 +196,24 @@ export const WorkingPaper = ({ currentStage, edition, onClick }: WorkingPaperPro
     useLayoutEffect(() => {
         if (!currentStage) return
 
-        const underlays = ([
-            ...currentStage.intentions,
-            ...edition.questions,
-            ...currentStage.edits
-        ]).map(assumption => {
-            if (assumption.type === 'question' && !isRelatedTo(assumption, currentStage)) {
-                return null
-            }
-
-            return (
-                <Assumption
-                    key={`underlay_${assumption.id}`}
-                    assumption={assumption}
-                    svgRef={svgRef}
-                    onClick={onClick || (() => { })}
-                />
-            )
-        })
-            .filter(e => e !== null)
+        const underlays =
+            <AllAssumptions
+                assumptions={[
+                    ...currentStage.intentions,
+                    ...edition.questions,
+                    ...currentStage.edits
+                ].filter(assumption => {
+                    if (assumption.type === 'question' && !isRelatedTo(assumption, currentStage)) {
+                        // exclude questions that are not related to the current stage
+                        return false
+                    }
+                    return true
+                })}
+                svgHeight={svgRef.current?.getBoundingClientRect().height || 0}
+                svgWidth={svgRef.current?.getBoundingClientRect().width || 0}
+                svgRef={svgRef}
+                onClick={onClick || (() => { })}
+            />
 
         setUnderlays(underlays)
     }, [edition, zoom, onClick, currentStage])
