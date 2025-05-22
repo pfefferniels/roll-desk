@@ -1,56 +1,59 @@
 import { RefObject } from "react";
-import { roundedHull } from "../../helpers/roundedHull";
 import { AnyEditorialAssumption } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
 import { MultilineText } from "./MultilineText";
-import { Hull } from "./Hull";
+import { getHull, Hull } from "./Hull";
+import { BBox, getBoundingBox } from "../../helpers/getBoundingBox";
+import { EditUnderlay } from "./EditUnderlay";
 
-/**
- * 
- * @param ids SVG must contain elements with matching data-id attributes
- * @param svg SVG to search for elements in
- * @returns points and hull of the convex hull of the elements
- */
-const getHull = (ids: string[], svg: SVGGElement, hullPadding = 3) => {
-    const points = ids
-        .map(id => {
-            return svg.querySelector(`[data-id="${id}"]`);
-        })
-        .filter(el => !!el)
-        .map(el => {
-            const bbox = (el as SVGGraphicsElement).getBBox();
-            return [
-                [bbox.x, bbox.y] as [number, number],
-                [bbox.x + bbox.width, bbox.y] as [number, number],
-                [bbox.x, bbox.y + bbox.height] as [number, number],
-                [bbox.x + bbox.width, bbox.y + bbox.height] as [number, number]
-            ];
-        })
-        .flat();
-    const hull = roundedHull(points, hullPadding);
-    return { points, hull };
-};
-
-type BBox = {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+const inferencesOf = (assumption: AnyEditorialAssumption) => {
+    if (!assumption.reasons) return []
+    return assumption.reasons
+        .filter(r => r.type === 'inference')
+        .flat()
 }
 
-const getBoundingBox = (points: [number, number][]): BBox => {
-    const minX = Math.min(...points.map(p => p[0]));
-    const minY = Math.min(...points.map(p => p[1]));
-    const maxX = Math.max(...points.map(p => p[0]));
-    const maxY = Math.max(...points.map(p => p[1]));
+const unpack = (acc: BBox[], assumption: AnyEditorialAssumption, svgEl: SVGGElement) => {
+    if (assumption.type === 'edit') {
+        const ids = [
+            ...(assumption.insert || []).map(e => e.id),
+            ...(assumption.delete || []).map(e => e.id)
+        ]
+        const { points } = getHull(ids, svgEl);
+        const bbox = getBoundingBox(points);
+        acc.push(bbox);
+    }
+    else if (assumption.type === 'intention') {
+        const inferences = inferencesOf(assumption)
+        for (const inference of inferences) {
+            // get one bbox for every inference
+            const premises = inference.premises
+            const ids = []
+            for (const premise of premises) {
+                if (premise.type === 'edit') {
+                    ids.push(
+                        ...(premise.insert || []).map(e => e.id),
+                        ...(premise.delete || []).map(e => e.id)
+                    )
+                }
+            }
 
-    return {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY
-    };
-};
+            const { points } = getHull(ids, svgEl);
+            const bbox = getBoundingBox(points);
+            acc.push(bbox);
+        }
+    }
+    else if (assumption.type === 'question') {
+        const inferences = inferencesOf(assumption)
+        for (const inference of inferences) {
+            const premises = inference.premises
+            for (const premise of premises) {
+                unpack(acc, premise, svgEl)
+            }
+        }
+    }
+    return acc
+}
 
 interface AssumptionUnderlayProps {
     assumption: AnyEditorialAssumption;
@@ -150,205 +153,22 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
         return hulls
     }
     else if (assumption.type === 'edit') {
-        const hulls = []
-
-        // draw overall hull only when there are both, insertions
-        // as well as deletions
-        if (assumption.insert && assumption.delete) {
-            const { points, hull } =
-                getHull(
-                    [...(assumption.insert || []), ...(assumption.delete || [])]
-                        .map(e => e.id), svgRef.current,
-                    7 // slightly larger padding, since it will be overlaid by insertion/deletion hulls
-                );
-            const bbox = getBoundingBox(points);
-
-            // also, draw an arrow from delete to insert 
-            // in order to make clear the direction of the edit
-            const arrowHeadSize = 3;
-            const bbox1 = getBoundingBox(getHull(assumption.delete.map(e => e.id), svgRef.current).points);
-            const bbox2 = getBoundingBox(getHull(assumption.insert.map(e => e.id), svgRef.current).points);
-
-            const [sx, sy, c1x, c1y, c2x, c2y, ex, ey, ae] = getBoxToBoxArrow(
-                bbox1.x,
-                bbox1.y,
-                bbox1.width,
-                bbox1.height,
-                bbox2.x,
-                bbox2.y,
-                bbox2.width,
-                bbox2.height,
-                {
-                    padStart: 1,
-                    padEnd: arrowHeadSize,
-                    controlPointStretch: Math.max(8, Math.abs(bbox1.x - bbox2.x) * 0.5),
-                    allowedStartSides: ['top'],
-                    allowedEndSides: ['top']
-                }
-            )
-            const arrowPath = `M${sx},${sy} C${c1x},${c1y} ${c2x},${c2y} ${ex},${ey}`;
-            const arrowHead = (
-                <polygon
-                    points={`0,${-arrowHeadSize} ${arrowHeadSize *
-                        2},0, 0,${arrowHeadSize}`}
-                    transform={`translate(${ex}, ${ey}) rotate(${ae})`}
-                    fill='black'
-                />
-            )
-
-            hulls.push(
-                <>
-                    <Hull
-                        key={assumption.id}
-                        id={assumption.id}
-                        hull={hull}
-                        onClick={() => onClick(assumption)}
-                        label={
-                            <text
-                                x={bbox.x}
-                                y={bbox.y + bbox.height + 10}
-                                fontSize={8}
-                                fill='black'
-                            >
-
-                            </text>
-                        }
-                        soft={true}
-                    />
-
-                    <g className='arrow'>
-                        <path
-                            stroke="black"
-                            strokeWidth={2}
-                            fill="none"
-                            d={arrowPath} />
-                        {arrowHead}
-                    </g>
-                </>
-
-            )
-        }
-
-        // draw hull for insertions
-        if (assumption.insert) {
-            const { points, hull } = getHull(assumption.insert.map(e => e.id), svgRef.current);
-            const bbox = getBoundingBox(points);
-
-            hulls.push(
-                <Hull
-                    key={`${assumption.id}-insert`}
-                    id={assumption.id}
-                    hull={hull}
-                    onClick={() => {
-                        onClick(assumption)
-                    }}
-                    label={
-                        !(assumption.insert && assumption.delete) && ( // don't show label if there is an overall hull
-                            <text
-                                x={bbox.x}
-                                y={bbox.y + bbox.height + 2}
-                                fontSize={10}
-                                fill='black'
-                            >
-                                +
-                            </text>
-                        )
-                    }
-                />
-            )
-        }
-
-        // draw hull for deletions
-        if (assumption.delete) {
-            const { points, hull } = getHull(assumption.delete.map(e => e.id), svgRef.current);
-            const bbox = getBoundingBox(points);
-
-            hulls.push(
-                <Hull
-                    key={`${assumption.id}-delete`}
-                    id={assumption.id}
-                    hull={hull}
-                    onClick={() => onClick(assumption)}
-                    label={
-                        !(assumption.insert && assumption.delete) && ( // don't show label if there is an overall hull
-                            <text
-                                x={bbox.x}
-                                y={bbox.y + bbox.height + 2}
-                                fontSize={10}
-                                fill='black'
-                            >
-                                -
-                            </text>
-                        )
-                    }
-                />
-            )
-        }
-
-        return (
-            <g>
-                {...hulls}
-            </g>
-        );
+        return <EditUnderlay {...{ assumption, svgRef, onClick }} />
     }
     else if (assumption.type === 'question') {
         if (!assumption.reasons) return null
 
-        const inferencesOf = (assumption: AnyEditorialAssumption) => {
-            if (!assumption.reasons) return []
-            return assumption.reasons
-                .filter(r => r.type === 'inference')
-                .flat()
-        }
-
-        const unpack = (acc: BBox[], assumption: AnyEditorialAssumption) => {
-            if (assumption.type === 'edit') {
-                const ids = [
-                    ...(assumption.insert || []).map(e => e.id),
-                    ...(assumption.delete || []).map(e => e.id)
-                ]
-                const { points } = getHull(ids, svgRef.current!);
-                const bbox = getBoundingBox(points);
-                acc.push(bbox);
-            }
-            else if (assumption.type === 'intention') {
-                const inferences = inferencesOf(assumption)
-                for (const inference of inferences) {
-                    // get one bbox for every inference
-                    const premises = inference.premises
-                    const ids = []
-                    for (const premise of premises) {
-                        if (premise.type === 'edit') {
-                            ids.push(
-                                ...(premise.insert || []).map(e => e.id),
-                                ...(premise.delete || []).map(e => e.id)
-                            )
-                        }
-                    }
-
-                    const { points } = getHull(ids, svgRef.current!);
-                    const bbox = getBoundingBox(points);
-                    acc.push(bbox);
-                }
-            }
-            else if (assumption.type === 'question') {
-                const inferences = inferencesOf(assumption)
-                for (const inference of inferences) {
-                    const premises = inference.premises
-                    for (const premise of premises) {
-                        unpack(acc, premise)
-                    }
-                }
-            }
-            return acc
-        }
-
         const bboxes: BBox[] = []
-        unpack(bboxes, assumption)
+        unpack(bboxes, assumption, svgRef.current)
 
         const xs = bboxes.map(bbox => bbox.x)
         const cx = xs.reduce((acc, x) => acc + x, 0) / xs.length
-        const cy = (bboxes.reduce((acc, bbox) => acc + bbox.y, 0) / bboxes.length) - 100
+        let cy = (bboxes.reduce((acc, bbox) => acc + bbox.y, 0) / bboxes.length)
+
+        const svgHeight = 880 // TODO: svgRef.current.clientHeight does not seem to work
+
+        const placement = cy > (svgHeight / 2) ? 'bottom' : 'top'
+        cy += placement === 'bottom' ? 100 : -100
 
         const arrows = bboxes
             .map(bbox => {
@@ -362,10 +182,10 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                     bbox.width,
                     bbox.height,
                     {
-                        padStart: 3,
-                        padEnd: 15,
-                        allowedStartSides: ['bottom'],
-                        allowedEndSides: ['top']
+                        padStart: 0,
+                        padEnd: 0,
+                        allowedStartSides: [placement === 'bottom' ? 'top' : 'bottom'],
+                        allowedEndSides: [placement],
                     }
                 )
 
@@ -375,7 +195,8 @@ export const AssumptionUnderlay = ({ assumption, svgRef, onClick }: AssumptionUn
                     <path
                         key={bbox.x}
                         stroke="black"
-                        strokeWidth={0.5}
+                        strokeWidth={2}
+                        strokeOpacity={0.4}
                         fill="none"
                         d={arrowPath}
                     />
