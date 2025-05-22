@@ -1,7 +1,7 @@
 import { AnyEditorialAssumption, Edit } from "linked-rolls";
 import { RefObject } from "react";
 import { getHull, Hull } from "./Hull";
-import { getBoundingBox } from "../../helpers/getBoundingBox";
+import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
 
 interface AssumptionUnderlayProps<T extends AnyEditorialAssumption> {

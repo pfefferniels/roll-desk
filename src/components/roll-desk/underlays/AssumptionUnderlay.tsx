@@ -1,9 +1,9 @@
 import { RefObject } from "react";
 import { AnyEditorialAssumption } from "linked-rolls";
 import { getBoxToBoxArrow } from "curved-arrows";
-import { MultilineText } from "./MultilineText";
+import { MultilineText } from "../MultilineText";
 import { getHull, Hull } from "./Hull";
-import { BBox, getBoundingBox } from "../../helpers/getBoundingBox";
+import { BBox, getBoundingBox } from "../../../helpers/getBoundingBox";
 import { EditUnderlay } from "./EditUnderlay";
 
 const inferencesOf = (assumption: AnyEditorialAssumption) => {

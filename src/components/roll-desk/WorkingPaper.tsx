@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Edition, AnyEditorialAssumption, Expression, CollatedEvent, StageCreation, findWitnessesWithinStage, Question, Stage, Inference } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { AssumptionUnderlay } from "./AssumptionUnderlay"
+import { AssumptionUnderlay } from "./underlays/AssumptionUnderlay"
 
 
 const isRelatedTo = (assumption: AnyEditorialAssumption, stageCreation: StageCreation) => {
@@ -50,7 +50,7 @@ const SustainPedal = ({ on, off }: SustainPedalProps) => {
             y={y1}
             height={height}
             fill='gray'
-            fillOpacity={0.2}
+            fillOpacity={0.1}
             stroke='black'
             strokeWidth={0.4}
         />
@@ -126,7 +126,7 @@ const CollatedEventViewer = ({ event, highlight, onClick }: CollatedEventViewerP
                 onMouseEnter={() => setDisplayDetails(true)}
                 onMouseLeave={() => setDisplayDetails(false)}
                 fill='red'
-                fillOpacity={0.2}
+                fillOpacity={0.15}
                 points={`
                         ${onsetStretch[0]},${y + height / 2}
                         ${innerBoundaries[0]},${y}
