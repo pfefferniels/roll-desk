@@ -23,6 +23,7 @@ const licenses = [
 const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, onClose }) => {
   const [title, setTitle] = useState<string>('');
   const [license, setLicense] = useState<string>('');
+  const [baseURI, setBaseURI] = useState<string>('');
   const [catalogueNumber, setCatalogueNumber] = useState<string>('');
   const [recordingDate, setRecordingDate] = useState<string>('');
   const [recordingPlace, setRecordingPlace] = useState<string>('');
@@ -32,6 +33,7 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
   useEffect(() => {
     setTitle(edition.title);
     setLicense(edition.license);
+    setBaseURI(edition.base);
     setPublisherName(edition.publicationEvent.publisher.name);
     setPublicationDate(edition.publicationEvent.publicationDate);
     setCatalogueNumber(edition.roll.catalogueNumber);
@@ -45,6 +47,7 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
     const newEdition = edition.shallowClone()
     newEdition.title = title
     newEdition.license = selectedLicense?.url || license
+    newEdition.base = baseURI
     newEdition.publicationEvent.publisher.name = publisherName
     newEdition.publicationEvent.publicationDate = publicationDate
     newEdition.roll.catalogueNumber = catalogueNumber
@@ -56,63 +59,73 @@ const CreateEdition: React.FC<CreateEditionProps> = ({ edition, onDone, open, on
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
         Create Edition
       </DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ minWidth: 400 }}>
-          <TextField
-            label="Title"
-            fullWidth
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <TextField
-            label="License"
-            fullWidth
-            select
-            value={license}
-            onChange={(e) => setLicense(e.target.value)}
-          >
-            {licenses.map((license) => (
-              <MenuItem key={license.url} value={license.url}>
-                {license.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <Divider />
-          <TextField
-            label="Publisher Name"
-            fullWidth
-            value={publisherName}
-            onChange={(e) => setPublisherName(e.target.value)}
-          />
-          <TextField
-            label="Publication Date"
-            fullWidth
-            value={publicationDate}
-            onChange={e => setPublicationDate(e.target.value)}
-          />
-          <Divider orientation='horizontal' />
-          <TextField
-            label="Catalogue Number"
-            fullWidth
-            value={catalogueNumber}
-            onChange={(e) => setCatalogueNumber(e.target.value)}
-          />
-          <TextField
-            label="Recording Date"
-            fullWidth
-            value={recordingDate}
-            onChange={(e) => setRecordingDate(e.target.value)}
-          />
-          <TextField
-            label="Recording Place"
-            fullWidth
-            value={recordingPlace}
-            onChange={(e) => setRecordingPlace(e.target.value)}
-          />
+        <Stack spacing={2} direction='row' sx={{ marginTop: '1rem' }}>
+          <Stack spacing={2} sx={{ minWidth: 300 }}>
+            <TextField
+              label="Title"
+              fullWidth
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <TextField
+              label="License"
+              fullWidth
+              select
+              value={license}
+              onChange={(e) => setLicense(e.target.value)}
+            >
+              {licenses.map((license) => (
+                <MenuItem key={license.url} value={license.url}>
+                  {license.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Base URI"
+              fullWidth
+              value={baseURI}
+              onChange={(e) => setBaseURI(e.target.value)}
+            />
+          </Stack>
+          <Stack sx={{ minWidth: 200 }} spacing={2}>
+            <TextField
+              label="Publisher Name"
+              fullWidth
+              value={publisherName}
+              onChange={(e) => setPublisherName(e.target.value)}
+            />
+            <TextField
+              label="Publication Date"
+              fullWidth
+              value={publicationDate}
+              onChange={e => setPublicationDate(e.target.value)}
+            />
+          </Stack>
+          <Stack sx={{ minWidth: 200 }} spacing={2}>
+            <TextField
+              label="Catalogue Number"
+              fullWidth
+              value={catalogueNumber}
+              onChange={(e) => setCatalogueNumber(e.target.value)}
+            />
+            <TextField
+              label="Recording Date"
+              fullWidth
+              value={recordingDate}
+              onChange={(e) => setRecordingDate(e.target.value)}
+            />
+            <TextField
+              label="Recording Place"
+              fullWidth
+              value={recordingPlace}
+              onChange={(e) => setRecordingPlace(e.target.value)}
+            />
+          </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>
