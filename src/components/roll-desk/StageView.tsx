@@ -1,0 +1,199 @@
+import { useLayoutEffect, useRef, useState } from "react"
+// import { usePiano } from "react-pianosound"
+import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, AnyEditorialAssumption, Question, Stage, Inference, traverseStages, getSnaphsot } from "linked-rolls"
+import { Dynamics } from "./Dynamics"
+import { AllAssumptions } from "./assumptions/AllAssumptions"
+import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
+import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
+import { EditView } from "./assumptions/EditView"
+
+interface StageViewProps {
+    stage: Stage
+    onClick?: (event: AnySymbol | AnyEditorialAssumption) => void
+}
+
+export const StageView = ({ stage, onClick }: StageViewProps) => {
+    const [underlays, setUnderlays] = useState<JSX.Element | undefined>()
+
+    const { zoom } = usePinchZoom()
+    // const { playSingleNote } = usePiano()
+
+    const svgRef = useRef<SVGGElement>(null)
+
+    const emulation = new Emulation()
+    emulation.emulateStage(stage)
+
+    const prevStage = stage.basedOn?.predecessor
+    let prevEmulation: Emulation | undefined = undefined
+    if (prevStage) {
+        prevEmulation = new Emulation()
+        prevEmulation.emulateStage(prevStage)
+    }
+
+    // symbols up to the previous stage
+    const snapshot: (AnySymbol & { age: number })[] = [];
+    if (prevStage) {
+        let age = 0
+        traverseStages(stage, s => {
+            // collect all inserted symbols and tell them their age
+            for (const edit of s.edits) {
+                for (const symbol of edit.insert ?? []) {
+                    snapshot.push({ ...symbol, age })
+                }
+            }
+
+            // remove deletions
+            const deletions = s.edits.flatMap(edit => edit.delete || [])
+            for (const toRemove of deletions) {
+                const idx = snapshot.findIndex(x => x.id === toRemove.id)
+                if (idx !== -1) snapshot.splice(idx, 1)
+            }
+
+            age += 1
+        })
+    }
+
+    // draw edits of current stage
+    const edits = []
+    for (const edit of stage.edits) {
+        edits.push(
+            <EditView
+                key={edit.id}
+                assumption={edit}
+                onClick={onClick}
+            />
+        )
+    }
+
+    // draw dynamics of prev stage and dynamics of current stage (for comparison)
+    const dynamics = (
+        <g className='dynamics'>
+            {prevEmulation && (
+                <Dynamics
+                    forEmulation={prevEmulation}
+                    pathProps={{
+                        stroke: 'gray',
+                        strokeWidth: 3,
+                        strokeOpacity: 0.4
+                    }}
+                />
+            )}
+            {emulation && (
+                <Dynamics
+                    forEmulation={emulation}
+                    pathProps={{
+                        stroke: 'black',
+                        strokeWidth: 1.5
+                    }}
+                />
+            )}
+        </g>
+    )
+
+    useLayoutEffect(() => {
+        if (!stage) return
+
+        const underlays =
+            <AllAssumptions
+                assumptions={[
+                    ...stage.intentions,
+                    ...stage.edits
+                ]}
+                svgHeight={svgRef.current?.getBoundingClientRect().height || 0}
+                svgWidth={svgRef.current?.getBoundingClientRect().width || 0}
+                svgRef={svgRef}
+                onClick={onClick || (() => { })}
+            />
+
+        setUnderlays(underlays)
+    }, [zoom, onClick, stage])
+
+    return (
+        <g className='collated-copies' ref={svgRef}>
+            {underlays}
+
+            {snapshot
+                .map((symbol, i) => {
+                    if (symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn') {
+                        const partner = snapshot
+                            .sort((a, b) => {
+                                return dimensionOf(a).horizontal.from - dimensionOf(b).horizontal.from
+                            })
+                            .find(candidate => {
+                                return (
+                                    candidate.type === 'expression'
+                                    && candidate.expressionType === 'SustainPedalOff'
+                                    && dimensionOf(candidate).horizontal.from > dimensionOf(symbol).horizontal.from
+                                )
+                            })
+                        if (!partner) return null
+
+                        return (
+                            <SustainPedal
+                                key={`sustain_${symbol.id || i}`}
+                                on={symbol}
+                                off={partner as Expression}
+                            />
+                        )
+                    }
+                    else if (symbol.type === 'expression' || symbol.type === 'note') {
+                        return (
+                            <Perforation
+                                key={`symbol_${symbol.id || i}`}
+                                symbol={symbol}
+                                highlight={stage ? false : (symbol.isCarriedBy?.length !== 0)}
+                                onClick={() => {
+                                    const performingEvents = emulation.findEventsPerforming(symbol.id)
+                                    const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
+                                    const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
+                                    if (noteOn && noteOff) {
+                                        // playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                                    }
+
+                                    if (onClick) onClick(symbol)
+                                }}
+                            />
+                        )
+                    }
+                    else if (symbol.type === 'handwrittenText' || symbol.type === 'rollLabel' || symbol.type === 'stamp') {
+                        return (
+                            <TextSymbol
+                                key={`textSymbol_${symbol.id || i}`}
+                                event={symbol}
+                                onClick={() => {
+                                    if (onClick) onClick(symbol)
+                                }}
+                            />
+                        )
+                    }
+                    else if (symbol.type === 'cover') {
+                        // TODO
+                    }
+                })}
+
+            {prevEmulation && (
+                <Dynamics
+                    forEmulation={prevEmulation}
+                    pathProps={{
+                        stroke: 'gray',
+                        strokeWidth: 3,
+                        strokeOpacity: 0.4
+                    }}
+                />
+            )}
+
+            {emulation && (
+                <Dynamics
+                    forEmulation={emulation}
+                    pathProps={{
+                        stroke: 'black',
+                        strokeWidth: 1.5
+                    }}
+                />
+            )}
+
+            <g className='overlayContainer' />
+        </g>
+    )
+}
