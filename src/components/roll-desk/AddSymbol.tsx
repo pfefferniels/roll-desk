@@ -1,22 +1,24 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { RollCopy, RollMeasurement, AnyRollEvent, WelteT100 } from "linked-rolls"
+import { RollCopy, RollFeature, RollMeasurement, WelteT100 } from "linked-rolls"
 import { useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
+import { AnySymbol } from "linked-rolls/lib/Symbol"
 
-interface AddEventProps {
+interface AddSymbolProps {
     open: boolean
     selection: EventDimension
     copy: RollCopy
     measurement: RollMeasurement
     iiifUrl?: string
+    onDone: (symbol: AnySymbol) => void
     onClose: () => void
 }
 
 const eventTypes = ['perforation', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddEventDialog = ({ selection, onClose, open, copy, measurement, iiifUrl }: AddEventProps) => {
+export const AddSymbolDialog = ({ selection, open, onClose, onDone, measurement, iiifUrl }: AddSymbolProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -129,66 +131,52 @@ export const AddEventDialog = ({ selection, onClose, open, copy, measurement, ii
             <DialogActions>
                 <Button
                     onClick={() => {
-                        let eventToAdd: AnyRollEvent | undefined = undefined
                         const rollSelection = structuredClone(selection) as EventDimension
 
-                        // Apply shift and stretch to the user's selection
-                        if (copy.shift) {
-                            rollSelection.horizontal.from -= copy.shift.horizontal
-                            rollSelection.horizontal.to -= copy.shift.horizontal
-                        }
-                        if (copy.stretch) {
-                            rollSelection.horizontal.from /= copy.stretch.factor
-                            rollSelection.horizontal.to /= copy.stretch.factor
+                        const feature: RollFeature = {
+                            id: v4(),
+                            ...rollSelection,
+                            measurement,
+                            annotates: iiifUrl
                         }
 
+                        let newSymbol: AnySymbol | undefined = undefined
                         if (eventType === 'rollLabel') {
-                            eventToAdd = {
+                            newSymbol = {
                                 type: eventType,
                                 text: text || '[no text]',
-                                ...rollSelection,
                                 signed: signed === undefined ? false : signed,
-                                id: v4(),
-                                measurement,
-                                annotates: iiifUrl
+                                isCarriedBy: [feature],
+                                id: v4()
                             }
                         }
                         if (eventType === 'stamp' || eventType === 'handwrittenText') {
-                            eventToAdd = {
+                            newSymbol = {
                                 type: eventType,
                                 text: text || '[no text]',
                                 rotation,
-                                ...rollSelection,
                                 id: v4(),
-                                measurement,
-                                annotates: iiifUrl
+                                isCarriedBy: [feature]
                             }
                         }
                         else if (eventType === 'cover') {
-                            eventToAdd = {
-                                type: eventType,
-                                ...rollSelection,
+                            newSymbol = {
                                 id: v4(),
-                                measurement,
+                                type: eventType,
                                 note: material,
-                                annotates: iiifUrl
+                                isCarriedBy: [feature]
                             }
                         }
 
                         else if (eventType === 'perforation' && perforationMeaning) {
-                            eventToAdd = {
-                                ...perforationMeaning,
-                                ...rollSelection,
+                            newSymbol = {
                                 id: v4(),
-                                measurement,
-                                annotates: iiifUrl
+                                ...perforationMeaning,
+                                isCarriedBy: [feature]
                             }
                         }
 
-                        if (eventToAdd) {
-                            copy.insertEvent(eventToAdd)
-                        }
-
+                        if (newSymbol) onDone(newSymbol)
                         onClose()
                     }}
                     variant='contained'
