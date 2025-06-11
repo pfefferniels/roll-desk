@@ -1,20 +1,22 @@
 import { ReactNode, MouseEventHandler, useState } from "react";
 import { roundedHull } from "../../../helpers/roundedHull";
 
+interface Rect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 /**
  * 
  * @param ids SVG must contain elements with matching data-id attributes
  * @param svg SVG to search for elements in
  * @returns points and hull of the convex hull of the elements
  */
-export const getHull = (ids: string[], svg: SVGGElement, hullPadding = 3) => {
-    const points = ids
-        .map(id => {
-            return svg.querySelector(`[data-id="${id}"]`);
-        })
-        .filter(el => !!el)
-        .map(el => {
-            const bbox = (el as SVGGraphicsElement).getBBox();
+export const getHull = (bboxes: Rect[], hullPadding = 3) => {
+    const points =
+        bboxes.map(bbox => {
             return [
                 [bbox.x, bbox.y] as [number, number],
                 [bbox.x + bbox.width, bbox.y] as [number, number],
@@ -22,7 +24,7 @@ export const getHull = (ids: string[], svg: SVGGElement, hullPadding = 3) => {
                 [bbox.x + bbox.width, bbox.y + bbox.height] as [number, number]
             ];
         })
-        .flat();
+            .flat();
     const hull = roundedHull(points, hullPadding);
     return { points, hull };
 };
@@ -45,9 +47,9 @@ export const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: Hull
         <g
             className='hull'
             onClick={onClick}
+            data-id={id}
         >
             <path
-                data-id={id}
                 id={id}
                 stroke={soft ? 'none' : 'black'}
                 fill={fill || (soft ? 'gray' : 'white')}

@@ -2,28 +2,56 @@ import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
-import { AssumptionProps } from "./AssumptionProps";
+import { MouseEventHandler } from "react";
+import { AnySymbol, dimensionOf } from "linked-rolls/lib/Symbol";
+import { usePinchZoom } from "../../../hooks/usePinchZoom";
 
-export const EditUnderlay = ({ assumption, svgRef, onClick, highlight }: AssumptionProps<Edit>) => {
-    if (!svgRef.current) return null
+interface EditViewProps {
+    edit: Edit;
+    onClick?: MouseEventHandler;
+}
+
+export const EditView = ({ edit, onClick }: EditViewProps) => {
+    const { translateX, trackToY, trackHeight } = usePinchZoom();
 
     const hulls = []
 
+    const getBBox = (symbol: AnySymbol) => {
+        const dim = dimensionOf(symbol)
+
+        let height = trackHeight.note
+        if (dim.vertical.to) {
+            height = trackToY(dim.vertical.to - dim.vertical.from);
+        }
+        else if (symbol.type === 'note' || symbol.type === 'expression') {
+            height = trackHeight[symbol.type];
+        }
+
+        return {
+            x: translateX(dim.horizontal.from),
+            y: trackToY(dim.vertical.from),
+            width: translateX(dim.horizontal.to - dim.horizontal.from),
+            height
+        }
+    }
+
+    const insertionBBoxes = edit.insert?.map(getBBox) || [];
+    const deletionBBoxes = edit.delete?.map(getBBox) || [];
+
     // draw overall hull only when there are both, insertions
     // as well as deletions
-    if (assumption.insert && assumption.delete) {
+    if (edit.insert && edit.delete) {
         const { hull } =
             getHull(
-                [...(assumption.insert || []), ...(assumption.delete || [])]
-                    .map(e => e.id), svgRef.current,
+                [...insertionBBoxes, ...deletionBBoxes],
                 7 // slightly larger padding, since it will be overlaid by insertion/deletion hulls
             );
 
         // also, draw an arrow from delete to insert 
         // in order to make clear the direction of the edit
         const arrowHeadSize = 3;
-        const bbox1 = getBoundingBox(getHull(assumption.delete.map(e => e.id), svgRef.current).points);
-        const bbox2 = getBoundingBox(getHull(assumption.insert.map(e => e.id), svgRef.current).points);
+        const bbox1 = getBoundingBox(getHull(deletionBBoxes).points);
+        const bbox2 = getBoundingBox(getHull(insertionBBoxes).points);
 
         const [sx, sy, c1x, c1y, c2x, c2y, ex, ey, ae] = getBoxToBoxArrow(
             bbox1.x,
@@ -55,12 +83,12 @@ export const EditUnderlay = ({ assumption, svgRef, onClick, highlight }: Assumpt
         hulls.push(
             <>
                 <Hull
-                    key={assumption.id}
-                    id={assumption.id}
-                    fillOpacity={highlight ? 0.5 : 0.05}
-                    fill='red'
+                    key={edit.id}
+                    id={edit.id}
+                    fillOpacity={0.5}
+                    fill='white'
                     hull={hull}
-                    onClick={() => onClick(assumption)}
+                    onClick={(e) => onClick && onClick(e)}
                     soft={true}
                 />
 
@@ -78,22 +106,22 @@ export const EditUnderlay = ({ assumption, svgRef, onClick, highlight }: Assumpt
     }
 
     // draw hull for insertions
-    if (assumption.insert) {
-        const { points, hull } = getHull(assumption.insert.map(e => e.id), svgRef.current);
+    if (edit.insert) {
+        const { points, hull } = getHull(insertionBBoxes);
         const bbox = getBoundingBox(points);
 
         hulls.push(
             <Hull
-                key={`${assumption.id}-insert`}
-                id={assumption.id}
+                key={`${edit.id}-insert`}
+                id={edit.id}
                 hull={hull}
-                fillOpacity={highlight ? 0.5 : 0.05}
-                fill='red'
-                onClick={() => {
-                    onClick(assumption)
+                fillOpacity={0.5}
+                fill='white'
+                onClick={(e) => {
+                    onClick && onClick(e)
                 }}
                 label={
-                    !(assumption.insert && assumption.delete) && ( // don't show label if there is an overall hull
+                    !(edit.insert && edit.delete) && ( // don't show label if there is an overall hull
                         <text
                             x={bbox.x}
                             y={bbox.y + bbox.height + 2}
@@ -110,20 +138,21 @@ export const EditUnderlay = ({ assumption, svgRef, onClick, highlight }: Assumpt
     }
 
     // draw hull for deletions
-    if (assumption.delete) {
-        const { points, hull } = getHull(assumption.delete.map(e => e.id), svgRef.current);
+    if (edit.delete) {
+        const { points, hull } = getHull(deletionBBoxes);
         const bbox = getBoundingBox(points);
 
         hulls.push(
             <Hull
-                key={`${assumption.id}-delete`}
-                id={assumption.id}
+                key={`${edit.id}-delete`}
+                id={edit.id}
+                data-id={edit.id}
                 hull={hull}
-                fillOpacity={highlight ? 0.5 : 0.05}
-                fill='red'
-                onClick={() => onClick(assumption)}
+                fillOpacity={0.5}
+                fill='white'
+                onClick={(e) => onClick && onClick(e)}
                 label={
-                    !(assumption.insert && assumption.delete) && ( // don't show label if there is an overall hull
+                    !(edit.insert && edit.delete) && ( // don't show label if there is an overall hull
                         <text
                             x={bbox.x}
                             y={bbox.y + bbox.height + 2}

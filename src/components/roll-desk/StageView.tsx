@@ -31,28 +31,26 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         prevEmulation.emulateStage(prevStage)
     }
 
-    // symbols up to the previous stage
+    // all symbols up to the current stage
     const snapshot: (AnySymbol & { age: number })[] = [];
-    if (prevStage) {
-        let age = 0
-        traverseStages(stage, s => {
-            // collect all inserted symbols and tell them their age
-            for (const edit of s.edits) {
-                for (const symbol of edit.insert ?? []) {
-                    snapshot.push({ ...symbol, age })
-                }
+    let age = 0
+    traverseStages(stage, s => {
+        // collect all inserted symbols and tell them their age
+        for (const edit of s.edits) {
+            for (const symbol of edit.insert ?? []) {
+                snapshot.push({ ...symbol, age })
             }
+        }
 
-            // remove deletions
-            const deletions = s.edits.flatMap(edit => edit.delete || [])
-            for (const toRemove of deletions) {
-                const idx = snapshot.findIndex(x => x.id === toRemove.id)
-                if (idx !== -1) snapshot.splice(idx, 1)
-            }
+        // remove deletions
+        const deletions = s.edits.flatMap(edit => edit.delete || [])
+        for (const toRemove of deletions) {
+            const idx = snapshot.findIndex(x => x.id === toRemove.id)
+            if (idx !== -1) snapshot.splice(idx, 1)
+        }
 
-            age += 1
-        })
-    }
+        age += 1
+    })
 
     // draw edits of current stage
     const edits = []
@@ -60,8 +58,8 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         edits.push(
             <EditView
                 key={edit.id}
-                assumption={edit}
-                onClick={onClick}
+                edit={edit}
+                onClick={() => onClick && onClick(edit)}
             />
         )
     }
@@ -112,6 +110,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
     return (
         <g className='collated-copies' ref={svgRef}>
             {underlays}
+            {dynamics}
 
             {snapshot
                 .map((symbol, i) => {
@@ -171,27 +170,6 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                         // TODO
                     }
                 })}
-
-            {prevEmulation && (
-                <Dynamics
-                    forEmulation={prevEmulation}
-                    pathProps={{
-                        stroke: 'gray',
-                        strokeWidth: 3,
-                        strokeOpacity: 0.4
-                    }}
-                />
-            )}
-
-            {emulation && (
-                <Dynamics
-                    forEmulation={emulation}
-                    pathProps={{
-                        stroke: 'black',
-                        strokeWidth: 1.5
-                    }}
-                />
-            )}
 
             <g className='overlayContainer' />
         </g>
