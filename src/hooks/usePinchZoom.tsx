@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 
-interface PinchZoomContextProps {
+export interface PinchZoomContextProps {
     translateX: (x: number) => number
     trackToY: (y: number) => number
     yToTrack: (y: number) => number | 'gap'

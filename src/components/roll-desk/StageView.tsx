@@ -3,10 +3,10 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, AnyEditorialAssumption, Question, Stage, Inference, traverseStages, getSnaphsot } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
-import { AllAssumptions } from "./assumptions/AllAssumptions"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
 import { EditView } from "./assumptions/EditView"
+import { IntentionView } from "./assumptions/IntentionView"
 
 interface StageViewProps {
     stage: Stage
@@ -14,7 +14,7 @@ interface StageViewProps {
 }
 
 export const StageView = ({ stage, onClick }: StageViewProps) => {
-    const [underlays, setUnderlays] = useState<JSX.Element | undefined>()
+    const [underlays, setUnderlays] = useState<JSX.Element[]>([])
 
     const { zoom } = usePinchZoom()
     // const { playSingleNote } = usePiano()
@@ -89,27 +89,19 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         </g>
     )
 
-    useLayoutEffect(() => {
-        if (!stage) return
-
-        const underlays =
-            <AllAssumptions
-                assumptions={[
-                    ...stage.intentions,
-                    ...stage.edits
-                ]}
-                svgHeight={svgRef.current?.getBoundingClientRect().height || 0}
-                svgWidth={svgRef.current?.getBoundingClientRect().width || 0}
-                svgRef={svgRef}
-                onClick={onClick || (() => { })}
-            />
-
-        setUnderlays(underlays)
-    }, [zoom, onClick, stage])
+    const intentions = stage.intentions
+        .map(intention => {
+            return (
+                <IntentionView
+                    key={intention.id}
+                    intention={intention}
+                    onClick={onClick}
+                />
+            )
+        })
 
     return (
         <g className='collated-copies' ref={svgRef}>
-            {underlays}
             {dynamics}
 
             {snapshot
@@ -171,7 +163,8 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                     }
                 })}
 
-            <g className='overlayContainer' />
+            {edits}
+            {intentions}
         </g>
     )
 }

@@ -4,7 +4,37 @@ import { getBoundingBox } from "../../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
 import { MouseEventHandler } from "react";
 import { AnySymbol, dimensionOf } from "linked-rolls/lib/Symbol";
-import { usePinchZoom } from "../../../hooks/usePinchZoom";
+import { PinchZoomContextProps, usePinchZoom } from "../../../hooks/usePinchZoom";
+
+export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' | 'trackHeight'>
+
+const getSymbolBBox = (symbol: AnySymbol, { translateX, trackToY, trackHeight }: Translation) => {
+    const dim = dimensionOf(symbol)
+
+    let height = trackHeight.note
+    if (dim.vertical.to) {
+        height = trackToY(dim.vertical.to - dim.vertical.from);
+    }
+    else if (symbol.type === 'note' || symbol.type === 'expression') {
+        height = trackHeight[symbol.type];
+    }
+
+    return {
+        x: translateX(dim.horizontal.from),
+        y: trackToY(dim.vertical.from),
+        width: translateX(dim.horizontal.to - dim.horizontal.from),
+        height
+    }
+}
+
+export const getEditBBox = (edit: Edit, translation: Translation) => {
+    const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, translation)) || [];
+    const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, translation)) || [];
+
+    return getBoundingBox(
+        getHull([...insertionBBoxes, ...deletionBBoxes]).points
+    );
+}
 
 interface EditViewProps {
     edit: Edit;
@@ -12,31 +42,12 @@ interface EditViewProps {
 }
 
 export const EditView = ({ edit, onClick }: EditViewProps) => {
-    const { translateX, trackToY, trackHeight } = usePinchZoom();
+    const translation = usePinchZoom();
 
     const hulls = []
 
-    const getBBox = (symbol: AnySymbol) => {
-        const dim = dimensionOf(symbol)
-
-        let height = trackHeight.note
-        if (dim.vertical.to) {
-            height = trackToY(dim.vertical.to - dim.vertical.from);
-        }
-        else if (symbol.type === 'note' || symbol.type === 'expression') {
-            height = trackHeight[symbol.type];
-        }
-
-        return {
-            x: translateX(dim.horizontal.from),
-            y: trackToY(dim.vertical.from),
-            width: translateX(dim.horizontal.to - dim.horizontal.from),
-            height
-        }
-    }
-
-    const insertionBBoxes = edit.insert?.map(getBBox) || [];
-    const deletionBBoxes = edit.delete?.map(getBBox) || [];
+    const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, translation)) || [];
+    const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, translation)) || [];
 
     // draw overall hull only when there are both, insertions
     // as well as deletions
