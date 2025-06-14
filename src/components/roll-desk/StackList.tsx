@@ -1,35 +1,36 @@
 import { Visibility, VisibilityOff, ColorLens, Edit, Add } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText, ListItemSecondaryAction, Divider, Paper, Box } from "@mui/material"
-import { Fragment, useState } from "react"
-import { OperationsAsText } from "./OperationAsText"
-import { LayerInfo } from "./RollDesk"
-import { Edition, RollCopy } from "linked-rolls"
+import { RollCopy } from "linked-rolls"
 import { stringToColor } from "../../helpers/stringToColor"
 import { RollCopyDialog } from "./RollCopyDialog"
+import { useState } from "react"
+import { ColorDialog } from "./ColorDialog"
 
-interface StackListProps {
-    stack: LayerInfo[]
-    setStack: (newStack: LayerInfo[]) => void
-    edition: Edition
-    activeLayerId: string
-    setActiveLayerId: (newActiveLayerId: string) => void
-    onChangeEdition: (newEdition: Edition) => void
-    onChangeColor: (item: LayerInfo) => void
+export interface Layer {
+    copy: RollCopy
+    color: string
+    opacity: number
+    facsimile: boolean
 }
 
-export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLayerId, onChangeEdition, onChangeColor }: StackListProps) => {
-    const [rollCopyDialogOpen, setRollCopyDialogOpen] = useState(false)
-    const [selectedCopy, setSelectedCopy] = useState<RollCopy>()
+interface LayerStackProps {
+    active: Layer
+    stack: Layer[]
+
+    onChange: (stack: Layer[]) => void
+    onClick: (layer: Layer) => void
+}
+
+export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps) => {
+    const [clickedLayer, setClickedLayer] = useState<Layer>();
 
     return (
         <>
             <Paper sx={{ maxWidth: 360 }} elevation={2}>
                 <List dense>
-                    {stack.map((stackItem, i) => {
-                        const copy = edition.copies.find(copy => copy.id === stackItem.id)
-
+                    {stack.map((layer, i) => {
                         return (
-                            <Fragment key={`listItem_${i}`}>
+                            <div key={`listItem_${i}`}>
                                 <ListItem>
                                     <ListItemIcon>
                                         <IconButton
@@ -37,71 +38,47 @@ export const StackList = ({ stack, setStack, edition, activeLayerId, setActiveLa
                                             edge="start"
                                             tabIndex={-1}
                                             onClick={() => {
-                                                stackItem.visible = !stackItem.visible
-                                                setStack([...stack])
+                                                layer.opacity = 1 - layer.opacity
+                                                onChange([...stack])
                                             }}
                                         >
-                                            {stackItem.visible ? <Visibility /> : <VisibilityOff />}
+                                            {layer.opacity === 1 ? <Visibility /> : <VisibilityOff />}
                                         </IconButton>
                                     </ListItemIcon>
-                                    <ListItemButton
-                                        onClick={() => setActiveLayerId(stackItem.id)}>
+                                    <ListItemButton onClick={() => onClick(layer)}>
                                         <ListItemText
-                                            style={{ border: activeLayerId === stackItem.id ? '3px' : '1px' }}
-                                            secondary={copy ? <OperationsAsText stretch={copy.stretch} shift={copy.shift} /> : undefined}
-                                            primary={activeLayerId === stackItem.id ? <b>{stackItem.title}</b> : stackItem.title} />
+                                            style={{ border: layer === active ? '3px' : '1px' }}
+                                            primary={`${layer.copy.productionEvent?.date.assigned} (${layer.copy.productionEvent?.system})`}
+                                            secondary={layer.copy.location}
+                                        />
                                     </ListItemButton>
                                     <ListItemSecondaryAction>
-                                        {stackItem.id !== 'working-paper' && (
-                                            <IconButton
-                                                edge="end"
-                                                onClick={() => {
-                                                    setRollCopyDialogOpen(true)
-                                                    setSelectedCopy(copy)
-                                                }}
-                                            >
-                                                <Edit />
-                                            </IconButton>
-                                        )}
                                         <IconButton
                                             edge="end"
-                                            sx={{ color: stackItem.id === 'working-paper' ? 'blue' : stringToColor(stackItem.id) }}
-                                            onClick={() => onChangeColor(stackItem)}
+                                            sx={{ color: layer.color }}
+                                            onClick={() => setClickedLayer(layer)}
                                         >
                                             <ColorLens />
                                         </IconButton>
                                     </ListItemSecondaryAction>
                                 </ListItem>
                                 {i === 0 && <Divider flexItem />}
-                            </Fragment>
+                            </div>
                         )
                     })}
                 </List>
-                <Box>
-                    <IconButton onClick={() => setRollCopyDialogOpen(true)}>
-                        <Add />
-                    </IconButton>
-                </Box>
             </Paper>
-
-            {rollCopyDialogOpen && (
-                <RollCopyDialog
-                    open={rollCopyDialogOpen}
-                    copy={selectedCopy}
-                    onClose={() => setRollCopyDialogOpen(false)}
-                    onDone={rollCopy => {
-                        const index = edition.copies.indexOf(rollCopy)
-                        if (index === -1) {
-                            edition.copies.push(rollCopy)
-                        }
-                        onChangeEdition(edition.shallowClone())
-                    }}
-                    onRemove={rollCopy => {
-                        const index = edition.copies.findIndex(copy => copy.id === rollCopy.id)
-                        if (index !== -1) {
-                            edition.copies.splice(index, 1)
-                        }
-                        onChangeEdition(edition.shallowClone())
+            {clickedLayer && (
+                <ColorDialog
+                    open={clickedLayer !== undefined}
+                    onClose={() => setClickedLayer(undefined)}
+                    color={clickedLayer.color}
+                    opacity={clickedLayer.opacity}
+                    onChange={(color, opacity) => {
+                        clickedLayer.color = color
+                        clickedLayer.opacity = opacity
+                        stack = stack.map(l => l === clickedLayer ? clickedLayer : l)
+                        onChange([...stack])
                     }}
                 />
             )}
