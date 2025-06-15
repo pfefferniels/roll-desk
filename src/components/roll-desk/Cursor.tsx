@@ -1,20 +1,15 @@
 import { RefObject, useCallback, useEffect, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Shift, Stretch } from "linked-rolls"
 
 interface FixedCursorProps {
     fixedAt: number
-    shift?: Shift
-    stretch?: Stretch
 }
 
-export const FixedCursor = ({ fixedAt, shift, stretch }: FixedCursorProps) => {
+export const FixedCursor = ({ fixedAt }: FixedCursorProps) => {
     const { translateX } = usePinchZoom()
 
-    const shiftedText = (shift && stretch) && `| ${((fixedAt * stretch.factor + shift.horizontal) / 10).toFixed(2)}cm`
-
     const cursorText = `
-        ${(fixedAt / 10).toFixed(2)}cm ${shiftedText || ''}`;
+        ${(fixedAt / 10).toFixed(2)} cm`;
 
     const translatedX = translateX(fixedAt)
 
@@ -48,16 +43,13 @@ export const FixedCursor = ({ fixedAt, shift, stretch }: FixedCursorProps) => {
 interface CursorProps {
     svgRef: RefObject<SVGElement>
     onFix: (x: number) => void
-    shift?: Shift
-    stretch?: Stretch
 }
 
-export const Cursor = ({ svgRef, onFix, shift, stretch }: CursorProps) => {
+export const Cursor = ({ svgRef, onFix }: CursorProps) => {
     const { translateX, zoom } = usePinchZoom()
     const [cursorX, setCursorX] = useState(0)
 
-    const shiftedText = (shift && stretch) && `| ${((cursorX * stretch.factor + shift.horizontal) / 10).toFixed(2)}cm`
-    const cursorText = `${(cursorX / 10).toFixed(2)}cm ${shiftedText || ''}`;
+    const cursorText = `${(cursorX / 10).toFixed(2)} cm`;
     const translatedX = translateX(cursorX)
 
     const onMouseMove = useCallback((event: MouseEvent) => {

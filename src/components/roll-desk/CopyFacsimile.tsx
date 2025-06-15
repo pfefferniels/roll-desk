@@ -1,4 +1,5 @@
 import {
+    flat,
     RollCopy,
     RollFeature
 } from "linked-rolls";
@@ -106,14 +107,18 @@ export const CopyFacsimile = ({
             if (!svgRef.current) return;
 
             if (!copy.scan) return;
-            const holeSeparation = copy.holeSeparation?.value
-            const margins = copy.margins
+            const holeSeparation = copy.measurements.holeSeparation?.value
+            const margins = copy.measurements.margins
             if (!holeSeparation || !margins) return;
 
             if (facsimileOpacity > 0) {
                 if (!facsimile) {
                     const baseUrl = copy.scan;
                     const info = await fetchIIIFInfo(baseUrl);
+                    const stretch = copy.conditions
+                        .map(c => flat(c))
+                        .find(c => c.type === 'paper-stretch')
+
                     setTiles(
                         await tilesAsSVGImage(
                             baseUrl,
@@ -123,8 +128,8 @@ export const CopyFacsimile = ({
                             zoom,
                             trackToY,
                             facsimileOpacity,
-                            copy.shift?.horizontal || 0,
-                            copy.stretch?.factor || 1
+                            copy.measurements.shift?.horizontal || 0,
+                            stretch?.factor || 1
                         )
                     );
                 } else {
@@ -180,14 +185,8 @@ export const CopyFacsimile = ({
                 })}
             </g>
 
-            <Cursor
-                onFix={(x) => setFixedX(x)}
-                svgRef={svgRef}
-                shift={copy.shift}
-                stretch={copy.stretch}
-            />
-
-            <FixedCursor fixedAt={fixedX} shift={copy.shift} stretch={copy.stretch} />
+            <Cursor onFix={(x) => setFixedX(x)} svgRef={svgRef} />
+            <FixedCursor fixedAt={fixedX} />
 
             <KeyboardDivision />
         </>
