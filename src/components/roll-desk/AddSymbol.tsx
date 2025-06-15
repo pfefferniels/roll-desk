@@ -1,29 +1,29 @@
-import { Button, Checkbox, Dialog, DialogActions, DialogContent, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { RollCopy, RollFeature, RollMeasurement, WelteT100 } from "linked-rolls"
+import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
+import { assign, RollFeature, Stage, WelteT100 } from "linked-rolls"
 import { useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
-import { AnySymbol } from "linked-rolls/lib/Symbol"
+import { AnySymbol, CarrierAssignment } from "linked-rolls/lib/Symbol"
 
 interface AddSymbolProps {
     open: boolean
     selection: EventDimension
-    copy: RollCopy
-    measurement: RollMeasurement
     iiifUrl?: string
-    onDone: (symbol: AnySymbol) => void
     onClose: () => void
 }
 
 const eventTypes = ['perforation', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddSymbolDialog = ({ selection, open, onClose, onDone, measurement, iiifUrl }: AddSymbolProps) => {
+export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl }: AddSymbolProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
     const [signed, setSigned] = useState<boolean>()
     const [material, setMaterial] = useState<string>()
+
+    const [transcription, setTranscription] = useState<CarrierAssignment>()
+    const [stage, setStage] = useState<Stage>()
 
     const perforationMeaning = eventType === 'perforation'
         ? new WelteT100().meaningOf(selection.vertical.from)
@@ -125,19 +125,38 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, measurement,
                             />
                         </FormControl>
                     )}
+
+                    <Divider />
+                    <FormControl>
+                        <FormLabel>Transcription</FormLabel>
+                        <i>
+                            TODO: here you can edit information
+                            e.g. about who did the transcription
+                            and which complications were part of it.
+                        </i>
+                    </FormControl>
                 </Stack>
             </DialogContent>
 
             <DialogActions>
                 <Button
                     onClick={() => {
+                        if (!stage || !transcription) {
+                            console.log('No stage or transcription provided')
+                            return
+                        }
+
                         const rollSelection = structuredClone(selection) as EventDimension
 
                         const feature: RollFeature = {
                             id: v4(),
                             ...rollSelection,
-                            measurement,
                             annotates: iiifUrl
+                        }
+
+                        const base = {
+                            id: v4(),
+                            carriers: [assign('carrierAssignment', feature)],
                         }
 
                         let newSymbol: AnySymbol | undefined = undefined
@@ -146,37 +165,37 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, measurement,
                                 type: eventType,
                                 text: text || '[no text]',
                                 signed: signed === undefined ? false : signed,
-                                isCarriedBy: [feature],
-                                id: v4()
+                                ...base
                             }
                         }
-                        if (eventType === 'stamp' || eventType === 'handwrittenText') {
+                        else if (eventType === 'stamp' || eventType === 'handwrittenText') {
                             newSymbol = {
                                 type: eventType,
                                 text: text || '[no text]',
                                 rotation,
-                                id: v4(),
-                                isCarriedBy: [feature]
+                                ...base
                             }
                         }
                         else if (eventType === 'cover') {
                             newSymbol = {
-                                id: v4(),
                                 type: eventType,
                                 note: material,
-                                isCarriedBy: [feature]
+                                ...base
                             }
                         }
-
                         else if (eventType === 'perforation' && perforationMeaning) {
                             newSymbol = {
-                                id: v4(),
                                 ...perforationMeaning,
-                                isCarriedBy: [feature]
+                                ...base
                             }
                         }
 
-                        if (newSymbol) onDone(newSymbol)
+                        if (newSymbol) {
+                            stage.edits.push({
+                                id: v4(),
+                                insert: [newSymbol],
+                            })
+                        }
                         onClose()
                     }}
                     variant='contained'
