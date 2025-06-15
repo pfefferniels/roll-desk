@@ -1,8 +1,6 @@
-import { Visibility, VisibilityOff, ColorLens, Edit, Add } from "@mui/icons-material"
-import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText, ListItemSecondaryAction, Divider, Paper, Box } from "@mui/material"
+import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
+import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText, ListItemSecondaryAction, Divider, Paper } from "@mui/material"
 import { RollCopy } from "linked-rolls"
-import { stringToColor } from "../../helpers/stringToColor"
-import { RollCopyDialog } from "./RollCopyDialog"
 import { useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 
@@ -14,7 +12,7 @@ export interface Layer {
 }
 
 interface LayerStackProps {
-    active: Layer
+    active?: Layer
     stack: Layer[]
 
     onChange: (stack: Layer[]) => void
