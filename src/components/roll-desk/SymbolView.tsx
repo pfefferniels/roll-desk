@@ -1,6 +1,7 @@
 import { dimensionOf, Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/Symbol";
 import { useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
+import { flat } from "linked-rolls";
 
 interface PerforationProps {
     symbol: Note | Expression;
@@ -12,7 +13,7 @@ export const Perforation = ({ symbol, highlight, onClick }: PerforationProps) =>
     const [displayDetails, setDisplayDetails] = useState(false);
     const { translateX, trackToY, trackHeight } = usePinchZoom();
 
-    const features = symbol.isCarriedBy;
+    const features = flat(symbol.carriers);
     if (!features) return null;
 
     const onsets = features.map(e => e.horizontal.from).sort();
@@ -100,8 +101,8 @@ interface SustainPedalProps {
 export const SustainPedal = ({ on, off }: SustainPedalProps) => {
     const { translateX, trackToY } = usePinchZoom()
 
-    const onsets = on.isCarriedBy.map(e => e.horizontal.from).sort()
-    const offsets = off.isCarriedBy.map(e => e.horizontal.to).sort()
+    const onsets = flat(on.carriers).map(e => e.horizontal.from).sort()
+    const offsets = flat(off.carriers).map(e => e.horizontal.to).sort()
 
     if (onsets.length === 0 || offsets.length === 0) return null
 

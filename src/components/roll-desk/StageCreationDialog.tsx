@@ -26,7 +26,7 @@ export const StageCreationDialog = ({ open, edition, symbols, onClose, onDone, c
                         <TextField value={siglum} onChange={e => setSiglum(e.target.value)} />
                     </FormControl>
                     <FormControl>
-                        <FormLabel>Based on stage</FormLabel>
+                        <FormLabel>Based on Stage</FormLabel>
                         <Select
                             label='Previous Stage'
                             value={prev?.siglum || ''}
