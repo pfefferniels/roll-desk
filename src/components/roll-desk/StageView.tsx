@@ -1,7 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react"
+import { useRef } from "react"
 // import { usePiano } from "react-pianosound"
-import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, AnyEditorialAssumption, Question, Stage, Inference, traverseStages, getSnaphsot } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverseStages, flat, Intention, Edit } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
@@ -10,13 +9,10 @@ import { IntentionView } from "./assumptions/IntentionView"
 
 interface StageViewProps {
     stage: Stage
-    onClick?: (event: AnySymbol | AnyEditorialAssumption) => void
+    onClick: (event: AnySymbol | Intention | Edit) => void
 }
 
 export const StageView = ({ stage, onClick }: StageViewProps) => {
-    const [underlays, setUnderlays] = useState<JSX.Element[]>([])
-
-    const { zoom } = usePinchZoom()
     // const { playSingleNote } = usePiano()
 
     const svgRef = useRef<SVGGElement>(null)
@@ -24,7 +20,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
     const emulation = new Emulation()
     emulation.emulateStage(stage)
 
-    const prevStage = stage.basedOn?.predecessor
+    const prevStage = stage.basedOn && flat(stage.basedOn)
     let prevEmulation: Emulation | undefined = undefined
     if (prevStage) {
         prevEmulation = new Emulation()
@@ -59,7 +55,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
             <EditView
                 key={edit.id}
                 edit={edit}
-                onClick={() => onClick && onClick(edit)}
+                onClick={() => onClick(edit)}
             />
         )
     }
@@ -95,13 +91,13 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                 <IntentionView
                     key={intention.id}
                     intention={intention}
-                    onClick={onClick}
+                    onClick={() => onClick(intention)}
                 />
             )
         })
 
     return (
-        <g className='collated-copies' ref={svgRef}>
+        <g className='stageView' ref={svgRef}>
             {dynamics}
 
             {snapshot
@@ -133,7 +129,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                             <Perforation
                                 key={`symbol_${symbol.id || i}`}
                                 symbol={symbol}
-                                highlight={stage ? false : (symbol.isCarriedBy?.length !== 0)}
+                                highlight={stage ? false : (symbol.carriers?.length !== 0)}
                                 onClick={() => {
                                     const performingEvents = emulation.findEventsPerforming(symbol.id)
                                     const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
@@ -142,7 +138,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                                         // playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
                                     }
 
-                                    if (onClick) onClick(symbol)
+                                    onClick(symbol)
                                 }}
                             />
                         )
@@ -152,9 +148,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                             <TextSymbol
                                 key={`textSymbol_${symbol.id || i}`}
                                 event={symbol}
-                                onClick={() => {
-                                    if (onClick) onClick(symbol)
-                                }}
+                                onClick={() => onClick(symbol)}
                             />
                         )
                     }
