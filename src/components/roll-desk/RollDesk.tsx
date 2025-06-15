@@ -1,29 +1,22 @@
-import { Button, Divider, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Edition, Emulation, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, RollCopy, Stage, VerticalSpan } from 'linked-rolls'
-import { Add, AlignHorizontalCenter, ArrowDownward, ArrowUpward, CallMerge, CallSplit, Clear, ClearAll, Create, Download, EditNote, GroupWork, JoinFull, Pause, PlayArrow, PsychologyAlt, Remove, Save, Settings } from "@mui/icons-material"
+import { Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { useCallback, useEffect, useState } from "react"
+import { Edition, Emulation, HorizontalSpan, isEdit, isIntention, isRollFeature, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
+import { ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
-import { v4 } from "uuid"
 import { write } from "midifile-ts"
 import { Layer, LayerStack } from "./StackList"
 import { LayeredRolls } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
-import { AddSymbolDialog } from "./AddSymbol"
-import { EditAssumption } from "./EditAssumption"
-import { ColorDialog } from "./ColorDialog"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
-import { ReportDamage } from "./ReportCondition"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import CreateEdition from "./CreateEdition"
-import { StageCreationDialog } from "./StageCreationDialog"
 import { WithId } from "linked-rolls/lib/WithId"
 import { StageMenu, StageSelection } from "./StageMenu"
 import { CopyFacsimileMenu } from "./CopyFacsimileMenu"
-import { active } from "d3"
 
 export type EventDimension = {
     vertical: VerticalSpan,
