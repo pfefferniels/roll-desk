@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { FileOpen } from "@mui/icons-material";
-import { IconButton } from "@mui/material";
+import { Button, IconButton } from "@mui/material";
 import { Edition, importJsonLd } from "linked-rolls";
 
 interface ImportButtonProps {
@@ -48,12 +48,13 @@ export const ImportButton = ({ onImport }: ImportButtonProps) => {
                 onChange={handleFileUpload}
             />
             <label htmlFor="import-file">
-                <IconButton
-                    size='small'
+                <Button
+                    variant='outlined'
                     component="span"
+                    startIcon={<FileOpen />}
                 >
-                    <FileOpen />
-                </IconButton>
+                    Open
+                </Button>
             </label>
         </>
     );

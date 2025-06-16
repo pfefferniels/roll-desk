@@ -1,6 +1,6 @@
 import { Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
-import { AnySymbol, Edition, Emulation, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
+import { AnySymbol, Edition, Emulation, flat, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
 import { ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -17,6 +17,7 @@ import EditMetadata from "./EditMetadata"
 import { StageMenu, StageSelection } from "./StageMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
+import { Welcome } from "./Welcome"
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -98,11 +99,7 @@ export const Desk = () => {
 
     if (!edition) {
         return (
-            <div>
-                <div>Welcome!</div>
-
-                <ImportButton onImport={newEdition => setEdition(newEdition)} />
-            </div>
+            <Welcome onCreate={edition => setEdition(edition)} />
         )
     }
 
@@ -192,7 +189,7 @@ export const Desk = () => {
                         <Paper sx={{ maxWidth: 360 }} elevation={0}>
                             <div style={{ float: 'left', padding: 8, width: '80%' }}>
                                 <b>{edition.title}</b><br />
-                                {edition.roll.catalogueNumber} ({edition.roll.recordingEvent.date})
+                                {edition.roll.catalogueNumber} ({flat(edition.roll.recordingEvent.date).toISOString()})
                             </div>
                             <div style={{ float: 'right' }}>
                                 <IconButton onClick={() => setCreateEditionDialogOpen(true)}>
