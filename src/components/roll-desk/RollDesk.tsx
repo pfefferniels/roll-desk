@@ -1,6 +1,6 @@
 import { Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
-import { Edition, Emulation, HorizontalSpan, isEdit, isIntention, isRollFeature, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
+import { AnySymbol, Edition, Emulation, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
 import { ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -14,16 +14,16 @@ import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import CreateEdition from "./CreateEdition"
-import { WithId } from "linked-rolls/lib/WithId"
 import { StageMenu, StageSelection } from "./StageMenu"
-import { CopyFacsimileMenu } from "./CopyFacsimileMenu"
+import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
+import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 
 export type EventDimension = {
     vertical: VerticalSpan,
     horizontal: HorizontalSpan
 }
 
-export type Selection = (StageSelection | (EventDimension & WithId))[]
+export type UserSelection = (StageSelection | FacsimileSelection)
 
 /**
  * Working on piano rolls is imagined like working on a 
@@ -50,7 +50,7 @@ export const Desk = () => {
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
 
-    const [selection, setSelection] = useState<Selection>([])
+    const [selection, setSelection] = useState<UserSelection[]>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [currentStage, setCurrentStage] = useState<Stage>()
@@ -130,8 +130,8 @@ export const Desk = () => {
                                 edition={edition}
                                 onChange={edition => setEdition({ ...edition })}
                                 selection={selection.filter(item => {
-                                    isEdit(item) || isIntention(item) || isEdit(item)
-                                })}
+                                    isEdit(item) || isIntention(item) || isSymbol(item)
+                                }) as (AnySymbol | Intention | Stage)[]}
                             />
                         )}
 
@@ -206,7 +206,14 @@ export const Desk = () => {
                                 <b>{selection.length}</b> events selected
                                 <br />
                                 <span style={{ color: 'gray', fontSize: '8pt' }}>
-                                    {selection.map(e => e.id.slice(0, 8)).join(', ')}
+                                    {selection.map(e => {
+                                        if ('id' in e) {
+                                            (e.id as any).slice(0, 8)
+                                        }
+                                        else {
+                                            return '[unnamed]'
+                                        }
+                                    }).join(', ')}
                                 </span>
                             </div>
                             <div style={{ float: 'right' }}>
@@ -234,17 +241,19 @@ export const Desk = () => {
                 </Grid>
                 <Grid item xs={9}>
                     <div style={{ overflow: 'scroll', width: 950 }}>
-                        <LayeredRolls
-                            edition={edition}
-                            activeLayerId={activeLayer?.copy.id || ''}
-                            stack={layers}
-                            stretch={stretch}
-                            selection={selection}
-                            onUpdateSelection={setSelection}
-                            fixedX={fixedX}
-                            setFixedX={setFixedX}
-                            currentStage={currentStage}
-                        />
+                        <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
+                            <LayeredRolls
+                                edition={edition}
+                                active={activeLayer}
+                                stack={layers}
+                                selection={selection}
+                                onAddToSelection={(item) => setSelection(prev => [...prev, item])}
+                                onRemoveFromSelection={(item) => setSelection(prev => prev.filter(s => s !== item))}
+                                fixedX={fixedX}
+                                setFixedX={setFixedX}
+                                currentStage={currentStage}
+                            />
+                        </PinchZoomProvider>
                     </div>
                 </Grid>
             </Grid>

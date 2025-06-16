@@ -1,53 +1,46 @@
 import { useRef } from "react"
 import { Glow } from "./Glow"
-import { PinchZoomProvider } from "../../hooks/usePinchZoom"
-import { LayerInfo, UserSelection } from "./RollDesk"
-import { WorkingPaper } from "./WorkingPaper"
-import { AnyEditorialAssumption, AnyRollEvent, CollatedEvent, Edition, StageCreation } from "linked-rolls"
-import { Selection } from "./Selection"
-import { RollCopyViewer } from "./RollCopyViewer"
+import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { StageView } from "./StageView"
+import { Edition, Stage } from "linked-rolls"
+import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
-import { v4 } from "uuid"
+import { Layer } from "./StackList"
+import { UserSelection } from "./RollDesk"
+import { SelectionFilter } from "./Selection"
 
 interface LayeredRollsProps {
     edition: Edition
-    stack: LayerInfo[]
-    activeLayerId: string
-    stretch: number
-    selection: UserSelection
-    onUpdateSelection: (newSelection: UserSelection) => void
+    stack: Layer[]
+    active?: Layer
+    currentStage?: Stage
+    selection: UserSelection[]
+    onAddToSelection: (newSelection: UserSelection) => void
+    onRemoveFromSelection: (eventToRemove: UserSelection) => void
     fixedX: number
     setFixedX: (fixedX: number) => void
-    currentStage?: StageCreation
 }
 
 export const LayeredRolls = ({
     stack,
-    activeLayerId,
-    stretch,
+    active,
+    currentStage,
     edition,
     selection,
-    onUpdateSelection,
+    onAddToSelection,
+    onRemoveFromSelection,
     fixedX,
-    setFixedX,
-    currentStage }: LayeredRollsProps
+    setFixedX }: LayeredRollsProps
 ) => {
+    const { zoom } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
     // makes sure that the active layer comes last
     const orderedLayers = [...stack].reverse()
 
-    const activeLayer = stack.find(layer => layer.id === activeLayerId)
-    if (activeLayer) {
-        const index = orderedLayers.findIndex(info => activeLayer.id === info.id)
-        if (index !== -1) {
-            orderedLayers.splice(index, 1)
-        }
-        orderedLayers.push(activeLayer)
-    }
-
-    const handleUpdateSelection = (clickedEvent: AnyRollEvent | CollatedEvent | AnyEditorialAssumption) => {
-        onUpdateSelection([...selection, clickedEvent])
+    if (active) {
+        orderedLayers.splice(orderedLayers.indexOf(active), 1)
+        orderedLayers.push(active)
     }
 
     const margin = 140
@@ -59,56 +52,37 @@ export const LayeredRolls = ({
                 <PatchPattern />
 
                 <g ref={svgRef}>
-                    <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
-                        {orderedLayers
-                            .map((stackItem, i) => {
-                                if (!stackItem.visible) return null
+                    {orderedLayers
+                        .map((stackItem, i) => {
+                            if (stackItem.opacity === 0) return null
 
-                                if (stackItem.id === 'working-paper') {
-                                    return (
-                                        <WorkingPaper
-                                            key={`copy_${i}`}
-                                            edition={edition}
-                                            onClick={handleUpdateSelection}
-                                            currentStage={currentStage}
-                                        />
-                                    )
-                                }
-
-                                const copy = edition.copies.find(copy => copy.id === stackItem.id)
-                                if (!copy) return null
-
-                                return (
-                                    <RollCopyViewer
-                                        key={`copy_${i}`}
-                                        copy={copy}
-                                        onTop={i === orderedLayers.length - 1}
-                                        color={stackItem.color}
-                                        facsimile={stackItem.image}
-                                        facsimileOpacity={stackItem.facsimileOpacity}
-                                        onClick={handleUpdateSelection}
-                                        onSelectionDone={dimension => onUpdateSelection([{
-                                            ...dimension,
-                                            id: v4()
-                                        }])}
-                                        fixedX={fixedX}
-                                        setFixedX={setFixedX}
-                                    />
-                                )
-                            })}
-
-                        {svgRef.current && (
-                            <Selection
-                                pins={selection}
-                                remove={eventToRemove => {
-                                    if (!('id' in eventToRemove)) {
-                                        return
-                                    }
-
-                                    onUpdateSelection(selection.filter(event => 'id' in event && event.id !== eventToRemove.id))
-                                }} />
-                        )}
-                    </PinchZoomProvider>
+                            return (
+                                <CopyFacsimile
+                                    key={`copy_${i}`}
+                                    copy={stackItem.copy}
+                                    position={i}
+                                    color={stackItem.color}
+                                    facsimileOpacity={stackItem.opacity}
+                                    onClick={onAddToSelection}
+                                    onSelectionDone={dimension => onAddToSelection({
+                                        ...dimension
+                                    })}
+                                    fixedX={fixedX}
+                                    setFixedX={setFixedX}
+                                />
+                            )
+                        })}
+                    {currentStage && (
+                        <StageView
+                            onClick={onAddToSelection}
+                            stage={currentStage}
+                        />
+                    )}
+                    {svgRef.current && (
+                        <SelectionFilter
+                            items={selection}
+                            remove={onRemoveFromSelection} />
+                    )}
                 </g>
             </g>
         </svg>
