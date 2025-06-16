@@ -1,5 +1,5 @@
 import { ReactNode, MouseEventHandler, useState } from "react";
-import { roundedHull } from "../../../helpers/roundedHull";
+import { roundedHull } from "../../helpers/roundedHull";
 
 interface Rect {
     x: number;

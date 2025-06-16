@@ -1,10 +1,10 @@
 import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
-import { getBoundingBox } from "../../../helpers/getBoundingBox";
+import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
 import { MouseEventHandler } from "react";
 import { AnySymbol, dimensionOf } from "linked-rolls/lib/Symbol";
-import { PinchZoomContextProps, usePinchZoom } from "../../../hooks/usePinchZoom";
+import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
 
 export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' | 'trackHeight'>
 

@@ -1,8 +1,8 @@
 import { Intention } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
-import { getBoundingBox } from "../../../helpers/getBoundingBox";
+import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { getEditBBox } from "./EditView";
-import { usePinchZoom } from "../../../hooks/usePinchZoom";
+import { usePinchZoom } from "../../hooks/usePinchZoom";
 
 export interface IntentionViewProps {
     intention: Intention;
