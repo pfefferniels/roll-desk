@@ -4,8 +4,8 @@ import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverse
 import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
-import { EditView } from "./assumptions/EditView"
-import { IntentionView } from "./assumptions/IntentionView"
+import { EditView } from "./EditView"
+import { IntentionView } from "./IntentionView"
 
 interface StageViewProps {
     stage: Stage

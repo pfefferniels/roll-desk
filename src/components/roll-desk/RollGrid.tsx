@@ -3,6 +3,7 @@ import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { WithId } from 'linked-rolls/lib/WithId';
 import { EventDimension } from './RollDesk.tsx';
+import { flat, RollCopy } from 'linked-rolls';
 
 interface RollGridProps {
     width: number;
@@ -126,3 +127,42 @@ export const RollGrid = ({
         </g>
     );
 };
+
+const mmToPixels = (mm: number, dpi: number): number => {
+    const inchesPerMM = 1 / 25.4;
+    return mm * dpi * inchesPerMM;
+}
+
+export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) => {
+    const dpi = 300.25
+
+    const { horizontal } = selection
+    let { from, to } = horizontal
+
+    if (copy.measurements.shift) {
+        from -= copy.measurements.shift.horizontal
+        to -= copy.measurements.shift.horizontal
+    }
+
+    const stretch = copy.conditions
+        .map(condition => flat(condition))
+        .find(condition => condition.type === 'paper-stretch')
+    
+    if (stretch) {
+        from /= stretch.factor
+        to /= stretch.factor
+    }
+
+    let x1 = mmToPixels(from, dpi)
+    let x2 = mmToPixels(to, dpi)
+
+    let y1 = (selection.vertical.to || selection.vertical.from + 1)
+        * (copy.measurements.holeSeparation?.value || 1)
+        + (copy.measurements.margins?.bass || 0)
+    let y2 = selection.vertical.from
+        * (copy.measurements.holeSeparation?.value || 1)
+        + (copy.measurements.margins?.bass || 0)
+
+    const region = `${Math.floor(y1)},${Math.floor(x1)},${Math.floor(Math.abs(y2 - y1))},${Math.floor(x2 - x1)}`
+    return `${copy.scan}/${region}/full/0/default.jpg`
+}
