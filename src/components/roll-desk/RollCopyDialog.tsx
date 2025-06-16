@@ -7,13 +7,14 @@ interface RollCopyDialogProps {
     open: boolean
     copy?: RollCopy
     onClose: () => void
-    onDone: (rollCopy: RollCopy) => void
+    onDone: (rollCopy: RollCopy, siglum: string) => void
     onRemove: (rollCopy: RollCopy) => void
 }
 
 export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCopyDialogProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [location, setLocation] = useState('') // P55 has current location
+    const [siglum, setSiglum] = useState('')
 
     useEffect(() => {
         if (!copy) return
@@ -38,14 +39,14 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
         }
 
         rollCopy.location = location
-        onDone(rollCopy);
+        onDone(rollCopy, siglum);
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
+        <Dialog open={open} onClose={onClose}>
             <DialogTitle>Add or Edit Roll Copy</DialogTitle>
             <DialogContent>
-                <Stack>
+                <Stack spacing={1}>
                     <Typography>Physical Location</Typography>
                     <TextField
                         size='small'
@@ -54,6 +55,16 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
                         placeholder='e. g. Stanford University Archive'
                         label='Physical location'
                     />
+
+                    <Typography>(Preliminary) Siglum</Typography>
+                    <TextField
+                        size='small'
+                        value={siglum}
+                        onChange={e => setSiglum(e.target.value)}
+                        placeholder='e. g. B1'
+                        label='Siglum'
+                    />
+
                     <Divider flexItem />
                     <Button variant="outlined" component="label" startIcon={<MusicNote />}>
                         {file ? file.name : 'Upload Roll Analysis'}

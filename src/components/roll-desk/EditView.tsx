@@ -12,8 +12,10 @@ const getSymbolBBox = (symbol: AnySymbol, { translateX, trackToY, trackHeight }:
     const dim = dimensionOf(symbol)
 
     let height = trackHeight.note
+    console.log('height=', height)
     if (dim.vertical.to) {
         height = trackToY(dim.vertical.to - dim.vertical.from);
+        console.log('new height', height)
     }
     else if (symbol.type === 'note' || symbol.type === 'expression') {
         height = trackHeight[symbol.type];
@@ -49,9 +51,11 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, translation)) || [];
     const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, translation)) || [];
 
+    console.log('bboxes', insertionBBoxes)
+
     // draw overall hull only when there are both, insertions
     // as well as deletions
-    if (edit.insert && edit.delete) {
+    if (edit.insert?.length && edit.delete?.length) {
         const { hull } =
             getHull(
                 [...insertionBBoxes, ...deletionBBoxes],
@@ -117,7 +121,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     }
 
     // draw hull for insertions
-    if (edit.insert) {
+    if (edit.insert?.length) {
         const { points, hull } = getHull(insertionBBoxes);
         const bbox = getBoundingBox(points);
 
@@ -149,7 +153,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     }
 
     // draw hull for deletions
-    if (edit.delete) {
+    if (edit.delete?.length) {
         const { points, hull } = getHull(deletionBBoxes);
         const bbox = getBoundingBox(points);
 

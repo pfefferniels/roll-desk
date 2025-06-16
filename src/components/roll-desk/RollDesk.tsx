@@ -1,7 +1,7 @@
-import { Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { Button, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
-import { AnySymbol, Edition, Emulation, flat, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
-import { ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
+import { AnySymbol, asSymbols, Edition, Emulation, fillEdits, flat, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
+import { Add, ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -18,6 +18,8 @@ import { StageMenu, StageSelection } from "./StageMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { Welcome } from "./Welcome"
+import { RollCopyDialog } from "./RollCopyDialog"
+import { v4 } from "uuid"
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -47,7 +49,8 @@ export const Desk = () => {
     const [layers, setLayers] = useState<Layer[]>([])
     const [activeLayer, setActiveLayer] = useState<Layer>()
 
-    const [createEditionDialogOpen, setCreateEditionDialogOpen] = useState(true)
+    const [editMetadata, setEditMetadata] = useState(true)
+    const [editCopy, setEditCopy] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
 
@@ -119,15 +122,17 @@ export const Desk = () => {
                                 copy={activeLayer.copy}
                                 edition={edition}
                                 onChange={edition => setEdition({ ...edition })}
+                                onChangeSelection={selection => setSelection(selection)}
                                 selection={selection.filter(item => isRollFeature(item))}
                             />
                         )}
                         {currentStage && (
                             <StageMenu
+                                stage={currentStage}
                                 edition={edition}
                                 onChange={edition => setEdition({ ...edition })}
                                 selection={selection.filter(item => {
-                                    isEdit(item) || isIntention(item) || isSymbol(item)
+                                    return isEdit(item) || isIntention(item) || isSymbol(item)
                                 }) as (AnySymbol | Intention | Stage)[]}
                             />
                         )}
@@ -192,7 +197,7 @@ export const Desk = () => {
                                 {edition.roll.catalogueNumber} ({flat(edition.roll.recordingEvent.date).toISOString()})
                             </div>
                             <div style={{ float: 'right' }}>
-                                <IconButton onClick={() => setCreateEditionDialogOpen(true)}>
+                                <IconButton onClick={() => setEditMetadata(true)}>
                                     <Create />
                                 </IconButton>
                             </div>
@@ -201,17 +206,22 @@ export const Desk = () => {
                         <Paper sx={{ maxWidth: 360 }} elevation={0}>
                             <div style={{ float: 'left', padding: 8 }}>
                                 <b>{selection.length}</b> events selected
-                                <br />
-                                <span style={{ color: 'gray', fontSize: '8pt' }}>
-                                    {selection.map(e => {
-                                        if ('id' in e) {
-                                            (e.id as any).slice(0, 8)
-                                        }
-                                        else {
-                                            return '[unnamed]'
-                                        }
-                                    }).join(', ')}
-                                </span>
+                                {selection.length < 10 && (
+                                    <>
+                                        <br />
+                                        <span style={{ color: 'gray', fontSize: '8pt' }}>
+                                            {selection.map(e => {
+                                                if ('id' in e) {
+                                                    return (e.id as any).slice(0, 15)
+                                                }
+                                                else {
+                                                    return '[unnamed]'
+                                                }
+                                            }).join(', ')}
+                                        </span>
+
+                                    </>
+                                )}
                             </div>
                             <div style={{ float: 'right' }}>
                                 <IconButton onClick={() => setSelection([])}>
@@ -220,12 +230,45 @@ export const Desk = () => {
                             </div>
                         </Paper>
 
+                        <div><b>Stage</b></div>
+                        <ToggleButtonGroup
+                            value={currentStage?.siglum || 'none'}
+                            exclusive
+                            onChange={(_, newValue) => {
+                                console.log(newValue)
+                                setCurrentStage(edition.stages.find(stage => stage.siglum === newValue) || undefined)
+                            }}
+                        >
+                            {edition.stages.map(stage => {
+                                return (
+                                    <ToggleButton
+                                        key={stage.siglum}
+                                        value={stage.siglum}
+                                    >
+                                        {stage.siglum}
+                                    </ToggleButton>
+                                )
+                            })}
+                            <ToggleButton
+                                value='none'
+                            >
+                                None
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+
                         <LayerStack
                             stack={layers}
                             active={activeLayer}
                             onChange={stack => setLayers([...stack])}
                             onClick={(layer) => setActiveLayer(layer)}
                         />
+
+                        <Button
+                            startIcon={<Add />}
+                            onClick={() => setEditCopy(true)}
+                        >
+                            Add Copy
+                        </Button>
 
                         <Paper>
                             {edition.questions.map(question => {
@@ -276,9 +319,35 @@ export const Desk = () => {
                 onDone={(edition) => {
                     setEdition(edition)
                 }}
-                onClose={() => setCreateEditionDialogOpen(false)}
-                open={createEditionDialogOpen}
+                onClose={() => setEditMetadata(false)}
+                open={editMetadata}
                 edition={edition}
+            />
+
+            <RollCopyDialog
+                open={editCopy}
+                onClose={() => setEditCopy(false)}
+                onDone={(newCopy, siglum) => {
+                    edition.copies.push(newCopy)
+                    const newStage: Stage = {
+                        siglum,
+                        id: v4(),
+                        edits: [],
+                        intentions: []
+                    }
+                    fillEdits(newStage, asSymbols(newCopy.features))
+                    edition.stages.push(newStage)
+                    setEdition({ ...edition })
+                }}
+                onRemove={copy => {
+                    setEdition(prev => {
+                        if (!prev) return
+                        return {
+                            ...prev,
+                            copies: prev.copies.filter(c => c !== copy)
+                        }
+                    })
+                }}
             />
         </>
     )

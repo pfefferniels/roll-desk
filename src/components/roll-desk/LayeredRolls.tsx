@@ -45,6 +45,8 @@ export const LayeredRolls = ({
 
     const margin = 140
 
+    console.log('svg ref current', svgRef.current)
+
     return (
         <svg width="100000" height={6 * 100 + margin * 2}>
             <g transform={`translate(0 ${margin})`}>

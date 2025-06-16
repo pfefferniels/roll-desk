@@ -229,7 +229,7 @@ const Feature = ({ feature, onClick, color }: FeatureProps) => {
         : trackToY(feature.vertical.to) - trackToY(feature.vertical.from);
 
     return (
-        <g className="feature" data-id={feature.id} onClick={onClick}>
+        <g className="feature" data-id={feature.id} id={feature.id} onClick={onClick}>
             <rect
                 fill={color}
                 fillOpacity={0.5}

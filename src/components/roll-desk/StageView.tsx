@@ -48,7 +48,8 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         age += 1
     })
 
-    // draw edits of current stage
+    // draw edits of current stage, but only 
+    // if the stage is based on a previous stage
     const edits = []
     for (const edit of stage.edits) {
         edits.push(

@@ -1,10 +1,13 @@
 import { Button, Stack } from "@mui/material"
-import { AnySymbol, assign, Edit, Edition, Intention, isEdit, isIntention, isRollFeature, isSymbol, RollCopy, RollFeature } from "linked-rolls"
+import { Edition, isRollFeature, RollCopy, RollFeature } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddSymbolDialog } from "./AddSymbol"
 import { useState } from "react"
 import { selectionAsIIIFLink } from "./RollGrid"
 import { ConditionStateDialog } from "./ConditionStateDialog"
+import { ProductionEventDialog } from "./ProductionEventDialog"
+import { Ribbon } from "./Ribbon"
+import { Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
@@ -12,12 +15,14 @@ interface MenuProps {
     copy: RollCopy
     edition: Edition
     selection: FacsimileSelection[]
+    onChangeSelection: (selection: FacsimileSelection[]) => void
     onChange: (edition: Edition) => void
 }
 
-export const CopyFacsimileMenu = ({ copy, selection, edition, onChange }: MenuProps) => {
+export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChangeSelection }: MenuProps) => {
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [conditionStateDialogOpen, setConditionstateDialogOpen] = useState(false)
+    const [editProduction, setEditProduction] = useState(false)
 
     const handleRemove = () => {
         for (const feature of selection.filter(isRollFeature)) {
@@ -29,10 +34,38 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange }: MenuPr
     return (
         <>
             <Stack direction='row' spacing={1}>
+                <Ribbon title='Production Event'>
+                    <Button
+                        onClick={() => setEditProduction(true)}
+                        size='small'
+                        startIcon={<EditIcon />}
+                    >
+                        Edit
+                    </Button>
+                </Ribbon>
+                <Ribbon title='Symbols'>
+                    <Button
+                        onClick={() => {
+                            if (selection.length === copy.features.length) {
+                                onChangeSelection([])
+                            }
+                            else {
+                                onChangeSelection(copy.features)
+                            }
+                        }}
+                        startIcon={selection.length === copy.features.length
+                            ? <Deselect /> : <SelectAll />}
+                        size='small'
+                    >
+                        {selection.length === copy.features.length ? 'Deselect' : 'Select'} All
+                    </Button>
+                </Ribbon>
                 {selection.length > 0 && (
                     <>
-                        <Button>
-                            Add Symbol
+                        <Button
+                            onClick={() => setAddSymbolDialogOpen(true)}
+                        >
+                            Insert Symbol
                         </Button>
                         <Button
                             onClick={handleRemove}
@@ -42,24 +75,41 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange }: MenuPr
                         <Button
                             onClick={() => setConditionstateDialogOpen(true)}
                         >
-                            Report Damage
+                            Report Condition
                         </Button>
                     </>
                 )}
             </Stack>
-            <AddSymbolDialog
-                open={addSymbolDialogOpen}
-                selection={selection[0]}
-                onClose={() => setAddSymbolDialogOpen(false)}
-                iiifUrl={selectionAsIIIFLink(selection[0], copy)}
-            />
-            <ConditionStateDialog
-                open={conditionStateDialogOpen}
-                onClose={() => setConditionstateDialogOpen(false)}
-                subject='feature'
-                onDone={condition => {
-                    if (!isRollFeature(selection[0])) return
-                    selection[0].condition = condition
+
+            {selection.length > 0 && (
+                <>
+                    <AddSymbolDialog
+                        open={addSymbolDialogOpen}
+                        selection={selection[0]}
+                        onClose={() => setAddSymbolDialogOpen(false)}
+                        iiifUrl={selectionAsIIIFLink(selection[0], copy)}
+                        edition={edition}
+                    />
+                    <ConditionStateDialog
+                        open={conditionStateDialogOpen}
+                        onClose={() => setConditionstateDialogOpen(false)}
+                        subject='feature'
+                        onDone={condition => {
+                            if (!isRollFeature(selection[0])) return
+                            selection[0].condition = condition
+                        }}
+                    />
+                </>
+            )}
+
+            <ProductionEventDialog
+                open={editProduction}
+                event={copy.productionEvent}
+                onClose={() => setEditProduction(false)}
+                onDone={(event) => {
+                    copy.productionEvent = event
+                    onChange({ ...edition })
+                    setEditProduction(false)
                 }}
             />
         </>

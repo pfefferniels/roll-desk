@@ -9,7 +9,7 @@ interface ProductionEventDialog {
     onDone: (event: ProductionEvent) => void
 }
 
-export const RollCopyDialog = ({ open, event, onClose, onDone }: ProductionEventDialog) => {
+export const ProductionEventDialog = ({ open, event, onClose, onDone }: ProductionEventDialog) => {
     const [company, setCompany] = useState('');
     const [system, setSystem] = useState('');
     const [paper, setPaper] = useState('');
@@ -33,7 +33,7 @@ export const RollCopyDialog = ({ open, event, onClose, onDone }: ProductionEvent
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
+        <Dialog open={open} onClose={onClose} fullWidth>
             <DialogTitle>Edit Production Event</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} p={1} sx={{ minWidth: 700 }}>

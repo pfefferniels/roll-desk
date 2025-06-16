@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { assign, RollFeature, Stage, WelteT100 } from "linked-rolls"
+import { assign, Edition, RollFeature, Stage, WelteT100 } from "linked-rolls"
 import { useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
@@ -10,12 +10,13 @@ interface AddSymbolProps {
     selection: EventDimension
     iiifUrl?: string
     onClose: () => void
+    edition: Edition
 }
 
 const eventTypes = ['perforation', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl }: AddSymbolProps) => {
+export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl, edition }: AddSymbolProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -135,14 +136,33 @@ export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl }: AddSymbol
                             and which complications were part of it.
                         </i>
                     </FormControl>
+                    <FormControl>
+                        <FormLabel>Stage</FormLabel>
+                        <Select
+                            size='small'
+                            value={stage?.siglum || ''}
+                            onChange={(e) => {
+                                const selectedStage = edition.stages.find(s => s.siglum === e.target.value)
+                                if (selectedStage) {
+                                    setStage(selectedStage)
+                                }
+                            }}
+                        >
+                            {edition.stages.map((s) => (
+                                <MenuItem value={s.siglum} key={s.id}>
+                                    {s.siglum}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 </Stack>
             </DialogContent>
 
             <DialogActions>
                 <Button
                     onClick={() => {
-                        if (!stage || !transcription) {
-                            console.log('No stage or transcription provided')
+                        if (!stage) {
+                            console.log('No stage provided')
                             return
                         }
 
