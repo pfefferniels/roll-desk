@@ -1,23 +1,21 @@
-import { Selection as SelectionType } from "./RollDesk";
-
-type ArrayElement<ArrayType extends readonly unknown[]> =
-    ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
+import { UserSelection } from "./RollDesk";
 
 interface SelectionProps {
-    pins: SelectionType
-    remove: (pin: ArrayElement<SelectionType>) => void
+    items: UserSelection[]
+    remove: (item: UserSelection) => void
 }
 
-export const SelectionFilter = ({ pins, remove }: SelectionProps) => {
+export const SelectionFilter = ({ items: items, remove }: SelectionProps) => {
     return (
         <g className="selection">
-            {pins.map(pin => {
+            {items.map((item, i) => {
+                const id = 'id' in item ? item.id : `selection_${i}`;
                 return (
                     <use
-                        key={`selected_${pin.id}`}
+                        key={`selected_${id}`}
                         filter="url(#purple-glow)"
-                        href={'#' + pin.id}
-                        onClick={() => remove(pin)} />
+                        href={'#' + id}
+                        onClick={() => remove(item)} />
                 )
             })}
         </g>
