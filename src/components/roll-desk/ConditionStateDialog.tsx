@@ -63,20 +63,19 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
                         <Stack direction="column" spacing={2}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="condition-type-label">Condition Type</InputLabel>
-                                {types.map(t => {
-                                    return (
-                                        <Select
-                                            key={t}
-                                            labelId="condition-type-label"
-                                            value={type}
-                                            onChange={e => setType(e.target.value as typeof types[number])}
-                                        >
-                                            <MenuItem value={t}>
+                                <Select
+                                    labelId="condition-type-label"
+                                    value={type}
+                                    onChange={e => setType(e.target.value as typeof types[number])}
+                                >
+                                    {types.map(t => {
+                                        return (
+                                            <MenuItem key={t} value={t}>
                                                 {t.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
                                             </MenuItem>
-                                        </Select>
-                                    )
-                                })}
+                                        )
+                                    })}
+                                </Select>
                             </FormControl>
 
                             <TextField
