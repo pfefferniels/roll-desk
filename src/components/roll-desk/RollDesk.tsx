@@ -13,7 +13,7 @@ import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
-import CreateEdition from "./CreateEdition"
+import EditMetadata from "./EditMetadata"
 import { StageMenu, StageSelection } from "./StageMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
@@ -275,7 +275,7 @@ export const Desk = () => {
                 onClose={() => setDownloadDialogOpen(false)}
             />
 
-            <CreateEdition
+            <EditMetadata
                 onDone={(edition) => {
                     setEdition(edition)
                 }}
