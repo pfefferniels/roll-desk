@@ -239,6 +239,16 @@ const Feature = ({ feature, onClick, color }: FeatureProps) => {
                 width={width}
                 height={height}
             />
+
+            {feature.condition && (
+                <text
+                    x={x}
+                    y={y}
+                    fontSize={10}
+                >
+                    {flat(feature.condition).type}
+                </text>
+            )}
         </g>
     );
 }
