@@ -1,9 +1,10 @@
-import { Edit as EditIcon } from "@mui/icons-material"
+import { Delete, Edit as EditIcon } from "@mui/icons-material"
 import { Button, Stack } from "@mui/material"
 import { AnySymbol, assign, Edit, Edition, Intention, isEdit, isIntention, isSymbol, Stage } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
+import { v4 } from "uuid"
 
 export type StageSelection = AnySymbol | Edit | Intention
 
@@ -28,7 +29,7 @@ export const StageMenu = ({ stage, selection, edition, onChange }: MenuProps) =>
         }
         const newStage: Stage = {
             siglum: stage.siglum + '_derived',
-            id: stage.id + 1,
+            id: v4(),
             basedOn: assign('derivation', stage),
             edits,
             intentions: [],
@@ -37,56 +38,71 @@ export const StageMenu = ({ stage, selection, edition, onChange }: MenuProps) =>
         onChange({ ...edition })
     }
 
+    const removeStage = (stageToRemove: Stage) => {
+        const index = edition.stages.indexOf(stageToRemove)
+        if (index !== -1) {
+            edition.stages.splice(index, 1)
+            onChange({ ...edition })
+        }
+    }
+
     return (
         <>
-            <Stack direction='row' spacing={1}>
-                <Ribbon title='Siglum'>
-                    <Button
-                        onClick={() => setEditSiglum(true)}
-                        startIcon={<EditIcon />}
-                        size='small'
-                    >
-                        Edit
-                    </Button>
-                </Ribbon>
-                {selection.length > 0 && (
-                    <>
-                        {selection.every(isSymbol) && (
-                            <>
-                                <Button>
-                                    Edit Symbol
-                                </Button>
-                                <Button>
-                                    Shift Vertically
-                                </Button>
-                            </>
-                        )}
-                        {selection.every(isIntention) && (
+            <Ribbon title='Stage'>
+                <Button
+                    onClick={() => removeStage(stage)}
+                    size='small'
+                    startIcon={<Delete />}
+                >
+                    Remove
+                </Button>
+            </Ribbon>
+            <Ribbon title='Siglum'>
+                <Button
+                    onClick={() => setEditSiglum(true)}
+                    startIcon={<EditIcon />}
+                    size='small'
+                >
+                    Edit
+                </Button>
+            </Ribbon>
+            {selection.length > 0 && (
+                <>
+                    {selection.every(isSymbol) && (
+                        <>
                             <Button>
-                                Remove Intention
+                                Edit Symbol
                             </Button>
-                        )}
+                            <Button>
+                                Shift Vertically
+                            </Button>
+                        </>
+                    )}
+                    {selection.every(isIntention) && (
                         <Button>
-                            Add Intention
+                            Remove Intention
                         </Button>
-                        {selection.every(isEdit) && (
-                            <Button onClick={handleNewStage}>
-                                Derive New Stage
+                    )}
+                    <Button>
+                        Add Intention
+                    </Button>
+                    {selection.every(isEdit) && (
+                        <Button onClick={handleNewStage}>
+                            Derive New Stage
+                        </Button>
+                    )}
+                    {selection.length > 2 && selection.every(isEdit) && (
+                        <>
+                            <Button>
+                                Merge
                             </Button>
-                        )}
-                        {selection.length > 2 && selection.every(isEdit) && (
-                            <>
-                                <Button>
-                                    Merge
-                                </Button>
-                                <Button>
-                                    Split
-                                </Button>
-                            </>
-                        )}
-                    </>
-                )}
-            </Stack>
+                            <Button>
+                                Split
+                            </Button>
+                        </>
+                    )}
+                </>
+            )}
 
             <EditSiglum
                 open={editSiglum}

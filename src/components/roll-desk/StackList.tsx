@@ -46,7 +46,13 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     <ListItemButton onClick={() => onClick(layer)}>
                                         <ListItemText
                                             style={{ border: layer === active ? '3px' : '1px' }}
-                                            primary={`${layer.copy.productionEvent?.date.assigned} (${layer.copy.productionEvent?.system})`}
+                                            primary={
+                                                <span style={{ fontWeight: layer === active ? 'bold' : 'normal' }}>
+                                                    {layer.copy.location}
+                                                    <span>{' '}</span>
+                                                    ({layer.copy.productionEvent?.date.assigned || '[unknown date]'})
+                                                </span>
+                                            }
                                             secondary={layer.copy.location}
                                         />
                                     </ListItemButton>

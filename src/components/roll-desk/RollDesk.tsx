@@ -20,6 +20,7 @@ import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { v4 } from "uuid"
+import { Stemma } from "./Stemma"
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -230,37 +231,24 @@ export const Desk = () => {
                             </div>
                         </Paper>
 
-                        <div><b>Stage</b></div>
-                        <ToggleButtonGroup
-                            value={currentStage?.siglum || 'none'}
-                            exclusive
-                            onChange={(_, newValue) => {
-                                console.log(newValue)
-                                setCurrentStage(edition.stages.find(stage => stage.siglum === newValue) || undefined)
+                        <Stemma
+                            stages={edition.stages}
+                            currentStage={currentStage}
+                            onClick={(stage) => {
+                                setCurrentStage(stage)
+                                setActiveLayer(undefined)
+                                setSelection([])
                             }}
-                        >
-                            {edition.stages.map(stage => {
-                                return (
-                                    <ToggleButton
-                                        key={stage.siglum}
-                                        value={stage.siglum}
-                                    >
-                                        {stage.siglum}
-                                    </ToggleButton>
-                                )
-                            })}
-                            <ToggleButton
-                                value='none'
-                            >
-                                None
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                        />
 
                         <LayerStack
                             stack={layers}
                             active={activeLayer}
                             onChange={stack => setLayers([...stack])}
-                            onClick={(layer) => setActiveLayer(layer)}
+                            onClick={(layer) => {
+                                setCurrentStage(undefined)
+                                setActiveLayer(layer)
+                            }}
                         />
 
                         <Button
@@ -287,8 +275,7 @@ export const Desk = () => {
                                 active={activeLayer}
                                 stack={layers}
                                 selection={selection}
-                                onAddToSelection={(item) => setSelection(prev => [...prev, item])}
-                                onRemoveFromSelection={(item) => setSelection(prev => prev.filter(s => s !== item))}
+                                onChangeSelection={setSelection}
                                 fixedX={fixedX}
                                 setFixedX={setFixedX}
                                 currentStage={currentStage}

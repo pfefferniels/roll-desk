@@ -12,7 +12,6 @@ const getSymbolBBox = (symbol: AnySymbol, { translateX, trackToY, trackHeight }:
     const dim = dimensionOf(symbol)
 
     let height = trackHeight.note
-    console.log('height=', height)
     if (dim.vertical.to) {
         height = trackToY(dim.vertical.to - dim.vertical.from);
         console.log('new height', height)
@@ -50,8 +49,6 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
 
     const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, translation)) || [];
     const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, translation)) || [];
-
-    console.log('bboxes', insertionBBoxes)
 
     // draw overall hull only when there are both, insertions
     // as well as deletions

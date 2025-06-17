@@ -15,8 +15,7 @@ interface LayeredRollsProps {
     active?: Layer
     currentStage?: Stage
     selection: UserSelection[]
-    onAddToSelection: (newSelection: UserSelection) => void
-    onRemoveFromSelection: (eventToRemove: UserSelection) => void
+    onChangeSelection: (userSelection: UserSelection[]) => void
     fixedX: number
     setFixedX: (fixedX: number) => void
 }
@@ -27,8 +26,7 @@ export const LayeredRolls = ({
     currentStage,
     edition,
     selection,
-    onAddToSelection,
-    onRemoveFromSelection,
+    onChangeSelection,
     fixedX,
     setFixedX }: LayeredRollsProps
 ) => {
@@ -43,9 +41,15 @@ export const LayeredRolls = ({
         orderedLayers.push(active)
     }
 
-    const margin = 140
+    const onAddToSelection = (item: UserSelection) => {
+        onChangeSelection([...selection, item])
+    }
 
-    console.log('svg ref current', svgRef.current)
+    const onRemoveFromSelection = (item: UserSelection) => {
+        onChangeSelection([...selection.filter(x => x !== item)])
+    }
+
+    const margin = 100
 
     return (
         <svg width="100000" height={6 * 100 + margin * 2}>
@@ -62,13 +66,13 @@ export const LayeredRolls = ({
                                 <CopyFacsimile
                                     key={`copy_${i}`}
                                     copy={stackItem.copy}
-                                    position={i}
+                                    active={stackItem.copy === active?.copy}
                                     color={stackItem.color}
                                     facsimileOpacity={stackItem.opacity}
                                     onClick={onAddToSelection}
-                                    onSelectionDone={dimension => onAddToSelection({
+                                    onSelectionDone={dimension => onChangeSelection([{
                                         ...dimension
-                                    })}
+                                    }])}
                                     fixedX={fixedX}
                                     setFixedX={setFixedX}
                                 />
@@ -83,7 +87,8 @@ export const LayeredRolls = ({
                     {svgRef.current && (
                         <SelectionFilter
                             items={selection}
-                            remove={onRemoveFromSelection} />
+                            remove={onRemoveFromSelection}
+                        />
                     )}
                 </g>
             </g>

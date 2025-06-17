@@ -36,42 +36,38 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         <Dialog open={open} onClose={onClose} fullWidth>
             <DialogTitle>Edit Production Event</DialogTitle>
             <DialogContent>
-                <Grid container spacing={2} p={1} sx={{ minWidth: 700 }}>
-                    <Grid item xs={4}>
-                        <Typography>Roll Production</Typography>
-                        <Stack direction="column" spacing={2}>
-                            <TextField
-                                size='small'
-                                value={company}
-                                placeholder="e.g. Welte & Söhne"
-                                onChange={e => setCompany(e.target.value)}
-                                fullWidth
-                            />
-                            <TextField
-                                size='small'
-                                value={system}
-                                placeholder="e.g. T-100"
-                                onChange={e => setSystem(e.target.value)}
-                                fullWidth
-                            />
-                            <TextField
-                                size='small'
-                                value={paper}
-                                placeholder="e.g. red paper, lined"
-                                onChange={e => setPaper(e.target.value)}
-                                fullWidth
-                            />
-                            <TextField
-                                size='small'
-                                label='Roll Date'
-                                value={date}
-                                placeholder="as indicated on the end of the roll"
-                                onChange={e => setDate(new Date(e.target.value))}
-                                fullWidth
-                            />
-                        </Stack>
-                    </Grid>
-                </Grid>
+                <Typography>Roll Production</Typography>
+                <Stack direction="column" spacing={2}>
+                    <TextField
+                        size='small'
+                        value={company}
+                        placeholder="e.g. Welte & Söhne"
+                        onChange={e => setCompany(e.target.value)}
+                        fullWidth
+                    />
+                    <TextField
+                        size='small'
+                        value={system}
+                        placeholder="e.g. T-100"
+                        onChange={e => setSystem(e.target.value)}
+                        fullWidth
+                    />
+                    <TextField
+                        size='small'
+                        value={paper}
+                        placeholder="e.g. red paper, lined"
+                        onChange={e => setPaper(e.target.value)}
+                        fullWidth
+                    />
+                    <TextField
+                        size='small'
+                        label='Roll Date'
+                        value={date}
+                        placeholder="as indicated on the end of the roll"
+                        onChange={e => setDate(new Date(e.target.value))}
+                        fullWidth
+                    />
+                </Stack>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>

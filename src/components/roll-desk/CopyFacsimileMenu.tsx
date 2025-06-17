@@ -7,7 +7,7 @@ import { selectionAsIIIFLink } from "./RollGrid"
 import { ConditionStateDialog } from "./ConditionStateDialog"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
-import { Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
+import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
@@ -34,13 +34,18 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChange
     return (
         <>
             <Stack direction='row' spacing={1}>
-                <Ribbon title='Production Event'>
+                <Ribbon title='Roll Metadata'>
                     <Button
                         onClick={() => setEditProduction(true)}
                         size='small'
                         startIcon={<EditIcon />}
                     >
-                        Edit
+                        Production
+                    </Button>
+                    <Button
+                        startIcon={<BrokenImage />}
+                    >
+                        Condition
                     </Button>
                 </Ribbon>
                 <Ribbon title='Symbols'>
@@ -59,24 +64,34 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChange
                     >
                         {selection.length === copy.features.length ? 'Deselect' : 'Select'} All
                     </Button>
+                    {selection.length > 0 && (
+                        <Button
+                            onClick={() => setAddSymbolDialogOpen(true)}
+                            size='small'
+                            startIcon={<Add />}
+                        >
+                            Add
+                        </Button>
+                    )}
                 </Ribbon>
                 {selection.length > 0 && (
                     <>
-                        <Button
-                            onClick={() => setAddSymbolDialogOpen(true)}
-                        >
-                            Insert Symbol
-                        </Button>
-                        <Button
-                            onClick={handleRemove}
-                        >
-                            Remove Feature
-                        </Button>
-                        <Button
-                            onClick={() => setConditionstateDialogOpen(true)}
-                        >
-                            Report Condition
-                        </Button>
+                        <Ribbon title='Feature'>
+                            <Button
+                                onClick={handleRemove}
+                                size='small'
+                                startIcon={<Delete />}
+                            >
+                                Remove
+                            </Button>
+                            <Button
+                                onClick={() => setConditionstateDialogOpen(true)}
+                                size='small'
+                                startIcon={<BrokenImage />}
+                            >
+                                Report Condition
+                            </Button>
+                        </Ribbon>
                     </>
                 )}
             </Stack>

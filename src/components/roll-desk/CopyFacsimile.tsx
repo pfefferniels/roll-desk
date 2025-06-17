@@ -33,7 +33,6 @@ async function tilesAsSVGImage(
     margins: { treble: number; bass: number },
     stretchX: number,
     trackToY: (track: number) => number,
-    opacity: number,
     shiftOp: number,
     stretchOp: number
 ) {
@@ -65,7 +64,6 @@ async function tilesAsSVGImage(
                     y={trackToY(track)}
                     width={svgWidth}
                     height={svgHeight}
-                    opacity={opacity}
                     preserveAspectRatio="none"
                 />
             );
@@ -76,7 +74,7 @@ async function tilesAsSVGImage(
 
 interface CopyFacsimileProps {
     copy: RollCopy;
-    position: number;
+    active: boolean;
     onClick: (e: RollFeature) => void;
     color: string;
     onSelectionDone: (dimension: EventDimension) => void;
@@ -88,7 +86,7 @@ interface CopyFacsimileProps {
 
 export const CopyFacsimile = ({
     copy,
-    position,
+    active,
     color,
     onClick,
     onSelectionDone,
@@ -127,7 +125,6 @@ export const CopyFacsimile = ({
                             margins,
                             zoom,
                             trackToY,
-                            facsimileOpacity,
                             copy.measurements.shift?.horizontal || 0,
                             stretch?.factor || 1
                         )
@@ -157,22 +154,35 @@ export const CopyFacsimile = ({
         };
 
         renderIIIF();
-    }, [svgRef, trackHeight, zoom, copy, facsimileOpacity, facsimile, trackToY]);
+    }, [svgRef, trackHeight, zoom, copy, facsimile, trackToY]);
 
     return (
         <>
-            <g className="roll-copy" ref={svgRef} opacity={1 / (position + 1)}>
-                <g className='facsimile'>
+            <g className="roll-copy" ref={svgRef}>
+                <defs>
+                    <filter id="invertFilter">
+                        <feComponentTransfer>
+                            <feFuncR type="table" tableValues="1 0" />
+                            <feFuncG type="table" tableValues="1 0" />
+                            <feFuncB type="table" tableValues="1 0" />
+                        </feComponentTransfer>
+                    </filter>
+                </defs>
+
+                <g className='facsimile' opacity={facsimileOpacity}>
                     {tiles}
                 </g>
 
-                {position === 0 && (
+                <Cursor onFix={(x) => setFixedX(x)} svgRef={svgRef} />
+
+                {active && (
                     <RollGrid
-                        selectionMode={position === 0}
+                        selectionMode={active}
                         onSelectionDone={onSelectionDone}
                         width={100000}
                     />
                 )}
+
                 {copy.features.map(feature => {
                     return (
                         <Feature
@@ -184,9 +194,6 @@ export const CopyFacsimile = ({
                     )
                 })}
             </g>
-
-            <Cursor onFix={(x) => setFixedX(x)} svgRef={svgRef} />
-            <FixedCursor fixedAt={fixedX} />
 
             <KeyboardDivision />
         </>
@@ -230,9 +237,19 @@ const Feature = ({ feature, onClick, color }: FeatureProps) => {
 
     return (
         <g className="feature" data-id={feature.id} id={feature.id} onClick={onClick}>
+            {feature.annotates && (
+                <image
+                    xlinkHref={feature.annotates.replace('default.jpg', 'gray.jpg')}
+                    x={x}
+                    y={y}
+                    width={width}
+                    filter="url(#invertFilter)"
+                />
+            )}
+
             <rect
                 fill={color}
-                fillOpacity={0.5}
+                fillOpacity={0.3}
                 strokeWidth={0}
                 x={x}
                 y={y}
