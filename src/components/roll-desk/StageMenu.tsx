@@ -1,13 +1,13 @@
 import { Delete, Edit as EditIcon, Person } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Edition, Intention, isEdit, isIntention, isSymbol, Stage } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Stage, isMotivation, MeaningComprehension } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
 import { EditAssumption } from "./EditAssumption"
 
-export type StageSelection = AnySymbol | Edit | Intention
+export type StageSelection = AnySymbol | Edit | Motivation
 
 interface MenuProps {
     stage: Stage
@@ -35,18 +35,33 @@ export const StageMenu = ({ stage, selection, onChange, onAdd, onRemove }: MenuP
             id: v4(),
             basedOn: assign('derivation', stage),
             edits,
-            intentions: [],
+            motivations: [],
         }
         onAdd(newStage)
     }
 
-    //const removeStage = (stageToRemove: Stage) => {
-    //    const index = edition.stages.indexOf(stageToRemove)
-    //    if (index !== -1) {
-    //        edition.stages.splice(index, 1)
-    //        onChange({ ...edition })
-    //    }
-    //}
+    const removeMotivations = (motivations: Motivation[]) => {
+        stage.motivations = stage.motivations.filter(m => !motivations.includes(m))
+        onChange(stage)
+    }
+
+    const addMotivation = (about: Edit[]) => {
+        const comprehension: MeaningComprehension<Edit> = {
+            comprehends: about
+        }
+
+        stage.motivations.push({
+            assigned: '...',
+            id: v4(),
+            type: 'motivationAssignment',
+            belief: {
+                type: 'belief',
+                certainty: 'true',
+                id: v4(),
+                reasons: [comprehension]
+            }
+        })
+    }
 
     return (
         <>
@@ -87,18 +102,20 @@ export const StageMenu = ({ stage, selection, onChange, onAdd, onRemove }: MenuP
                             </Button>
                         </>
                     )}
-                    {selection.every(isIntention) && (
-                        <Button>
-                            Remove Intention
+                    {selection.every(isMotivation) && (
+                        <Button onClick={() => removeMotivations(selection)}>
+                            Remove Motivation
                         </Button>
                     )}
-                    <Button>
-                        Add Intention
-                    </Button>
                     {selection.every(isEdit) && (
-                        <Button onClick={handleNewStage}>
-                            Derive New Stage
-                        </Button>
+                        <>
+                            <Button onClick={() => addMotivation(selection)}>
+                                Add Motivation
+                            </Button>
+                            <Button onClick={handleNewStage}>
+                                Derive New Stage
+                            </Button>
+                        </>
                     )}
                     {selection.length > 2 && selection.every(isEdit) && (
                         <>

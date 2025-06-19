@@ -1,6 +1,6 @@
-import { Button, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
-import { useCallback, useEffect, useState } from "react"
-import { AnySymbol, asSymbols, Edition, EditionCreation, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Question, RollCopy, Stage, VerticalSpan } from 'linked-rolls'
+import { Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
+import { useCallback, useState } from "react"
+import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Stage, VerticalSpan } from 'linked-rolls'
 import { Add, ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -43,7 +43,6 @@ export const Desk = () => {
     const { play, stop } = usePiano()
 
     const [stretch, setStretch] = useState(2)
-    const [fixedX, setFixedX] = useState(-1)
 
     const [metadata, setMetadata] = useState<EditionMetadata>()
     const [stages, setStages] = useState<Stage[]>([])
@@ -164,8 +163,8 @@ export const Desk = () => {
                                     }
                                 }}
                                 selection={selection.filter(item => {
-                                    return isEdit(item) || isIntention(item) || isSymbol(item)
-                                }) as (AnySymbol | Intention | Stage)[]}
+                                    return isEdit(item) || isMotivation(item) || isSymbol(item)
+                                }) as (AnySymbol | Motivation | Stage)[]}
                             />
                         )}
 
@@ -301,8 +300,6 @@ export const Desk = () => {
                                 stack={layers}
                                 selection={selection}
                                 onChangeSelection={setSelection}
-                                fixedX={fixedX}
-                                setFixedX={setFixedX}
                                 currentStage={currentStage}
                             />
                         </PinchZoomProvider>
@@ -355,7 +352,7 @@ export const Desk = () => {
                         siglum,
                         id: v4(),
                         edits: [],
-                        intentions: []
+                        motivations: []
                     }
 
                     fillEdits(newStage, asSymbols(newCopy.features))

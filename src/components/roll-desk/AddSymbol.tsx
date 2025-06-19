@@ -3,7 +3,7 @@ import { assign, RollFeature, Stage, WelteT100 } from "linked-rolls"
 import { useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
-import { AnySymbol, CarrierAssignment, isSymbol } from "linked-rolls/lib/Symbol"
+import { AnySymbol, isSymbol } from "linked-rolls/lib/Symbol"
 
 interface AddSymbolProps {
     open: boolean

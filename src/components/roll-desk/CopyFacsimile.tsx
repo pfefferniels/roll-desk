@@ -6,7 +6,7 @@ import {
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
-import { Cursor, FixedCursor } from "./Cursor.tsx";
+import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 
 interface IIIFInfo {
@@ -78,8 +78,6 @@ interface CopyFacsimileProps {
     onClick: (e: RollFeature) => void;
     color: string;
     onSelectionDone: (dimension: EventDimension) => void;
-    fixedX: number;
-    setFixedX: (fixedX: number) => void;
     facsimile?: File;
     facsimileOpacity: number;
 }
@@ -90,8 +88,6 @@ export const CopyFacsimile = ({
     color,
     onClick,
     onSelectionDone,
-    fixedX,
-    setFixedX,
     facsimile,
     facsimileOpacity,
 }: CopyFacsimileProps) => {
@@ -173,7 +169,7 @@ export const CopyFacsimile = ({
                     {tiles}
                 </g>
 
-                <Cursor onFix={(x) => setFixedX(x)} svgRef={svgRef} />
+                <Cursor svgRef={svgRef} />
 
                 {active && (
                     <RollGrid

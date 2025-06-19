@@ -1,15 +1,15 @@
 import { useRef } from "react"
 // import { usePiano } from "react-pianosound"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverseStages, flat, Intention, Edit } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverseStages, flat, Edit, Motivation } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
 import { EditView } from "./EditView"
-import { IntentionView } from "./IntentionView"
+import { MotivationView } from "./MotivationView"
 
 interface StageViewProps {
     stage: Stage
-    onClick: (event: AnySymbol | Intention | Edit) => void
+    onClick: (event: AnySymbol | Motivation | Edit) => void
 }
 
 export const StageView = ({ stage, onClick }: StageViewProps) => {
@@ -86,13 +86,13 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         </g>
     )
 
-    const intentions = stage.intentions
-        .map(intention => {
+    const motivations = stage.motivations
+        .map(motivation => {
             return (
-                <IntentionView
-                    key={intention.id}
-                    intention={intention}
-                    onClick={() => onClick(intention)}
+                <MotivationView
+                    key={motivation.id}
+                    motivation={motivation}
+                    onClick={() => onClick(motivation)}
                 />
             )
         })
@@ -159,7 +159,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                 })}
 
             {edits}
-            {intentions}
+            {motivations}
         </g>
     )
 }

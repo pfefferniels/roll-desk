@@ -58,7 +58,7 @@ export const StageCreationDialog = ({ open, edition, symbols, onClose, onDone, c
                             id: v4(),
                             siglum,
                             edits: [],
-                            intentions: [],
+                            motivations: [],
                             basedOn: prev && assign('derivation', prev)
                         }
 

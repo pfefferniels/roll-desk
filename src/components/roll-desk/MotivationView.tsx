@@ -1,18 +1,21 @@
-import { Intention } from "linked-rolls";
+import { Edit, flat, isEdit, isMeaningComprehension, Motivation } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { getEditBBox } from "./EditView";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 
-export interface IntentionViewProps {
-    intention: Intention;
-    onClick?: (intention: Intention) => void;
+export interface MotivationViewProps {
+    motivation: Motivation;
+    onClick?: (motivation: Motivation) => void;
 }
 
-export const IntentionView = ({ intention, onClick }: IntentionViewProps) => {
+export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => {
     const translation = usePinchZoom()
 
-    const bboxes = intention.belief.about
+    const bboxes = (motivation.belief?.reasons || [])
+        .filter(reason => isMeaningComprehension<Edit>(reason, isEdit))
+        .map(({ comprehends }) => comprehends)
+        .flat()
         .map(edit => getEditBBox(edit, translation));
 
     const hull = getHull(bboxes)
@@ -21,14 +24,14 @@ export const IntentionView = ({ intention, onClick }: IntentionViewProps) => {
     return (
         <g>
             <Hull
-                key={`${intention.id}`}
-                id={`${intention.id}`}
-                data-id={`${intention.id}}`}
+                key={`${motivation.id}`}
+                id={`${motivation.id}`}
+                data-id={`${motivation.id}}`}
                 hull={hull.hull}
                 fillOpacity={0.5}
                 fill='red'
                 onClick={() => {
-                    onClick && onClick(intention)
+                    onClick && onClick(motivation)
                 }}
                 label={
                     <text
@@ -38,7 +41,7 @@ export const IntentionView = ({ intention, onClick }: IntentionViewProps) => {
                         fill='black'
                         style={{ pointerEvents: 'none' }}
                     >
-                        {intention.description}
+                        {flat(motivation)}
                     </text>
                 }
             />

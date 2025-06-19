@@ -1,53 +1,14 @@
 import { RefObject, useCallback, useEffect, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 
-interface FixedCursorProps {
-    fixedAt: number
-}
-
-export const FixedCursor = ({ fixedAt }: FixedCursorProps) => {
-    const { translateX } = usePinchZoom()
-
-    const cursorText = `
-        ${(fixedAt / 10).toFixed(2)} cm`;
-
-    const translatedX = translateX(fixedAt)
-
-    return (
-        <>
-            <line
-                x1={translatedX}
-                y1={0}
-                x2={translatedX}
-                y2={4000}
-                strokeWidth={1}
-                stroke='black'
-                strokeDasharray={4}
-                className='cursor' />
-
-            <text
-                x={translatedX}
-                y={10}
-                fontSize={12}
-                textAnchor='middle'
-                fill='black'
-                className='cursor'
-            >
-                {cursorText}
-            </text>
-
-        </>
-    )
-}
-
 interface CursorProps {
     svgRef: RefObject<SVGElement>
-    onFix: (x: number) => void
 }
 
-export const Cursor = ({ svgRef, onFix }: CursorProps) => {
+export const Cursor = ({ svgRef }: CursorProps) => {
     const { translateX, zoom } = usePinchZoom()
     const [cursorX, setCursorX] = useState(0)
+    const [fixedX, setFixedX] = useState<number>()
 
     const cursorText = `${(cursorX / 10).toFixed(2)} cm`;
     const translatedX = translateX(cursorX)
@@ -73,13 +34,30 @@ export const Cursor = ({ svgRef, onFix }: CursorProps) => {
 
     return (
         <>
+            {fixedX && (
+                <line
+                    x1={translateX(fixedX)}
+                    y1={100}
+                    x2={translateX(cursorX)}
+                    y2={100}
+                    strokeWidth={5}
+                    stroke='gray'
+                />
+            )}
             <line
-                onClick={() => onFix(cursorX)}
+                onClick={() => {
+                    if (fixedX === undefined) {
+                        setFixedX(cursorX)
+                    }
+                    else {
+                        setFixedX(undefined)
+                    }
+                }}
                 x1={translatedX}
                 y1={0}
                 x2={translatedX}
                 y2={4000}
-                strokeWidth={0.5}
+                strokeWidth={2}
                 stroke='black'
                 className='cursor'
             />

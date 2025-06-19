@@ -15,8 +15,6 @@ interface LayeredRollsProps {
     currentStage?: Stage
     selection: UserSelection[]
     onChangeSelection: (userSelection: UserSelection[]) => void
-    fixedX: number
-    setFixedX: (fixedX: number) => void
 }
 
 export const LayeredRolls = ({
@@ -24,9 +22,8 @@ export const LayeredRolls = ({
     active,
     currentStage,
     selection,
-    onChangeSelection,
-    fixedX,
-    setFixedX }: LayeredRollsProps
+    onChangeSelection
+}: LayeredRollsProps
 ) => {
     const { zoom } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
@@ -71,8 +68,6 @@ export const LayeredRolls = ({
                                     onSelectionDone={dimension => onChangeSelection([{
                                         ...dimension
                                     }])}
-                                    fixedX={fixedX}
-                                    setFixedX={setFixedX}
                                 />
                             )
                         })}
