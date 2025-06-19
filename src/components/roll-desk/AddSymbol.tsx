@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { assign, Edition, RollFeature, Stage, WelteT100 } from "linked-rolls"
+import { assign, RollFeature, Stage, WelteT100 } from "linked-rolls"
 import { useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
@@ -10,13 +10,14 @@ interface AddSymbolProps {
     selection: EventDimension | AnySymbol
     iiifUrl?: string
     onClose: () => void
-    edition: Edition
+    onDone: (symbol: AnySymbol, feature: RollFeature, stage: Stage) => void
+    stages: Stage[]
 }
 
 const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl, edition }: AddSymbolProps) => {
+export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, stages }: AddSymbolProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -155,13 +156,13 @@ export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl, edition }: 
                                 size='small'
                                 value={stage?.siglum || ''}
                                 onChange={(e) => {
-                                    const selectedStage = edition.stages.find(s => s.siglum === e.target.value)
+                                    const selectedStage = stages.find(s => s.siglum === e.target.value)
                                     if (selectedStage) {
                                         setStage(selectedStage)
                                     }
                                 }}
                             >
-                                {edition.stages.map((s) => (
+                                {stages.map((s) => (
                                     <MenuItem value={s.siglum} key={s.id}>
                                         {s.siglum}
                                     </MenuItem>
@@ -176,7 +177,7 @@ export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl, edition }: 
                 <Button
                     onClick={() => {
                         if (isSymbol(selection)) {
-                            selection.type = eventType 
+                            selection.type = eventType
                             if ('text' in selection) selection.text = text || ''
                             if ('rotation' in selection) selection.rotation = rotation || 0
                             if ('signed' in selection) selection.signed = signed || false
@@ -233,12 +234,8 @@ export const AddSymbolDialog = ({ selection, open, onClose, iiifUrl, edition }: 
                         }
 
                         if (newSymbol) {
-                            stage.edits.push({
-                                id: v4(),
-                                insert: [newSymbol],
-                            })
+                            onDone(newSymbol, feature, stage)
                         }
-                        onClose()
                     }}
                     variant='contained'
                 >

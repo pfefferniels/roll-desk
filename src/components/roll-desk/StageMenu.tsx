@@ -1,21 +1,24 @@
-import { Delete, Edit as EditIcon } from "@mui/icons-material"
-import { Button, Stack } from "@mui/material"
+import { Delete, Edit as EditIcon, Person } from "@mui/icons-material"
+import { Button } from "@mui/material"
 import { AnySymbol, assign, Edit, Edition, Intention, isEdit, isIntention, isSymbol, Stage } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
+import { EditAssumption } from "./EditAssumption"
 
 export type StageSelection = AnySymbol | Edit | Intention
 
 interface MenuProps {
     stage: Stage
-    edition: Edition
     selection: StageSelection[]
-    onChange: (edition: Edition) => void
+    onChange: (stage: Stage) => void
+    onAdd: (stage: Stage) => void
+    onRemove: (stage: Stage) => void
 }
 
-export const StageMenu = ({ stage, selection, edition, onChange }: MenuProps) => {
+export const StageMenu = ({ stage, selection, onChange, onAdd, onRemove }: MenuProps) => {
+    const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
 
     const handleNewStage = () => {
@@ -34,23 +37,29 @@ export const StageMenu = ({ stage, selection, edition, onChange }: MenuProps) =>
             edits,
             intentions: [],
         }
-        edition.stages.push(newStage)
-        onChange({ ...edition })
+        onAdd(newStage)
     }
 
-    const removeStage = (stageToRemove: Stage) => {
-        const index = edition.stages.indexOf(stageToRemove)
-        if (index !== -1) {
-            edition.stages.splice(index, 1)
-            onChange({ ...edition })
-        }
-    }
+    //const removeStage = (stageToRemove: Stage) => {
+    //    const index = edition.stages.indexOf(stageToRemove)
+    //    if (index !== -1) {
+    //        edition.stages.splice(index, 1)
+    //        onChange({ ...edition })
+    //    }
+    //}
 
     return (
         <>
             <Ribbon title='Stage'>
                 <Button
-                    onClick={() => removeStage(stage)}
+                    onClick={() => setAssignActor(true)}
+                    size='small'
+                    startIcon={<Person />}
+                >
+                    Actor
+                </Button>
+                <Button
+                    onClick={() => onRemove(stage)}
                     size='small'
                     startIcon={<Delete />}
                 >
@@ -110,11 +119,21 @@ export const StageMenu = ({ stage, selection, edition, onChange }: MenuProps) =>
                 onDone={(newSiglum) => {
                     stage.siglum = newSiglum
                     setEditSiglum(false)
-                    onChange({ ...edition })
+                    onChange(stage)
                 }}
                 onClose={() => setEditSiglum(false)}
             />
-        </>
 
+            <EditAssumption
+                open={assignActor}
+                onClose={() => setAssignActor(false)}
+                assumption={stage.actor || assign('actorAssignment', { name: '', sameAs: [] })}
+                onChange={(assumption) => {
+                    stage.actor = assumption
+                    setAssignActor(false)
+                    onChange(stage)
+                }}
+            />
+        </>
     )
 }

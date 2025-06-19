@@ -1,5 +1,5 @@
 import { Button, Stack } from "@mui/material"
-import { Edition, isRollFeature, RollCopy, RollFeature } from "linked-rolls"
+import { Edition, isRollFeature, RollCopy, RollFeature, Stage } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddSymbolDialog } from "./AddSymbol"
 import { useState } from "react"
@@ -8,18 +8,19 @@ import { ConditionStateDialog } from "./ConditionStateDialog"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
+import { v4 } from "uuid"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
 interface MenuProps {
+    stages: Stage[]
     copy: RollCopy
-    edition: Edition
     selection: FacsimileSelection[]
     onChangeSelection: (selection: FacsimileSelection[]) => void
-    onChange: (edition: Edition) => void
+    onChange: (copy: RollCopy, stages?: Stage[]) => void
 }
 
-export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChangeSelection }: MenuProps) => {
+export const CopyFacsimileMenu = ({ copy, selection, stages, onChange, onChangeSelection }: MenuProps) => {
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [conditionStateDialogOpen, setConditionstateDialogOpen] = useState(false)
     const [editProduction, setEditProduction] = useState(false)
@@ -28,7 +29,7 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChange
         for (const feature of selection.filter(isRollFeature)) {
             copy.features.splice(copy.features.indexOf(feature), 1);
         }
-        onChange({ ...edition })
+        onChange(copy.shallowClone())
     }
 
     return (
@@ -102,8 +103,17 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChange
                         open={addSymbolDialogOpen}
                         selection={selection[0]}
                         onClose={() => setAddSymbolDialogOpen(false)}
+                        onDone={(symbol, feature, stage) => {
+                            stage.edits.push({
+                                id: v4(),
+                                insert: [symbol],
+                            })
+                            copy.features.push(feature)
+                            onChange(copy.shallowClone(), [...stages])
+                            setAddSymbolDialogOpen(false)
+                        }}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
-                        edition={edition}
+                        stages={stages}
                     />
                     <ConditionStateDialog
                         open={conditionStateDialogOpen}
@@ -123,7 +133,7 @@ export const CopyFacsimileMenu = ({ copy, selection, edition, onChange, onChange
                 onClose={() => setEditProduction(false)}
                 onDone={(event) => {
                     copy.productionEvent = event
-                    onChange({ ...edition })
+                    onChange(copy.shallowClone())
                     setEditProduction(false)
                 }}
             />

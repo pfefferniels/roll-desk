@@ -1,6 +1,6 @@
 import { Button, Grid, IconButton, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
-import { AnySymbol, asSymbols, Edition, Emulation, fillEdits, flat, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Stage, VerticalSpan } from 'linked-rolls'
+import { AnySymbol, asSymbols, Edition, EditionCreation, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Intention, isEdit, isIntention, isRollFeature, isSymbol, PlaceTimeConversion, Question, RollCopy, Stage, VerticalSpan } from 'linked-rolls'
 import { Add, ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -42,10 +42,12 @@ export type UserSelection = (StageSelection | FacsimileSelection)
 export const Desk = () => {
     const { play, stop } = usePiano()
 
-    const [edition, setEdition] = useState<Edition>()
-
     const [stretch, setStretch] = useState(2)
     const [fixedX, setFixedX] = useState(-1)
+
+    const [metadata, setMetadata] = useState<EditionMetadata>()
+    const [stages, setStages] = useState<Stage[]>([])
+    const [questions, setQuestions] = useState<Question[]>([])
 
     const [layers, setLayers] = useState<Layer[]>([])
     const [activeLayer, setActiveLayer] = useState<Layer>()
@@ -77,33 +79,13 @@ export const Desk = () => {
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile('output.mid', dataBuf, 'audio/midi')
-    }, [edition, currentStage, conversionMethod])
+    }, [currentStage, conversionMethod])
 
-    // keeping layers and edition up-to-date
-    useEffect(() => {
-        setLayers(layers => {
-            if (!edition) return []
-
-            return edition.copies.map(rollCopy => {
-                const existingLayer = layers.find(layer => layer.copy === rollCopy)
-
-                // make sure to keep existing layer settings
-                if (existingLayer) return existingLayer
-
-                return {
-                    copy: rollCopy,
-                    visible: true,
-                    color: stringToColor(rollCopy.id),
-                    opacity: 0.5,
-                    facsimile: true
-                }
-            })
-        })
-    }, [edition])
-
-    if (!edition) {
+    if (!metadata) {
         return (
-            <Welcome onCreate={edition => setEdition(edition)} />
+            <Welcome onCreate={metadata => {
+                setMetadata(metadata)
+            }} />
         )
     }
 
@@ -113,7 +95,31 @@ export const Desk = () => {
                 <Grid item xs={12} md={12} xl={12}>
                     <RibbonGroup>
                         <Ribbon title=' '>
-                            <ImportButton onImport={newEdition => setEdition(newEdition)} />
+                            <ImportButton onImport={edition => {
+                                <ImportButton onImport={edition => {
+                                    const { copies, stages, questions, ...metadata } = edition
+
+                                    setMetadata(metadata)
+                                    setStages(stages)
+                                    setQuestions(questions)
+                                    setLayers(copies.map(copy => {
+                                        return {
+                                            color: stringToColor(copy.id),
+                                            copy: copy,
+                                            opacity: 1,
+                                            facsimile: false
+                                        }
+                                    }))
+                                }} />
+                                setLayers(edition.copies.map(copy => {
+                                    return {
+                                        color: stringToColor(copy.id),
+                                        copy: copy,
+                                        opacity: 1,
+                                        facsimile: false
+                                    }
+                                }))
+                            }} />
                             <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
                                 <Save />
                             </IconButton>
@@ -121,8 +127,17 @@ export const Desk = () => {
                         {(!currentStage && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
-                                edition={edition}
-                                onChange={edition => setEdition({ ...edition })}
+                                stages={stages}
+                                onChange={(copy, stages) => {
+                                    const layer = layers.find(layer => layer.copy === copy)
+                                    if (layer) {
+                                        layer.copy = copy
+                                        setLayers([...layers])
+                                    }
+                                    if (stages) {
+                                        setStages([...stages])
+                                    }
+                                }}
                                 onChangeSelection={selection => setSelection(selection)}
                                 selection={selection.filter(item => isRollFeature(item))}
                             />
@@ -130,8 +145,24 @@ export const Desk = () => {
                         {currentStage && (
                             <StageMenu
                                 stage={currentStage}
-                                edition={edition}
-                                onChange={edition => setEdition({ ...edition })}
+                                onChange={stage => {
+                                    const index = stages.indexOf(stage)
+                                    if (index !== -1) {
+                                        stages[index] = stage
+                                        setStages([...stages])
+                                    }
+                                }}
+                                onAdd={(stage) => {
+                                    stages.push(stage)
+                                    setStages([...stages])
+                                }}
+                                onRemove={(stage) => {
+                                    const index = stages.indexOf(stage)
+                                    if (index !== -1) {
+                                        stages.splice(index, 1)
+                                        setStages([...stages])
+                                    }
+                                }}
                                 selection={selection.filter(item => {
                                     return isEdit(item) || isIntention(item) || isSymbol(item)
                                 }) as (AnySymbol | Intention | Stage)[]}
@@ -152,18 +183,13 @@ export const Desk = () => {
                                 <Download />
                             </IconButton>
                             <IconButton
-                                disabled={!edition || !currentStage}
+                                disabled={!currentStage}
                                 onClick={() => {
                                     if (!currentStage) return
 
                                     if (isPlaying) {
                                         stop()
                                         setIsPlaying(false)
-                                        return
-                                    }
-
-                                    if (edition.copies.length === 0) {
-                                        console.log('No existing copies')
                                         return
                                     }
 
@@ -194,8 +220,8 @@ export const Desk = () => {
                     <Stack direction='column' spacing={1}>
                         <Paper sx={{ maxWidth: 360 }} elevation={0}>
                             <div style={{ float: 'left', padding: 8, width: '80%' }}>
-                                <b>{edition.title}</b><br />
-                                {edition.roll.catalogueNumber} ({flat(edition.roll.recordingEvent.date).toISOString()})
+                                <b>{metadata.title}</b><br />
+                                {metadata.roll.catalogueNumber} ({flat(metadata.roll.recordingEvent.date).toISOString()})
                             </div>
                             <div style={{ float: 'right' }}>
                                 <IconButton onClick={() => setEditMetadata(true)}>
@@ -232,7 +258,7 @@ export const Desk = () => {
                         </Paper>
 
                         <Stemma
-                            stages={edition.stages}
+                            stages={stages}
                             currentStage={currentStage}
                             onClick={(stage) => {
                                 setCurrentStage(stage)
@@ -259,7 +285,7 @@ export const Desk = () => {
                         </Button>
 
                         <Paper>
-                            {edition.questions.map(question => {
+                            {questions.map(question => {
                                 return (
                                     <div>{question.question}</div>
                                 )
@@ -271,7 +297,6 @@ export const Desk = () => {
                     <div style={{ overflow: 'scroll', width: 950 }}>
                         <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
                             <LayeredRolls
-                                edition={edition}
                                 active={activeLayer}
                                 stack={layers}
                                 selection={selection}
@@ -290,7 +315,6 @@ export const Desk = () => {
                 onClose={() => {
                     setEmulationSettingsDialogOpen(false)
                 }}
-                edition={edition}
                 onDone={(conversion) => {
                     setConversionMethod(conversion)
                 }}
@@ -298,41 +322,49 @@ export const Desk = () => {
 
             <DownloadDialog
                 open={downloadDialogOpen}
-                edition={edition}
+                edition={{
+                    ...metadata,
+                    copies: layers.map(({ copy }) => copy),
+                    stages,
+                    questions
+                }}
                 onClose={() => setDownloadDialogOpen(false)}
             />
 
             <EditMetadata
                 onDone={(edition) => {
-                    setEdition(edition)
+                    setMetadata(edition)
                 }}
                 onClose={() => setEditMetadata(false)}
                 open={editMetadata}
-                edition={edition}
+                metadata={metadata}
             />
 
             <RollCopyDialog
                 open={editCopy}
                 onClose={() => setEditCopy(false)}
                 onDone={(newCopy, siglum) => {
-                    edition.copies.push(newCopy)
+                    layers.push({
+                        copy: newCopy,
+                        color: stringToColor(newCopy.id),
+                        opacity: 1,
+                        facsimile: false
+                    })
+
                     const newStage: Stage = {
                         siglum,
                         id: v4(),
                         edits: [],
                         intentions: []
                     }
+
                     fillEdits(newStage, asSymbols(newCopy.features))
-                    edition.stages.push(newStage)
-                    setEdition({ ...edition })
+                    stages.push(newStage)
+                    setStages([...stages])
                 }}
                 onRemove={copy => {
-                    setEdition(prev => {
-                        if (!prev) return
-                        return {
-                            ...prev,
-                            copies: prev.copies.filter(c => c !== copy)
-                        }
+                    setLayers(prev => {
+                        return prev.filter(layer => layer.copy !== copy)
                     })
                 }}
             />

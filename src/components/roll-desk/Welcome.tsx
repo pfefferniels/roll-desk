@@ -1,12 +1,11 @@
 import { Box, Button, Stack } from "@mui/material";
-import exp from "constants";
-import { assign, Edition } from "linked-rolls";
+import { assign, Edition, EditionMetadata } from "linked-rolls";
 import { ImportButton } from "./ImportButton";
 import { useState } from "react";
 import EditMetadata from "./EditMetadata";
 import { Create } from "@mui/icons-material";
 
-const emptyEdition: Edition = {
+const emptyMetadata: EditionMetadata = {
     title: '',
     license: '',
     base: '',
@@ -31,14 +30,11 @@ const emptyEdition: Edition = {
             date: assign('dateAssignment', new Date()),
             place: { name: '', sameAs: [] }
         }
-    },
-    stages: [],
-    copies: [],
-    questions: []
+    }
 };
 
 export interface WelcomeProps {
-    onCreate: (edition: Edition) => void;
+    onCreate: (metadata: EditionMetadata) => void;
 }
 
 export const Welcome = ({ onCreate }: WelcomeProps) => {
@@ -86,11 +82,11 @@ export const Welcome = ({ onCreate }: WelcomeProps) => {
                 </Box>
             </Box>
             <EditMetadata
-                edition={emptyEdition}
+                metadata={emptyMetadata}
                 open={editMetadata}
                 onClose={() => setEditMetadata(false)}
-                onDone={(edition) => {
-                    onCreate(edition);
+                onDone={(metadata) => {
+                    onCreate(metadata);
                     setEditMetadata(false);
                 }}
             />

@@ -1,18 +1,13 @@
-import { Emulation, Shift, Stretch } from "linked-rolls"
+import { Emulation } from "linked-rolls"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
 type DynamicsProps ={
     forEmulation: Emulation
-    shift?: Shift
-    stretch?: Stretch
     pathProps: React.SVGProps<SVGPathElement>
 } 
 
-export const Dynamics = ({ forEmulation: emulation, shift, stretch, pathProps }: DynamicsProps) => {
+export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) => {
     const { translateX, trackToY } = usePinchZoom()
-
-    const translate = (x: number) =>
-        translateX(x * (stretch?.factor || 1) + (shift?.horizontal || 0))
 
     const bassShift = trackToY(33)
     const trebleShift = trackToY(97)
@@ -20,7 +15,7 @@ export const Dynamics = ({ forEmulation: emulation, shift, stretch, pathProps }:
     const reducerFor = (scope: 'treble' | 'bass') => {
         return (acc: [number, number][], v: number, i: number) => {
             if (i % 25 !== 0) return acc
-            const x = translate(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)
+            const x = translateX(emulation.placeTimeConversion.timeToPlace(i / 1000)! * 10)
             const y = 127 - v + (scope === 'bass' ? bassShift : trebleShift)
             acc.push([x, y])
             return acc

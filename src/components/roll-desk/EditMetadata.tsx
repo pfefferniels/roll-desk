@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Divider, Stack } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
-import { assign, Edition, flat } from 'linked-rolls';
+import { assign, Edition, EditionMetadata, flat } from 'linked-rolls';
 import { ImportButton } from './ImportButton';
 
 interface EditMetadataProps {
-  edition: Edition
+  metadata: EditionMetadata
   open: boolean
   onClose: () => void
-  onDone: (edition: Edition) => void;
+  onDone: (metadata: EditionMetadata) => void;
 }
 
 const licenses = [
@@ -20,7 +20,7 @@ const licenses = [
   { name: 'Creative Commons Attribution-NonCommercial-NoDerivatives 4.0', url: 'https://creativecommons.org/licenses/by-nc-nd/4.0/' },
 ];
 
-const EditMetadata = ({ edition, onDone, open, onClose }: EditMetadataProps) => {
+const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadataProps) => {
   const [title, setTitle] = useState<string>('');
   const [license, setLicense] = useState<string>('');
   const [baseURI, setBaseURI] = useState<string>('');

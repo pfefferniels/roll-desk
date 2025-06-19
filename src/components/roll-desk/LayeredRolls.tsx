@@ -10,7 +10,6 @@ import { UserSelection } from "./RollDesk"
 import { SelectionFilter } from "./Selection"
 
 interface LayeredRollsProps {
-    edition: Edition
     stack: Layer[]
     active?: Layer
     currentStage?: Stage
@@ -24,7 +23,6 @@ export const LayeredRolls = ({
     stack,
     active,
     currentStage,
-    edition,
     selection,
     onChangeSelection,
     fixedX,

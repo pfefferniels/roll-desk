@@ -1,11 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormLabel, MenuItem, Select, Stack, Typography } from "@mui/material"
-import { Edition } from "linked-rolls"
 import { GottschewskiConversion, KinematicConversion, NoAccelerationConversion, PlaceTimeConversion } from "linked-rolls/lib/PlaceTimeConversion"
 import { useState } from "react"
 
 interface EmulationSettingsDialogProps {
     open: boolean
-    edition: Edition
     onClose: () => void
     onDone: (conversion: PlaceTimeConversion) => void
 }
@@ -13,7 +11,7 @@ interface EmulationSettingsDialogProps {
 const methods = ['gottschewski', 'kinematic', 'no-acceleration'] as const
 type Method = typeof methods[number]
 
-export const EmulationSettingsDialog = ({ open, edition, onClose, onDone }: EmulationSettingsDialogProps) => {
+export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSettingsDialogProps) => {
     const [method, setMethod] = useState<Method>('kinematic')
     const [conversion, setConversion] = useState<PlaceTimeConversion>(new KinematicConversion())
 
