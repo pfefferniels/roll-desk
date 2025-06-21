@@ -1,29 +1,32 @@
-import { Delete, Edit as EditIcon, Person } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Person, Link } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Stage, isMotivation, MeaningComprehension } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Stage, isMotivation, MeaningComprehension, fillEdits, getSnaphsot } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
 import { EditAssumption } from "./EditAssumption"
+import { SelectStage } from "./SelectStage"
 
 export type StageSelection = AnySymbol | Edit | Motivation
 
 interface MenuProps {
     stage: Stage
+    stages: Stage[]
     selection: StageSelection[]
     onChange: (stage: Stage) => void
     onAdd: (stage: Stage) => void
     onRemove: (stage: Stage) => void
 }
 
-export const StageMenu = ({ stage, selection, onChange, onAdd, onRemove }: MenuProps) => {
+export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove }: MenuProps) => {
     const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
+    const [attachTo, setAttachTo] = useState(false)
 
     const handleNewStage = () => {
         const edits = selection.filter(isEdit)
-        console.log('edits', edits)
+        // console.log('edits', edits)
         for (const edit of edits) {
             const index = stage.edits.indexOf(edit)
             if (index !== -1) {
@@ -129,6 +132,15 @@ export const StageMenu = ({ stage, selection, onChange, onAdd, onRemove }: MenuP
                     )}
                 </>
             )}
+            <Ribbon title='Derivation'>
+                <Button
+                    onClick={() => setAttachTo(true)}
+                    size='small'
+                    startIcon={<Link />}
+                >
+                    Attach To
+                </Button>
+            </Ribbon>
 
             <EditSiglum
                 open={editSiglum}
@@ -150,6 +162,18 @@ export const StageMenu = ({ stage, selection, onChange, onAdd, onRemove }: MenuP
                     setAssignActor(false)
                     onChange(stage)
                 }}
+            />
+
+            <SelectStage
+                open={attachTo}
+                onClose={() => setAttachTo(false)}
+                onDone={(previousStage) => {
+                    stage.basedOn = assign('derivation', previousStage)
+                    const snapshot = getSnaphsot(stage)
+                    stage.edits = []
+                    fillEdits(stage, snapshot)
+                }}
+                stages={stages}
             />
         </>
     )

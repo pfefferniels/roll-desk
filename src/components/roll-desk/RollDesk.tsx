@@ -145,6 +145,7 @@ export const Desk = () => {
                         {currentStage && (
                             <StageMenu
                                 stage={currentStage}
+                                stages={stages}
                                 onChange={stage => {
                                     const index = stages.indexOf(stage)
                                     if (index !== -1) {
