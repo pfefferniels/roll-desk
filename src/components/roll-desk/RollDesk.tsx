@@ -139,6 +139,7 @@ export const Desk = () => {
                                 }}
                                 onChangeSelection={selection => setSelection(selection)}
                                 selection={selection.filter(item => isRollFeature(item))}
+                                copies={layers.map(layer => layer.copy)}
                             />
                         )}
                         {currentStage && (

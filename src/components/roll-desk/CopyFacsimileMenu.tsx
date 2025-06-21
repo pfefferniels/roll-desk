@@ -1,5 +1,5 @@
 import { Button, Stack } from "@mui/material"
-import { Edition, isRollFeature, RollCopy, RollFeature, Stage } from "linked-rolls"
+import { assign, isRollFeature, RollCopy, RollFeature, Stage } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddSymbolDialog } from "./AddSymbol"
 import { useState } from "react"
@@ -9,21 +9,24 @@ import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
 import { v4 } from "uuid"
+import { AlignCopies } from "./AlignCopies"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
 interface MenuProps {
     stages: Stage[]
+    copies: RollCopy[]
     copy: RollCopy
     selection: FacsimileSelection[]
     onChangeSelection: (selection: FacsimileSelection[]) => void
     onChange: (copy: RollCopy, stages?: Stage[]) => void
 }
 
-export const CopyFacsimileMenu = ({ copy, selection, stages, onChange, onChangeSelection }: MenuProps) => {
+export const CopyFacsimileMenu = ({ copy, copies, selection, stages, onChange, onChangeSelection }: MenuProps) => {
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [conditionStateDialogOpen, setConditionstateDialogOpen] = useState(false)
     const [editProduction, setEditProduction] = useState(false)
+    const [alignCopies, setAlignCopies] = useState(false)
 
     const handleRemove = () => {
         for (const feature of selection.filter(isRollFeature)) {
@@ -47,6 +50,13 @@ export const CopyFacsimileMenu = ({ copy, selection, stages, onChange, onChangeS
                         startIcon={<BrokenImage />}
                     >
                         Condition
+                    </Button>
+                </Ribbon>
+                <Ribbon title='Alignment'>
+                    <Button
+                        onClick={() => setAlignCopies(true)}
+                    >
+                        Align Copies
                     </Button>
                 </Ribbon>
                 <Ribbon title='Symbols'>
@@ -135,6 +145,26 @@ export const CopyFacsimileMenu = ({ copy, selection, stages, onChange, onChangeS
                     copy.productionEvent = event
                     onChange(copy.shallowClone())
                     setEditProduction(false)
+                }}
+            />
+
+            <AlignCopies
+                copies={copies}
+                copy={copy}
+                open={alignCopies}
+                onClose={() => setAlignCopies(false)}
+                onDone={(shift, stretch) => {
+                    copy.setShift({
+                        horizontal: shift,
+                        vertical: 0
+                    })
+                    copy.setStretch(assign('conditionAssignment', {
+                        factor: stretch,
+                        description: 'calculated by alignment',
+                        type: 'paper-stretch'
+                    }))
+                    onChange(copy.shallowClone())
+                    setAlignCopies(false)
                 }}
             />
         </>
