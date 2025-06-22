@@ -1,14 +1,15 @@
 import { Delete, Edit as EditIcon, Person, Link } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Stage, isMotivation, MeaningComprehension, fillEdits, getSnaphsot } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Stage, isMotivation, MeaningComprehension, fillEdits, getSnaphsot, merge } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
 import { EditAssumption } from "./EditAssumption"
 import { SelectStage } from "./SelectStage"
+import { useHotkeys } from "react-hotkeys-hook"
 
-export type StageSelection = AnySymbol | Edit | Motivation
+export type StageSelection = AnySymbol | Edit | Motivation<string>
 
 interface MenuProps {
     stage: Stage
@@ -23,6 +24,30 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
     const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
+
+    useHotkeys(['m'], (_, handler) => {
+        switch (handler.keys?.join('')) {
+            case 'm':
+                handleMerge();
+                break;
+        }
+    })
+
+    const handleMerge = () => {
+        if (selection.length < 2 || !selection.every(isEdit)) {
+            return
+        }
+        
+        const newEdit = merge(selection)
+        for (const edit of selection) {
+            stage.edits.splice(
+                stage.edits.indexOf(edit), 1
+            )
+        }
+        stage.edits.push(newEdit)
+        onChange(stage)
+    }
+
 
     const handleNewStage = () => {
         const edits = selection.filter(isEdit)
@@ -43,7 +68,7 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
         onAdd(newStage)
     }
 
-    const removeMotivations = (motivations: Motivation[]) => {
+    const removeMotivations = (motivations: Motivation<any>[]) => {
         stage.motivations = stage.motivations.filter(m => !motivations.includes(m))
         onChange(stage)
     }
@@ -120,9 +145,11 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                             </Button>
                         </>
                     )}
-                    {selection.length > 2 && selection.every(isEdit) && (
+                    {selection.length >= 2 && selection.every(isEdit) && (
                         <>
-                            <Button>
+                            <Button
+                                onClick={handleMerge}
+                            >
                                 Merge
                             </Button>
                             <Button>
@@ -168,8 +195,8 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                 open={attachTo}
                 onClose={() => setAttachTo(false)}
                 onDone={(previousStage) => {
-                    stage.basedOn = assign('derivation', previousStage)
                     const snapshot = getSnaphsot(stage)
+                    stage.basedOn = assign('derivation', previousStage)
                     stage.edits = []
                     fillEdits(stage, snapshot)
                 }}
