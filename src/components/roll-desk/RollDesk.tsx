@@ -152,6 +152,7 @@ export const Desk = () => {
                                         stages[index] = stage
                                         setStages([...stages])
                                     }
+                                    setSelection([])
                                 }}
                                 onAdd={(stage) => {
                                     stages.push(stage)
@@ -166,7 +167,7 @@ export const Desk = () => {
                                 }}
                                 selection={selection.filter(item => {
                                     return isEdit(item) || isMotivation(item) || isSymbol(item)
-                                }) as (AnySymbol | Motivation | Stage)[]}
+                                }) as (AnySymbol | Motivation<any> | Stage)[]}
                             />
                         )}
 
