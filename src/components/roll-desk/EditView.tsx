@@ -1,4 +1,4 @@
-import { Edit } from "linked-rolls";
+import { Edit, flat } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { getBoxToBoxArrow } from "curved-arrows";
@@ -98,7 +98,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                     key={edit.id}
                     id={edit.id}
                     fillOpacity={0.5}
-                    fill='white'
+                    fill='lightgray'
                     hull={hull}
                     onClick={(e) => onClick && onClick(e)}
                     soft={true}
@@ -128,22 +128,20 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 id={edit.id}
                 hull={hull}
                 fillOpacity={0.5}
-                fill='white'
+                fill='lightgray'
                 onClick={(e) => {
                     onClick && onClick(e)
                 }}
                 label={
-                    !(edit.insert && edit.delete) && ( // don't show label if there is an overall hull
-                        <text
-                            x={bbox.x}
-                            y={bbox.y + bbox.height + 2}
-                            fontSize={10}
-                            fill='black'
-                            style={{ pointerEvents: 'none' }}
-                        >
-                            +
-                        </text>
-                    )
+                    <text
+                        x={bbox.x}
+                        y={bbox.y + bbox.height + 2}
+                        fontSize={10}
+                        fill='black'
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        +{edit.insert.length} {edit.motivation && flat(edit.motivation)}
+                    </text>
                 }
             />
         )
@@ -161,20 +159,18 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 data-id={edit.id}
                 hull={hull}
                 fillOpacity={0.5}
-                fill='white'
+                fill='lightgray'
                 onClick={(e) => onClick && onClick(e)}
                 label={
-                    !(edit.insert && edit.delete) && ( // don't show label if there is an overall hull
-                        <text
-                            x={bbox.x}
-                            y={bbox.y + bbox.height + 2}
-                            fontSize={10}
-                            fill='black'
-                            style={{ pointerEvents: 'none' }}
-                        >
-                            -
-                        </text>
-                    )
+                    <text
+                        x={bbox.x}
+                        y={bbox.y + bbox.height + 2}
+                        fontSize={10}
+                        fill='black'
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        -{edit.delete.length}
+                    </text>
                 }
             />
         )
