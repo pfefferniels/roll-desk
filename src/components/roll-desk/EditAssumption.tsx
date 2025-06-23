@@ -52,6 +52,20 @@ export const PersonEdit = ({ person, onChange }: PersonEditProps) => {
     );
 }
 
+export const MotivationEdit = ({ motivation, onChange }: { motivation: string; onChange: (motivation: string) => void }) => {
+    return (
+        <FormControl fullWidth>
+            <FormLabel>Motivation</FormLabel>
+            <TextField
+                value={motivation}
+                onChange={(e) => {
+                    onChange(e.target.value);
+                }}
+            />
+        </FormControl>
+    );
+}
+
 interface EditAssumptionProps<Name, Type> {
     open: boolean;
     onClose: () => void;
@@ -94,6 +108,14 @@ export function EditAssumption<Name, Type>({ assumption, onChange, open, onClose
                             person={assigned as Person}
                             onChange={(actor) => {
                                 setAssigned(actor as Type);
+                            }}
+                        />
+                    )}
+                    {assumption.type === 'motivationAssignment' && (
+                        <MotivationEdit
+                            motivation={assigned as string}
+                            onChange={(motivation) => {
+                                setAssigned(motivation as Type);
                             }}
                         />
                     )}
