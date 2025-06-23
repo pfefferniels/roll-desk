@@ -41,27 +41,28 @@ async function tilesAsSVGImage(
     const stepSize = 10000
 
     const images: JSX.Element[] = [];
-    for (let track = 0; track < 100; track++) {
+    const areas = [[0, 9], [10, 89], [90, 99]]
+    for (const [from, to] of areas) {
         for (let x = 0; x < width; x += stepSize) {
-            const y = Math.ceil(track * holeSeparation + margins.bass);
-            const height = Math.ceil(holeSeparation);
+            const y = Math.ceil(from * holeSeparation + margins.bass);
+            const height = Math.ceil(holeSeparation * (to - from));
             const region = `${y},${x},${height},${stepSize}`;
-            const size = `10,`;
+            const size = `256,`;
             const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
 
             const svgX = (pixelsToMM(x, dpi) + shiftOp) * stretchX * stretchOp;
             const svgWidth = pixelsToMM(stepSize, dpi) * stretchX * stretchOp;
-            if (trackToY(track) === null || trackToY(track + 1) === null) {
+            if (trackToY(from) === null || trackToY(to) === null) {
                 continue
             }
-            const svgHeight = trackToY(track) - trackToY(track + 1);
+            const svgHeight = trackToY(from) - trackToY(to);
 
             images.push(
                 <image
-                    key={`tile_${track}_${x}`}
+                    key={`tile_${to}_${x}`}
                     xlinkHref={tileUrl}
                     x={svgX}
-                    y={trackToY(track)}
+                    y={trackToY(to)}
                     width={svgWidth}
                     height={svgHeight}
                     preserveAspectRatio="none"
@@ -186,6 +187,7 @@ export const CopyFacsimile = ({
                             feature={feature}
                             onClick={() => onClick(feature)}
                             color={color}
+                            showFacsimile={facsimileOpacity === 0}
                         />
                     )
                 })}
@@ -219,9 +221,10 @@ interface FeatureProps {
     feature: RollFeature;
     onClick: React.MouseEventHandler;
     color: string;
+    showFacsimile?: boolean
 }
 
-const Feature = ({ feature, onClick, color }: FeatureProps) => {
+const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
     const { translateX, trackToY, trackHeight } = usePinchZoom();
 
     const x = translateX(feature.horizontal.from);
@@ -233,7 +236,7 @@ const Feature = ({ feature, onClick, color }: FeatureProps) => {
 
     return (
         <g className="feature" data-id={feature.id} id={feature.id} onClick={onClick}>
-            {feature.annotates && (
+            {(showFacsimile && feature.annotates) && (
                 <image
                     xlinkHref={feature.annotates.replace('default.jpg', 'gray.jpg')}
                     x={x}
