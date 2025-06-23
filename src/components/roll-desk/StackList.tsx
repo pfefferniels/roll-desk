@@ -50,7 +50,7 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                                 <span style={{ fontWeight: layer === active ? 'bold' : 'normal' }}>
                                                     {layer.copy.location}
                                                     <span>{' '}</span>
-                                                    ({layer.copy.productionEvent?.date.assigned || '[unknown date]'})
+                                                    ({layer.copy.productionEvent?.date.assigned || 'unknown date'})
                                                 </span>
                                             }
                                             secondary={layer.copy.location}

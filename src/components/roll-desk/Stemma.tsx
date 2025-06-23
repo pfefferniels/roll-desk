@@ -27,14 +27,18 @@ export const Stemma = ({ stages, currentStage, onClick }: Stemma) => {
                         e.stopPropagation()
                     }}
                 >
-                    <span
+                    <div
                         className='siglum'
-                        style={{
-                            fontWeight: stage.id === currentStage?.id ? 'bold' : 'normal'
-                        }}
                     >
-                        {stage.siglum}
-                    </span>
+                        <span style={{
+                            fontWeight: stage.id === currentStage?.id ? 'bold' : 'normal'
+                        }}>
+                            {stage.siglum}
+                        </span>
+                        <br />
+                        +{stage.edits.map(edit => edit.insert || []).flat().length},
+                        -{stage.edits.map(edit => edit.delete || []).flat().length}
+                    </div>
                     {childrenMap[stage.id]?.length > 0 && renderTree(stage.id)}
                 </li>
             ))}

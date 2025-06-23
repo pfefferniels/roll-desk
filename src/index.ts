@@ -1,3 +1,3 @@
-export { RollCopyViewer } from "./components/roll-desk/RollCopyViewer"
-export { WorkingPaper } from "./components/roll-desk/WorkingPaper"
+export { CopyFacsimile as RollCopyViewer } from "./components/roll-desk/CopyFacsimile"
+export { StageView as WorkingPaper } from "./components/roll-desk/StageView"
 export { PinchZoomProvider } from "./hooks/usePinchZoom"

@@ -5,11 +5,12 @@ import { flat } from "linked-rolls";
 
 interface PerforationProps {
     symbol: Note | Expression;
+    age?: number;
     highlight: boolean;
     onClick: () => void;
 }
 
-export const Perforation = ({ symbol, highlight, onClick }: PerforationProps) => {
+export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProps) => {
     const [displayDetails, setDisplayDetails] = useState(false);
     const { translateX, trackToY, trackHeight } = usePinchZoom();
 
@@ -32,31 +33,36 @@ export const Perforation = ({ symbol, highlight, onClick }: PerforationProps) =>
     const y = trackToY(features[0].vertical.from);
     const height = symbol.type === 'note' ? trackHeight.note : trackHeight.expression;
 
+    const opacity = 1 / ((age || 0) + 1)
+    const color = (age || 0) >= 1 ? 'gray' : 'black';
+
     return (
         <g
             data-id={symbol.id}
             id={symbol.id}
             className='collated-event'
+            onMouseEnter={() => setDisplayDetails(true)}
+            onMouseLeave={() => setDisplayDetails(false)}
         >
             <rect
                 x={innerBoundaries[0]}
                 width={innerBoundaries[1] - innerBoundaries[0]}
                 y={y}
                 height={height}
-                fill={highlight ? 'red' : 'black'}
-                fillOpacity={0.4}
+                fill={highlight ? 'red' : color}
+                fillOpacity={opacity}
                 onClick={onClick} />
             <line
-                x1={meanOnset}
-                x2={meanOnset}
+                x1={translateX(meanOnset)}
+                x2={translateX(meanOnset)}
                 y1={displayDetails ? trackToY(100) : y - 10}
                 y2={displayDetails ? trackToY(0) : y + 20}
                 stroke='black'
                 strokeWidth={0.2}
                 strokeOpacity={0.7} />
             <line
-                x1={meanOffset}
-                x2={meanOffset}
+                x1={translateX(meanOffset)}
+                x2={translateX(meanOffset)}
                 y1={displayDetails ? trackToY(100) : y - 10}
                 y2={displayDetails ? trackToY(0) : y + 20}
                 stroke='black'
@@ -65,10 +71,8 @@ export const Perforation = ({ symbol, highlight, onClick }: PerforationProps) =>
 
             <polygon
                 onClick={onClick}
-                onMouseEnter={() => setDisplayDetails(true)}
-                onMouseLeave={() => setDisplayDetails(false)}
-                fill='red'
-                fillOpacity={0.15}
+                fill={color}
+                fillOpacity={opacity}
                 points={`
                         ${onsetStretch[0]},${y + height / 2}
                         ${innerBoundaries[0]},${y}

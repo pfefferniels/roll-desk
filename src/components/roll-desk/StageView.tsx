@@ -1,6 +1,6 @@
 import { useRef } from "react"
 // import { usePiano } from "react-pianosound"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverseStages, flat, Edit, Motivation } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverseStages, flat, Edit, Motivation, getSnaphsot } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
@@ -9,7 +9,7 @@ import { MotivationView } from "./MotivationView"
 
 interface StageViewProps {
     stage: Stage
-    onClick: (event: AnySymbol | Motivation | Edit) => void
+    onClick: (event: AnySymbol | Motivation<string> | Edit) => void
 }
 
 export const StageView = ({ stage, onClick }: StageViewProps) => {
@@ -29,6 +29,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
 
     // all symbols up to the current stage
     const snapshot: (AnySymbol & { age: number })[] = [];
+    const deletions: AnySymbol[] = []
     let age = 0
     traverseStages(stage, s => {
         // collect all inserted symbols and tell them their age
@@ -39,13 +40,24 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         }
 
         // remove deletions
-        const deletions = s.edits.flatMap(edit => edit.delete || [])
+        const deleted = []
         for (const toRemove of deletions) {
-            const idx = snapshot.findIndex(x => x.id === toRemove.id)
-            if (idx !== -1) snapshot.splice(idx, 1)
+            const idx = snapshot.findIndex(x => x === toRemove)
+            if (idx !== -1) {
+                snapshot.splice(idx, 1)
+                deleted.push(toRemove)
+            }
+        }
+        for (const del of deleted) {
+            deletions.splice(deletions.indexOf(del), 1)
         }
 
+        deletions.push(...s.edits.flatMap(edit => edit.delete || []))
         age += 1
+    })
+
+    snapshot.sort((a, b) => {
+        return dimensionOf(a).horizontal.from - dimensionOf(b).horizontal.from
     })
 
     // draw edits of current stage, but only 
@@ -97,11 +109,21 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
             )
         })
 
+        console.log('snapshot:', getSnaphsot(stage))
+
     return (
         <g className='stageView' ref={svgRef}>
             {dynamics}
+            {edits}
 
             {snapshot
+                // .filter(symbol => {
+                //     const found = stage.edits.findIndex(edit => (
+                //         (edit.insert || []).includes(symbol) ||
+                //         (edit.delete || []).includes(symbol)
+                //     ))
+                //     return found === -1
+                // })
                 .map((symbol, i) => {
                     if (symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn') {
                         const partner = snapshot
@@ -128,8 +150,9 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                     else if (symbol.type === 'expression' || symbol.type === 'note') {
                         return (
                             <Perforation
-                                key={`symbol_${symbol.id || i}`}
+                                key={`${symbol.id || i}`}
                                 symbol={symbol}
+                                age={symbol.age}
                                 highlight={stage ? false : (symbol.carriers?.length !== 0)}
                                 onClick={() => {
                                     const performingEvents = emulation.findEventsPerforming(symbol.id)
@@ -158,7 +181,6 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                     }
                 })}
 
-            {edits}
             {motivations}
         </g>
     )

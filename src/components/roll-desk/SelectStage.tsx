@@ -20,7 +20,7 @@ export const SelectStage = ({ open, onClose, onDone, stages }: SelectStageProps)
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <Dialog open={open} onClose={onClose}>
             <DialogTitle>Select Stage</DialogTitle>
             <DialogContent>
                 <Select
@@ -32,6 +32,7 @@ export const SelectStage = ({ open, onClose, onDone, stages }: SelectStageProps)
                             setSelectedStage(stage);
                         }
                     }}
+                    fullWidth
                 >
                     {stages.map((stage) => (
                         <MenuItem

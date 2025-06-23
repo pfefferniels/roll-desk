@@ -5,8 +5,8 @@ import { getEditBBox } from "./EditView";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 
 export interface MotivationViewProps {
-    motivation: Motivation;
-    onClick?: (motivation: Motivation) => void;
+    motivation: Motivation<string>;
+    onClick?: (motivation: Motivation<string>) => void;
 }
 
 export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => {
@@ -36,8 +36,8 @@ export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => 
                 label={
                     <text
                         x={bbox.x}
-                        y={bbox.y + bbox.height + 2}
-                        fontSize={10}
+                        y={bbox.y + bbox.height + 20}
+                        fontSize={12}
                         fill='black'
                         style={{ pointerEvents: 'none' }}
                     >

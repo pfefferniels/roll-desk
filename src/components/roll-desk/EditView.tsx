@@ -140,7 +140,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                         fill='black'
                         style={{ pointerEvents: 'none' }}
                     >
-                        +{edit.insert.length} {edit.motivation && flat(edit.motivation)}
+                        +{edit.insert.length} {edit.motivation && flat(edit.motivation).replaceAll('-', ' ')}
                     </text>
                 }
             />

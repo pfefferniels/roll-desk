@@ -39,6 +39,7 @@ export interface WelcomeProps {
 
 export const Welcome = ({ onCreate }: WelcomeProps) => {
     const [editMetadata, setEditMetadata] = useState(false)
+    
     return (
         <>
             <Box
