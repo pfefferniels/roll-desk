@@ -1,4 +1,4 @@
-import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
 import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split } from "linked-rolls"
 import { useState } from "react"
@@ -8,6 +8,7 @@ import { v4 } from "uuid"
 import { EditAssumption } from "./EditAssumption"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
+import { EditVersionType } from "./EditVersionType"
 
 export type VersionSelection = AnySymbol | Edit | Motivation<string>
 
@@ -25,6 +26,7 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     const [assignMotivation, setAssignMotivation] = useState<Motivation<string>>()
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
+    const [editType, setEditType] = useState(false)
 
     useHotkeys(['m'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -64,7 +66,7 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
             basedOn: assign('derivation', version),
             edits,
             motivations: [],
-            type: 'edition'
+            type: 'authorised-revision'
         }
         onAdd(newVersion)
     }
@@ -99,6 +101,13 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     return (
         <>
             <Ribbon title='Version'>
+                <Button
+                    onClick={() => setEditType(true)}
+                    size='small'
+                    startIcon={<TypeSpecimen />}
+                >
+                    Type
+                </Button>
                 <Button
                     onClick={() => setAssignActor(true)}
                     size='small'
@@ -275,6 +284,16 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                     onChange(version)
                 }}
                 versions={versions}
+            />
+
+            <EditVersionType
+                open={editType}
+                onClose={() => setEditType(false)}
+                onSave={(type) => {
+                    version.type = type
+                    onChange(version)
+                }}
+                type={version.type}
             />
         </>
     )
