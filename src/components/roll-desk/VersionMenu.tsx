@@ -1,26 +1,26 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Stage, isMotivation, MeaningComprehension, fillEdits, getSnaphsot, merge, split } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
 import { EditAssumption } from "./EditAssumption"
-import { SelectStage } from "./SelectStage"
+import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 
-export type StageSelection = AnySymbol | Edit | Motivation<string>
+export type VersionSelection = AnySymbol | Edit | Motivation<string>
 
 interface MenuProps {
-    stage: Stage
-    stages: Stage[]
-    selection: StageSelection[]
-    onChange: (stage: Stage) => void
-    onAdd: (stage: Stage) => void
-    onRemove: (stage: Stage) => void
+    version: Version
+    versions: Version[]
+    selection: VersionSelection[]
+    onChange: (version: Version) => void
+    onAdd: (version: Version) => void
+    onRemove: (version: Version) => void
 }
 
-export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove }: MenuProps) => {
+export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onRemove }: MenuProps) => {
     const [assignActor, setAssignActor] = useState(false)
     const [assignMotivation, setAssignMotivation] = useState<Motivation<string>>()
     const [editSiglum, setEditSiglum] = useState(false)
@@ -41,37 +41,37 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
 
         const newEdit = merge(selection)
         for (const edit of selection) {
-            stage.edits.splice(
-                stage.edits.indexOf(edit), 1
+            version.edits.splice(
+                version.edits.indexOf(edit), 1
             )
         }
-        stage.edits.push(newEdit)
-        onChange(stage)
+        version.edits.push(newEdit)
+        onChange(version)
     }
 
 
-    const handleNewStage = () => {
+    const handleNewVersion = () => {
         const edits = selection.filter(isEdit)
-        // console.log('edits', edits)
         for (const edit of edits) {
-            const index = stage.edits.indexOf(edit)
+            const index = version.edits.indexOf(edit)
             if (index !== -1) {
-                stage.edits.splice(index, 1)
+                version.edits.splice(index, 1)
             }
         }
-        const newStage: Stage = {
-            siglum: stage.siglum + '_derived',
+        const newVersion: Version = {
+            siglum: version.siglum + '_derived',
             id: v4(),
-            basedOn: assign('derivation', stage),
+            basedOn: assign('derivation', version),
             edits,
             motivations: [],
+            type: 'edition'
         }
-        onAdd(newStage)
+        onAdd(newVersion)
     }
 
     const removeMotivations = (motivations: Motivation<any>[]) => {
-        stage.motivations = stage.motivations.filter(m => !motivations.includes(m))
-        onChange(stage)
+        version.motivations = version.motivations.filter(m => !motivations.includes(m))
+        onChange(version)
     }
 
     const addMotivation = (about: Edit[]) => {
@@ -91,14 +91,14 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
             }
         }
 
-        stage.motivations.push(motivation)
+        version.motivations.push(motivation)
         setAssignMotivation(motivation)
-        onChange(stage)
+        onChange(version)
     }
 
     return (
         <>
-            <Ribbon title='Stage'>
+            <Ribbon title='Version'>
                 <Button
                     onClick={() => setAssignActor(true)}
                     size='small'
@@ -107,7 +107,7 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                     Actor
                 </Button>
                 <Button
-                    onClick={() => onRemove(stage)}
+                    onClick={() => onRemove(version)}
                     size='small'
                     startIcon={<Delete />}
                 >
@@ -133,9 +133,19 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                             </Button>
                             <Button
                                 size='small'
-                                startIcon={<MoveUp />}
+                                startIcon={<Delete />}
+                                onClick={() => {
+                                    for (const symbol of selection) {
+                                        for (const edit of version.edits) {
+                                            if (edit.insert?.includes(symbol)) {
+                                                edit.insert.splice(edit.insert.indexOf(symbol), 1)
+                                            }
+                                        }
+                                    }
+                                    onChange(version)
+                                }}
                             >
-                                Shift Vertically
+                                Remove
                             </Button>
                         </Ribbon>
                     )}
@@ -182,11 +192,11 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                             {selection.length === 1 && selection.every(isEdit) && (
                                 <Button
                                     onClick={() => {
-                                        stage.edits.push(...split(selection[0]))
-                                        stage.edits.splice(
-                                            stage.edits.indexOf(selection[0]), 1
+                                        version.edits.push(...split(selection[0]))
+                                        version.edits.splice(
+                                            version.edits.indexOf(selection[0]), 1
                                         )
-                                        onChange(stage)
+                                        onChange(version)
                                     }}
                                     size='small'
                                     startIcon={<GroupRemove />}
@@ -208,22 +218,22 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                 </Button>
                 {selection.length > 0 && selection.every(isEdit) && (
                     <Button
-                        onClick={handleNewStage}
+                        onClick={handleNewVersion}
                         startIcon={<CallSplit />}
                         size='small'
                     >
-                        Derive New Stage
+                        Derive New Version
                     </Button>
                 )}
             </Ribbon>
 
             <EditSiglum
                 open={editSiglum}
-                siglum={stage.siglum}
+                siglum={version.siglum}
                 onDone={(newSiglum) => {
-                    stage.siglum = newSiglum
+                    version.siglum = newSiglum
                     setEditSiglum(false)
-                    onChange(stage)
+                    onChange(version)
                 }}
                 onClose={() => setEditSiglum(false)}
             />
@@ -231,11 +241,11 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
             <EditAssumption
                 open={assignActor}
                 onClose={() => setAssignActor(false)}
-                assumption={stage.actor || assign('actorAssignment', { name: '', sameAs: [] })}
+                assumption={version.actor || assign('actorAssignment', { name: '', sameAs: [] })}
                 onChange={(assumption) => {
-                    stage.actor = assumption
+                    version.actor = assumption
                     setAssignActor(false)
-                    onChange(stage)
+                    onChange(version)
                 }}
             />
 
@@ -245,26 +255,26 @@ export const StageMenu = ({ stage, stages, selection, onChange, onAdd, onRemove 
                     onClose={() => setAssignMotivation(undefined)}
                     assumption={assignMotivation}
                     onChange={(assumption) => {
-                        stage.motivations.splice(
-                            stage.motivations.indexOf(assignMotivation), 1, assumption
+                        version.motivations.splice(
+                            version.motivations.indexOf(assignMotivation), 1, assumption
                         )
                         setAssignMotivation(undefined)
-                        onChange(stage)
+                        onChange(version)
                     }}
                 />
             )}
 
-            <SelectStage
+            <SelectVersion
                 open={attachTo}
                 onClose={() => setAttachTo(false)}
-                onDone={(previousStage) => {
-                    const snapshot = getSnaphsot(stage)
-                    stage.basedOn = assign('derivation', previousStage)
-                    stage.edits = []
-                    fillEdits(stage, snapshot)
-                    onChange(stage)
+                onDone={(previousVersion) => {
+                    const snapshot = getSnapshot(version)
+                    version.basedOn = assign('derivation', previousVersion)
+                    version.edits = []
+                    fillEdits(version, snapshot)
+                    onChange(version)
                 }}
-                stages={stages}
+                versions={versions}
             />
         </>
     )

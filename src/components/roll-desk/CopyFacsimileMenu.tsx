@@ -1,5 +1,5 @@
 import { Button, Stack } from "@mui/material"
-import { assign, isRollFeature, RollCopy, RollFeature, Stage } from "linked-rolls"
+import { assign, isRollFeature, RollCopy, RollFeature, Version } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddSymbolDialog } from "./AddSymbol"
 import { useState } from "react"
@@ -14,15 +14,15 @@ import { AlignCopies } from "./AlignCopies"
 export type FacsimileSelection = EventDimension | RollFeature
 
 interface MenuProps {
-    stages: Stage[]
+    versions: Version[]
     copies: RollCopy[]
     copy: RollCopy
     selection: FacsimileSelection[]
     onChangeSelection: (selection: FacsimileSelection[]) => void
-    onChange: (copy: RollCopy, stages?: Stage[]) => void
+    onChange: (copy: RollCopy, versions?: Version[]) => void
 }
 
-export const CopyFacsimileMenu = ({ copy, copies, selection, stages, onChange, onChangeSelection }: MenuProps) => {
+export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange, onChangeSelection }: MenuProps) => {
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [conditionStateDialogOpen, setConditionstateDialogOpen] = useState(false)
     const [editProduction, setEditProduction] = useState(false)
@@ -113,17 +113,17 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, stages, onChange, o
                         open={addSymbolDialogOpen}
                         selection={selection[0]}
                         onClose={() => setAddSymbolDialogOpen(false)}
-                        onDone={(symbol, feature, stage) => {
-                            stage.edits.push({
+                        onDone={(symbol, feature, version) => {
+                            version.edits.push({
                                 id: v4(),
                                 insert: [symbol],
                             })
                             copy.features.push(feature)
-                            onChange(copy.shallowClone(), [...stages])
+                            onChange(copy.shallowClone(), [...versions])
                             setAddSymbolDialogOpen(false)
                         }}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
-                        stages={stages}
+                        versions={versions}
                     />
                     <ConditionStateDialog
                         open={conditionStateDialogOpen}

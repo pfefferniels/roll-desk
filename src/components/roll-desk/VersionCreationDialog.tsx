@@ -1,24 +1,24 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormLabel, MenuItem, Select, SelectChangeEvent, Stack, TextField } from "@mui/material"
-import { AnySymbol, assign, Edition, fillEdits, Stage } from "linked-rolls";
+import { AnySymbol, assign, Edition, fillEdits, Version } from "linked-rolls";
 import { useState } from "react";
 import { v4 } from "uuid";
 
-interface StageCreationDialogProps {
+interface VersionCreationDialogProps {
     open: boolean
     edition: Edition
     symbols: AnySymbol[]
     onClose: () => void
-    onDone: (stage: Stage) => void
+    onDone: (version: Version) => void
     clearSelection: () => void
 }
 
-export const StageCreationDialog = ({ open, edition, symbols, onClose, onDone, clearSelection }: StageCreationDialogProps) => {
+export const VersionCreationDialog = ({ open, edition, symbols, onClose, onDone, clearSelection }: VersionCreationDialogProps) => {
     const [siglum, setSiglum] = useState<string>('')
-    const [prev, setPrev] = useState<Stage>()
+    const [prev, setPrev] = useState<Version>()
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Create New Stage</DialogTitle>
+            <DialogTitle>Create New Version</DialogTitle>
             <DialogContent>
                 <Stack spacing={1} direction='column'>
                     <FormControl>
@@ -26,17 +26,17 @@ export const StageCreationDialog = ({ open, edition, symbols, onClose, onDone, c
                         <TextField value={siglum} onChange={e => setSiglum(e.target.value)} />
                     </FormControl>
                     <FormControl>
-                        <FormLabel>Based on Stage</FormLabel>
+                        <FormLabel>Based on Version</FormLabel>
                         <Select
-                            label='Previous Stage'
+                            label='Previous Version'
                             value={prev?.siglum || ''}
                             onChange={(event) => {
                                 const value = event.target.value
-                                setPrev(edition.stages.find(stage => stage.siglum === value))
+                                setPrev(edition.versions.find(version => version.siglum === value))
                             }}
                         >
-                            {edition.stages.map(stage => {
-                                const siglum = stage.siglum
+                            {edition.versions.map(version => {
+                                const siglum = version.siglum
                                 return (
                                     <MenuItem value={siglum} key={siglum}>
                                         {siglum}
@@ -54,17 +54,18 @@ export const StageCreationDialog = ({ open, edition, symbols, onClose, onDone, c
             <DialogActions>
                 <Button
                     onClick={() => {
-                        const stage: Stage = {
+                        const version: Version = {
                             id: v4(),
                             siglum,
                             edits: [],
                             motivations: [],
-                            basedOn: prev && assign('derivation', prev)
+                            basedOn: prev && assign('derivation', prev),
+                            type: 'edition'
                         }
 
-                        fillEdits(stage, symbols)
+                        fillEdits(version, symbols)
 
-                        onDone(stage)
+                        onDone(version)
                         onClose()
                         clearSelection()
                     }}

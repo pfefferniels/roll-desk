@@ -28,46 +28,43 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                 <List dense>
                     {stack.map((layer, i) => {
                         return (
-                            <div key={`listItem_${i}`}>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <IconButton
-                                            size='small'
-                                            edge="start"
-                                            tabIndex={-1}
-                                            onClick={() => {
-                                                layer.opacity = 1 - layer.opacity
-                                                onChange([...stack])
-                                            }}
-                                        >
-                                            {layer.opacity === 1 ? <Visibility /> : <VisibilityOff />}
-                                        </IconButton>
-                                    </ListItemIcon>
-                                    <ListItemButton onClick={() => onClick(layer)}>
-                                        <ListItemText
-                                            style={{ border: layer === active ? '3px' : '1px' }}
-                                            primary={
-                                                <span style={{ fontWeight: layer === active ? 'bold' : 'normal' }}>
-                                                    {layer.copy.location}
-                                                    <span>{' '}</span>
-                                                    ({layer.copy.productionEvent?.date.assigned || 'unknown date'})
-                                                </span>
-                                            }
-                                            secondary={layer.copy.location}
-                                        />
-                                    </ListItemButton>
-                                    <ListItemSecondaryAction>
-                                        <IconButton
-                                            edge="end"
-                                            sx={{ color: layer.color }}
-                                            onClick={() => setClickedLayer(layer)}
-                                        >
-                                            <ColorLens />
-                                        </IconButton>
-                                    </ListItemSecondaryAction>
-                                </ListItem>
-                                {i === 0 && <Divider flexItem />}
-                            </div>
+                            <ListItem key={`listItem_${i}`}>
+                                <ListItemIcon>
+                                    <IconButton
+                                        size='small'
+                                        edge="start"
+                                        tabIndex={-1}
+                                        onClick={() => {
+                                            layer.opacity = 1 - layer.opacity
+                                            onChange([...stack])
+                                        }}
+                                    >
+                                        {layer.opacity === 1 ? <Visibility /> : <VisibilityOff />}
+                                    </IconButton>
+                                </ListItemIcon>
+                                <ListItemButton onClick={() => onClick(layer)}>
+                                    <ListItemText
+                                        style={{ border: layer === active ? '3px' : '1px' }}
+                                        primary={
+                                            <span style={{ fontWeight: layer === active ? 'bold' : 'normal' }}>
+                                                {layer.copy.location}
+                                                <span>{' '}</span>
+                                                ({layer.copy.productionEvent?.date.assigned || 'unknown date'})
+                                            </span>
+                                        }
+                                        secondary={layer.copy.location}
+                                    />
+                                </ListItemButton>
+                                <ListItemSecondaryAction>
+                                    <IconButton
+                                        edge="end"
+                                        sx={{ color: layer.color }}
+                                        onClick={() => setClickedLayer(layer)}
+                                    >
+                                        <ColorLens />
+                                    </IconButton>
+                                </ListItemSecondaryAction>
+                            </ListItem>
                         )
                     })}
                 </List>

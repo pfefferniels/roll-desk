@@ -1,37 +1,37 @@
 import { useRef } from "react"
 // import { usePiano } from "react-pianosound"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Stage, traverseStages, flat, Edit, Motivation, getSnaphsot } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, traverseVersions, flat, Edit, Motivation, getSnapshot } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
 import { EditView } from "./EditView"
 import { MotivationView } from "./MotivationView"
 
-interface StageViewProps {
-    stage: Stage
+interface VersionViewProps {
+    version: Version
     onClick: (event: AnySymbol | Motivation<string> | Edit) => void
 }
 
-export const StageView = ({ stage, onClick }: StageViewProps) => {
+export const VersionView = ({ version, onClick }: VersionViewProps) => {
     // const { playSingleNote } = usePiano()
 
     const svgRef = useRef<SVGGElement>(null)
 
     const emulation = new Emulation()
-    emulation.emulateStage(stage)
+    emulation.emulateVersion(version)
 
-    const prevStage = stage.basedOn && flat(stage.basedOn)
+    const prevVersion = version.basedOn && flat(version.basedOn)
     let prevEmulation: Emulation | undefined = undefined
-    if (prevStage) {
+    if (prevVersion) {
         prevEmulation = new Emulation()
-        prevEmulation.emulateStage(prevStage)
+        prevEmulation.emulateVersion(prevVersion)
     }
 
-    // all symbols up to the current stage
+    // all symbols up to the current version
     const snapshot: (AnySymbol & { age: number })[] = [];
     const deletions: AnySymbol[] = []
     let age = 0
-    traverseStages(stage, s => {
+    traverseVersions(version, s => {
         // collect all inserted symbols and tell them their age
         for (const edit of s.edits) {
             for (const symbol of edit.insert ?? []) {
@@ -60,10 +60,10 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         return dimensionOf(a).horizontal.from - dimensionOf(b).horizontal.from
     })
 
-    // draw edits of current stage, but only 
-    // if the stage is based on a previous stage
+    // draw edits of current version, but only 
+    // if the version is based on a previous version
     const edits = []
-    for (const edit of stage.edits) {
+    for (const edit of version.edits) {
         edits.push(
             <EditView
                 key={edit.id}
@@ -73,7 +73,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         )
     }
 
-    // draw dynamics of prev stage and dynamics of current stage (for comparison)
+    // draw dynamics of prev version and dynamics of current version (for comparison)
     const dynamics = (
         <g className='dynamics'>
             {prevEmulation && (
@@ -98,7 +98,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
         </g>
     )
 
-    const motivations = stage.motivations
+    const motivations = version.motivations
         .map(motivation => {
             return (
                 <MotivationView
@@ -109,16 +109,16 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
             )
         })
 
-        console.log('snapshot:', getSnaphsot(stage))
+        console.log('snapshot:', getSnapshot(version))
 
     return (
-        <g className='stageView' ref={svgRef}>
+        <g className='versionView' ref={svgRef}>
             {dynamics}
             {edits}
 
             {snapshot
                 // .filter(symbol => {
-                //     const found = stage.edits.findIndex(edit => (
+                //     const found = version.edits.findIndex(edit => (
                 //         (edit.insert || []).includes(symbol) ||
                 //         (edit.delete || []).includes(symbol)
                 //     ))
@@ -153,7 +153,7 @@ export const StageView = ({ stage, onClick }: StageViewProps) => {
                                 key={`${symbol.id || i}`}
                                 symbol={symbol}
                                 age={symbol.age}
-                                highlight={stage ? false : (symbol.carriers?.length !== 0)}
+                                highlight={version ? false : (symbol.carriers?.length !== 0)}
                                 onClick={() => {
                                     const performingEvents = emulation.findEventsPerforming(symbol.id)
                                     const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined

@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { assign, RollFeature, Stage, WelteT100 } from "linked-rolls"
+import { assign, RollFeature, Version, WelteT100 } from "linked-rolls"
 import { useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
@@ -10,21 +10,21 @@ interface AddSymbolProps {
     selection: EventDimension | AnySymbol
     iiifUrl?: string
     onClose: () => void
-    onDone: (symbol: AnySymbol, feature: RollFeature, stage: Stage) => void
-    stages: Stage[]
+    onDone: (symbol: AnySymbol, feature: RollFeature, version: Version) => void
+    versions: Version[]
 }
 
 const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, stages }: AddSymbolProps) => {
+export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, versions }: AddSymbolProps) => {
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
     const [signed, setSigned] = useState<boolean>()
     const [material, setMaterial] = useState<string>()
 
-    const [stage, setStage] = useState<Stage>()
+    const [version, setVersion] = useState<Version>()
 
     useEffect(() => {
         if (isSymbol(selection)) {
@@ -151,18 +151,18 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, sta
                     </FormControl>
                     {!isSymbol(selection) && (
                         <FormControl>
-                            <FormLabel>Stage</FormLabel>
+                            <FormLabel>Version</FormLabel>
                             <Select
                                 size='small'
-                                value={stage?.siglum || ''}
+                                value={version?.siglum || ''}
                                 onChange={(e) => {
-                                    const selectedStage = stages.find(s => s.siglum === e.target.value)
-                                    if (selectedStage) {
-                                        setStage(selectedStage)
+                                    const selectedVersion = versions.find(s => s.siglum === e.target.value)
+                                    if (selectedVersion) {
+                                        setVersion(selectedVersion)
                                     }
                                 }}
                             >
-                                {stages.map((s) => (
+                                {versions.map((s) => (
                                     <MenuItem value={s.siglum} key={s.id}>
                                         {s.siglum}
                                     </MenuItem>
@@ -184,8 +184,8 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, sta
                             if ('note' in selection) selection.note = material || ''
                             return onClose()
                         }
-                        if (!stage) {
-                            console.log('No stage provided')
+                        if (!version) {
+                            console.log('No version provided')
                             return
                         }
 
@@ -234,7 +234,7 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, sta
                         }
 
                         if (newSymbol) {
-                            onDone(newSymbol, feature, stage)
+                            onDone(newSymbol, feature, version)
                         }
                     }}
                     variant='contained'

@@ -1,8 +1,8 @@
 import { useRef } from "react"
 import { Glow } from "./Glow"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { StageView } from "./StageView"
-import { Edition, Stage } from "linked-rolls"
+import { VersionView } from "./VersionView"
+import { Edition, Version } from "linked-rolls"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
 import { Layer } from "./StackList"
@@ -12,7 +12,7 @@ import { SelectionFilter } from "./Selection"
 interface LayeredRollsProps {
     stack: Layer[]
     active?: Layer
-    currentStage?: Stage
+    currentVersion?: Version
     selection: UserSelection[]
     onChangeSelection: (userSelection: UserSelection[]) => void
 }
@@ -20,7 +20,7 @@ interface LayeredRollsProps {
 export const LayeredRolls = ({
     stack,
     active,
-    currentStage,
+    currentVersion,
     selection,
     onChangeSelection
 }: LayeredRollsProps
@@ -71,10 +71,10 @@ export const LayeredRolls = ({
                                 />
                             )
                         })}
-                    {currentStage && (
-                        <StageView
+                    {currentVersion && (
+                        <VersionView
                             onClick={onAddToSelection}
-                            stage={currentStage}
+                            version={currentVersion}
                         />
                     )}
                     {svgRef.current && (

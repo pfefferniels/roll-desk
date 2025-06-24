@@ -1,6 +1,6 @@
 import { Button, Grid, IconButton, Paper, Slider, Stack } from "@mui/material"
 import { useCallback, useState } from "react"
-import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Stage, VerticalSpan } from 'linked-rolls'
+import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan } from 'linked-rolls'
 import { Add, ClearAll, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -14,7 +14,7 @@ import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
 import { stringToColor } from "../../helpers/stringToColor"
 import EditMetadata from "./EditMetadata"
-import { StageMenu, StageSelection } from "./StageMenu"
+import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { Welcome } from "./Welcome"
@@ -27,7 +27,7 @@ export type EventDimension = {
     horizontal: HorizontalSpan
 }
 
-export type UserSelection = (StageSelection | FacsimileSelection)
+export type UserSelection = (VersionSelection | FacsimileSelection)
 
 /**
  * Working on piano rolls is imagined like working on a 
@@ -45,7 +45,7 @@ export const Desk = () => {
     const [stretch, setStretch] = useState(2)
 
     const [metadata, setMetadata] = useState<EditionMetadata>()
-    const [stages, setStages] = useState<Stage[]>([])
+    const [versions, setVersions] = useState<Version[]>([])
     const [questions, setQuestions] = useState<Question[]>([])
 
     const [layers, setLayers] = useState<Layer[]>([])
@@ -59,11 +59,11 @@ export const Desk = () => {
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
-    const [currentStage, setCurrentStage] = useState<Stage>()
+    const [currentVersion, setCurrentVersion] = useState<Version>()
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
 
     const downloadMIDI = useCallback(async () => {
-        if (!currentStage) return
+        if (!currentVersion) return
 
         const emulation = new Emulation();
 
@@ -72,13 +72,13 @@ export const Desk = () => {
         }
 
         if (emulation.midiEvents.length === 0) {
-            emulation.emulateStage(currentStage);
+            emulation.emulateVersion(currentVersion);
         }
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile('output.mid', dataBuf, 'audio/midi')
-    }, [currentStage, conversionMethod])
+    }, [currentVersion, conversionMethod])
 
     if (!metadata) {
         return (
@@ -96,10 +96,10 @@ export const Desk = () => {
                         <Ribbon title=' '>
                             <ImportButton onImport={edition => {
                                 <ImportButton onImport={edition => {
-                                    const { copies, stages, questions, ...metadata } = edition
+                                    const { copies, versions, questions, ...metadata } = edition
 
                                     setMetadata(metadata)
-                                    setStages(stages)
+                                    setVersions(versions)
                                     setQuestions(questions)
                                     setLayers(copies.map(copy => {
                                         return {
@@ -123,18 +123,18 @@ export const Desk = () => {
                                 <Save />
                             </IconButton>
                         </Ribbon>
-                        {(!currentStage && activeLayer) && (
+                        {(!currentVersion && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
-                                stages={stages}
-                                onChange={(copy, stages) => {
+                                versions={versions}
+                                onChange={(copy, versions) => {
                                     const layer = layers.find(layer => layer.copy === copy)
                                     if (layer) {
                                         layer.copy = copy
                                         setLayers([...layers])
                                     }
-                                    if (stages) {
-                                        setStages([...stages])
+                                    if (versions) {
+                                        setVersions([...versions])
                                     }
                                 }}
                                 onChangeSelection={selection => setSelection(selection)}
@@ -142,32 +142,32 @@ export const Desk = () => {
                                 copies={layers.map(layer => layer.copy)}
                             />
                         )}
-                        {currentStage && (
-                            <StageMenu
-                                stage={currentStage}
-                                stages={stages}
-                                onChange={stage => {
-                                    const index = stages.indexOf(stage)
+                        {currentVersion && (
+                            <VersionMenu
+                                version={currentVersion}
+                                versions={versions}
+                                onChange={version => {
+                                    const index = versions.indexOf(version)
                                     if (index !== -1) {
-                                        stages[index] = stage
-                                        setStages([...stages])
+                                        versions[index] = version
+                                        setVersions([...versions])
                                     }
                                     setSelection([])
                                 }}
-                                onAdd={(stage) => {
-                                    stages.push(stage)
-                                    setStages([...stages])
+                                onAdd={(version) => {
+                                    versions.push(version)
+                                    setVersions([...versions])
                                 }}
-                                onRemove={(stage) => {
-                                    const index = stages.indexOf(stage)
+                                onRemove={(version) => {
+                                    const index = versions.indexOf(version)
                                     if (index !== -1) {
-                                        stages.splice(index, 1)
-                                        setStages([...stages])
+                                        versions.splice(index, 1)
+                                        setVersions([...versions])
                                     }
                                 }}
                                 selection={selection.filter(item => {
                                     return isEdit(item) || isMotivation(item) || isSymbol(item)
-                                }) as (AnySymbol | Motivation<any> | Stage)[]}
+                                }) as (AnySymbol | Motivation<any> | Version)[]}
                             />
                         )}
 
@@ -185,9 +185,9 @@ export const Desk = () => {
                                 <Download />
                             </IconButton>
                             <IconButton
-                                disabled={!currentStage}
+                                disabled={!currentVersion}
                                 onClick={() => {
-                                    if (!currentStage) return
+                                    if (!currentVersion) return
 
                                     if (isPlaying) {
                                         stop()
@@ -199,7 +199,7 @@ export const Desk = () => {
                                     if (conversionMethod) {
                                         emulation.placeTimeConversion = conversionMethod
                                     }
-                                    emulation.emulateStage(currentStage, undefined, true)
+                                    emulation.emulateVersion(currentVersion, undefined, true)
 
                                     play(emulation.asMIDI())
                                     setIsPlaying(true)
@@ -260,10 +260,10 @@ export const Desk = () => {
                         </Paper>
 
                         <Stemma
-                            stages={stages}
-                            currentStage={currentStage}
-                            onClick={(stage) => {
-                                setCurrentStage(stage)
+                            versions={versions}
+                            currentVersion={currentVersion}
+                            onClick={(version) => {
+                                setCurrentVersion(version)
                                 setActiveLayer(undefined)
                                 setSelection([])
                             }}
@@ -274,7 +274,7 @@ export const Desk = () => {
                             active={activeLayer}
                             onChange={stack => setLayers([...stack])}
                             onClick={(layer) => {
-                                setCurrentStage(undefined)
+                                setCurrentVersion(undefined)
                                 setActiveLayer(layer)
                             }}
                         />
@@ -303,7 +303,7 @@ export const Desk = () => {
                                 stack={layers}
                                 selection={selection}
                                 onChangeSelection={setSelection}
-                                currentStage={currentStage}
+                                currentVersion={currentVersion}
                             />
                         </PinchZoomProvider>
                     </div>
@@ -325,7 +325,7 @@ export const Desk = () => {
                 edition={{
                     ...metadata,
                     copies: layers.map(({ copy }) => copy),
-                    stages,
+                    versions,
                     questions
                 }}
                 onClose={() => setDownloadDialogOpen(false)}
@@ -351,16 +351,17 @@ export const Desk = () => {
                         facsimile: false
                     })
 
-                    const newStage: Stage = {
+                    const newVersion: Version = {
                         siglum,
                         id: v4(),
                         edits: [],
-                        motivations: []
+                        motivations: [],
+                        type: 'edition'
                     }
 
-                    fillEdits(newStage, asSymbols(newCopy.features))
-                    stages.push(newStage)
-                    setStages([...stages])
+                    fillEdits(newVersion, asSymbols(newCopy.features))
+                    versions.push(newVersion)
+                    setVersions([...versions])
                 }}
                 onRemove={copy => {
                     setLayers(prev => {
