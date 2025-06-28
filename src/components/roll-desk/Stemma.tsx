@@ -36,6 +36,10 @@ export const Stemma = ({ versions, currentVersion, onClick }: Stemma) => {
                             {version.siglum}
                         </span>
                         <br />
+                        <span style={{ fontSize: '0.9rem' }}>
+                            {version.type.replaceAll('-', ' ')}
+                        </span>
+                        <br />
                         +{version.edits.map(edit => edit.insert || []).flat().length},
                         -{version.edits.map(edit => edit.delete || []).flat().length}
                     </div>
