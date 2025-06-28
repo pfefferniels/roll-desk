@@ -1,6 +1,10 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Grid, TextField, Typography, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import { assign, ProductionEvent } from "linked-rolls";
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
 
 interface ProductionEventDialog {
     open: boolean
@@ -59,14 +63,17 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
                         onChange={e => setPaper(e.target.value)}
                         fullWidth
                     />
-                    <TextField
-                        size='small'
-                        label='Roll Date'
-                        value={date}
-                        placeholder="as indicated on the end of the roll"
-                        onChange={e => setDate(new Date(e.target.value))}
-                        fullWidth
-                    />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            value={dayjs(date)}
+                            onChange={newValue => {
+                                if (newValue && newValue.isValid()) {
+                                    setDate(newValue.toDate());
+                                }
+                            }}
+                            label="Roll Date"
+                        />
+                    </LocalizationProvider>
                 </Stack>
             </DialogContent>
             <DialogActions>

@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Divider, Stack } from '@mui/material';
+import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
-import { assign, Edition, EditionMetadata, flat } from 'linked-rolls';
+import { assign, EditionMetadata, flat } from 'linked-rolls';
 import { ImportButton } from './ImportButton';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
 
 interface EditMetadataProps {
   metadata: EditionMetadata
@@ -113,12 +117,18 @@ const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadata
               value={catalogueNumber}
               onChange={(e) => setCatalogueNumber(e.target.value)}
             />
-            <TextField
-              label="Recording Date"
-              fullWidth
-              value={recordingDate}
-              onChange={(e) => setRecordingDate(new Date(e.target.value))}
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                value={dayjs(recordingDate)}
+                onChange={newValue => {
+                  if (newValue && newValue.isValid()) {
+                    setRecordingDate(newValue.toDate());
+                  }
+                }}
+                label="Roll Date"
+              />
+            </LocalizationProvider>
+
             <TextField
               label="Recording Place"
               fullWidth

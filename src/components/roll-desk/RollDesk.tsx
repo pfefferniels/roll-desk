@@ -1,7 +1,7 @@
-import { AppBar, Box, Button, Grid, IconButton, Menu, Paper, Slider, Stack, Toolbar, Typography } from "@mui/material"
+import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Toolbar } from "@mui/material"
 import { useCallback, useState } from "react"
-import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, exportDate } from 'linked-rolls'
-import { Add, Clear, ClearAll, Create, Download, MenuBook, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
+import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan } from 'linked-rolls'
+import { Add, Clear, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -107,237 +107,233 @@ export const Desk = () => {
 
     return (
         <>
-            <Box sx={{ flexGrow: 1 }}>
-                <AppBar position="static" sx={{ bgcolor: "white", color: 'black' }}>
-                    <Toolbar>
-                        <RibbonGroup>
-                            <Ribbon title='File'>
-                                <ImportButton onImport={edition => {
-                                    const { copies, versions, questions, ...metadata } = edition
+            <AppBar position="static" sx={{ bgcolor: "white", color: 'black' }}>
+                <Toolbar>
+                    <RibbonGroup>
+                        <Ribbon title='File'>
+                            <ImportButton onImport={edition => {
+                                const { copies, versions, questions, ...metadata } = edition
 
-                                    setMetadata(metadata)
-                                    setVersions(versions)
-                                    setQuestions(questions)
-                                    setLayers(copies.map(copy => {
-                                        return {
-                                            color: stringToColor(copy.id),
-                                            copy: copy,
-                                            opacity: 1,
-                                            facsimile: false
-                                        }
-                                    }))
-                                    setLayers(edition.copies.map(copy => {
-                                        return {
-                                            color: stringToColor(copy.id),
-                                            copy: copy,
-                                            opacity: 1,
-                                            facsimile: false
-                                        }
-                                    }))
-                                }} />
-                                <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
-                                    <Save />
-                                </IconButton>
-                            </Ribbon>
-                            {(!currentVersion && activeLayer) && (
-                                <CopyFacsimileMenu
-                                    copy={activeLayer.copy}
-                                    versions={versions}
-                                    onChange={(copy, versions) => {
-                                        const layer = layers.find(layer => layer.copy === copy)
-                                        if (layer) {
-                                            layer.copy = copy
-                                            setLayers([...layers])
-                                        }
-                                        if (versions) {
-                                            setVersions([...versions])
-                                        }
-                                    }}
-                                    onChangeSelection={selection => setSelection(selection)}
-                                    selection={selection.filter(item => isRollFeature(item))}
-                                    copies={layers.map(layer => layer.copy)}
-                                />
-                            )}
-                            {currentVersion && (
-                                <VersionMenu
-                                    version={currentVersion}
-                                    versions={versions}
-                                    onChange={version => {
-                                        const index = versions.indexOf(version)
-                                        if (index !== -1) {
-                                            versions[index] = version
-                                            setVersions([...versions])
-                                        }
-                                        setSelection([])
-                                    }}
-                                    onAdd={(version) => {
-                                        versions.push(version)
+                                setMetadata(metadata)
+                                setVersions(versions)
+                                setQuestions(questions)
+                                setLayers(copies.map(copy => {
+                                    return {
+                                        color: stringToColor(copy.id),
+                                        copy: copy,
+                                        opacity: 1,
+                                        facsimile: false
+                                    }
+                                }))
+                                setLayers(edition.copies.map(copy => {
+                                    return {
+                                        color: stringToColor(copy.id),
+                                        copy: copy,
+                                        opacity: 1,
+                                        facsimile: false
+                                    }
+                                }))
+                            }} />
+                            <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
+                                <Save />
+                            </IconButton>
+                        </Ribbon>
+                        {(!currentVersion && activeLayer) && (
+                            <CopyFacsimileMenu
+                                copy={activeLayer.copy}
+                                versions={versions}
+                                onChange={(copy, versions) => {
+                                    const layer = layers.find(layer => layer.copy === copy)
+                                    if (layer) {
+                                        layer.copy = copy
+                                        setLayers([...layers])
+                                    }
+                                    if (versions) {
                                         setVersions([...versions])
-                                    }}
-                                    onRemove={(version) => {
-                                        const index = versions.indexOf(version)
-                                        if (index !== -1) {
-                                            versions.splice(index, 1)
-                                            setVersions([...versions])
-                                        }
-                                    }}
-                                    selection={selection.filter(item => {
-                                        return isEdit(item) || isMotivation(item) || isSymbol(item)
-                                    }) as (AnySymbol | Motivation<any> | Version)[]}
-                                />
-                            )}
+                                    }
+                                }}
+                                onChangeSelection={selection => setSelection(selection)}
+                                selection={selection.filter(item => isRollFeature(item))}
+                                copies={layers.map(layer => layer.copy)}
+                            />
+                        )}
+                        {currentVersion && (
+                            <VersionMenu
+                                version={currentVersion}
+                                versions={versions}
+                                onChange={version => {
+                                    const index = versions.indexOf(version)
+                                    if (index !== -1) {
+                                        versions[index] = version
+                                        setVersions([...versions])
+                                    }
+                                    setSelection([])
+                                }}
+                                onAdd={(version) => {
+                                    versions.push(version)
+                                    setVersions([...versions])
+                                }}
+                                onRemove={(version) => {
+                                    const index = versions.indexOf(version)
+                                    if (index !== -1) {
+                                        versions.splice(index, 1)
+                                        setVersions([...versions])
+                                    }
+                                }}
+                                selection={selection.filter(item => {
+                                    return isEdit(item) || isMotivation(item) || isSymbol(item)
+                                }) as (AnySymbol | Motivation<any> | Version)[]}
+                            />
+                        )}
 
-                            <Ribbon title='Emulation'>
-                                <IconButton
-                                    size='small'
-                                    onClick={() => setEmulationSettingsDialogOpen(true)}
-                                >
-                                    <Settings />
-                                </IconButton>
-                                <IconButton
-                                    size='small'
-                                    onClick={downloadMIDI}
-                                >
-                                    <Download />
-                                </IconButton>
-                                <IconButton
-                                    disabled={!currentVersion}
-                                    onClick={() => {
-                                        if (!currentVersion) return
+                        <Ribbon title='Emulation'>
+                            <IconButton
+                                size='small'
+                                onClick={() => setEmulationSettingsDialogOpen(true)}
+                            >
+                                <Settings />
+                            </IconButton>
+                            <IconButton
+                                size='small'
+                                onClick={downloadMIDI}
+                            >
+                                <Download />
+                            </IconButton>
+                            <IconButton
+                                disabled={!currentVersion}
+                                onClick={() => {
+                                    if (!currentVersion) return
 
-                                        if (isPlaying) {
-                                            stop()
-                                            setIsPlaying(false)
-                                            return
-                                        }
+                                    if (isPlaying) {
+                                        stop()
+                                        setIsPlaying(false)
+                                        return
+                                    }
 
-                                        const emulation = new Emulation()
-                                        if (conversionMethod) {
-                                            emulation.placeTimeConversion = conversionMethod
-                                        }
-                                        emulation.emulateVersion(currentVersion, undefined, true)
+                                    const emulation = new Emulation()
+                                    if (conversionMethod) {
+                                        emulation.placeTimeConversion = conversionMethod
+                                    }
+                                    emulation.emulateVersion(currentVersion, undefined, true)
 
-                                        play(emulation.asMIDI())
-                                        setIsPlaying(true)
-                                    }}>
-                                    {isPlaying ? <Pause /> : <PlayArrow />}
-                                </IconButton>
-                            </Ribbon>
-                            <Ribbon title='Zoom'>
-                                <Slider
-                                    sx={{ minWidth: 120 }}
-                                    min={0.1}
-                                    max={2}
-                                    step={0.05}
-                                    value={stretch}
-                                    onChange={(_, newValue) => setStretch(newValue as number)} />
-                            </Ribbon>
-                        </RibbonGroup>
-                    </Toolbar>
-                </AppBar>
-            </Box>
-            <Box sx={{ position: 'absolute' }} m={1}>
-                <Paper
-                    sx={{
-                        backdropFilter: 'blur(17px)',
-                        background: 'rgba(255, 255, 255, 0.8)',
-                        padding: 2
-                    }}
-                >
-                    <Stack direction='column' spacing={1}>
+                                    play(emulation.asMIDI())
+                                    setIsPlaying(true)
+                                }}>
+                                {isPlaying ? <Pause /> : <PlayArrow />}
+                            </IconButton>
+                        </Ribbon>
+                        <Ribbon title='Zoom'>
+                            <Slider
+                                sx={{ minWidth: 120 }}
+                                min={0.1}
+                                max={2}
+                                step={0.05}
+                                value={stretch}
+                                onChange={(_, newValue) => setStretch(newValue as number)} />
+                        </Ribbon>
+                    </RibbonGroup>
+                </Toolbar>
+            </AppBar>
+            <Paper
+                sx={{
+                    position: 'absolute',
+                    margin: 1,
+                    backdropFilter: 'blur(17px)',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    padding: 2
+                }}
+            >
+                <Stack direction='column' spacing={1}>
+                    <Box>
+                        <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
+                            <b>{metadata.title}</b><br />
+                            {metadata.roll.catalogueNumber}{' '}
+                            ({new Intl.DateTimeFormat().format(
+                                flat(metadata.roll.recordingEvent.date)
+                            )})
+                        </div>
+                        <div style={{ float: 'right' }}>
+                            <IconButton onClick={() => setEditMetadata(true)}>
+                                <Create />
+                            </IconButton>
+                        </div>
+                    </Box>
+
+                    {selection.length > 0 && (
                         <Box>
-                            <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
-                                <b>{metadata.title}</b><br />
-                                {metadata.roll.catalogueNumber}{' '}
-                                ({new Intl.DateTimeFormat().format(
-                                    flat(metadata.roll.recordingEvent.date)
-                                )})
+                            <div style={{ float: 'left', padding: 8 }}>
+                                <b>{selection.length}</b> item(s) selected
+                                {selection.length < 10 && (
+                                    <>
+                                        <br />
+                                        <span style={{ color: 'gray', fontSize: '8pt' }}>
+                                            {selection.map(e => {
+                                                if ('id' in e) {
+                                                    return (e.id as any).slice(0, 15)
+                                                }
+                                                else {
+                                                    return '[unnamed]'
+                                                }
+                                            }).join(', ')}
+                                        </span>
+
+                                    </>
+                                )}
                             </div>
                             <div style={{ float: 'right' }}>
-                                <IconButton onClick={() => setEditMetadata(true)}>
-                                    <Create />
+                                <IconButton onClick={() => setSelection([])}>
+                                    <Clear />
                                 </IconButton>
                             </div>
                         </Box>
+                    )}
 
-                        {selection.length > 0 && (
-                            <Box>
-                                <div style={{ float: 'left', padding: 8 }}>
-                                    <b>{selection.length}</b> item(s) selected
-                                    {selection.length < 10 && (
-                                        <>
-                                            <br />
-                                            <span style={{ color: 'gray', fontSize: '8pt' }}>
-                                                {selection.map(e => {
-                                                    if ('id' in e) {
-                                                        return (e.id as any).slice(0, 15)
-                                                    }
-                                                    else {
-                                                        return '[unnamed]'
-                                                    }
-                                                }).join(', ')}
-                                            </span>
+                    <Stemma
+                        versions={versions}
+                        currentVersion={currentVersion}
+                        onClick={(version) => {
+                            setCurrentVersion(version)
+                            setActiveLayer(undefined)
+                            setSelection([])
+                        }}
+                    />
 
-                                        </>
-                                    )}
-                                </div>
-                                <div style={{ float: 'right' }}>
-                                    <IconButton onClick={() => setSelection([])}>
-                                        <Clear />
-                                    </IconButton>
-                                </div>
-                            </Box>
-                        )}
+                    <LayerStack
+                        stack={layers}
+                        active={activeLayer}
+                        onChange={stack => setLayers([...stack])}
+                        onClick={(layer) => {
+                            setCurrentVersion(undefined)
+                            setActiveLayer(layer)
+                        }}
+                    />
 
-                        <Stemma
-                            versions={versions}
-                            currentVersion={currentVersion}
-                            onClick={(version) => {
-                                setCurrentVersion(version)
-                                setActiveLayer(undefined)
-                                setSelection([])
-                            }}
-                        />
+                    <Button
+                        startIcon={<Add />}
+                        onClick={() => setEditCopy(true)}
+                    >
+                        Add Copy
+                    </Button>
 
-                        <LayerStack
-                            stack={layers}
-                            active={activeLayer}
-                            onChange={stack => setLayers([...stack])}
-                            onClick={(layer) => {
-                                setCurrentVersion(undefined)
-                                setActiveLayer(layer)
-                            }}
-                        />
-
-                        <Button
-                            startIcon={<Add />}
-                            onClick={() => setEditCopy(true)}
-                        >
-                            Add Copy
-                        </Button>
-
-                        <Paper>
-                            {questions.map(question => {
-                                return (
-                                    <div>{question.question}</div>
-                                )
-                            })}
-                        </Paper>
-                    </Stack>
-                </Paper>
-            </Box>
-            <Box flexGrow={1} overflow='scroll'>
-                <div >
-                    <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
-                        <LayeredRolls
-                            active={activeLayer}
-                            stack={layers}
-                            selection={selection}
-                            onChangeSelection={setSelection}
-                            currentVersion={currentVersion}
-                        />
-                    </PinchZoomProvider>
-                </div>
+                    <Paper>
+                        {questions.map(question => {
+                            return (
+                                <div>{question.question}</div>
+                            )
+                        })}
+                    </Paper>
+                </Stack>
+            </Paper>
+            <Box overflow='scroll'>
+                <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
+                    <LayeredRolls
+                        active={activeLayer}
+                        stack={layers}
+                        selection={selection}
+                        onChangeSelection={setSelection}
+                        currentVersion={currentVersion}
+                    />
+                </PinchZoomProvider>
             </Box>
 
             <EmulationSettingsDialog

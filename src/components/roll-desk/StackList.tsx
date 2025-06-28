@@ -27,7 +27,16 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
             <List dense>
                 {stack.map((layer, i) => {
                     return (
-                        <ListItem key={`listItem_${i}`}>
+                        <ListItem key={`listItem_${i}`}
+                            secondaryAction={
+                                <IconButton
+                                    edge="end"
+                                    sx={{ color: layer.color }}
+                                    onClick={() => setClickedLayer(layer)}
+                                >
+                                    <ColorLens />
+                                </IconButton>
+                            }>
                             <ListItemIcon>
                                 <IconButton
                                     size='small'
@@ -54,15 +63,6 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     secondary={layer.copy.location}
                                 />
                             </ListItemButton>
-                            <ListItemSecondaryAction>
-                                <IconButton
-                                    edge="end"
-                                    sx={{ color: layer.color }}
-                                    onClick={() => setClickedLayer(layer)}
-                                >
-                                    <ColorLens />
-                                </IconButton>
-                            </ListItemSecondaryAction>
                         </ListItem>
                     )
                 })}
