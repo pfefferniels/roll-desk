@@ -19,33 +19,36 @@ export const Stemma = ({ versions, currentVersion, onClick }: Stemma) => {
 
     const renderTree = (parentId: string) => (
         <ul className={parentId === 'root' ? 'tree' : undefined}>
-            {(childrenMap[parentId] || []).map(version => (
-                <li
-                    key={version.id}
-                    onClick={e => {
-                        onClick(version)
-                        e.stopPropagation()
-                    }}
-                >
-                    <div
-                        className='siglum'
+            {(childrenMap[parentId] || []).map(version => {
+                const active = currentVersion?.id === version.id
+                return (
+                    <li
+                        key={version.id}
+                        onClick={e => {
+                            onClick(version)
+                            e.stopPropagation()
+                        }}
                     >
-                        <span style={{
-                            fontWeight: version.id === currentVersion?.id ? 'bold' : 'normal'
-                        }}>
-                            {version.siglum}
-                        </span>
-                        <br />
-                        <span style={{ fontSize: '0.9rem' }}>
-                            {version.type.replaceAll('-', ' ')}
-                        </span>
-                        <br />
-                        +{version.edits.map(edit => edit.insert || []).flat().length},
-                        -{version.edits.map(edit => edit.delete || []).flat().length}
-                    </div>
-                    {childrenMap[version.id]?.length > 0 && renderTree(version.id)}
-                </li>
-            ))}
+                        <div
+                            className={`siglum ${active ? 'active' : ''}`}
+                        >
+                            <span style={{
+                                fontWeight: active ? 'bold' : 'normal'
+                            }}>
+                                {version.siglum}
+                            </span>
+                            <br />
+                            <span style={{ fontSize: '0.9rem' }}>
+                                {version.type.replaceAll('-', ' ')}
+                            </span>
+                            <br />
+                            +{version.edits.map(edit => edit.insert || []).flat().length},
+                            -{version.edits.map(edit => edit.delete || []).flat().length}
+                        </div>
+                        {childrenMap[version.id]?.length > 0 && renderTree(version.id)}
+                    </li>
+                )
+            })}
         </ul>
     )
 
