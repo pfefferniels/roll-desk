@@ -4,10 +4,11 @@ import { Button, IconButton } from "@mui/material";
 import { Edition, importJsonLd } from "linked-rolls";
 
 interface ImportButtonProps {
+    outlined?: boolean
     onImport: (newEdition: Edition) => void;
 }
 
-export const ImportButton = ({ onImport }: ImportButtonProps) => {
+export const ImportButton = ({ onImport, outlined }: ImportButtonProps) => {
     const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -48,13 +49,21 @@ export const ImportButton = ({ onImport }: ImportButtonProps) => {
                 onChange={handleFileUpload}
             />
             <label htmlFor="import-file">
-                <Button
-                    variant='outlined'
-                    component="span"
-                    startIcon={<FileOpen />}
-                >
-                    Open
-                </Button>
+                {outlined
+                    ? (
+                        <Button
+                            variant='outlined'
+                            component="span"
+                            startIcon={<FileOpen />}
+                        >
+                            Open
+                        </Button>
+                    )
+                    : (
+                        <IconButton size='small'>
+                            <FileOpen />
+                        </IconButton>
+                    )}
             </label>
         </>
     );

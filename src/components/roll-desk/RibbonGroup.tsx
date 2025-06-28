@@ -7,16 +7,14 @@ interface RibbonGroupProps {
 
 export const RibbonGroup = ({ children }: RibbonGroupProps) => {
     return (
-        <Paper>
-            <Stack direction='row'>
-                {Children.map(children, child => (
-                    isValidElement(child) ? (
-                        <>
-                            {child}
-                            <Divider orientation="vertical" flexItem />
-                        </>) : null
-                ))}
-            </Stack>
-        </Paper>
+        <Stack direction='row'>
+            {Children.map(children, child => (
+                isValidElement(child) ? (
+                    <>
+                        {child}
+                        <Divider orientation="vertical" flexItem />
+                    </>) : null
+            ))}
+        </Stack>
     )
 }

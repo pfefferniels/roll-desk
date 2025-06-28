@@ -72,7 +72,7 @@ export const Welcome = ({ onCreate, onImport }: WelcomeProps) => {
                         justifyContent="center"
                         sx={{ mt: 2 }}
                     >
-                        <ImportButton onImport={onImport} />
+                        <ImportButton outlined={true} onImport={onImport} />
                         <Button
                             variant="outlined"
                             startIcon={<Create />}
