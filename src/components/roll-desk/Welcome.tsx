@@ -35,9 +35,10 @@ const emptyMetadata: EditionMetadata = {
 
 export interface WelcomeProps {
     onCreate: (metadata: EditionMetadata) => void;
+    onImport: (edition: Edition) => void;
 }
 
-export const Welcome = ({ onCreate }: WelcomeProps) => {
+export const Welcome = ({ onCreate, onImport }: WelcomeProps) => {
     const [editMetadata, setEditMetadata] = useState(false)
     
     return (
@@ -71,7 +72,7 @@ export const Welcome = ({ onCreate }: WelcomeProps) => {
                         justifyContent="center"
                         sx={{ mt: 2 }}
                     >
-                        <ImportButton onImport={onCreate} />
+                        <ImportButton onImport={onImport} />
                         <Button
                             variant="outlined"
                             startIcon={<Create />}

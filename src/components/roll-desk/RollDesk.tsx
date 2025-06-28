@@ -82,9 +82,26 @@ export const Desk = () => {
 
     if (!metadata) {
         return (
-            <Welcome onCreate={metadata => {
-                setMetadata(metadata)
-            }} />
+            <Welcome
+                onCreate={metadata => {
+                    setMetadata(metadata)
+                }}
+                onImport={edition => {
+                    const { copies, versions, questions, ...metadata } = edition
+
+                    setMetadata(metadata)
+                    setVersions(versions)
+                    setQuestions(questions)
+                    setLayers(copies.map(copy => {
+                        return {
+                            color: stringToColor(copy.id),
+                            copy: copy,
+                            opacity: 1,
+                            facsimile: false
+                        }
+                    }))
+                }}
+            />
         )
     }
 
@@ -95,21 +112,19 @@ export const Desk = () => {
                     <RibbonGroup>
                         <Ribbon title=' '>
                             <ImportButton onImport={edition => {
-                                <ImportButton onImport={edition => {
-                                    const { copies, versions, questions, ...metadata } = edition
+                                const { copies, versions, questions, ...metadata } = edition
 
-                                    setMetadata(metadata)
-                                    setVersions(versions)
-                                    setQuestions(questions)
-                                    setLayers(copies.map(copy => {
-                                        return {
-                                            color: stringToColor(copy.id),
-                                            copy: copy,
-                                            opacity: 1,
-                                            facsimile: false
-                                        }
-                                    }))
-                                }} />
+                                setMetadata(metadata)
+                                setVersions(versions)
+                                setQuestions(questions)
+                                setLayers(copies.map(copy => {
+                                    return {
+                                        color: stringToColor(copy.id),
+                                        copy: copy,
+                                        opacity: 1,
+                                        facsimile: false
+                                    }
+                                }))
                                 setLayers(edition.copies.map(copy => {
                                     return {
                                         color: stringToColor(copy.id),
