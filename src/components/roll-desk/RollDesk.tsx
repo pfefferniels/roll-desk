@@ -1,7 +1,7 @@
 import { AppBar, Box, Button, Grid, IconButton, Menu, Paper, Slider, Stack, Toolbar, Typography } from "@mui/material"
 import { useCallback, useState } from "react"
 import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, exportDate } from 'linked-rolls'
-import { Add, ClearAll, Create, Download, MenuBook, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
+import { Add, Clear, ClearAll, Create, Download, MenuBook, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -246,7 +246,7 @@ export const Desk = () => {
                 >
                     <Stack direction='column' spacing={1}>
                         <Box>
-                            <div style={{ float: 'left', padding: 8, width: '80%' }}>
+                            <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
                                 <b>{metadata.title}</b><br />
                                 {metadata.roll.catalogueNumber}{' '}
                                 ({new Intl.DateTimeFormat().format(
@@ -260,32 +260,34 @@ export const Desk = () => {
                             </div>
                         </Box>
 
-                        <Box>
-                            <div style={{ float: 'left', padding: 8 }}>
-                                <b>{selection.length}</b> events selected
-                                {selection.length < 10 && (
-                                    <>
-                                        <br />
-                                        <span style={{ color: 'gray', fontSize: '8pt' }}>
-                                            {selection.map(e => {
-                                                if ('id' in e) {
-                                                    return (e.id as any).slice(0, 15)
-                                                }
-                                                else {
-                                                    return '[unnamed]'
-                                                }
-                                            }).join(', ')}
-                                        </span>
+                        {selection.length > 0 && (
+                            <Box>
+                                <div style={{ float: 'left', padding: 8 }}>
+                                    <b>{selection.length}</b> item(s) selected
+                                    {selection.length < 10 && (
+                                        <>
+                                            <br />
+                                            <span style={{ color: 'gray', fontSize: '8pt' }}>
+                                                {selection.map(e => {
+                                                    if ('id' in e) {
+                                                        return (e.id as any).slice(0, 15)
+                                                    }
+                                                    else {
+                                                        return '[unnamed]'
+                                                    }
+                                                }).join(', ')}
+                                            </span>
 
-                                    </>
-                                )}
-                            </div>
-                            <div style={{ float: 'right' }}>
-                                <IconButton onClick={() => setSelection([])}>
-                                    <ClearAll />
-                                </IconButton>
-                            </div>
-                        </Box>
+                                        </>
+                                    )}
+                                </div>
+                                <div style={{ float: 'right' }}>
+                                    <IconButton onClick={() => setSelection([])}>
+                                        <Clear />
+                                    </IconButton>
+                                </div>
+                            </Box>
+                        )}
 
                         <Stemma
                             versions={versions}
