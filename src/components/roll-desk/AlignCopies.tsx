@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, RollCopy } from "linked-rolls";
+import { alignFeatures, flat, RollCopy } from "linked-rolls";
 import { useState } from "react";
 
 interface AlignCopiesProps {
@@ -25,12 +25,16 @@ export const AlignCopies = ({ copy, copies, onDone, onClose, open }: AlignCopies
         verticalStretch = copyB.measurements.dimensions.height / copy.measurements.dimensions.height
     }
 
+    const date = copy.productionEvent?.date && new Intl.DateTimeFormat().format(
+        flat(copy.productionEvent?.date)
+    )
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth>
             <DialogContent>
                 <Stack>
                     <Typography>
-                        Choose Second Copy:
+                        Choose Second Copy
                     </Typography>
                     <Select value={copyB?.id || ''} onChange={(e) => {
                         setCopyB(copies.find(copy => copy.id === e.target.value))
@@ -38,7 +42,7 @@ export const AlignCopies = ({ copy, copies, onDone, onClose, open }: AlignCopies
                         {copies.map(copy => {
                             return (
                                 <MenuItem value={copy.id} key={`alignSymbols_${copy.id}`}>
-                                    {copy.location}
+                                    {date} ({copy.location})
                                 </MenuItem>
                             )
                         })}

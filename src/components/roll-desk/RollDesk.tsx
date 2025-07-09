@@ -1,7 +1,7 @@
-import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Toolbar } from "@mui/material"
+import { AppBar, Box, Button, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slider, Stack, Toolbar } from "@mui/material"
 import { useCallback, useState } from "react"
-import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan } from 'linked-rolls'
-import { Add, Clear, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
+import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, MeaningComprehension, Edit } from 'linked-rolls'
+import { Add, Clear, Create, Download, Edit as EditIcon, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { usePiano } from "react-pianosound"
@@ -46,7 +46,6 @@ export const Desk = () => {
 
     const [metadata, setMetadata] = useState<EditionMetadata>()
     const [versions, setVersions] = useState<Version[]>([])
-    const [questions, setQuestions] = useState<Question[]>([])
 
     const [layers, setLayers] = useState<Layer[]>([])
     const [activeLayer, setActiveLayer] = useState<Layer>()
@@ -60,6 +59,8 @@ export const Desk = () => {
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [currentVersion, setCurrentVersion] = useState<Version>()
+    const [currentMotivation, setCurrentMotivation] = useState<Motivation<string>>()
+
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
 
     const downloadMIDI = useCallback(async () => {
@@ -87,16 +88,16 @@ export const Desk = () => {
                     setMetadata(metadata)
                 }}
                 onImport={edition => {
-                    const { copies, versions, questions, ...metadata } = edition
+                    const { copies, versions, ...metadata } = edition
 
                     setMetadata(metadata)
                     setVersions(versions)
-                    setQuestions(questions)
                     setLayers(copies.map(copy => {
                         return {
                             color: stringToColor(copy.id),
                             copy: copy,
-                            opacity: 1,
+                            symbolOpacity: 1,
+                            facsimileOpacity: 0,
                             facsimile: false
                         }
                     }))
@@ -112,25 +113,25 @@ export const Desk = () => {
                     <RibbonGroup>
                         <Ribbon title='File'>
                             <ImportButton onImport={edition => {
-                                const { copies, versions, questions, ...metadata } = edition
+                                const { copies, versions, ...metadata } = edition
 
                                 setMetadata(metadata)
                                 setVersions(versions)
-                                setQuestions(questions)
                                 setLayers(copies.map(copy => {
                                     return {
                                         color: stringToColor(copy.id),
                                         copy: copy,
                                         opacity: 1,
-                                        facsimile: false
+                                        facsimileOpacity: 0,
+                                        symbolOpacity: 1
                                     }
                                 }))
                                 setLayers(edition.copies.map(copy => {
                                     return {
                                         color: stringToColor(copy.id),
                                         copy: copy,
-                                        opacity: 1,
-                                        facsimile: false
+                                        symbolOpacity: 1,
+                                        facsimileOpacity: 0,
                                     }
                                 }))
                             }} />
@@ -243,10 +244,11 @@ export const Desk = () => {
                     padding: 2
                 }}
             >
-                <Stack direction='column' spacing={1}>
+                <Stack direction='column' spacing={1} sx={{ maxWidth: '300px' }}>
                     <Box>
                         <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
-                            <b>{metadata.title}</b><br />
+                            <b>{metadata.title}</b>
+                            <br />
                             {metadata.roll.catalogueNumber}{' '}
                             ({new Intl.DateTimeFormat().format(
                                 flat(metadata.roll.recordingEvent.date)
@@ -298,8 +300,68 @@ export const Desk = () => {
                         }}
                     />
 
+                    {currentVersion && (
+                        <List dense>
+                            {currentVersion?.motivations.map((motivation, i) => {
+                                if (!motivation.belief) return
+
+                                const edits = motivation.belief.reasons
+                                    .filter((reason): reason is MeaningComprehension<Edit> => {
+                                        return 'comprehends' in reason
+                                    })
+                                    .map(argumentation => argumentation.comprehends)
+                                    .flat()
+
+                                return (
+                                    <ListItem key={`motivation_${i}`}
+                                        secondaryAction={
+                                            <IconButton>
+                                                <EditIcon />
+                                            </IconButton>
+                                        }
+                                    >
+                                        <ListItemButton
+                                            onMouseEnter={() => {
+                                                setCurrentMotivation(motivation)
+                                            }}
+                                            onMouseLeave={() => {
+                                                setCurrentMotivation(undefined)
+                                            }}
+                                        >
+                                            <ListItemText
+                                                secondary={
+                                                    <span>
+                                                        {motivation.belief?.certainty},
+                                                        {' '}{edits.length} edits
+                                                    </span>
+                                                }
+                                            >
+                                                {flat(motivation)}
+                                            </ListItemText>
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            })}
+                        </List>
+                    )}
+
                     <LayerStack
-                        stack={layers}
+                        stack={
+                            currentVersion
+                                ? layers.filter(layer => {
+                                    const features = layer.copy.features.map(f => f.id)
+                                    const versionFeatures = currentVersion.edits
+                                        .map(edit => ([...(edit.insert || []), ...(edit.delete || [])]))
+                                        .flat()
+                                        .map(symbol => symbol.carriers)
+                                        .flat()
+                                        .map(feature => flat(feature).id)
+
+                                    const intersection = new Set(features).intersection(new Set(versionFeatures))
+                                    return intersection.size !== 0
+                                })
+                                : layers
+                        }
                         active={activeLayer}
                         onChange={stack => setLayers([...stack])}
                         onClick={(layer) => {
@@ -316,9 +378,9 @@ export const Desk = () => {
                     </Button>
 
                     <Paper>
-                        {questions.map(question => {
+                        {metadata.creation.questions.map(question => {
                             return (
-                                <div>{question.question}</div>
+                                <div>{question.raise.question}</div>
                             )
                         })}
                     </Paper>
@@ -332,6 +394,8 @@ export const Desk = () => {
                         selection={selection}
                         onChangeSelection={setSelection}
                         currentVersion={currentVersion}
+                        currentMotivation={currentMotivation}
+
                     />
                 </PinchZoomProvider>
             </Box>
@@ -351,8 +415,7 @@ export const Desk = () => {
                 edition={{
                     ...metadata,
                     copies: layers.map(({ copy }) => copy),
-                    versions,
-                    questions
+                    versions
                 }}
                 onClose={() => setDownloadDialogOpen(false)}
             />
@@ -373,8 +436,8 @@ export const Desk = () => {
                     layers.push({
                         copy: newCopy,
                         color: stringToColor(newCopy.id),
-                        opacity: 1,
-                        facsimile: false
+                        symbolOpacity: 1,
+                        facsimileOpacity: 0
                     })
 
                     const newVersion: Version = {

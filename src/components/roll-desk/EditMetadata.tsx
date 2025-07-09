@@ -38,8 +38,8 @@ const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadata
     setTitle(edition.title);
     setLicense(edition.license);
     setBaseURI(edition.base);
-    setPublisherName(edition.publicationEvent.publisher.name);
-    setPublicationDate(edition.publicationEvent.publicationDate);
+    setPublisherName(edition.creation.publisher.name);
+    setPublicationDate(edition.creation.publicationDate);
     setCatalogueNumber(edition.roll.catalogueNumber);
     setRecordingDate(flat(edition.roll.recordingEvent.date));
     setRecordingPlace(edition.roll.recordingEvent.place.name);
@@ -52,8 +52,8 @@ const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadata
     newEdition.title = title
     newEdition.license = selectedLicense?.url || license
     newEdition.base = baseURI
-    newEdition.publicationEvent.publisher.name = publisherName
-    newEdition.publicationEvent.publicationDate = publicationDate
+    newEdition.creation.publisher.name = publisherName
+    newEdition.creation.publicationDate = publicationDate
     newEdition.roll.catalogueNumber = catalogueNumber
     newEdition.roll.recordingEvent.date = assign('dateAssignment', recordingDate)
     newEdition.roll.recordingEvent.place.name = recordingPlace

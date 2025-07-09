@@ -146,12 +146,19 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                                 onClick={() => {
                                     for (const symbol of selection) {
                                         for (const edit of version.edits) {
-                                            if (edit.insert?.includes(symbol)) {
-                                                edit.insert.splice(edit.insert.indexOf(symbol), 1)
+                                            if (!edit.insert) continue
+                                            const index = edit.insert.findIndex(s => s.id === symbol.id)
+                                            if (index !== -1) {
+                                                edit.insert.splice(index, 1)
+                                            }
+
+                                            // the edit is empty now, we can safely remove it
+                                            if (edit.insert.length === 0 && edit.delete?.length) {
+                                                version.edits.splice(version.edits.indexOf(edit), 1)
                                             }
                                         }
                                     }
-                                    onChange(version)
+                                    onChange({...version})
                                 }}
                             >
                                 Remove

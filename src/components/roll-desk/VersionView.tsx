@@ -5,7 +5,6 @@ import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
 import { EditView } from "./EditView"
-import { MotivationView } from "./MotivationView"
 
 interface VersionViewProps {
     version: Version
@@ -98,19 +97,6 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
         </g>
     )
 
-    const motivations = version.motivations
-        .map(motivation => {
-            return (
-                <MotivationView
-                    key={motivation.id}
-                    motivation={motivation}
-                    onClick={() => onClick(motivation)}
-                />
-            )
-        })
-
-        console.log('snapshot:', getSnapshot(version))
-
     return (
         <g className='versionView' ref={svgRef}>
             {dynamics}
@@ -180,8 +166,6 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                         // TODO
                     }
                 })}
-
-            {motivations}
         </g>
     )
 }

@@ -2,17 +2,19 @@ import { useRef } from "react"
 import { Glow } from "./Glow"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { VersionView } from "./VersionView"
-import { Edition, Version } from "linked-rolls"
+import { Edition, Motivation, Version } from "linked-rolls"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
 import { Layer } from "./StackList"
 import { UserSelection } from "./RollDesk"
 import { SelectionFilter } from "./Selection"
+import { MotivationView } from "./MotivationView"
 
 interface LayeredRollsProps {
     stack: Layer[]
     active?: Layer
     currentVersion?: Version
+    currentMotivation?: Motivation<string>
     selection: UserSelection[]
     onChangeSelection: (userSelection: UserSelection[]) => void
 }
@@ -21,11 +23,11 @@ export const LayeredRolls = ({
     stack,
     active,
     currentVersion,
+    currentMotivation,
     selection,
     onChangeSelection
 }: LayeredRollsProps
 ) => {
-    const { zoom } = usePinchZoom()
     const svgRef = useRef<SVGGElement>(null)
 
     // makes sure that the active layer comes last
@@ -55,7 +57,7 @@ export const LayeredRolls = ({
                 <g ref={svgRef}>
                     {orderedLayers
                         .map((stackItem, i) => {
-                            if (stackItem.opacity === 0) return null
+                            if (stackItem.symbolOpacity === 0) return null
 
                             return (
                                 <CopyFacsimile
@@ -63,7 +65,7 @@ export const LayeredRolls = ({
                                     copy={stackItem.copy}
                                     active={stackItem.copy === active?.copy}
                                     color={stackItem.color}
-                                    facsimileOpacity={stackItem.opacity}
+                                    facsimileOpacity={stackItem.facsimileOpacity}
                                     onClick={onAddToSelection}
                                     onSelectionDone={dimension => onChangeSelection([{
                                         ...dimension
@@ -71,12 +73,21 @@ export const LayeredRolls = ({
                                 />
                             )
                         })}
+
                     {currentVersion && (
                         <VersionView
                             onClick={onAddToSelection}
                             version={currentVersion}
                         />
                     )}
+
+                    {currentMotivation && (
+                        <MotivationView
+                            motivation={currentMotivation}
+                            onClick={onAddToSelection}
+                        />
+                    )}
+
                     {svgRef.current && (
                         <SelectionFilter
                             items={selection}

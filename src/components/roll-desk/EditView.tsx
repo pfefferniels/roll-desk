@@ -28,13 +28,11 @@ const getSymbolBBox = (symbol: AnySymbol, { translateX, trackToY, trackHeight }:
     }
 }
 
-export const getEditBBox = (edit: Edit, translation: Translation) => {
+export const getEditBBoxes = (edit: Edit, translation: Translation) => {
     const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, translation)) || [];
     const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, translation)) || [];
 
-    return getBoundingBox(
-        getHull([...insertionBBoxes, ...deletionBBoxes]).points
-    );
+    return [...insertionBBoxes, ...deletionBBoxes]
 }
 
 interface EditViewProps {
@@ -97,6 +95,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 <Hull
                     key={edit.id}
                     id={edit.id}
+                    data-id={edit.id}
                     fillOpacity={0.5}
                     fill='lightgray'
                     hull={hull}

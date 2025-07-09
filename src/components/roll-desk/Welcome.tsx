@@ -9,13 +9,14 @@ const emptyMetadata: EditionMetadata = {
     title: '',
     license: '',
     base: '',
-    publicationEvent: {
+    creation: {
         publisher: { name: '', sameAs: [] },
         publicationDate: new Date(),
-        consistsOf: {
+        collationTolerance: {
             toleranceEnd: 5,
             toleranceStart: 5,
-        }
+        },
+        questions: []
     },
     roll: {
         catalogueNumber: '',

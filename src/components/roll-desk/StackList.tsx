@@ -1,14 +1,14 @@
 import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
-import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText, ListItemSecondaryAction, Divider, Paper } from "@mui/material"
-import { RollCopy } from "linked-rolls"
+import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText } from "@mui/material"
+import { flat, RollCopy } from "linked-rolls"
 import { useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 
 export interface Layer {
     copy: RollCopy
     color: string
-    opacity: number
-    facsimile: boolean
+    symbolOpacity: number
+    facsimileOpacity: number
 }
 
 interface LayerStackProps {
@@ -26,6 +26,12 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
         <>
             <List dense>
                 {stack.map((layer, i) => {
+                    const date = layer.copy.productionEvent?.date
+                        ? new Intl.DateTimeFormat().format(
+                            flat(layer.copy.productionEvent.date)
+                        )
+                        : 'unknown date';
+
                     return (
                         <ListItem key={`listItem_${i}`}
                             secondaryAction={
@@ -43,11 +49,11 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     edge="start"
                                     tabIndex={-1}
                                     onClick={() => {
-                                        layer.opacity = 1 - layer.opacity
+                                        layer.symbolOpacity = 1 - layer.symbolOpacity
                                         onChange([...stack])
                                     }}
                                 >
-                                    {layer.opacity === 1 ? <Visibility /> : <VisibilityOff />}
+                                    {layer.symbolOpacity === 1 ? <Visibility /> : <VisibilityOff />}
                                 </IconButton>
                             </ListItemIcon>
                             <ListItemButton onClick={() => onClick(layer)}>
@@ -55,9 +61,7 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     style={{ border: layer === active ? '3px' : '1px' }}
                                     primary={
                                         <span style={{ fontWeight: layer === active ? 'bold' : 'normal' }}>
-                                            {layer.copy.location}
-                                            <span>{' '}</span>
-                                            ({layer.copy.productionEvent?.date.assigned || 'unknown date'})
+                                            {date}
                                         </span>
                                     }
                                     secondary={layer.copy.location}
@@ -72,10 +76,12 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                     open={clickedLayer !== undefined}
                     onClose={() => setClickedLayer(undefined)}
                     color={clickedLayer.color}
-                    opacity={clickedLayer.opacity}
-                    onChange={(color, opacity) => {
+                    symbolOpacity={clickedLayer.symbolOpacity}
+                    facsimileOpacity={clickedLayer.facsimileOpacity}
+                    onChange={(color, symbolOpacity, facsimileOpacity) => {
                         clickedLayer.color = color
-                        clickedLayer.opacity = opacity
+                        clickedLayer.symbolOpacity = symbolOpacity
+                        clickedLayer.facsimileOpacity = facsimileOpacity
                         stack = stack.map(l => l === clickedLayer ? clickedLayer : l)
                         onChange([...stack])
                     }}
