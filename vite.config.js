@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import eslint from 'vite-plugin-eslint';
+// import eslint from 'vite-plugin-eslint';
 import * as path from 'path';
 import dts from 'vite-plugin-dts'
+import { libInjectCss } from 'vite-plugin-lib-inject-css';
 
 // Detect whether we're building as a library or an app
 const isLib = process.env.BUILD_LIB === 'true';
@@ -32,7 +33,7 @@ export default defineConfig(() => {
                 },
         plugins: [
             react(),
-            eslint(),
+            libInjectCss(),
             dts({
                 include: 'src',
                 tsconfigPath: path.resolve(__dirname, 'tsconfig.json'),

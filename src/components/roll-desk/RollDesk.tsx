@@ -1,10 +1,12 @@
+'use client'
+
 import { AppBar, Box, Button, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slider, Stack, Toolbar } from "@mui/material"
-import { useCallback, useState } from "react"
-import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, MeaningComprehension, Edit } from 'linked-rolls'
+import { useCallback, useEffect, useState } from "react"
+import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, MeaningComprehension, Edit, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Edit as EditIcon, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
-import { usePiano } from "react-pianosound"
+// import { usePiano } from "react-pianosound"
 import { write } from "midifile-ts"
 import { Layer, LayerStack } from "./StackList"
 import { LayeredRolls } from "./LayeredRolls"
@@ -39,8 +41,14 @@ export type UserSelection = (VersionSelection | FacsimileSelection)
  * a thin transparent paper roll.
  */
 
-export const Desk = () => {
-    const { play, stop } = usePiano()
+interface DeskProps {
+    edition?: Edition
+    viewOnly?: boolean
+    versionId?: string
+}
+
+export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
+    // const { play, stop } = usePiano()
 
     const [stretch, setStretch] = useState(2)
 
@@ -50,7 +58,7 @@ export const Desk = () => {
     const [layers, setLayers] = useState<Layer[]>([])
     const [activeLayer, setActiveLayer] = useState<Layer>()
 
-    const [editMetadata, setEditMetadata] = useState(true)
+    const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
@@ -81,37 +89,55 @@ export const Desk = () => {
         downloadFile('output.mid', dataBuf, 'audio/midi')
     }, [currentVersion, conversionMethod])
 
+    const importEdition = (edition: Edition) => {
+        const { copies, versions, ...metadata } = edition
+
+        setMetadata(metadata)
+        setVersions(versions)
+        setLayers(copies.map(copy => {
+            return {
+                color: stringToColor(copy.id),
+                copy: copy,
+                symbolOpacity: 1,
+                facsimileOpacity: 0,
+                facsimile: false
+            }
+        }))
+    }
+
+    useEffect(() => {
+        if (edition) importEdition(edition)
+    }, [edition])
+
+    useEffect(() => {
+        if (!versionId) return
+        setCurrentVersion(versions.find(v => v.id === versionId))
+    }, [versionId, versions])
+
     if (!metadata) {
         return (
             <Welcome
                 onCreate={metadata => {
                     setMetadata(metadata)
                 }}
-                onImport={edition => {
-                    const { copies, versions, ...metadata } = edition
-
-                    setMetadata(metadata)
-                    setVersions(versions)
-                    setLayers(copies.map(copy => {
-                        return {
-                            color: stringToColor(copy.id),
-                            copy: copy,
-                            symbolOpacity: 1,
-                            facsimileOpacity: 0,
-                            facsimile: false
-                        }
-                    }))
-                }}
+                onImport={importEdition}
             />
         )
     }
 
     return (
         <>
-            <AppBar position="static" sx={{ bgcolor: "white", color: 'black' }}>
+            <AppBar
+                position={viewOnly ? 'absolute' : 'static'}
+                sx={{
+                    bgcolor: "white",
+                    color: 'black',
+                    width: viewOnly ? 'fit-content' : '100%',
+                    right: viewOnly ? '3rem' : 'inherit'
+                }}>
                 <Toolbar>
                     <RibbonGroup>
-                        <Ribbon title='File'>
+                        <Ribbon title='File' visible={!viewOnly}>
                             <ImportButton onImport={edition => {
                                 const { copies, versions, ...metadata } = edition
 
@@ -139,7 +165,7 @@ export const Desk = () => {
                                 <Save />
                             </IconButton>
                         </Ribbon>
-                        {(!currentVersion && activeLayer) && (
+                        {(!viewOnly && !currentVersion && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
                                 versions={versions}
@@ -158,7 +184,7 @@ export const Desk = () => {
                                 copies={layers.map(layer => layer.copy)}
                             />
                         )}
-                        {currentVersion && (
+                        {(!viewOnly && currentVersion) && (
                             <VersionMenu
                                 version={currentVersion}
                                 versions={versions}
@@ -217,7 +243,7 @@ export const Desk = () => {
                                     }
                                     emulation.emulateVersion(currentVersion, undefined, true)
 
-                                    play(emulation.asMIDI())
+                                    //play(emulation.asMIDI())
                                     setIsPlaying(true)
                                 }}>
                                 {isPlaying ? <Pause /> : <PlayArrow />}
@@ -250,11 +276,12 @@ export const Desk = () => {
                             <b>{metadata.title}</b>
                             <br />
                             {metadata.roll.catalogueNumber}{' '}
-                            ({new Intl.DateTimeFormat().format(
+
+                            ({/*new Intl.DateTimeFormat().format(
                                 flat(metadata.roll.recordingEvent.date)
-                            )})
+                            )*/})
                         </div>
-                        <div style={{ float: 'right' }}>
+                        <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
                             <IconButton onClick={() => setEditMetadata(true)}>
                                 <Create />
                             </IconButton>
@@ -370,12 +397,14 @@ export const Desk = () => {
                         }}
                     />
 
-                    <Button
-                        startIcon={<Add />}
-                        onClick={() => setEditCopy(true)}
-                    >
-                        Add Copy
-                    </Button>
+                    {!viewOnly && (
+                        <Button
+                            startIcon={<Add />}
+                            onClick={() => setEditCopy(true)}
+                        >
+                            Add Copy
+                        </Button>
+                    )}
 
                     <Paper>
                         {metadata.creation.questions.map(question => {

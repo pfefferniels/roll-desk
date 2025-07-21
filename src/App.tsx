@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import { Snackbar } from '@mui/material';
 import { SnackbarContext } from './providers/SnackbarContext';
@@ -7,6 +7,18 @@ import { PianoContextProvider } from 'react-pianosound';
 
 const App = () => {
   const [message, setMessage] = useState<string>()
+
+  useEffect(() => {
+    function beforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+
+    window.addEventListener('beforeunload', beforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+    };
+  }, []);
 
   return (
     <div className="App">

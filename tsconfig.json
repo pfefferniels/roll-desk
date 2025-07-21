@@ -8,7 +8,7 @@
     ],
     "module": "esnext",
     "allowImportingTsExtensions": true,
-    "moduleResolution": "Bundler",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
