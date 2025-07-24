@@ -1,20 +1,21 @@
 import { Check } from "@mui/icons-material";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Select, Stack } from "@mui/material";
-import { VersionType, versionTypes } from "linked-rolls";
+import { Dialog, IconButton, MenuItem, Select, Stack } from "@mui/material";
 
-interface EditVersionTypeProps {
+interface EditType<T extends string> {
     open: boolean;
     onClose: () => void;
-    onSave: (type: VersionType) => void;
-    type: VersionType;
+    onSave: (type: T) => void;
+    value: T;
+    readonly types: readonly T[];
 }
 
-export const EditVersionType = ({
+export const EditType = <T extends string,>({
     open,
     onClose,
     onSave,
-    type,
-}: EditVersionTypeProps) => {
+    value,
+    types
+}: EditType<T>) => {
     return (
         <Dialog
             open={open}
@@ -22,13 +23,13 @@ export const EditVersionType = ({
         >
             <Stack direction='row' spacing={2} alignItems='center' sx={{ padding: 2 }}>
                 <Select
-                    value={type}
-                    onChange={(e) => onSave(e.target.value as VersionType)}
+                    value={value}
+                    onChange={(e) => onSave(e.target.value as T)}
                 >
-                    {versionTypes.map(vType => {
+                    {types.map(type => {
                         return (
-                            <MenuItem key={vType} value={vType}>
-                                {vType}
+                            <MenuItem key={type} value={type}>
+                                {type}
                             </MenuItem>
                         );
                     })}

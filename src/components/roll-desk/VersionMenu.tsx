@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split, versionTypes, editMotivations, EditMotivation } from "linked-rolls"
 import { useState } from "react"
 import { EditSiglum } from "./EditSiglum"
 import { Ribbon } from "./Ribbon"
@@ -8,7 +8,7 @@ import { v4 } from "uuid"
 import { EditAssumption } from "./EditAssumption"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
-import { EditVersionType } from "./EditVersionType"
+import { EditType } from "./EditVersionType"
 
 export type VersionSelection = AnySymbol | Edit | Motivation<string>
 
@@ -26,7 +26,7 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     const [assignMotivation, setAssignMotivation] = useState<Motivation<string>>()
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
-    const [editType, setEditType] = useState(false)
+    const [versionType, setVersionType] = useState(false)
 
     useHotkeys(['m'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -68,6 +68,9 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
             motivations: [],
             type: 'authorised-revision'
         }
+
+        // TODO: calculate impact on later versions
+
         onAdd(newVersion)
     }
 
@@ -77,32 +80,51 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     }
 
     const addMotivation = (about: Edit[]) => {
-        const comprehension: MeaningComprehension<Edit> = {
-            comprehends: about
-        }
+        if (about.length === 0) return
 
-        const motivation: Motivation<string> = {
-            assigned: '...',
-            id: v4(),
-            type: 'motivationAssignment',
-            belief: {
-                type: 'belief',
-                certainty: 'true',
+        if (about.length === 1) {
+            const motivation: Motivation<EditMotivation> = about[0].motivation || {
+                assigned: 'correct-error',
                 id: v4(),
-                reasons: [comprehension]
+                type: 'motivationAssignment',
+                belief: {
+                    id: v4(),
+                    type: 'belief',
+                    certainty: 'true',
+                    reasons: []
+                }
             }
-        }
 
-        version.motivations.push(motivation)
-        setAssignMotivation(motivation)
-        onChange(version)
+            setAssignMotivation(motivation)
+        }
+        else {
+            const comprehension: MeaningComprehension<Edit> = {
+                comprehends: about
+            }
+
+            const motivation: Motivation<string> = {
+                assigned: '...',
+                id: v4(),
+                type: 'motivationAssignment',
+                belief: {
+                    type: 'belief',
+                    certainty: 'true',
+                    id: v4(),
+                    reasons: [comprehension]
+                }
+            }
+
+            version.motivations.push(motivation)
+            setAssignMotivation(motivation)
+            onChange(version)
+        }
     }
 
     return (
         <>
             <Ribbon title='Version'>
                 <Button
-                    onClick={() => setEditType(true)}
+                    onClick={() => setVersionType(true)}
                     size='small'
                     startIcon={<TypeSpecimen />}
                 >
@@ -158,7 +180,7 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                                             }
                                         }
                                     }
-                                    onChange({...version})
+                                    onChange({ ...version })
                                 }}
                             >
                                 Remove
@@ -189,23 +211,34 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                     )}
                     {selection.every(isEdit) && (
                         <Ribbon title='Edits'>
-                            <Button
-                                size='small'
-                                startIcon={<Lightbulb />}
-                                onClick={() => addMotivation(selection)}
-                            >
-                                Add Motivation
-                            </Button>
-                            {selection.length >= 2 && selection.every(isEdit) && (
+                            {selection.length === 1 && (
                                 <Button
-                                    onClick={handleMerge}
-                                    startIcon={<GroupAdd />}
+                                    onClick={() => addMotivation(selection)}
                                     size='small'
+                                    startIcon={<TypeSpecimen />}
                                 >
-                                    Merge
+                                    Type
                                 </Button>
                             )}
-                            {selection.length === 1 && selection.every(isEdit) && (
+                            {selection.length >= 2 && (
+                                <>
+                                    <Button
+                                        size='small'
+                                        startIcon={<Lightbulb />}
+                                        onClick={() => addMotivation(selection)}
+                                    >
+                                        Add Motivation
+                                    </Button>
+                                    <Button
+                                        onClick={handleMerge}
+                                        startIcon={<GroupAdd />}
+                                        size='small'
+                                    >
+                                        Merge
+                                    </Button>
+                                </>
+                            )}
+                            {selection.length === 1 && (
                                 <Button
                                     onClick={() => {
                                         version.edits.push(...split(selection[0]))
@@ -271,11 +304,17 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                     onClose={() => setAssignMotivation(undefined)}
                     assumption={assignMotivation}
                     onChange={(assumption) => {
-                        version.motivations.splice(
-                            version.motivations.indexOf(assignMotivation), 1, assumption
-                        )
+                        if (selection.length === 1 && isEdit(selection[0])) {
+                            selection[0].motivation = assumption as any
+                            console.log('new selection', selection)
+                        }
+                        else {
+                            version.motivations.splice(
+                                version.motivations.indexOf(assignMotivation), 1, assumption
+                            )
+                        }
                         setAssignMotivation(undefined)
-                        onChange(version)
+                        onChange({ ...version })
                     }}
                 />
             )}
@@ -287,20 +326,21 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                     const snapshot = getSnapshot(version)
                     version.basedOn = assign('derivation', previousVersion)
                     version.edits = []
-                    fillEdits(version, snapshot)
+                    fillEdits(version, snapshot, { toleranceStart: 3, toleranceEnd: 3 })
                     onChange(version)
                 }}
                 versions={versions}
             />
 
-            <EditVersionType
-                open={editType}
-                onClose={() => setEditType(false)}
+            <EditType
+                open={versionType}
+                onClose={() => setVersionType(false)}
                 onSave={(type) => {
                     version.type = type
                     onChange(version)
                 }}
-                type={version.type}
+                value={version.type}
+                types={versionTypes}
             />
         </>
     )

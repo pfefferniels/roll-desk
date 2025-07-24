@@ -1,10 +1,10 @@
 import { Edit, flat } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
-import { getBoxToBoxArrow } from "curved-arrows";
 import { MouseEventHandler } from "react";
 import { AnySymbol, dimensionOf } from "linked-rolls/lib/Symbol";
 import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
+import { Arrow } from "./Arrow";
 
 export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' | 'trackHeight'>
 
@@ -51,66 +51,35 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     // draw overall hull only when there are both, insertions
     // as well as deletions
     if (edit.insert?.length && edit.delete?.length) {
-        const { hull } =
-            getHull(
-                [...insertionBBoxes, ...deletionBBoxes],
-                7 // slightly larger padding, since it will be overlaid by insertion/deletion hulls
-            );
+        if (edit.insert.length === 1 && edit.delete.length === 1) {
+            // do not draw any hull, only the arrow
+            const fromBox = getSymbolBBox(edit.delete[0], translation)
+            const toBox = getSymbolBBox(edit.insert[0], translation);
 
-        // also, draw an arrow from delete to insert 
-        // in order to make clear the direction of the edit
-        const arrowHeadSize = 3;
-        const bbox1 = getBoundingBox(getHull(deletionBBoxes).points);
-        const bbox2 = getBoundingBox(getHull(insertionBBoxes).points);
+            fromBox.width = 2
+            toBox.width = 2
 
-        const [sx, sy, c1x, c1y, c2x, c2y, ex, ey, ae] = getBoxToBoxArrow(
-            bbox1.x,
-            bbox1.y,
-            bbox1.width,
-            bbox1.height,
-            bbox2.x,
-            bbox2.y,
-            bbox2.width,
-            bbox2.height,
-            {
-                padStart: 1,
-                padEnd: arrowHeadSize,
-                controlPointStretch: Math.max(8, Math.abs(bbox1.x - bbox2.x) * 0.5),
-                allowedStartSides: ['top'],
-                allowedEndSides: ['top']
-            }
-        )
-        const arrowPath = `M${sx},${sy} C${c1x},${c1y} ${c2x},${c2y} ${ex},${ey}`;
-        const arrowHead = (
-            <polygon
-                points={`0,${-arrowHeadSize} ${arrowHeadSize *
-                    2},0, 0,${arrowHeadSize}`}
-                transform={`translate(${ex}, ${ey}) rotate(${ae})`}
-                fill='black'
-            />
-        )
+            return (
+                <Arrow
+                    from={fromBox}
+                    to={toBox}
+                    onClick={onClick}
+                    svgProps={{ id: edit.id }}
+                />
+            )
+        }
+
+        const deletionBBox = getBoundingBox(getHull(deletionBBoxes).points);
+        const insertionBBox = getBoundingBox(getHull(insertionBBoxes).points);
 
         hulls.push(
             <>
-                <Hull
-                    key={edit.id}
-                    id={edit.id}
-                    data-id={edit.id}
-                    fillOpacity={0.5}
-                    fill='lightgray'
-                    hull={hull}
-                    onClick={(e) => onClick && onClick(e)}
-                    soft={true}
+                <Arrow
+                    from={deletionBBox}
+                    to={insertionBBox}
+                    onClick={onClick}
+                    svgProps={{ id: edit.id }}
                 />
-
-                <g className='arrow'>
-                    <path
-                        stroke="black"
-                        strokeWidth={2}
-                        fill="none"
-                        d={arrowPath} />
-                    {arrowHead}
-                </g>
             </>
 
         )
@@ -120,11 +89,14 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     if (edit.insert?.length) {
         const { points, hull } = getHull(insertionBBoxes);
         const bbox = getBoundingBox(points);
+        const id = edit.delete?.length
+            ? `${edit.id}-insert` :
+            edit.id
 
         hulls.push(
             <Hull
                 key={`${edit.id}-insert`}
-                id={edit.id}
+                id={id}
                 hull={hull}
                 fillOpacity={0.5}
                 fill='lightgray'
@@ -133,9 +105,9 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 }}
                 label={
                     <text
-                        x={bbox.x}
-                        y={bbox.y + bbox.height + 2}
-                        fontSize={10}
+                        x={bbox.x + 8}
+                        y={bbox.y + bbox.height + 8}
+                        fontSize={12}
                         fill='black'
                         style={{ pointerEvents: 'none' }}
                     >
@@ -150,21 +122,24 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     if (edit.delete?.length) {
         const { points, hull } = getHull(deletionBBoxes);
         const bbox = getBoundingBox(points);
+        const id = edit.insert?.length
+            ? `${edit.id}-delete` :
+            edit.id
+
 
         hulls.push(
             <Hull
                 key={`${edit.id}-delete`}
-                id={edit.id}
-                data-id={edit.id}
+                id={id}
                 hull={hull}
                 fillOpacity={0.5}
                 fill='lightgray'
                 onClick={(e) => onClick && onClick(e)}
                 label={
                     <text
-                        x={bbox.x}
-                        y={bbox.y + bbox.height + 2}
-                        fontSize={10}
+                        x={bbox.x + 8}
+                        y={bbox.y + bbox.height + 8}
+                        fontSize={12}
                         fill='black'
                         style={{ pointerEvents: 'none' }}
                     >

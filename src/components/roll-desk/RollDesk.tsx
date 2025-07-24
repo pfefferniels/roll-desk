@@ -253,7 +253,7 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                             <Slider
                                 sx={{ minWidth: 120 }}
                                 min={0.1}
-                                max={2}
+                                max={3}
                                 step={0.05}
                                 value={stretch}
                                 onChange={(_, newValue) => setStretch(newValue as number)} />
@@ -477,7 +477,7 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                         type: 'edition'
                     }
 
-                    fillEdits(newVersion, asSymbols(newCopy.features))
+                    fillEdits(newVersion, asSymbols(newCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
                     versions.push(newVersion)
                     setVersions([...versions])
                 }}

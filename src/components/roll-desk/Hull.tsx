@@ -60,8 +60,6 @@ export const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: Hull
                 onMouseLeave={() => setHovered(false)}
             />
             <g style={{
-                fillOpacity: hovered ? 1 : 0.5,
-                strokeOpacity: hovered ? 1 : 0.5,
             }}>
                 {label}
             </g>

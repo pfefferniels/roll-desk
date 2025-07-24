@@ -63,7 +63,7 @@ export const VersionCreationDialog = ({ open, edition, symbols, onClose, onDone,
                             type: 'edition'
                         }
 
-                        fillEdits(version, symbols)
+                        fillEdits(version, symbols, { toleranceStart: 3, toleranceEnd: 3 })
 
                         onDone(version)
                         onClose()

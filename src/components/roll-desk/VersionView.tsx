@@ -62,14 +62,16 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     // draw edits of current version, but only 
     // if the version is based on a previous version
     const edits = []
-    for (const edit of version.edits) {
-        edits.push(
-            <EditView
-                key={edit.id}
-                edit={edit}
-                onClick={() => onClick(edit)}
-            />
-        )
+    if (prevVersion) {
+        for (const edit of version.edits) {
+            edits.push(
+                <EditView
+                    key={edit.id}
+                    edit={edit}
+                    onClick={() => onClick(edit)}
+                />
+            )
+        }
     }
 
     // draw dynamics of prev version and dynamics of current version (for comparison)
