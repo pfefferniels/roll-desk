@@ -213,3 +213,94 @@ export function alignBeamedNotes(beamedGroup: MusicalElement[]): MusicalElement[
         };
     });
 }
+
+/**
+ * Advanced beam detection for complex notation scenarios
+ */
+export function detectBeamGroups(elements: MusicalElement[]): MusicalElement[][] {
+    const noteElements = elements.filter(e => e.type === 'note');
+    const groups: MusicalElement[][] = [];
+    
+    for (let i = 0; i < noteElements.length; i++) {
+        const current = noteElements[i];
+        const group = [current];
+        
+        // Look for nearby notes that could be beamed together
+        for (let j = i + 1; j < noteElements.length; j++) {
+            const candidate = noteElements[j];
+            
+            // Check if candidate is close enough to be in the same beam group
+            const horizontalDistance = candidate.bounds.x - current.bounds.x;
+            const verticalDistance = Math.abs(candidate.bounds.y - current.bounds.y);
+            
+            // Beam grouping criteria
+            if (horizontalDistance < 100 && // Within reasonable horizontal distance
+                verticalDistance < 50 && // Within same staff area
+                horizontalDistance > 0) { // Ensure forward progression
+                group.push(candidate);
+                i = j; // Skip ahead
+            } else {
+                break; // End of beam group
+            }
+        }
+        
+        if (group.length > 1) {
+            groups.push(group);
+        }
+    }
+    
+    return groups;
+}
+
+/**
+ * Calculate alignment confidence score
+ */
+export function calculateAlignmentConfidence(
+    sourceFeatures: any[],
+    targetFeatures: any[],
+    alignmentResult: { shift: number; stretch: number }
+): {
+    confidence: number;
+    issues: string[];
+    recommendations: string[];
+} {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+    let confidence = 1.0;
+
+    // Check feature count similarity
+    const featureRatio = Math.min(sourceFeatures.length, targetFeatures.length) / 
+                        Math.max(sourceFeatures.length, targetFeatures.length);
+    if (featureRatio < 0.7) {
+        confidence *= 0.8;
+        issues.push(`Significant difference in feature count (${sourceFeatures.length} vs ${targetFeatures.length})`);
+        recommendations.push('Consider manual verification of alignment results');
+    }
+
+    // Check stretch factor reasonableness
+    if (alignmentResult.stretch > 1.5 || alignmentResult.stretch < 0.5) {
+        confidence *= 0.6;
+        issues.push(`Extreme stretch factor (${(alignmentResult.stretch * 100).toFixed(1)}%)`);
+        recommendations.push('Verify source material quality and scaling');
+    }
+
+    // Check shift magnitude
+    const shiftMM = Math.abs(alignmentResult.shift);
+    if (shiftMM > 50) {
+        confidence *= 0.7;
+        issues.push(`Large shift required (${shiftMM.toFixed(1)}mm)`);
+        recommendations.push('Check for systematic offset in source materials');
+    }
+
+    // Check for potential outliers
+    if (confidence < 0.5) {
+        recommendations.push('Consider alternative alignment approaches');
+        recommendations.push('Verify input data quality');
+    }
+
+    return {
+        confidence: Math.max(0, Math.min(1, confidence)),
+        issues,
+        recommendations
+    };
+}
