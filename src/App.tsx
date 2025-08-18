@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { Snackbar } from '@mui/material';
 import { SnackbarContext } from './providers/SnackbarContext';
 import { Desk } from './components/roll-desk/RollDesk';
 import { PianoContextProvider } from 'react-pianosound';
+import { DoubtProvider, SolidAuthProvider, SolidStatusBar } from 'doubtful'
 
 const App = () => {
   const [message, setMessage] = useState<string>()
@@ -23,9 +24,14 @@ const App = () => {
   return (
     <div className="App">
       <SnackbarContext.Provider value={{ setMessage }}>
-        <PianoContextProvider>
-          <Desk />
-        </PianoContextProvider>
+        <SolidAuthProvider datasetPath='doubts.ttl'>
+          <SolidStatusBar />
+          <PianoContextProvider>
+            <DoubtProvider>
+              <Desk />
+            </DoubtProvider>
+          </PianoContextProvider>
+        </SolidAuthProvider>
       </SnackbarContext.Provider>
 
       <Snackbar

@@ -1,12 +1,11 @@
 'use client'
 
-import { AppBar, Box, Button, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slider, Stack, Toolbar } from "@mui/material"
+import { AppBar, Box, Button, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slider, Stack, Toolbar, Tooltip } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
 import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, MeaningComprehension, Edit, Edition } from 'linked-rolls'
-import { Add, Clear, Create, Download, Edit as EditIcon, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
+import { Add, Clear, Create, Download, Edit as EditIcon, Pause, PlayArrow, QuestionAnswer, QuestionMark, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
-// import { usePiano } from "react-pianosound"
 import { write } from "midifile-ts"
 import { Layer, LayerStack } from "./StackList"
 import { LayeredRolls } from "./LayeredRolls"
@@ -23,6 +22,7 @@ import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { v4 } from "uuid"
 import { Stemma } from "./Stemma"
+import { Doubts } from "doubtful"
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -134,7 +134,9 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                     color: 'black',
                     width: viewOnly ? 'fit-content' : '100%',
                     right: viewOnly ? '3rem' : 'inherit'
-                }}>
+                }}
+                elevation={1}
+            >
                 <Toolbar>
                     <RibbonGroup>
                         <Ribbon title='File' visible={!viewOnly}>
@@ -277,9 +279,11 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                             <br />
                             {metadata.roll.catalogueNumber}{' '}
 
-                            ({/*new Intl.DateTimeFormat().format(
+                            ({new Intl.DateTimeFormat().format(
                                 flat(metadata.roll.recordingEvent.date)
-                            )*/})
+                            )})
+
+                            <Doubts about={metadata.roll.recordingEvent.date.id} />
                         </div>
                         <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
                             <IconButton onClick={() => setEditMetadata(true)}>
@@ -405,14 +409,6 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                             Add Copy
                         </Button>
                     )}
-
-                    <Paper>
-                        {metadata.creation.questions.map(question => {
-                            return (
-                                <div>{question.raise.question}</div>
-                            )
-                        })}
-                    </Paper>
                 </Stack>
             </Paper>
             <Box overflow='scroll'>
