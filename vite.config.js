@@ -42,18 +42,5 @@ export default defineConfig(() => {
         worker: {
             format: 'es',
         },
-        optimizeDeps: {
-            include: ['@mui/material'],
-            esbuildOptions: {
-                target: "es2020",
-            },
-
-        },
-        server: {
-            fs: {
-                // Allow serving files from one level up to the project root
-                allow: ['/Users'],
-            },
-        },
     };
 });
