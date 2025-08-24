@@ -8,6 +8,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
+import useIsVisible from "../../hooks/useIsVisible.tsx";
 
 interface IIIFInfo {
     "@id": string;
@@ -225,6 +226,8 @@ interface FeatureProps {
 }
 
 const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
+    const ref = useRef<SVGRectElement>(null);
+    const isVisible = useIsVisible(ref)
     const { translateX, trackToY, trackHeight } = usePinchZoom();
 
     const x = translateX(feature.horizontal.from);
@@ -236,7 +239,7 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
 
     return (
         <g className="feature" data-id={feature.id} id={feature.id} onClick={onClick}>
-            {(showFacsimile && feature.annotates) && (
+            {(showFacsimile && feature.annotates && isVisible) && (
                 <image
                     xlinkHref={feature.annotates.replace('default.jpg', 'gray.jpg')}
                     x={x}
@@ -247,6 +250,7 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
             )}
 
             <rect
+                ref={ref}
                 fill={color}
                 fillOpacity={0.3}
                 strokeWidth={0}
