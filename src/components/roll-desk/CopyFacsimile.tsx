@@ -227,12 +227,45 @@ interface FeatureProps {
 const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
     const { translateX, trackToY, trackHeight } = usePinchZoom();
 
-    const x = translateX(feature.horizontal.from);
-    const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to - feature.horizontal.from);
-    const height = feature.vertical.to === undefined
-        ? trackHeight.note
-        : trackToY(feature.vertical.to) - trackToY(feature.vertical.from);
+    // Validate feature data before processing
+    if (!feature?.horizontal || !feature?.vertical) {
+        console.warn('Invalid feature data:', feature?.id);
+        return null;
+    }
+
+    // Improved coordinate calculation with validation
+    const fromX = feature.horizontal.from;
+    const toX = feature.horizontal.to;
+    const fromY = feature.vertical.from;
+    const toY = feature.vertical.to;
+
+    // Validate coordinate values
+    if (!isFinite(fromX) || !isFinite(fromY) || !isFinite(toX)) {
+        console.warn('Invalid coordinates for feature:', feature.id);
+        return null;
+    }
+
+    const x = translateX(fromX);
+    const y = trackToY(fromY);
+    
+    // Calculate width with minimum size for visibility
+    const calculatedWidth = translateX(toX - fromX);
+    const width = Math.max(0.5, calculatedWidth); // Ensure minimum width
+
+    // Calculate height with proper fallback
+    let height: number;
+    if (toY === undefined || !isFinite(toY)) {
+        height = trackHeight.note;
+    } else {
+        const calculatedHeight = trackToY(toY) - trackToY(fromY);
+        height = Math.max(0.5, Math.abs(calculatedHeight)); // Ensure positive minimum height
+    }
+
+    // Validate final rendering coordinates
+    if (!isFinite(x) || !isFinite(y) || !isFinite(width) || !isFinite(height)) {
+        console.warn('Invalid rendering coordinates for feature:', feature.id);
+        return null;
+    }
 
     return (
         <g className="feature" data-id={feature.id} id={feature.id} onClick={onClick}>
@@ -242,6 +275,7 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
                     x={x}
                     y={y}
                     width={width}
+                    height={height}
                     filter="url(#invertFilter)"
                 />
             )}
@@ -258,13 +292,14 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
 
             {feature.condition && (
                 <text
-                    x={x}
-                    y={y}
+                    x={Math.max(0, x)}
+                    y={Math.max(10, y)}
                     fontSize={10}
+                    className="feature-condition"
                 >
-                    {flat(feature.condition).type}
+                    {flat(feature.condition)?.type || 'Unknown'}
                 </text>
             )}
         </g>
     );
-}
+};
