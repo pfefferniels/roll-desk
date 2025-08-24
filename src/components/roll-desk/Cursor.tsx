@@ -2,7 +2,7 @@ import { RefObject, useCallback, useEffect, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 
 interface CursorProps {
-    svgRef: RefObject<SVGElement>
+    svgRef: RefObject<SVGGElement | null>
 }
 
 export const Cursor = ({ svgRef }: CursorProps) => {
