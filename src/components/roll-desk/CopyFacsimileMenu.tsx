@@ -10,6 +10,7 @@ import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
 import { v4 } from "uuid"
 import { AlignCopies } from "./AlignCopies"
+import { EditString } from "./EditString"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
@@ -24,7 +25,8 @@ interface MenuProps {
 
 export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange, onChangeSelection }: MenuProps) => {
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
-    const [conditionStateDialogOpen, setConditionstateDialogOpen] = useState(false)
+    const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
+    const [reportRollCondition, setReportRollCondition] = useState(false)
     const [editProduction, setEditProduction] = useState(false)
     const [alignCopies, setAlignCopies] = useState(false)
 
@@ -41,13 +43,13 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 <Ribbon title='Roll Metadata'>
                     <Button
                         onClick={() => setEditProduction(true)}
-                        size='small'
                         startIcon={<EditIcon />}
                     >
                         Production
                     </Button>
                     <Button
                         startIcon={<BrokenImage />}
+                        onClick={() => setReportRollCondition(true)}
                     >
                         Condition
                     </Button>
@@ -96,7 +98,7 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                                 Remove
                             </Button>
                             <Button
-                                onClick={() => setConditionstateDialogOpen(true)}
+                                onClick={() => setReportFeatureCondition(true)}
                                 size='small'
                                 startIcon={<BrokenImage />}
                             >
@@ -125,9 +127,10 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
                         versions={versions}
                     />
+
                     <ConditionStateDialog
-                        open={conditionStateDialogOpen}
-                        onClose={() => setConditionstateDialogOpen(false)}
+                        open={reportFeatureCondition}
+                        onClose={() => setReportFeatureCondition(false)}
                         subject='feature'
                         onDone={condition => {
                             if (!isRollFeature(selection[0])) return
@@ -136,6 +139,20 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                     />
                 </>
             )}
+
+            <EditString
+                open={reportRollCondition}
+                value={"Generel condition ..."}
+                onClose={() => setReportRollCondition(false)}
+                onDone={(value) => {
+                    copy.conditions.push(assign('conditionAssignment', {
+                        type: 'general',
+                        description: value
+                    }))
+                    onChange(copy.shallowClone())
+                    setReportRollCondition(false)
+                }}
+            />
 
             <ProductionEventDialog
                 open={editProduction}

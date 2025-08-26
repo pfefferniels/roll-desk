@@ -67,6 +67,7 @@ export const LayeredRolls = ({
                                     color={stackItem.color}
                                     facsimileOpacity={stackItem.facsimileOpacity}
                                     onClick={onAddToSelection}
+                                    onChange={() => {}}
                                     onSelectionDone={dimension => onChangeSelection([{
                                         ...dimension
                                     }])}

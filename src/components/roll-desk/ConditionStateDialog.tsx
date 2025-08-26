@@ -1,4 +1,4 @@
-import { Button, DialogTitle, DialogContent, Dialog, DialogActions, Grid, TextField, Typography, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
 import { assign, EditorialAssumption, FeatureCondition, flat, GeneralRollCondition, PaperStretch } from "linked-rolls";
 
@@ -54,51 +54,47 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
+        <Dialog open={open} onClose={onClose}>
             <DialogTitle>Edit Condition</DialogTitle>
             <DialogContent>
-                <Grid container spacing={2} p={1} sx={{ minWidth: 700 }}>
-                    <Grid item xs={4}>
-                        <Typography>Condition Type</Typography>
-                        <Stack direction="column" spacing={2}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel id="condition-type-label">Condition Type</InputLabel>
-                                <Select
-                                    labelId="condition-type-label"
-                                    value={type}
-                                    onChange={e => setType(e.target.value as typeof types[number])}
-                                >
-                                    {types.map(t => {
-                                        return (
-                                            <MenuItem key={t} value={t}>
-                                                {t.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
-                                            </MenuItem>
-                                        )
-                                    })}
-                                </Select>
-                            </FormControl>
+                <Typography>Condition Type</Typography>
+                <Stack direction="column" spacing={2}>
+                    <FormControl size="small">
+                        <InputLabel id="condition-type-label">Condition Type</InputLabel>
+                        <Select
+                            labelId="condition-type-label"
+                            value={type}
+                            onChange={e => setType(e.target.value as typeof types[number])}
+                        >
+                            {types.map(t => {
+                                return (
+                                    <MenuItem key={t} value={t}>
+                                        {t.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                                    </MenuItem>
+                                )
+                            })}
+                        </Select>
+                    </FormControl>
 
-                            <TextField
-                                size="small"
-                                value={description ?? ''}
-                                placeholder="Description of the condition"
-                                onChange={e => setDescription(e.target.value)}
-                                fullWidth
-                            />
+                    <TextField
+                        size="small"
+                        value={description ?? ''}
+                        placeholder="Description of the condition"
+                        onChange={e => setDescription(e.target.value)}
+                        fullWidth
+                    />
 
-                            {type === 'paper-stretch' && (
-                                <TextField
-                                    size="small"
-                                    type="number"
-                                    value={factor ?? ''}
-                                    placeholder="Factor (e.g. 1.5)"
-                                    onChange={e => setFactor(Number(e.target.value))}
-                                    fullWidth
-                                />
-                            )}
-                        </Stack>
-                    </Grid>
-                </Grid>
+                    {type === 'paper-stretch' && (
+                        <TextField
+                            size="small"
+                            type="number"
+                            value={factor ?? ''}
+                            placeholder="Factor (e.g. 1.5)"
+                            onChange={e => setFactor(Number(e.target.value))}
+                            fullWidth
+                        />
+                    )}
+                </Stack>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>

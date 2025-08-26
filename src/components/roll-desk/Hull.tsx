@@ -1,4 +1,4 @@
-import { ReactNode, MouseEventHandler, useState } from "react";
+import React, { ReactNode, MouseEventHandler, useState } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
 
 interface Rect {
@@ -32,6 +32,7 @@ export const getHull = (bboxes: Rect[], hullPadding = 3) => {
 
 
 interface HullProps {
+    ref?: React.Ref<SVGPathElement>;
     id: string;
     hull: string;
     label?: ReactNode;
@@ -40,7 +41,8 @@ interface HullProps {
     fillOpacity?: number;
     fill?: string;
 }
-export const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: HullProps) => {
+
+export const Hull = ({ ref, id, hull, onClick, label, soft, fill, fillOpacity }: HullProps) => {
     const [hovered, setHovered] = useState(false);
 
     return (
@@ -50,6 +52,7 @@ export const Hull = ({ id, hull, onClick, label, soft, fill, fillOpacity }: Hull
             data-id={id}
         >
             <path
+                ref={ref}
                 id={id}
                 stroke={soft ? 'none' : 'black'}
                 fill={fill || (soft ? 'gray' : 'white')}

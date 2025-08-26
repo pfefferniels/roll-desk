@@ -9,6 +9,7 @@ import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 import useIsVisible from "../../hooks/useIsVisible.tsx";
+import { Arguable } from "./EditAssumption.tsx";
 
 interface IIIFInfo {
     "@id": string;
@@ -78,6 +79,7 @@ interface CopyFacsimileProps {
     copy: RollCopy;
     active: boolean;
     onClick: (e: RollFeature) => void;
+    onChange: (copy: RollCopy) => void;
     color: string;
     onSelectionDone: (dimension: EventDimension) => void;
     facsimile?: File;
@@ -92,6 +94,7 @@ export const CopyFacsimile = ({
     onSelectionDone,
     facsimile,
     facsimileOpacity,
+    onChange
 }: CopyFacsimileProps) => {
     const { zoom, trackHeight, trackToY } = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
@@ -189,6 +192,9 @@ export const CopyFacsimile = ({
                             onClick={() => onClick(feature)}
                             color={color}
                             showFacsimile={facsimileOpacity === 0}
+                            onChange={() => {
+                                onChange(copy.shallowClone())
+                            }}
                         />
                     )
                 })}
@@ -221,11 +227,12 @@ const KeyboardDivision = () => {
 interface FeatureProps {
     feature: RollFeature;
     onClick: React.MouseEventHandler;
+    onChange: (feature: RollFeature) => void;
     color: string;
     showFacsimile?: boolean
 }
 
-const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
+const Feature = ({ feature, onClick, color, showFacsimile, onChange }: FeatureProps) => {
     const ref = useRef<SVGRectElement>(null);
     const isVisible = useIsVisible(ref)
     const { translateX, trackToY, trackHeight } = usePinchZoom();
@@ -238,7 +245,7 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
         : trackToY(feature.vertical.to) - trackToY(feature.vertical.from);
 
     return (
-        <g className="feature" data-id={feature.id} id={feature.id} onClick={onClick}>
+        <g className="feature">
             {(showFacsimile && feature.annotates && isVisible) && (
                 <image
                     xlinkHref={feature.annotates.replace('default.jpg', 'gray.jpg')}
@@ -246,6 +253,9 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
                     y={y}
                     width={width}
                     filter="url(#invertFilter)"
+                    data-id={feature.id}
+                    id={feature.id}
+                    onClick={onClick}
                 />
             )}
 
@@ -258,16 +268,27 @@ const Feature = ({ feature, onClick, color, showFacsimile }: FeatureProps) => {
                 y={y}
                 width={width}
                 height={height}
+                data-id={feature.id}
+                id={feature.id}
+                onClick={onClick}
             />
 
             {feature.condition && (
-                <text
-                    x={x}
-                    y={y}
+                <foreignObject
+                    x={x + 10}
+                    y={y - 10}
+                    width={200}
+                    height={40}
                     fontSize={10}
+                    transform={`rotate(-90 ${x} ${y})`}
                 >
-                    {flat(feature.condition).type}
-                </text>
+                    <Arguable about={feature.condition} viewOnly={false} onChange={condition => {
+                        feature.condition = condition;
+                        onChange(feature);
+                    }}>
+                        {flat(feature.condition).type.replaceAll('-', ' ')}
+                    </Arguable>
+                </foreignObject>
             )}
         </g>
     );

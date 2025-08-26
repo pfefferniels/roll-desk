@@ -17,12 +17,15 @@ export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => 
         .flat()
         .map(edit => getEditBBoxes(edit, translation))
         .map(bboxes => getHull(bboxes, 10))
-
+    
     return (
         <g>
             {hulls.map(hull => {
                 return (
                     <Hull
+                        ref={e => {
+                            if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+                        }}
                         data-test="motivation"
                         key={`${motivation.id}`}
                         id={`${motivation.id}`}

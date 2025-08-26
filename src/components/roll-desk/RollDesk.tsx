@@ -1,9 +1,9 @@
 'use client'
 
-import { AppBar, Box, Button, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slider, Stack, Toolbar, Tooltip } from "@mui/material"
+import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useEffect, useState } from "react"
-import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Question, Version, VerticalSpan, MeaningComprehension, Edit, Edition } from 'linked-rolls'
-import { Add, Clear, Create, Download, Edit as EditIcon, Pause, PlayArrow, QuestionAnswer, QuestionMark, Save, Settings } from "@mui/icons-material"
+import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
+import { Add, Clear, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { write } from "midifile-ts"
@@ -22,7 +22,30 @@ import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { v4 } from "uuid"
 import { Stemma } from "./Stemma"
-import { Doubts } from "doubtful"
+import { Arguable } from "./EditAssumption"
+import { SelectionContext } from "../../providers/SelectionContext"
+
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`simple-tabpanel-${index}`}
+            aria-labelledby={`simple-tab-${index}`}
+            {...other}
+        >
+            {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+        </div>
+    );
+}
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -70,6 +93,8 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
     const [currentMotivation, setCurrentMotivation] = useState<Motivation<string>>()
 
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
+
+    const [currentTab, setCurrentTab] = useState(2)
 
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion) return
@@ -126,7 +151,7 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
     }
 
     return (
-        <>
+        <SelectionContext.Provider value={{ selection, setSelection }}>
             <AppBar
                 position={viewOnly ? 'absolute' : 'static'}
                 sx={{
@@ -193,6 +218,7 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                                 onChange={version => {
                                     const index = versions.indexOf(version)
                                     if (index !== -1) {
+                                        console.log('updating version')
                                         versions[index] = version
                                         setVersions([...versions])
                                     }
@@ -272,55 +298,42 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                     padding: 2
                 }}
             >
-                <Stack direction='column' spacing={1} sx={{ maxWidth: '300px' }}>
-                    <Box>
-                        <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
-                            <b>{metadata.title}</b>
-                            <br />
-                            {metadata.roll.catalogueNumber}{' '}
+                <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
+                    <Tab value={0} label="General" />
+                    <Tab value={1} label="Stemma" />
+                    <Tab value={2} label="Carriers" />
+                </Tabs>
 
+                <TabPanel value={currentTab} index={0}>
+                    <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
+                        <b>{metadata.title}</b>
+                        <br />
+                        {metadata.roll.catalogueNumber}{' '}
+
+                        <Arguable
+                            viewOnly={viewOnly || false}
+                            about={metadata.roll.recordingEvent.date}
+                            onChange={(assumption) => {
+                                setMetadata(prev => {
+                                    if (!prev) return
+                                    prev.roll.recordingEvent.date = assumption
+                                    return { ...prev }
+                                })
+                            }}
+                        >
                             ({new Intl.DateTimeFormat().format(
                                 flat(metadata.roll.recordingEvent.date)
                             )})
+                        </Arguable>
+                    </div>
+                    <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
+                        <IconButton onClick={() => setEditMetadata(true)}>
+                            <Create />
+                        </IconButton>
+                    </div>
+                </TabPanel>
 
-                            <Doubts about={metadata.roll.recordingEvent.date.id} />
-                        </div>
-                        <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
-                            <IconButton onClick={() => setEditMetadata(true)}>
-                                <Create />
-                            </IconButton>
-                        </div>
-                    </Box>
-
-                    {selection.length > 0 && (
-                        <Box>
-                            <div style={{ float: 'left', padding: 8 }}>
-                                <b>{selection.length}</b> item(s) selected
-                                {selection.length < 10 && (
-                                    <>
-                                        <br />
-                                        <span style={{ color: 'gray', fontSize: '8pt' }}>
-                                            {selection.map(e => {
-                                                if ('id' in e) {
-                                                    return (e.id as any).slice(0, 15)
-                                                }
-                                                else {
-                                                    return '[unnamed]'
-                                                }
-                                            }).join(', ')}
-                                        </span>
-
-                                    </>
-                                )}
-                            </div>
-                            <div style={{ float: 'right' }}>
-                                <IconButton onClick={() => setSelection([])}>
-                                    <Clear />
-                                </IconButton>
-                            </div>
-                        </Box>
-                    )}
-
+                <TabPanel value={currentTab} index={1}>
                     <Stemma
                         versions={versions}
                         currentVersion={currentVersion}
@@ -329,53 +342,18 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                             setActiveLayer(undefined)
                             setSelection([])
                         }}
+                        onHoverMotivation={(motivation) => {
+                            if (motivation === null) {
+                                setCurrentMotivation(undefined)
+                            }
+                            else {
+                                setCurrentMotivation(motivation)
+                            }
+                        }}
                     />
+                </TabPanel>
 
-                    {currentVersion && (
-                        <List dense>
-                            {currentVersion?.motivations.map((motivation, i) => {
-                                if (!motivation.belief) return
-
-                                const edits = motivation.belief.reasons
-                                    .filter((reason): reason is MeaningComprehension<Edit> => {
-                                        return 'comprehends' in reason
-                                    })
-                                    .map(argumentation => argumentation.comprehends)
-                                    .flat()
-
-                                return (
-                                    <ListItem key={`motivation_${i}`}
-                                        secondaryAction={
-                                            <IconButton>
-                                                <EditIcon />
-                                            </IconButton>
-                                        }
-                                    >
-                                        <ListItemButton
-                                            onMouseEnter={() => {
-                                                setCurrentMotivation(motivation)
-                                            }}
-                                            onMouseLeave={() => {
-                                                setCurrentMotivation(undefined)
-                                            }}
-                                        >
-                                            <ListItemText
-                                                secondary={
-                                                    <span>
-                                                        {motivation.belief?.certainty},
-                                                        {' '}{edits.length} edits
-                                                    </span>
-                                                }
-                                            >
-                                                {flat(motivation)}
-                                            </ListItemText>
-                                        </ListItemButton>
-                                    </ListItem>
-                                )
-                            })}
-                        </List>
-                    )}
-
+                <TabPanel value={currentTab} index={2}>
                     <LayerStack
                         stack={
                             currentVersion
@@ -409,7 +387,47 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                             Add Copy
                         </Button>
                     )}
-                </Stack>
+                </TabPanel>
+            </Paper>
+
+            <Paper
+                sx={{
+                    position: 'absolute',
+                    margin: 1,
+                    backdropFilter: 'blur(17px)',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    padding: 2,
+                    bottom: 1
+                }}
+            >
+                {selection.length > 0 && (
+                    <Box>
+                        <div style={{ float: 'left', padding: 8 }}>
+                            <b>{selection.length}</b> item(s) selected
+                            {selection.length < 10 && (
+                                <>
+                                    <br />
+                                    <span style={{ color: 'gray', fontSize: '8pt' }}>
+                                        {selection.map(e => {
+                                            if ('id' in e) {
+                                                return (e.id as any).slice(0, 15)
+                                            }
+                                            else {
+                                                return '[unnamed]'
+                                            }
+                                        }).join(', ')}
+                                    </span>
+
+                                </>
+                            )}
+                        </div>
+                        <div style={{ float: 'right' }}>
+                            <IconButton onClick={() => setSelection([])}>
+                                <Clear />
+                            </IconButton>
+                        </div>
+                    </Box>
+                )}
             </Paper>
             <Box overflow='scroll'>
                 <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
@@ -483,6 +501,6 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                     })
                 }}
             />
-        </>
+        </SelectionContext.Provider >
     )
 }

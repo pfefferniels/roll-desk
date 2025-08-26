@@ -15,8 +15,7 @@ const emptyMetadata: EditionMetadata = {
         collationTolerance: {
             toleranceEnd: 5,
             toleranceStart: 5,
-        },
-        questions: []
+        }
     },
     roll: {
         catalogueNumber: '',

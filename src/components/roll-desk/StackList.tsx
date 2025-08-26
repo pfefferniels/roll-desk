@@ -1,8 +1,9 @@
 import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText } from "@mui/material"
-import { flat, RollCopy } from "linked-rolls"
+import { flat, PaperStretch, RollCopy } from "linked-rolls"
 import { useState } from "react"
 import { ColorDialog } from "./ColorDialog"
+import { Arguable } from "./EditAssumption"
 
 export interface Layer {
     copy: RollCopy
@@ -27,8 +28,16 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
             <List dense>
                 {stack.map((layer, i) => {
                     const date = layer.copy.productionEvent?.date
-                        ? new Intl.DateTimeFormat().format(
-                            flat(layer.copy.productionEvent.date)
+                        ? (
+                            <Arguable
+                                about={layer.copy.productionEvent.date}
+                                onChange={() => { }}
+                                viewOnly={false}
+                            >
+                                {new Intl.DateTimeFormat().format(
+                                    flat(layer.copy.productionEvent.date)
+                                )}
+                            </Arguable>
                         )
                         : 'unknown date';
 
@@ -39,6 +48,7 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     edge="end"
                                     sx={{ color: layer.color }}
                                     onClick={() => setClickedLayer(layer)}
+                                    aria-label="change color and facsimile"
                                 >
                                     <ColorLens />
                                 </IconButton>
@@ -64,7 +74,30 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                             {date}
                                         </span>
                                     }
-                                    secondary={layer.copy.location}
+                                    secondary={
+                                        <div>
+                                            {layer.copy.location}
+                                            <br/>
+                                            {layer.copy.conditions.map((c, idx) => {
+                                                return (
+                                                    <Arguable
+                                                        key={`condition_${idx}` }
+                                                        about={c}
+                                                        onChange={() => {
+                                                            onChange([...stack])
+                                                        }}
+                                                        viewOnly={false}
+                                                    >
+                                                        <span>
+                                                            {flat(c).type === 'general'
+                                                                ? flat(c).description
+                                                                : `Paper Stretch: ${(flat(c) as PaperStretch).factor.toFixed(3)}`}
+                                                        </span>
+                                                    </Arguable>
+                                                )
+                                            })}
+                                        </div>
+                                    }
                                 />
                             </ListItemButton>
                         </ListItem>

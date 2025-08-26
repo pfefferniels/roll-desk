@@ -1,11 +1,11 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split, versionTypes, editMotivations, EditMotivation } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split, versionTypes, editMotivations, EditMotivation, flat } from "linked-rolls"
 import { useState } from "react"
-import { EditSiglum } from "./EditSiglum"
+import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
-import { EditAssumption } from "./EditAssumption"
+// import { EditAssumption } from "./EditAssumption"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
@@ -27,6 +27,7 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
+    const [editsToMotivate, setEditsToMotivate] = useState<Edit[]>()
 
     useHotkeys(['m'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -82,6 +83,10 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     const addMotivation = (about: Edit[]) => {
         if (about.length === 0) return
 
+
+        setEditsToMotivate(about)
+
+        /*
         if (about.length === 1) {
             const motivation: Motivation<EditMotivation> = about[0].motivation || {
                 assigned: 'correct-error',
@@ -97,27 +102,8 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
 
             setAssignMotivation(motivation)
         }
-        else {
-            const comprehension: MeaningComprehension<Edit> = {
-                comprehends: about
-            }
-
-            const motivation: Motivation<string> = {
-                assigned: '...',
-                id: v4(),
-                type: 'motivationAssignment',
-                belief: {
-                    type: 'belief',
-                    certainty: 'true',
-                    id: v4(),
-                    reasons: [comprehension]
-                }
-            }
-
-            version.motivations.push(motivation)
-            setAssignMotivation(motivation)
-            onChange(version)
-        }
+        else {*/
+        /*}*/
     }
 
     return (
@@ -276,9 +262,9 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 )}
             </Ribbon>
 
-            <EditSiglum
+            <EditString
                 open={editSiglum}
-                siglum={version.siglum}
+                value={version.siglum}
                 onDone={(newSiglum) => {
                     version.siglum = newSiglum
                     setEditSiglum(false)
@@ -287,37 +273,20 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 onClose={() => setEditSiglum(false)}
             />
 
-            <EditAssumption
+            <EditString
                 open={assignActor}
                 onClose={() => setAssignActor(false)}
-                assumption={version.actor || assign('actorAssignment', { name: '', sameAs: [] })}
-                onChange={(assumption) => {
-                    version.actor = assumption
+                value={version.actor ? flat(version.actor).name : ''}
+                onDone={(str) => {
+                    version.actor = assign('actorAssignment', {
+                        name: str,
+                        id: v4(),
+                        sameAs: ['']
+                    })
                     setAssignActor(false)
                     onChange(version)
                 }}
             />
-
-            {assignMotivation && (
-                <EditAssumption
-                    open={!!assignMotivation}
-                    onClose={() => setAssignMotivation(undefined)}
-                    assumption={assignMotivation}
-                    onChange={(assumption) => {
-                        if (selection.length === 1 && isEdit(selection[0])) {
-                            selection[0].motivation = assumption as any
-                            console.log('new selection', selection)
-                        }
-                        else {
-                            version.motivations.splice(
-                                version.motivations.indexOf(assignMotivation), 1, assumption
-                            )
-                        }
-                        setAssignMotivation(undefined)
-                        onChange({ ...version })
-                    }}
-                />
-            )}
 
             <SelectVersion
                 open={attachTo}
@@ -341,6 +310,37 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 }}
                 value={version.type}
                 types={versionTypes}
+            />
+
+            <EditString
+                open={!!editsToMotivate}
+                onClose={() => setEditsToMotivate(undefined)}
+                value=''
+                onDone={(motivationDescription) => {
+                    if (!editsToMotivate) return
+
+                    const comprehension: MeaningComprehension<Edit> = {
+                        type: 'meaningComprehension',
+                        comprehends: editsToMotivate
+                    }
+
+                    const motivation: Motivation<string> = {
+                        assigned: motivationDescription,
+                        id: v4(),
+                        type: 'motivationAssignment',
+                        belief: {
+                            type: 'belief',
+                            certainty: 'true',
+                            id: v4(),
+                            reasons: [comprehension]
+                        }
+                    }
+
+                    version.motivations.push(motivation)
+                    setAssignMotivation(motivation)
+                    onChange(version)
+                    setEditsToMotivate(undefined)
+                }}
             />
         </>
     )

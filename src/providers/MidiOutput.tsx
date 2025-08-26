@@ -1,4 +1,4 @@
-import { SynthEvent, getSamplesFromSoundFont } from "@ryohey/wavelet"
+import { SynthEvent, getSampleEventsFromSoundFont } from "@ryohey/wavelet"
 import { useEffect, useState, createContext, useCallback } from "react"
 
 interface MidiOutputState {
@@ -55,15 +55,14 @@ export const MidiOutputProvider: React.FC<MidiOutputProviderProps> = ({ children
 
         const loadSoundFont = async (soundFontUrl: string) => {
             const soundFontData = await (await fetch(soundFontUrl)).arrayBuffer()
-            const parsed = getSamplesFromSoundFont(
+            const sampleEvents = getSampleEventsFromSoundFont(
                 new Uint8Array(soundFontData),
-                context
             )
-    
-            for (const sample of parsed) {
+        
+            for (const sample of sampleEvents) {
                 postSynthMessage(
-                    sample,
-                    [sample.sample.buffer] // transfer instead of copy
+                    sample.event,
+                    sample.transfer // transfer instead of copy
                 )
             }
         }
