@@ -7,10 +7,11 @@ type DynamicsProps ={
 } 
 
 export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) => {
-    const { translateX, trackToY } = usePinchZoom()
+    const { translateX, trackToY, getRepresentativeTrack } = usePinchZoom()
 
-    const bassShift = trackToY(33)
-    const trebleShift = trackToY(97)
+    // Use representative tracks from the proper expression areas for the current roll system
+    const bassShift = trackToY(getRepresentativeTrack('bass-expression'))
+    const trebleShift = trackToY(getRepresentativeTrack('treble-expression'))
 
     const reducerFor = (scope: 'treble' | 'bass') => {
         return (acc: [number, number][], v: number, i: number) => {
