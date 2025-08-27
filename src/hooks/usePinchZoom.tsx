@@ -4,6 +4,7 @@ export interface PinchZoomContextProps {
     translateX: (x: number) => number
     trackToY: (y: number) => number
     yToTrack: (y: number) => number | 'gap'
+    getRepresentativeTrack: (area: 'bass-expression' | 'notes' | 'treble-expression') => number
 
     trackHeight: {
         note: number
@@ -18,22 +19,38 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     translateX: (x: number) => x,
     trackToY: (track: number) => track,
     yToTrack: (y: number) => y,
+    getRepresentativeTrack: (area: 'bass-expression' | 'notes' | 'treble-expression') => 0,
     zoom: 0,
     height: 0
 });
+
+interface RollSystemAreas {
+    'bass-expression': [number, number]
+    'notes': [number, number]
+    'treble-expression': [number, number]
+}
 
 interface PinchZoomProviderProps {
     spacing?: number
     zoom: number
     noteHeight: number
     expressionHeight: number
+    rollSystemAreas?: RollSystemAreas
     children: ReactNode;
 }
 
-export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, noteHeight, expressionHeight, children, spacing: userSpacing }) => {
+export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ 
+    zoom, 
+    noteHeight, 
+    expressionHeight, 
+    children, 
+    spacing: userSpacing,
+    rollSystemAreas 
+}) => {
     const spacing = userSpacing || 40
 
-    const areas = {
+    // Default to Welte T-100 system if no areas specified
+    const areas = rollSystemAreas || {
         'bass-expression': [0, 9],
         'notes': [10, 89],
         'treble-expression': [90, 99]
@@ -60,15 +77,18 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
         if (name === null) return 0
 
         if (name === 'bass-expression') {
-            return height - (track * expressionHeight)
+            // Add half-track offset to center track positioning
+            return height - ((track + 0.5) * expressionHeight)
         }
         if (name === 'notes') {
             const noteArea = track - 10
-            return height - (spacing + 10 * expressionHeight + noteArea * noteHeight)
+            // Add half-track offset to center track positioning
+            return height - (spacing + 10 * expressionHeight + (noteArea + 0.5) * noteHeight)
         }
         if (name === 'treble-expression') {
             const expressionArea = track - 90
-            return height - (spacing * 2 + 10 * expressionHeight + 80 * noteHeight + expressionArea * expressionHeight)
+            // Add half-track offset to center track positioning
+            return height - (spacing * 2 + 10 * expressionHeight + 80 * noteHeight + (expressionArea + 0.5) * expressionHeight)
         }
         else {
             return 0
@@ -77,7 +97,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
 
     const yToTrack = (y: number): number | 'gap' => {
         const inverse = height - y
-        console.log('y to track', 'nverse', inverse, 'height', height, 'y', y)
+        console.log('y to track', 'inverse', inverse, 'height', height, 'y', y)
 
         const seg1Max = 10 * expressionHeight
         const seg2Min = spacing + 10 * expressionHeight
@@ -85,16 +105,25 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
         const seg3Min = spacing * 2 + 10 * expressionHeight + 80 * noteHeight
 
         if (inverse < seg1Max) {
-            return Math.floor(inverse / expressionHeight)
+            // Adjust for half-track offset: round to nearest track
+            return Math.round(inverse / expressionHeight - 0.5)
         }
         else if (inverse >= seg2Min && inverse < seg2Max) {
-            return Math.floor((inverse - seg2Min) / noteHeight) + 10
+            // Adjust for half-track offset: round to nearest track  
+            return Math.round((inverse - seg2Min) / noteHeight - 0.5) + 10
         }
         else if (inverse >= seg3Min) {
-            return Math.floor((inverse - seg3Min) / expressionHeight) + 90
+            // Adjust for half-track offset: round to nearest track
+            return Math.round((inverse - seg3Min) / expressionHeight - 0.5) + 90
         }
 
         return 'gap'
+    }
+
+    const getRepresentativeTrack = (area: 'bass-expression' | 'notes' | 'treble-expression'): number => {
+        const range = areas[area]
+        // Return the middle track of the range
+        return Math.floor((range[0] + range[1]) / 2)
     }
 
     return (
@@ -102,6 +131,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
             translateX,
             trackToY,
             yToTrack,
+            getRepresentativeTrack,
             zoom,
             trackHeight: {
                 note: noteHeight,
