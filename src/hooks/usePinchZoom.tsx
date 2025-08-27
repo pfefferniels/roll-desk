@@ -4,6 +4,7 @@ export interface PinchZoomContextProps {
     translateX: (x: number) => number
     trackToY: (y: number) => number
     yToTrack: (y: number) => number | 'gap'
+    areaOf: (track: number) => string | null
 
     trackHeight: {
         note: number
@@ -18,6 +19,7 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     translateX: (x: number) => x,
     trackToY: (track: number) => track,
     yToTrack: (y: number) => y,
+    areaOf: (track: number) => null,
     zoom: 0,
     height: 0
 });
@@ -107,7 +109,8 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
                 note: noteHeight,
                 expression: expressionHeight
             },
-            height
+            height,
+            areaOf
         }}>
             {children}
         </PinchZoomContext.Provider>

@@ -147,7 +147,7 @@ export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) =
     const stretch = copy.conditions
         .map(condition => flat(condition))
         .find(condition => condition.type === 'paper-stretch')
-    
+
     if (stretch) {
         from /= stretch.factor
         to /= stretch.factor
@@ -156,10 +156,10 @@ export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) =
     let x1 = mmToPixels(from, dpi)
     let x2 = mmToPixels(to, dpi)
 
-    let y1 = (selection.vertical.to || selection.vertical.from + 1)
+    let y1 = ((selection.vertical.to || selection.vertical.from + 1) + 2)
         * (copy.measurements.holeSeparation?.value || 1)
         + (copy.measurements.margins?.bass || 0)
-    let y2 = selection.vertical.from
+    let y2 = (selection.vertical.from + 2)
         * (copy.measurements.holeSeparation?.value || 1)
         + (copy.measurements.margins?.bass || 0)
 

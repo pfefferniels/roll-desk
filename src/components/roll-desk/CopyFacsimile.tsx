@@ -4,7 +4,7 @@ import {
     RollFeature
 } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
-import { useLayoutEffect, useRef, useState } from "react";
+import { JSX, useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
@@ -46,8 +46,8 @@ async function tilesAsSVGImage(
     const areas = [[0, 9], [10, 89], [90, 99]]
     for (const [from, to] of areas) {
         for (let x = 0; x < width; x += stepSize) {
-            const y = Math.ceil(from * holeSeparation + margins.bass);
-            const height = Math.ceil(holeSeparation * (to - from));
+            const y = Math.ceil((from + 2) * holeSeparation + margins.bass);
+            const height = Math.ceil(holeSeparation * (to - from + 1));
             const region = `${y},${x},${height},${stepSize}`;
             const size = `256,`;
             const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
@@ -235,14 +235,21 @@ interface FeatureProps {
 const Feature = ({ feature, onClick, color, showFacsimile, onChange }: FeatureProps) => {
     const ref = useRef<SVGRectElement>(null);
     const isVisible = useIsVisible(ref)
-    const { translateX, trackToY, trackHeight } = usePinchZoom();
+    const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
 
     const x = translateX(feature.horizontal.from);
     const y = trackToY(feature.vertical.from);
     const width = translateX(feature.horizontal.to - feature.horizontal.from);
-    const height = feature.vertical.to === undefined
-        ? trackHeight.note
-        : trackToY(feature.vertical.to) - trackToY(feature.vertical.from);
+    let height = 0
+    if (areaOf(feature.vertical.from)?.includes('expression')) {
+        height = trackHeight.expression
+    }
+    else if (areaOf(feature.vertical.from)?.includes('note')) {
+        height = trackHeight.note
+    }
+    else if (feature.vertical.to !== undefined) {
+        height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
+    }
 
     return (
         <g className="feature">
