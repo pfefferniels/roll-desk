@@ -4,7 +4,6 @@ export interface PinchZoomContextProps {
     translateX: (x: number) => number
     trackToY: (y: number) => number
     yToTrack: (y: number) => number | 'gap'
-    getRepresentativeTrack: (area: 'bass-expression' | 'notes' | 'treble-expression') => number
 
     trackHeight: {
         note: number
@@ -19,38 +18,22 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     translateX: (x: number) => x,
     trackToY: (track: number) => track,
     yToTrack: (y: number) => y,
-    getRepresentativeTrack: (area: 'bass-expression' | 'notes' | 'treble-expression') => 0,
     zoom: 0,
     height: 0
 });
-
-interface RollSystemAreas {
-    'bass-expression': [number, number]
-    'notes': [number, number]
-    'treble-expression': [number, number]
-}
 
 interface PinchZoomProviderProps {
     spacing?: number
     zoom: number
     noteHeight: number
     expressionHeight: number
-    rollSystemAreas?: RollSystemAreas
     children: ReactNode;
 }
 
-export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ 
-    zoom, 
-    noteHeight, 
-    expressionHeight, 
-    children, 
-    spacing: userSpacing,
-    rollSystemAreas 
-}) => {
+export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, noteHeight, expressionHeight, children, spacing: userSpacing }) => {
     const spacing = userSpacing || 40
 
-    // Default to Welte T-100 system if no areas specified
-    const areas = rollSystemAreas || {
+    const areas = {
         'bass-expression': [0, 9],
         'notes': [10, 89],
         'treble-expression': [90, 99]
@@ -114,18 +97,11 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         return 'gap'
     }
 
-    const getRepresentativeTrack = (area: 'bass-expression' | 'notes' | 'treble-expression'): number => {
-        const range = areas[area]
-        // Return the middle track of the range
-        return Math.floor((range[0] + range[1]) / 2)
-    }
-
     return (
         <PinchZoomContext.Provider value={{
             translateX,
             trackToY,
             yToTrack,
-            getRepresentativeTrack,
             zoom,
             trackHeight: {
                 note: noteHeight,
