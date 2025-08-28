@@ -6,6 +6,7 @@ import { v4 } from "uuid";
 import { useSelection } from "../../providers/SelectionContext";
 import { Doubts } from "doubtful";
 import { EditChoice, EditString } from "./EditString";
+import { produce } from "immer";
 /*
 interface PersonEditProps {
     person: Person;
@@ -97,8 +98,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                         id: v4(),
                         reasons: [],
                     }
-                    about.belief = newBelief;
-                    onChange(about);
+                    const updatedAbout = produce(about, draft => {
+                        draft.belief = newBelief;
+                    })
+                    onChange(updatedAbout);
                 }}>
                     Create Belief
                 </Button>
@@ -114,8 +117,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                                     <Edit />
                                 </IconButton>
                                 <IconButton size='small' onClick={() => {
-                                    about.belief = undefined;
-                                    onChange(about);
+                                    const updatedAbout = produce(about, draft => {
+                                        draft.belief = undefined;
+                                    })
+                                    onChange(updatedAbout);
                                 }}>
                                     <Delete />
                                 </IconButton>
@@ -135,8 +140,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                                                     <IconButton
                                                         size='small'
                                                         onClick={() => {
-                                                            about.belief?.reasons.splice(i, 1)
-                                                            onChange(about);
+                                                            const updatedAbout = produce(about, draft => {
+                                                                draft.belief?.reasons.splice(i, 1)
+                                                            })
+                                                            onChange(updatedAbout);
                                                         }}
                                                     >
                                                         <Delete />
@@ -176,8 +183,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                                                     <IconButton
                                                         size='small'
                                                         onClick={() => {
-                                                            about.belief?.reasons.splice(i, 1)
-                                                            onChange(about);
+                                                            const updatedAbout = produce(about, draft => {
+                                                                draft.belief?.reasons.splice(i, 1)
+                                                            })
+                                                            onChange(updatedAbout);
                                                         }}
                                                     >
                                                         <Delete />
@@ -210,8 +219,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                                             },
                                             comprehends: selection as AnySymbol[]
                                         }
-                                        about.belief.reasons.push(comprehension)
-                                        onChange(about);
+                                        const updatedAbout = produce(about, draft => {
+                                            draft.belief?.reasons.push(comprehension)
+                                        })
+                                        onChange(updatedAbout);
                                     }}
                                 >
                                     Comprehend Selection
@@ -243,8 +254,12 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                         onClose={() => setEditValue(false)}
                         onDone={(newValue) => {
                             if (about.belief) {
-                                about.belief.certainty = newValue as Certainty;
-                                onChange(about);
+                                const updatedAbout = produce(about, draft => {
+                                    if (draft.belief) {
+                                        draft.belief.certainty = newValue as Certainty;
+                                    }
+                                })
+                                onChange(updatedAbout);
                             }
                             setEditValue(false);
                         }}
@@ -265,8 +280,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                                 },
                                 note: str,
                             }
-                            about.belief.reasons.push(beliefAdoption)
-                            onChange(about);
+                            const updatedAbout = produce(about, draft => {
+                                draft.belief?.reasons.push(beliefAdoption)
+                            })
+                            onChange(updatedAbout);
                         }}
                     />
 
@@ -285,8 +302,10 @@ export function Arguable<Name, Type>({ asSVG, anchor, about, onChange, viewOnly,
                                 },
                                 note: str,
                             }
-                            about.belief.reasons.push(plainArg)
-                            onChange(about);
+                            const updatedAbout = produce(about, draft => {
+                                draft.belief?.reasons.push(plainArg)
+                            })
+                            onChange(updatedAbout);
                         }}
                     />
                 </>

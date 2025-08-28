@@ -4,6 +4,7 @@ import { flat, PaperStretch, RollCopy } from "linked-rolls"
 import { useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./EditAssumption"
+import { produce } from "immer"
 
 export interface Layer {
     copy: RollCopy
@@ -59,8 +60,13 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     edge="start"
                                     tabIndex={-1}
                                     onClick={() => {
-                                        layer.symbolOpacity = 1 - layer.symbolOpacity
-                                        onChange([...stack])
+                                        const updatedStack = produce(stack, draft => {
+                                            const layerIndex = draft.findIndex(l => l === layer)
+                                            if (layerIndex !== -1) {
+                                                draft[layerIndex].symbolOpacity = 1 - draft[layerIndex].symbolOpacity
+                                            }
+                                        })
+                                        onChange(updatedStack)
                                     }}
                                 >
                                     {layer.symbolOpacity === 1 ? <Visibility /> : <VisibilityOff />}
@@ -112,11 +118,16 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                     symbolOpacity={clickedLayer.symbolOpacity}
                     facsimileOpacity={clickedLayer.facsimileOpacity}
                     onChange={(color, symbolOpacity, facsimileOpacity) => {
-                        clickedLayer.color = color
-                        clickedLayer.symbolOpacity = symbolOpacity
-                        clickedLayer.facsimileOpacity = facsimileOpacity
-                        stack = stack.map(l => l === clickedLayer ? clickedLayer : l)
-                        onChange([...stack])
+                        if (!clickedLayer) return
+                        const updatedStack = produce(stack, draft => {
+                            const layerIndex = draft.findIndex(l => l === clickedLayer)
+                            if (layerIndex !== -1) {
+                                draft[layerIndex].color = color
+                                draft[layerIndex].symbolOpacity = symbolOpacity
+                                draft[layerIndex].facsimileOpacity = facsimileOpacity
+                            }
+                        })
+                        onChange(updatedStack)
                     }}
                 />
             )}

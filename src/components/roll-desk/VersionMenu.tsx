@@ -9,6 +9,7 @@ import { v4 } from "uuid"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
+import { produce } from "immer"
 
 export type VersionSelection = AnySymbol | Edit | Motivation<string>
 
@@ -43,28 +44,36 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
         }
 
         const newEdit = merge(selection)
-        for (const edit of selection) {
-            version.edits.splice(
-                version.edits.indexOf(edit), 1
-            )
-        }
-        version.edits.push(newEdit)
-        onChange(version)
+        const updatedVersion = produce(version, draft => {
+            // Remove all selected edits
+            for (const edit of selection) {
+                const index = draft.edits.indexOf(edit)
+                if (index !== -1) {
+                    draft.edits.splice(index, 1)
+                }
+            }
+            // Add the merged edit
+            draft.edits.push(newEdit)
+        })
+        onChange(updatedVersion)
     }
 
 
     const handleNewVersion = () => {
         const edits = selection.filter(isEdit)
-        for (const edit of edits) {
-            const index = version.edits.indexOf(edit)
-            if (index !== -1) {
-                version.edits.splice(index, 1)
+        const updatedVersion = produce(version, draft => {
+            for (const edit of edits) {
+                const index = draft.edits.indexOf(edit)
+                if (index !== -1) {
+                    draft.edits.splice(index, 1)
+                }
             }
-        }
+        })
+        
         const newVersion: Version = {
             siglum: version.siglum + '_derived',
             id: v4(),
-            basedOn: assign('derivation', version),
+            basedOn: assign('derivation', updatedVersion),
             edits,
             motivations: [],
             type: 'authorised-revision'
@@ -76,8 +85,10 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     }
 
     const removeMotivations = (motivations: Motivation<any>[]) => {
-        version.motivations = version.motivations.filter(m => !motivations.includes(m))
-        onChange(version)
+        const updatedVersion = produce(version, draft => {
+            draft.motivations = draft.motivations.filter(m => !motivations.includes(m))
+        })
+        onChange(updatedVersion)
     }
 
     const addMotivation = (about: Edit[]) => {
@@ -152,21 +163,26 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                                 size='small'
                                 startIcon={<Delete />}
                                 onClick={() => {
-                                    for (const symbol of selection) {
-                                        for (const edit of version.edits) {
-                                            if (!edit.insert) continue
-                                            const index = edit.insert.findIndex(s => s.id === symbol.id)
-                                            if (index !== -1) {
-                                                edit.insert.splice(index, 1)
-                                            }
+                                    const updatedVersion = produce(version, draft => {
+                                        for (const symbol of selection) {
+                                            for (const edit of draft.edits) {
+                                                if (!edit.insert) continue
+                                                const index = edit.insert.findIndex(s => s.id === symbol.id)
+                                                if (index !== -1) {
+                                                    edit.insert.splice(index, 1)
+                                                }
 
-                                            // the edit is empty now, we can safely remove it
-                                            if (edit.insert.length === 0 && edit.delete?.length) {
-                                                version.edits.splice(version.edits.indexOf(edit), 1)
+                                                // the edit is empty now, we can safely remove it
+                                                if (edit.insert.length === 0 && edit.delete?.length) {
+                                                    const editIndex = draft.edits.indexOf(edit)
+                                                    if (editIndex !== -1) {
+                                                        draft.edits.splice(editIndex, 1)
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
-                                    onChange({ ...version })
+                                    })
+                                    onChange(updatedVersion)
                                 }}
                             >
                                 Remove
@@ -227,11 +243,15 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                             {selection.length === 1 && (
                                 <Button
                                     onClick={() => {
-                                        version.edits.push(...split(selection[0]))
-                                        version.edits.splice(
-                                            version.edits.indexOf(selection[0]), 1
-                                        )
-                                        onChange(version)
+                                        const updatedVersion = produce(version, draft => {
+                                            const splitEdits = split(selection[0])
+                                            draft.edits.push(...splitEdits)
+                                            const originalIndex = draft.edits.indexOf(selection[0])
+                                            if (originalIndex !== -1) {
+                                                draft.edits.splice(originalIndex, 1)
+                                            }
+                                        })
+                                        onChange(updatedVersion)
                                     }}
                                     size='small'
                                     startIcon={<GroupRemove />}
@@ -266,7 +286,10 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 open={editSiglum}
                 value={version.siglum}
                 onDone={(newSiglum) => {
-                    version.siglum = newSiglum
+                    const updatedVersion = produce(version, draft => {
+                        draft.siglum = newSiglum
+                    })
+                    onChange(updatedVersion)
                     setEditSiglum(false)
                     onChange(version)
                 }}

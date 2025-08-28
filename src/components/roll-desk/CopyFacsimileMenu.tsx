@@ -11,6 +11,7 @@ import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from 
 import { v4 } from "uuid"
 import { AlignCopies } from "./AlignCopies"
 import { EditString } from "./EditString"
+import { produce } from "immer"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
@@ -31,10 +32,16 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
     const [alignCopies, setAlignCopies] = useState(false)
 
     const handleRemove = () => {
-        for (const feature of selection.filter(isRollFeature)) {
-            copy.features.splice(copy.features.indexOf(feature), 1);
-        }
-        onChange(copy.shallowClone())
+        const rolFeatures = selection.filter(isRollFeature)
+        const updatedCopy = produce(copy, draft => {
+            for (const feature of rolFeatures) {
+                const index = draft.features.indexOf(feature)
+                if (index !== -1) {
+                    draft.features.splice(index, 1)
+                }
+            }
+        })
+        onChange(updatedCopy)
     }
 
     return (
@@ -116,12 +123,18 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                         selection={selection[0]}
                         onClose={() => setAddSymbolDialogOpen(false)}
                         onDone={(symbol, feature, version) => {
-                            version.edits.push({
-                                id: v4(),
-                                insert: [symbol],
+                            const updatedVersion = produce(version, draft => {
+                                draft.edits.push({
+                                    id: v4(),
+                                    insert: [symbol],
+                                })
                             })
-                            copy.features.push(feature)
-                            onChange(copy.shallowClone(), [...versions])
+                            const updatedCopy = produce(copy, draft => {
+                                draft.features.push(feature)
+                            })
+                            // Update the versions array to include the updated version
+                            const updatedVersions = versions.map(v => v.id === version.id ? updatedVersion : v)
+                            onChange(updatedCopy, updatedVersions)
                             setAddSymbolDialogOpen(false)
                         }}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
@@ -134,6 +147,8 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                         subject='feature'
                         onDone={condition => {
                             if (!isRollFeature(selection[0])) return
+                            // Note: This appears to be modifying selection directly, which might be intentional
+                            // for immediate feedback. If not, this should be handled differently by the parent.
                             selection[0].condition = condition
                         }}
                     />
@@ -145,11 +160,13 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 value={"Generel condition ..."}
                 onClose={() => setReportRollCondition(false)}
                 onDone={(value) => {
-                    copy.conditions.push(assign('conditionAssignment', {
-                        type: 'general',
-                        description: value
-                    }))
-                    onChange(copy.shallowClone())
+                    const updatedCopy = produce(copy, draft => {
+                        draft.conditions.push(assign('conditionAssignment', {
+                            type: 'general',
+                            description: value
+                        }))
+                    })
+                    onChange(updatedCopy)
                     setReportRollCondition(false)
                 }}
             />
@@ -159,8 +176,10 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 event={copy.productionEvent}
                 onClose={() => setEditProduction(false)}
                 onDone={(event) => {
-                    copy.productionEvent = event
-                    onChange(copy.shallowClone())
+                    const updatedCopy = produce(copy, draft => {
+                        draft.productionEvent = event
+                    })
+                    onChange(updatedCopy)
                     setEditProduction(false)
                 }}
             />
@@ -171,16 +190,18 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 open={alignCopies}
                 onClose={() => setAlignCopies(false)}
                 onDone={(shift, stretch) => {
-                    copy.setShift({
-                        horizontal: shift,
-                        vertical: 0
+                    const updatedCopy = produce(copy, draft => {
+                        draft.setShift({
+                            horizontal: shift,
+                            vertical: 0
+                        })
+                        draft.setStretch(assign('conditionAssignment', {
+                            factor: stretch,
+                            description: 'calculated by alignment',
+                            type: 'paper-stretch'
+                        }))
                     })
-                    copy.setStretch(assign('conditionAssignment', {
-                        factor: stretch,
-                        description: 'calculated by alignment',
-                        type: 'paper-stretch'
-                    }))
-                    onChange(copy.shallowClone())
+                    onChange(updatedCopy)
                     setAlignCopies(false)
                 }}
             />
