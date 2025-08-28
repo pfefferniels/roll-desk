@@ -18,6 +18,7 @@ import EditMetadata from "./EditMetadata"
 import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
+import { produce } from "immer"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { v4 } from "uuid"
@@ -197,11 +198,13 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                                 copy={activeLayer.copy}
                                 versions={versions}
                                 onChange={(copy, versions) => {
-                                    const layer = layers.find(layer => layer.copy === copy)
-                                    if (layer) {
-                                        layer.copy = copy
-                                        setLayers([...layers])
-                                    }
+                                    const updatedLayers = produce(layers, draft => {
+                                        const layer = draft.find(layer => layer.copy === activeLayer.copy)
+                                        if (layer) {
+                                            layer.copy = copy
+                                        }
+                                    })
+                                    setLayers(updatedLayers)
                                     if (versions) {
                                         setVersions([...versions])
                                     }
