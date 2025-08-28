@@ -33,15 +33,14 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
 
     const handleRemove = () => {
         const rolFeatures = selection.filter(isRollFeature)
-        const updatedCopy = produce(copy, draft => {
-            for (const feature of rolFeatures) {
-                const index = draft.features.indexOf(feature)
-                if (index !== -1) {
-                    draft.features.splice(index, 1)
-                }
+        // RollCopy is a class, so we work with it directly instead of using immer
+        for (const feature of rolFeatures) {
+            const index = copy.features.indexOf(feature)
+            if (index !== -1) {
+                copy.features.splice(index, 1)
             }
-        })
-        onChange(updatedCopy)
+        }
+        onChange(copy)
     }
 
     return (
@@ -129,12 +128,11 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                                     insert: [symbol],
                                 })
                             })
-                            const updatedCopy = produce(copy, draft => {
-                                draft.features.push(feature)
-                            })
+                            // RollCopy is a class, so we work with it directly instead of using immer
+                            copy.features.push(feature)
                             // Update the versions array to include the updated version
                             const updatedVersions = versions.map(v => v.id === version.id ? updatedVersion : v)
-                            onChange(updatedCopy, updatedVersions)
+                            onChange(copy, updatedVersions)
                             setAddSymbolDialogOpen(false)
                         }}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
@@ -160,13 +158,12 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 value={"Generel condition ..."}
                 onClose={() => setReportRollCondition(false)}
                 onDone={(value) => {
-                    const updatedCopy = produce(copy, draft => {
-                        draft.conditions.push(assign('conditionAssignment', {
-                            type: 'general',
-                            description: value
-                        }))
-                    })
-                    onChange(updatedCopy)
+                    // RollCopy is a class, so we work with it directly instead of using immer
+                    copy.conditions.push(assign('conditionAssignment', {
+                        type: 'general',
+                        description: value
+                    }))
+                    onChange(copy)
                     setReportRollCondition(false)
                 }}
             />
@@ -176,10 +173,9 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 event={copy.productionEvent}
                 onClose={() => setEditProduction(false)}
                 onDone={(event) => {
-                    const updatedCopy = produce(copy, draft => {
-                        draft.productionEvent = event
-                    })
-                    onChange(updatedCopy)
+                    // RollCopy is a class, so we work with it directly instead of using immer
+                    copy.productionEvent = event
+                    onChange(copy)
                     setEditProduction(false)
                 }}
             />
@@ -190,18 +186,18 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                 open={alignCopies}
                 onClose={() => setAlignCopies(false)}
                 onDone={(shift, stretch) => {
-                    const updatedCopy = produce(copy, draft => {
-                        draft.setShift({
-                            horizontal: shift,
-                            vertical: 0
-                        })
-                        draft.setStretch(assign('conditionAssignment', {
-                            factor: stretch,
-                            description: 'calculated by alignment',
-                            type: 'paper-stretch'
-                        }))
+                    // RollCopy is a class, so we work with it directly instead of using immer
+                    // Call methods directly on the RollCopy instance
+                    copy.setShift({
+                        horizontal: shift,
+                        vertical: 0
                     })
-                    onChange(updatedCopy)
+                    copy.setStretch(assign('conditionAssignment', {
+                        factor: stretch,
+                        description: 'calculated by alignment',
+                        type: 'paper-stretch'
+                    }))
+                    onChange(copy)
                     setAlignCopies(false)
                 }}
             />

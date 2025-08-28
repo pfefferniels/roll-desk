@@ -198,12 +198,12 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                                 copy={activeLayer.copy}
                                 versions={versions}
                                 onChange={(copy, versions) => {
-                                    const updatedLayers = produce(layers, draft => {
-                                        const layer = draft.find(layer => layer.copy === activeLayer.copy)
-                                        if (layer) {
-                                            layer.copy = copy
-                                        }
-                                    })
+                                    // Update layers directly since RollCopy is a class that immer can't handle
+                                    const updatedLayers = layers.map(layer => 
+                                        layer.copy === activeLayer.copy 
+                                            ? { ...layer, copy }
+                                            : layer
+                                    )
                                     setLayers(updatedLayers)
                                     if (versions) {
                                         setVersions([...versions])
