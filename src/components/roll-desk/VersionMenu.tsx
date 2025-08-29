@@ -1,7 +1,7 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
 import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split, versionTypes, editMotivations, EditMotivation, flat } from "linked-rolls"
-import { useState } from "react"
+import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
@@ -9,21 +9,102 @@ import { v4 } from "uuid"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
+import { EditionContext, EditionOp } from "../../providers/EditionContext"
+
+const mergeEdits = (versionId: string, edits: Edit[]): EditionOp => {
+    return (draft) => {
+        if (edits.length < 2) {
+            return
+        }
+
+        const version = draft.versions.find(v => v.id === versionId)
+        if (!version) return
+
+        const newEdit = merge(edits)
+        for (const edit of edits) {
+            version.edits.splice(
+                version.edits.indexOf(edit), 1
+            )
+        }
+        version.edits.push(newEdit)
+    }
+}
+
+const splitEdits = (versionId: string, selection: Edit[]): EditionOp => {
+    return (draft) => {
+        const version = draft.versions.find(v => v.id === versionId)
+        if (!version) return
+
+        version.edits.push(...split(selection[0]))
+        version.edits.splice(
+            version.edits.indexOf(selection[0]), 1
+        )
+
+    }
+}
+
+const deriveVersion = (versionId: string, selection: VersionSelection[]): EditionOp =>
+    (draft) => {
+        const version = draft.versions.find(v => v.id === versionId)
+        if (!version) return
+
+        const edits = selection.filter(isEdit)
+        for (const edit of edits) {
+            const index = version.edits.indexOf(edit)
+            if (index !== -1) {
+                version.edits.splice(index, 1)
+            }
+        }
+
+        draft.versions.push({
+            siglum: version.siglum + '_derived',
+            id: v4(),
+            basedOn: assign('derivation', version),
+            edits,
+            motivations: [],
+            type: 'authorised-revision'
+        })
+    }
+
+const removeSymbols = (versionId: string, symbols: AnySymbol[]): EditionOp => {
+    return (draft) => {
+        const version = draft.versions.find(v => v.id === versionId)
+        if (!version) return
+
+        for (const symbol of symbols) {
+            for (const edit of version.edits) {
+                if (!edit.insert) continue
+                const index = edit.insert.findIndex(s => s.id === symbol.id)
+                if (index !== -1) {
+                    edit.insert.splice(index, 1)
+                }
+
+                // the edit is empty now, we can safely remove it
+                if (edit.insert.length === 0 && edit.delete?.length) {
+                    version.edits.splice(version.edits.indexOf(edit), 1)
+                }
+            }
+        }
+    }
+}
+
+const remove = (versionId: string): EditionOp => {
+    return (draft) => {
+        draft.versions = draft.versions.filter(v => v.id !== versionId)
+    }
+}
 
 export type VersionSelection = AnySymbol | Edit | Motivation<string>
 
 interface MenuProps {
-    version: Version
-    versions: Version[]
+    versionId: string
     selection: VersionSelection[]
-    onChange: (version: Version) => void
-    onAdd: (version: Version) => void
-    onRemove: (version: Version) => void
+    onClearSelection: () => void
 }
 
-export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onRemove }: MenuProps) => {
+export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProps) => {
+    const { edition, apply } = useContext(EditionContext)
     const [assignActor, setAssignActor] = useState(false)
-    const [assignMotivation, setAssignMotivation] = useState<Motivation<string>>()
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
@@ -32,53 +113,13 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
     useHotkeys(['m'], (_, handler) => {
         switch (handler.keys?.join('')) {
             case 'm':
-                handleMerge();
+                if (!selection.every(isEdit)) return
+                apply(mergeEdits(
+                    versionId, selection
+                ));
                 break;
         }
     })
-
-    const handleMerge = () => {
-        if (selection.length < 2 || !selection.every(isEdit)) {
-            return
-        }
-
-        const newEdit = merge(selection)
-        for (const edit of selection) {
-            version.edits.splice(
-                version.edits.indexOf(edit), 1
-            )
-        }
-        version.edits.push(newEdit)
-        onChange(version)
-    }
-
-
-    const handleNewVersion = () => {
-        const edits = selection.filter(isEdit)
-        for (const edit of edits) {
-            const index = version.edits.indexOf(edit)
-            if (index !== -1) {
-                version.edits.splice(index, 1)
-            }
-        }
-        const newVersion: Version = {
-            siglum: version.siglum + '_derived',
-            id: v4(),
-            basedOn: assign('derivation', version),
-            edits,
-            motivations: [],
-            type: 'authorised-revision'
-        }
-
-        // TODO: calculate impact on later versions
-
-        onAdd(newVersion)
-    }
-
-    const removeMotivations = (motivations: Motivation<any>[]) => {
-        version.motivations = version.motivations.filter(m => !motivations.includes(m))
-        onChange(version)
-    }
 
     const addMotivation = (about: Edit[]) => {
         if (about.length === 0) return
@@ -106,6 +147,11 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
         /*}*/
     }
 
+    if (!edition) return null
+
+    const version = edition.versions.find(v => v.id === versionId)
+    if (!version) return null
+
     return (
         <>
             <Ribbon title='Version'>
@@ -124,7 +170,7 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                     Actor
                 </Button>
                 <Button
-                    onClick={() => onRemove(version)}
+                    onClick={() => apply(remove(versionId))}
                     size='small'
                     startIcon={<Delete />}
                 >
@@ -152,47 +198,13 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                                 size='small'
                                 startIcon={<Delete />}
                                 onClick={() => {
-                                    for (const symbol of selection) {
-                                        for (const edit of version.edits) {
-                                            if (!edit.insert) continue
-                                            const index = edit.insert.findIndex(s => s.id === symbol.id)
-                                            if (index !== -1) {
-                                                edit.insert.splice(index, 1)
-                                            }
-
-                                            // the edit is empty now, we can safely remove it
-                                            if (edit.insert.length === 0 && edit.delete?.length) {
-                                                version.edits.splice(version.edits.indexOf(edit), 1)
-                                            }
-                                        }
-                                    }
-                                    onChange({ ...version })
+                                    apply(
+                                        removeSymbols(versionId, selection)
+                                    )
                                 }}
                             >
                                 Remove
                             </Button>
-                        </Ribbon>
-                    )}
-                    {selection.every(isMotivation) && (
-                        <Ribbon title='Motivation'>
-                            <Button
-                                onClick={() => removeMotivations(selection)}
-                                size='small'
-                                startIcon={<Delete />}
-                            >
-                                Remove
-                            </Button>
-                            {selection.length === 1 && (
-                                <Button
-                                    onClick={() => {
-                                        setAssignMotivation(selection[0])
-                                    }}
-                                    size='small'
-                                    startIcon={<EditIcon />}
-                                >
-                                    Edit
-                                </Button>
-                            )}
                         </Ribbon>
                     )}
                     {selection.every(isEdit) && (
@@ -216,7 +228,12 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                                         Add Motivation
                                     </Button>
                                     <Button
-                                        onClick={handleMerge}
+                                        onClick={() => {
+                                            apply(
+                                                mergeEdits(versionId, selection)
+                                            )
+                                            onClearSelection()
+                                        }}
                                         startIcon={<GroupAdd />}
                                         size='small'
                                     >
@@ -227,11 +244,10 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                             {selection.length === 1 && (
                                 <Button
                                     onClick={() => {
-                                        version.edits.push(...split(selection[0]))
-                                        version.edits.splice(
-                                            version.edits.indexOf(selection[0]), 1
+                                        apply(
+                                            splitEdits(versionId, selection)
                                         )
-                                        onChange(version)
+                                        onClearSelection()
                                     }}
                                     size='small'
                                     startIcon={<GroupRemove />}
@@ -253,7 +269,11 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 </Button>
                 {selection.length > 0 && selection.every(isEdit) && (
                     <Button
-                        onClick={handleNewVersion}
+                        onClick={() => {
+                            apply(deriveVersion(
+                                versionId, selection
+                            ))
+                        }}
                         startIcon={<CallSplit />}
                         size='small'
                     >
@@ -266,9 +286,12 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 open={editSiglum}
                 value={version.siglum}
                 onDone={(newSiglum) => {
-                    version.siglum = newSiglum
+                    apply(draft => {
+                        const version = draft.versions.find(v => v.id === versionId)
+                        if (!version) return
+                        version.siglum = newSiglum
+                    })
                     setEditSiglum(false)
-                    onChange(version)
                 }}
                 onClose={() => setEditSiglum(false)}
             />
@@ -278,13 +301,17 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 onClose={() => setAssignActor(false)}
                 value={version.actor ? flat(version.actor).name : ''}
                 onDone={(str) => {
+                    apply((draft) => {
+                        const version = draft.versions.find(v => v.id === versionId)
+                        if (!version) return
+
+                    })
                     version.actor = assign('actorAssignment', {
                         name: str,
                         id: v4(),
                         sameAs: ['']
                     })
                     setAssignActor(false)
-                    onChange(version)
                 }}
             />
 
@@ -292,21 +319,28 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                 open={attachTo}
                 onClose={() => setAttachTo(false)}
                 onDone={(previousVersion) => {
-                    const snapshot = getSnapshot(version)
-                    version.basedOn = assign('derivation', previousVersion)
-                    version.edits = []
-                    fillEdits(version, snapshot, { toleranceStart: 3, toleranceEnd: 3 })
-                    onChange(version)
+                    apply((draft) => {
+                        const version = draft.versions.find(v => v.id === versionId)
+                        if (!version) return
+
+                        const snapshot = getSnapshot(version)
+                        version.basedOn = assign('derivation', previousVersion)
+                        version.edits = []
+                        fillEdits(version, snapshot, { toleranceStart: 3, toleranceEnd: 3 })
+                    })
                 }}
-                versions={versions}
+                versions={edition.versions}
             />
 
             <EditType
                 open={versionType}
                 onClose={() => setVersionType(false)}
                 onSave={(type) => {
-                    version.type = type
-                    onChange(version)
+                    apply((draft) => {
+                        const version = draft.versions.find(v => v.id === versionId)
+                        if (!version) return
+                        version.type = type
+                    })
                 }}
                 value={version.type}
                 types={versionTypes}
@@ -336,9 +370,11 @@ export const VersionMenu = ({ version, versions, selection, onChange, onAdd, onR
                         }
                     }
 
-                    version.motivations.push(motivation)
-                    setAssignMotivation(motivation)
-                    onChange(version)
+                    apply((d) => {
+                        const version = d.versions.find(v => v.id === versionId)
+                        if (!version) return
+                        version.motivations.push(motivation)
+                    })
                     setEditsToMotivate(undefined)
                 }}
             />

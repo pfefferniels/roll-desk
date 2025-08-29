@@ -168,7 +168,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         {(!viewOnly && !currentVersion && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
-                                onChange={(copy, versions) => {
+                                onChange={(copy) => {
                                     const layer = layers.find(layer => layer.copy === copy)
                                     if (layer) {
                                         layer.copy = copy
@@ -182,21 +182,14 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         )}
                         {(!viewOnly && currentVersion) && (
                             <VersionMenu
-                                version={currentVersion}
-                                versions={edition.versions}
-                                onChange={version => {
+                                versionId={currentVersion.id}
+                                onClearSelection={() => {
                                     setSelection([])
                                 }}
-                                onAdd={(version) => {
-                                    apply(draft => draft.versions.push(version))
-                                }}
-                                onRemove={(version) => {
-                                    apply(draft => {
-                                        draft.versions = draft.versions.filter(v => v !== version)
-                                    })
-                                }}
                                 selection={selection.filter(item => {
-                                    return isEdit(item) || isMotivation(item) || isSymbol(item)
+                                    return isEdit(item)
+                                        || isMotivation(item)
+                                        || isSymbol(item)
                                 }) as (AnySymbol | Motivation<any> | Version)[]}
                             />
                         )}
