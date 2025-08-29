@@ -3,7 +3,7 @@
 import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AnySymbol, asSymbols, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
-import { Add, Clear, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
+import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { write } from "midifile-ts"
@@ -76,7 +76,7 @@ interface DeskProps {
 export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
-    const { edition, apply } = useContext(EditionContext)
+    const { edition, apply, undo, redo, canUndo, canRedo } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
@@ -165,6 +165,22 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                 <Save />
                             </IconButton>
                         </Ribbon>
+                        <RibbonGroup>
+                            <Ribbon title='History'>
+                                <IconButton
+                                    onClick={() => undo()}
+                                    disabled={!canUndo}
+                                >
+                                    <Undo />
+                                </IconButton>
+                                <IconButton
+                                    onClick={() => redo()}
+                                    disabled={!canRedo}
+                                >
+                                    <Redo />
+                                </IconButton>
+                            </Ribbon>
+                        </RibbonGroup>
                         {(!viewOnly && !currentVersion && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
@@ -433,7 +449,9 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                     }
 
                     fillEdits(newVersion, asSymbols(newCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
-                    apply(draft => draft.versions.push(newVersion))
+                    apply(draft => {
+                        draft.versions.push(newVersion)
+                    })
                 }}
                 onRemove={copy => {
                     setLayers(prev => {
