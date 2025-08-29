@@ -168,17 +168,11 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         {(!viewOnly && !currentVersion && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
-                                versions={edition.versions}
                                 onChange={(copy, versions) => {
                                     const layer = layers.find(layer => layer.copy === copy)
                                     if (layer) {
                                         layer.copy = copy
                                         setLayers([...layers])
-                                    }
-                                    if (versions) {
-                                        apply((draft) => {
-                                            draft.versions = versions
-                                        })
                                     }
                                 }}
                                 onChangeSelection={selection => setSelection(selection)}

@@ -1,29 +1,29 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { assign, RollFeature, Version, WelteT100 } from "linked-rolls"
-import { useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
 import { AnySymbol, isSymbol } from "linked-rolls/lib/Symbol"
+import { EditionContext } from "../../providers/EditionContext"
 
 interface AddSymbolProps {
     open: boolean
     selection: EventDimension | AnySymbol
     iiifUrl?: string
     onClose: () => void
-    onDone: (symbol: AnySymbol, feature: RollFeature, version: Version) => void
-    versions: Version[]
+    onDone: (feature: RollFeature) => void
 }
 
 const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, versions }: AddSymbolProps) => {
+export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: AddSymbolProps) => {
+    const { edition, apply } = useContext(EditionContext)
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
     const [signed, setSigned] = useState<boolean>()
     const [material, setMaterial] = useState<string>()
-
     const [version, setVersion] = useState<Version>()
 
     useEffect(() => {
@@ -40,6 +40,10 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, ver
         (!isSymbol(selection) && (eventType === 'note' || eventType === 'expression'))
             ? new WelteT100().meaningOf(selection.vertical.from)
             : undefined
+
+    if (!edition) {
+        return null
+    }
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -156,13 +160,13 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, ver
                                 size='small'
                                 value={version?.siglum || ''}
                                 onChange={(e) => {
-                                    const selectedVersion = versions.find(s => s.siglum === e.target.value)
+                                    const selectedVersion = edition.versions.find(s => s.siglum === e.target.value)
                                     if (selectedVersion) {
                                         setVersion(selectedVersion)
                                     }
                                 }}
                             >
-                                {versions.map((s) => (
+                                {edition.versions.map((s) => (
                                     <MenuItem value={s.siglum} key={s.id}>
                                         {s.siglum}
                                     </MenuItem>
@@ -234,7 +238,16 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl, ver
                         }
 
                         if (newSymbol) {
-                            onDone(newSymbol, feature, version)
+                            apply(draft => {
+                                const v = draft.versions.find(v => v.id === version.id)
+                                if (v) {
+                                    v.edits.push({
+                                        id: v4(),
+                                        insert: [newSymbol],
+                                    })
+                                }
+                            })
+                            onDone(feature)
                         }
                     }}
                     variant='contained'

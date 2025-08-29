@@ -8,22 +8,20 @@ import { ConditionStateDialog } from "./ConditionStateDialog"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
-import { v4 } from "uuid"
 import { AlignCopies } from "./AlignCopies"
 import { EditString } from "./EditString"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
 interface MenuProps {
-    versions: Version[]
     copies: RollCopy[]
     copy: RollCopy
     selection: FacsimileSelection[]
     onChangeSelection: (selection: FacsimileSelection[]) => void
-    onChange: (copy: RollCopy, versions?: Version[]) => void
+    onChange: (copy: RollCopy) => void
 }
 
-export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange, onChangeSelection }: MenuProps) => {
+export const CopyFacsimileMenu = ({ copy, copies, selection, onChange, onChangeSelection }: MenuProps) => {
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
     const [reportRollCondition, setReportRollCondition] = useState(false)
@@ -115,17 +113,12 @@ export const CopyFacsimileMenu = ({ copy, copies, selection, versions, onChange,
                         open={addSymbolDialogOpen}
                         selection={selection[0]}
                         onClose={() => setAddSymbolDialogOpen(false)}
-                        onDone={(symbol, feature, version) => {
-                            version.edits.push({
-                                id: v4(),
-                                insert: [symbol],
-                            })
+                        onDone={(feature) => {
                             copy.features.push(feature)
-                            onChange(copy.shallowClone(), [...versions])
+                            onChange(copy.shallowClone())
                             setAddSymbolDialogOpen(false)
                         }}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
-                        versions={versions}
                     />
 
                     <ConditionStateDialog
