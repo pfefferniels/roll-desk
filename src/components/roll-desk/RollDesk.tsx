@@ -1,7 +1,7 @@
 'use client'
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -24,6 +24,10 @@ import { v4 } from "uuid"
 import { Stemma } from "./Stemma"
 import { Arguable } from "./EditAssumption"
 import { SelectionContext } from "../../providers/SelectionContext"
+import { Draft } from 'immer'
+import { EditionContext } from "../../providers/EditionContext"
+
+export type DocOp = (d: Draft<Edition>) => void;
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -70,8 +74,10 @@ interface DeskProps {
     versionId?: string
 }
 
-export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
+export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
+
+    const { edition } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
@@ -141,12 +147,7 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
 
     if (!metadata) {
         return (
-            <Welcome
-                onCreate={metadata => {
-                    setMetadata(metadata)
-                }}
-                onImport={importEdition}
-            />
+            <Welcome />
         )
     }
 
@@ -165,29 +166,7 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
                 <Toolbar>
                     <RibbonGroup>
                         <Ribbon title='File' visible={!viewOnly}>
-                            <ImportButton onImport={edition => {
-                                const { copies, versions, ...metadata } = edition
-
-                                setMetadata(metadata)
-                                setVersions(versions)
-                                setLayers(copies.map(copy => {
-                                    return {
-                                        color: stringToColor(copy.id),
-                                        copy: copy,
-                                        opacity: 1,
-                                        facsimileOpacity: 0,
-                                        symbolOpacity: 1
-                                    }
-                                }))
-                                setLayers(edition.copies.map(copy => {
-                                    return {
-                                        color: stringToColor(copy.id),
-                                        copy: copy,
-                                        symbolOpacity: 1,
-                                        facsimileOpacity: 0,
-                                    }
-                                }))
-                            }} />
+                            <ImportButton />
                             <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
                                 <Save />
                             </IconButton>
@@ -464,12 +443,8 @@ export const Desk = ({ edition, viewOnly, versionId }: DeskProps) => {
             />
 
             <EditMetadata
-                onDone={(edition) => {
-                    setMetadata(edition)
-                }}
                 onClose={() => setEditMetadata(false)}
                 open={editMetadata}
-                metadata={metadata}
             />
 
             <RollCopyDialog

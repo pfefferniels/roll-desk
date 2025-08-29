@@ -5,40 +5,7 @@ import { useState } from "react";
 import EditMetadata from "./EditMetadata";
 import { Create } from "@mui/icons-material";
 
-const emptyMetadata: EditionMetadata = {
-    title: '',
-    license: '',
-    base: '',
-    creation: {
-        publisher: { name: '', sameAs: [] },
-        publicationDate: new Date(),
-        collationTolerance: {
-            toleranceEnd: 5,
-            toleranceStart: 5,
-        }
-    },
-    roll: {
-        catalogueNumber: '',
-        recordingEvent: {
-            recorded: {
-                pianist: {
-                    name: '',
-                    sameAs: []
-                },
-                playing: ''
-            },
-            date: assign('dateAssignment', new Date()),
-            place: { name: '', sameAs: [] }
-        }
-    }
-};
-
-export interface WelcomeProps {
-    onCreate: (metadata: EditionMetadata) => void;
-    onImport: (edition: Edition) => void;
-}
-
-export const Welcome = ({ onCreate, onImport }: WelcomeProps) => {
+export const Welcome = () => {
     const [editMetadata, setEditMetadata] = useState(false)
     
     return (
@@ -72,7 +39,7 @@ export const Welcome = ({ onCreate, onImport }: WelcomeProps) => {
                         justifyContent="center"
                         sx={{ mt: 2 }}
                     >
-                        <ImportButton outlined={true} onImport={onImport} />
+                        <ImportButton outlined={true} />
                         <Button
                             variant="outlined"
                             startIcon={<Create />}
@@ -84,13 +51,8 @@ export const Welcome = ({ onCreate, onImport }: WelcomeProps) => {
                 </Box>
             </Box>
             <EditMetadata
-                metadata={emptyMetadata}
                 open={editMetadata}
                 onClose={() => setEditMetadata(false)}
-                onDone={(metadata) => {
-                    onCreate(metadata);
-                    setEditMetadata(false);
-                }}
             />
         </>
     );

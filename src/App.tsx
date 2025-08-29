@@ -5,6 +5,7 @@ import { SnackbarContext } from './providers/SnackbarContext';
 import { Desk } from './components/roll-desk/RollDesk';
 import { PianoContextProvider } from 'react-pianosound';
 import { DoubtProvider, SolidAuthProvider, SolidStatusBar } from 'doubtful'
+import { EditionProvider } from './providers/EditionContext';
 
 const App = () => {
   const [message, setMessage] = useState<string>()
@@ -28,7 +29,9 @@ const App = () => {
           <SolidStatusBar />
           <PianoContextProvider>
             <DoubtProvider>
-              <Desk />
+              <EditionProvider>
+                <Desk />
+              </EditionProvider>
             </DoubtProvider>
           </PianoContextProvider>
         </SolidAuthProvider>

@@ -1,14 +1,16 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { Button, IconButton } from "@mui/material";
 import { Edition, importJsonLd } from "linked-rolls";
+import { EditionContext } from '../../providers/EditionContext';
 
 interface ImportButtonProps {
     outlined?: boolean
-    onImport: (newEdition: Edition) => void;
 }
 
-export const ImportButton = ({ onImport, outlined }: ImportButtonProps) => {
+export const ImportButton = ({ outlined }: ImportButtonProps) => {
+    const { setEdition } = useContext(EditionContext)
+
     const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -30,14 +32,14 @@ export const ImportButton = ({ onImport, outlined }: ImportButtonProps) => {
                     return;
                 }
 
-                onImport(newEdition);
+                setEdition(newEdition)
             } catch (error) {
                 console.error("Error importing file:", error);
             }
         };
 
         reader.readAsText(file);
-    }, [onImport]);
+    }, [setEdition]);
 
     return (
         <>

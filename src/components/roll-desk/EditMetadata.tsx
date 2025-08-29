@@ -1,18 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
-import { assign, EditionMetadata, flat } from 'linked-rolls';
+import { assign, flat } from 'linked-rolls';
 import { ImportButton } from './ImportButton';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
+import { EditionContext } from '../../providers/EditionContext';
 
 interface EditMetadataProps {
-  metadata: EditionMetadata
   open: boolean
   onClose: () => void
-  onDone: (metadata: EditionMetadata) => void;
 }
 
 const licenses = [
@@ -24,7 +23,9 @@ const licenses = [
   { name: 'Creative Commons Attribution-NonCommercial-NoDerivatives 4.0', url: 'https://creativecommons.org/licenses/by-nc-nd/4.0/' },
 ];
 
-const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadataProps) => {
+const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
+  const { apply, edition } = useContext(EditionContext)
+
   const [title, setTitle] = useState<string>('');
   const [license, setLicense] = useState<string>('');
   const [baseURI, setBaseURI] = useState<string>('');
@@ -48,17 +49,17 @@ const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadata
   const handleCreate = () => {
     const selectedLicense = licenses.find((l) => l.name === license);
 
-    const newEdition = { ...edition }
-    newEdition.title = title
-    newEdition.license = selectedLicense?.url || license
-    newEdition.base = baseURI
-    newEdition.creation.publisher.name = publisherName
-    newEdition.creation.publicationDate = publicationDate
-    newEdition.roll.catalogueNumber = catalogueNumber
-    newEdition.roll.recordingEvent.date = assign('dateAssignment', recordingDate)
-    newEdition.roll.recordingEvent.place.name = recordingPlace
+    apply(draft => {
+      draft.title = title
+      draft.license = selectedLicense?.url || license
+      draft.base = baseURI
+      draft.creation.publisher.name = publisherName
+      draft.creation.publicationDate = publicationDate
+      draft.roll.catalogueNumber = catalogueNumber
+      draft.roll.recordingEvent.date = assign('dateAssignment', recordingDate)
+      draft.roll.recordingEvent.place.name = recordingPlace
+    })
 
-    onDone(newEdition);
     onClose();
   };
 
@@ -147,12 +148,7 @@ const EditMetadata = ({ metadata: edition, onDone, open, onClose }: EditMetadata
         >
           Create
         </Button>
-        <ImportButton
-          onImport={(newEdition) => {
-            onDone(newEdition)
-            onClose()
-          }}
-        />
+        <ImportButton />
       </DialogActions>
     </Dialog>
   );
