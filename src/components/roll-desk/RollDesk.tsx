@@ -69,12 +69,11 @@ export type UserSelection = (VersionSelection | FacsimileSelection)
  */
 
 interface DeskProps {
-    edition?: Edition
     viewOnly?: boolean
     versionId?: string
 }
 
-export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
+export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
     const { edition, apply } = useContext(EditionContext)
