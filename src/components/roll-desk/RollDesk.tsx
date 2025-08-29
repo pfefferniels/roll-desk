@@ -2,7 +2,7 @@
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
-import { AnySymbol, asSymbols, EditionMetadata, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
+import { AnySymbol, asSymbols, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Save, Settings } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -81,7 +81,6 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
 
     const [stretch, setStretch] = useState(2)
 
-    const [versions, setVersions] = useState<Version[]>([])
     const [layers, setLayers] = useState<Layer[]>([])
     const [activeLayer, setActiveLayer] = useState<Layer>()
 
@@ -119,9 +118,8 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
     }, [currentVersion, conversionMethod])
 
     const importEdition = (edition: Edition) => {
-        const { copies, versions } = edition
+        const { copies } = edition
 
-        setVersions(versions)
         setLayers(copies.map(copy => {
             return {
                 color: stringToColor(copy.id),
@@ -139,8 +137,8 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
 
     useEffect(() => {
         if (!versionId) return
-        setCurrentVersion(versions.find(v => v.id === versionId))
-    }, [versionId, versions])
+        setCurrentVersion(edition?.versions.find(v => v.id === versionId))
+    }, [versionId, edition])
 
     if (!edition) {
         return (
@@ -171,7 +169,7 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
                         {(!viewOnly && !currentVersion && activeLayer) && (
                             <CopyFacsimileMenu
                                 copy={activeLayer.copy}
-                                versions={versions}
+                                versions={edition.versions}
                                 onChange={(copy, versions) => {
                                     const layer = layers.find(layer => layer.copy === copy)
                                     if (layer) {
@@ -179,7 +177,9 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
                                         setLayers([...layers])
                                     }
                                     if (versions) {
-                                        setVersions([...versions])
+                                        apply((draft) => {
+                                            draft.versions = versions
+                                        })
                                     }
                                 }}
                                 onChangeSelection={selection => setSelection(selection)}
@@ -190,26 +190,17 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
                         {(!viewOnly && currentVersion) && (
                             <VersionMenu
                                 version={currentVersion}
-                                versions={versions}
+                                versions={edition.versions}
                                 onChange={version => {
-                                    const index = versions.indexOf(version)
-                                    if (index !== -1) {
-                                        console.log('updating version')
-                                        versions[index] = version
-                                        setVersions([...versions])
-                                    }
                                     setSelection([])
                                 }}
                                 onAdd={(version) => {
-                                    versions.push(version)
-                                    setVersions([...versions])
+                                    apply(draft => draft.versions.push(version))
                                 }}
                                 onRemove={(version) => {
-                                    const index = versions.indexOf(version)
-                                    if (index !== -1) {
-                                        versions.splice(index, 1)
-                                        setVersions([...versions])
-                                    }
+                                    apply(draft => {
+                                        draft.versions = draft.versions.filter(v => v !== version)
+                                    })
                                 }}
                                 selection={selection.filter(item => {
                                     return isEdit(item) || isMotivation(item) || isSymbol(item)
@@ -304,7 +295,7 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
 
                 <TabPanel value={currentTab} index={1}>
                     <Stemma
-                        versions={versions}
+                        versions={edition.versions}
                         currentVersion={currentVersion}
                         onClick={(version) => {
                             setCurrentVersion(version)
@@ -427,7 +418,6 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
                 edition={{
                     ...edition,
                     copies: layers.map(({ copy }) => copy),
-                    versions
                 }}
                 onClose={() => setDownloadDialogOpen(false)}
             />
@@ -457,8 +447,7 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
                     }
 
                     fillEdits(newVersion, asSymbols(newCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
-                    versions.push(newVersion)
-                    setVersions([...versions])
+                    apply(draft => draft.versions.push(newVersion))
                 }}
                 onRemove={copy => {
                     setLayers(prev => {
