@@ -22,7 +22,7 @@ import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { v4 } from "uuid"
 import { Stemma } from "./Stemma"
-import { Arguable } from "./EditAssumption"
+import { Arguable } from "./Arguable"
 import { SelectionContext } from "../../providers/SelectionContext"
 import { Draft } from 'immer'
 import { EditionContext } from "../../providers/EditionContext"
@@ -77,13 +77,11 @@ interface DeskProps {
 export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
-    const { edition } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
-    const [metadata, setMetadata] = useState<EditionMetadata>()
     const [versions, setVersions] = useState<Version[]>([])
-
     const [layers, setLayers] = useState<Layer[]>([])
     const [activeLayer, setActiveLayer] = useState<Layer>()
 
@@ -121,9 +119,8 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
     }, [currentVersion, conversionMethod])
 
     const importEdition = (edition: Edition) => {
-        const { copies, versions, ...metadata } = edition
+        const { copies, versions } = edition
 
-        setMetadata(metadata)
         setVersions(versions)
         setLayers(copies.map(copy => {
             return {
@@ -145,7 +142,7 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
         setCurrentVersion(versions.find(v => v.id === versionId))
     }, [versionId, versions])
 
-    if (!metadata) {
+    if (!edition) {
         return (
             <Welcome />
         )
@@ -285,23 +282,16 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
 
                 <TabPanel value={currentTab} index={0}>
                     <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
-                        <b>{metadata.title}</b>
+                        <b>{edition.title}</b>
                         <br />
-                        {metadata.roll.catalogueNumber}{' '}
+                        {edition.roll.catalogueNumber}{' '}
 
                         <Arguable
                             viewOnly={viewOnly || false}
-                            about={metadata.roll.recordingEvent.date}
-                            onChange={(assumption) => {
-                                setMetadata(prev => {
-                                    if (!prev) return
-                                    prev.roll.recordingEvent.date = assumption
-                                    return { ...prev }
-                                })
-                            }}
+                            path={['roll', 'recordingEvent', 'date'] as const}
                         >
                             ({new Intl.DateTimeFormat().format(
-                                flat(metadata.roll.recordingEvent.date)
+                                flat(edition.roll.recordingEvent.date)
                             )})
                         </Arguable>
                     </div>
@@ -435,7 +425,7 @@ export const Desk = ({ edition: edition_, viewOnly, versionId }: DeskProps) => {
             <DownloadDialog
                 open={downloadDialogOpen}
                 edition={{
-                    ...metadata,
+                    ...edition,
                     copies: layers.map(({ copy }) => copy),
                     versions
                 }}

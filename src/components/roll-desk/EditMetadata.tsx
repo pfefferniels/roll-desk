@@ -36,6 +36,8 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   const [publicationDate, setPublicationDate] = useState<Date>(new Date());
 
   useEffect(() => {
+    if (!edition) return
+
     setTitle(edition.title);
     setLicense(edition.license);
     setBaseURI(edition.base);

@@ -3,7 +3,7 @@ import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText 
 import { flat, PaperStretch, RollCopy } from "linked-rolls"
 import { useState } from "react"
 import { ColorDialog } from "./ColorDialog"
-import { Arguable } from "./EditAssumption"
+import { Arguable } from "./Arguable"
 
 export interface Layer {
     copy: RollCopy

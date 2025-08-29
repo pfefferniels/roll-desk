@@ -9,7 +9,7 @@ import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 import useIsVisible from "../../hooks/useIsVisible.tsx";
-import { Arguable } from "./EditAssumption.tsx";
+import { Arguable } from "./Arguable.tsx";
 
 interface IIIFInfo {
     "@id": string;

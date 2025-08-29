@@ -3,7 +3,7 @@ import { Box, IconButton, Popover, Portal } from "@mui/material";
 import { useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
-import { Arguable } from './EditAssumption';
+import { Arguable } from './Arguable';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { EditString } from './EditString';
 

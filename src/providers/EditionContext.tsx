@@ -1,9 +1,8 @@
-import { Toolbar, List } from "@mui/material";
 import { enablePatches, produceWithPatches, applyPatches, Patch, Draft } from "immer";
 import { assign, Edit, Edition, EditionMetadata } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
-type EditionOp = (d: Draft<Edition>) => void;
+export type EditionOp = (d: Draft<Edition>) => void;
 
 type HistoryEntry = { patches: Patch[]; inverse: Patch[] };
 type History = { past: HistoryEntry[]; future: HistoryEntry[]; limit: number };
@@ -37,7 +36,7 @@ export const emptyMetadata: EditionMetadata = {
 };
 
 export const EditionContext = createContext<{
-    edition: Edition;
+    edition?: Edition;
     setEdition: (edition: Edition) => void;
     apply: (op: EditionOp) => void
     undo: () => void;
@@ -45,11 +44,6 @@ export const EditionContext = createContext<{
     canUndo: boolean;
     canRedo: boolean;
 }>({
-    edition: {
-        copies: [],
-        versions: [],
-        ...emptyMetadata
-    },
     setEdition: () => {},
     apply: () => { },
     undo: () => { },
