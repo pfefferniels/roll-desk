@@ -123,28 +123,7 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
 
     const addMotivation = (about: Edit[]) => {
         if (about.length === 0) return
-
-
         setEditsToMotivate(about)
-
-        /*
-        if (about.length === 1) {
-            const motivation: Motivation<EditMotivation> = about[0].motivation || {
-                assigned: 'correct-error',
-                id: v4(),
-                type: 'motivationAssignment',
-                belief: {
-                    id: v4(),
-                    type: 'belief',
-                    certainty: 'true',
-                    reasons: []
-                }
-            }
-
-            setAssignMotivation(motivation)
-        }
-        else {*/
-        /*}*/
     }
 
     if (!edition) return null
