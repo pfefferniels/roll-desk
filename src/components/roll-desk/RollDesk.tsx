@@ -2,25 +2,24 @@
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
-import { AnySymbol, asSymbols, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
+import { AnySymbol, asSymbols, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition, RollCopy } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { write } from "midifile-ts"
-import { Layer, LayerStack } from "./StackList"
+import { LayerInfo, LayerStack } from "./StackList"
 import { LayeredRolls } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
-import { stringToColor } from "../../helpers/stringToColor"
+import { distinctColors } from "../../helpers/distinctColors"
 import EditMetadata from "./EditMetadata"
 import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
-import { v4 } from "uuid"
 import { Stemma } from "./Stemma"
 import { Arguable } from "./Arguable"
 import { SelectionContext } from "../../providers/SelectionContext"
@@ -76,11 +75,11 @@ interface DeskProps {
 export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
-    const { edition, apply, undo, redo, canUndo, canRedo } = useContext(EditionContext)
+    const { edition, undo, redo, canUndo, canRedo } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
-    const [layers, setLayers] = useState<Layer[]>([])
+    const [layerInfos, setLayerInfos] = useState<LayerInfo[]>([])
 
     const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
@@ -90,7 +89,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
-    const [currentCopy, setCurrentCopy] = useState<Layer>()
+    const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersion, setCurrentVersion] = useState<Version>()
     const [currentMotivation, setCurrentMotivation] = useState<Motivation<string>>()
 
@@ -116,28 +115,39 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
         downloadFile('output.mid', dataBuf, 'audio/midi')
     }, [currentVersion, conversionMethod])
 
-    const importEdition = (edition: Edition) => {
-        const { copies } = edition
-
-        setLayers(copies.map(copy => {
-            return {
-                color: stringToColor(copy.id),
-                copy: copy,
-                symbolOpacity: 1,
-                facsimileOpacity: 0,
-                facsimile: false
-            }
-        }))
-    }
-
-    useEffect(() => {
-        if (edition) importEdition(edition)
-    }, [edition])
-
     useEffect(() => {
         if (!versionId) return
         setCurrentVersion(edition?.versions.find(v => v.id === versionId))
     }, [versionId, edition])
+
+    useEffect(() => {
+        if (!edition) return
+
+        setLayerInfos(prev => {
+            const prevMap = new Map(prev.map(li => [li.copyId, li]))
+
+            const newList: LayerInfo[] = edition.copies.map((copy, i) => {
+                const existing = prevMap.get(copy.id)
+                if (existing) return existing
+
+                return {
+                    color: distinctColors[i % distinctColors.length],
+                    copyId: copy.id,
+                    symbolOpacity: 1,
+                    facsimileOpacity: 0,
+                    facsimile: false
+                }
+            })
+
+            const unchanged = prev.length === newList.length && prev.every((p, i) => p.copyId === newList[i].copyId && p === newList[i])
+            return unchanged ? prev : newList
+        })
+
+        // If the currently active copy was removed from the edition, clear it
+        if (currentCopyId && !edition.copies.find(c => c.id === currentCopyId)) {
+            setCurrentCopyId(undefined)
+        }
+    }, [edition?.copies])
 
     if (!edition) {
         return (
@@ -181,19 +191,11 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                 </IconButton>
                             </Ribbon>
                         </RibbonGroup>
-                        {(!viewOnly && !currentVersion && currentCopy) && (
+                        {(!viewOnly && !currentVersion && currentCopyId) && (
                             <CopyFacsimileMenu
-                                copy={currentCopy.copy}
-                                onChange={(copy) => {
-                                    const layer = layers.find(layer => layer.copy === copy)
-                                    if (layer) {
-                                        layer.copy = copy
-                                        setLayers([...layers])
-                                    }
-                                }}
+                                copyId={currentCopyId}
                                 onChangeSelection={selection => setSelection(selection)}
                                 selection={selection.filter(item => isRollFeature(item))}
-                                copies={layers.map(layer => layer.copy)}
                             />
                         )}
                         {(!viewOnly && currentVersion) && (
@@ -300,7 +302,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         currentVersionId={currentVersion?.id}
                         onClick={(version) => {
                             setCurrentVersion(version)
-                            setCurrentCopy(undefined)
+                            setCurrentCopyId(undefined)
                             setSelection([])
                         }}
                         onHoverMotivation={(motivation) => {
@@ -316,10 +318,13 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
 
                 <TabPanel value={currentTab} index={2}>
                     <LayerStack
-                        stack={
+                        layerInfos={
                             currentVersion
-                                ? layers.filter(layer => {
-                                    const features = layer.copy.features.map(f => f.id)
+                                ? layerInfos.filter(layer => {
+                                    const copy = edition.copies.find(c => c.id === layer.copyId)
+                                    if (!copy) return false
+
+                                    const features = copy.features.map(f => f.id)
                                     const versionFeatures = currentVersion.edits
                                         .map(edit => ([...(edit.insert || []), ...(edit.delete || [])]))
                                         .flat()
@@ -330,13 +335,13 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                     const intersection = new Set(features).intersection(new Set(versionFeatures))
                                     return intersection.size !== 0
                                 })
-                                : layers
+                                : layerInfos
                         }
-                        active={currentCopy}
-                        onChange={stack => setLayers([...stack])}
-                        onClick={(layer) => {
+                        activeId={currentCopyId}
+                        onChange={layerInfos => setLayerInfos([...layerInfos])}
+                        onClick={(copyId) => {
                             setCurrentVersion(undefined)
-                            setCurrentCopy(layer)
+                            setCurrentCopyId(copyId)
                         }}
                     />
 
@@ -393,8 +398,8 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
             <Box overflow='scroll'>
                 <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
                     <LayeredRolls
-                        active={currentCopy}
-                        stack={layers}
+                        activeId={currentCopyId}
+                        layerInfos={layerInfos}
                         selection={selection}
                         onChangeSelection={setSelection}
                         currentVersion={currentVersion}
@@ -416,10 +421,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
 
             <DownloadDialog
                 open={downloadDialogOpen}
-                edition={{
-                    ...edition,
-                    copies: layers.map(({ copy }) => copy),
-                }}
+                edition={edition}
                 onClose={() => setDownloadDialogOpen(false)}
             />
 
@@ -431,37 +433,6 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
             <RollCopyDialog
                 open={editCopy}
                 onClose={() => setEditCopy(false)}
-                onDone={(newCopy, siglum) => {
-                    setLayers(prev => {
-                        return [...prev, {
-                            copy: newCopy,
-                            color: stringToColor(newCopy.id),
-                            symbolOpacity: 1,
-                            facsimileOpacity: 0
-
-                        }]
-                    })
-
-                    const newVersion: Version = {
-                        siglum,
-                        id: v4(),
-                        edits: [],
-                        motivations: [],
-                        type: 'edition'
-                    }
-
-                    newVersion.edits = fillEdits(newVersion, asSymbols(newCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
-
-                    apply(draft => {
-                        draft.copies.push(newCopy)
-                        draft.versions.push(newVersion)
-                    })
-                }}
-                onRemove={copy => {
-                    setLayers(prev => {
-                        return prev.filter(layer => layer.copy !== copy)
-                    })
-                }}
             />
         </SelectionContext.Provider >
     )

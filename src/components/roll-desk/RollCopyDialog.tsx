@@ -1,17 +1,18 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
-import { useEffect, useState } from "react";
-import { readFromSpencerMIDI, readFromStanfordAton, RollCopy } from "linked-rolls";
+import { useContext, useEffect, useState } from "react";
+import { asSymbols, fillEdits, readFromSpencerMIDI, readFromStanfordAton, RollCopy, Version } from "linked-rolls";
+import { EditionContext } from "../../providers/EditionContext";
+import { v4 } from "uuid";
 
 interface RollCopyDialogProps {
     open: boolean
     copy?: RollCopy
     onClose: () => void
-    onDone: (rollCopy: RollCopy, siglum: string) => void
-    onRemove: (rollCopy: RollCopy) => void
 }
 
-export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCopyDialogProps) => {
+export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => {
+    const { edition, apply } = useContext(EditionContext)
     const [file, setFile] = useState<File | null>(null);
     const [location, setLocation] = useState('') // P55 has current location
     const [siglum, setSiglum] = useState('')
@@ -22,12 +23,22 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
     }, [copy])
 
     const handleUpload = async () => {
+        if (!edition) return
+
         if (!file) {
             console.log('No file uploaded yet');
             return;
         }
 
-        let rollCopy = copy || new RollCopy()
+        let rollCopy: RollCopy = copy || {
+            ops: new Set(),
+            type: 'RollCopy',
+            id: v4(),
+            features: [],
+            measurements: {},
+            conditions: [],
+            location: '',
+        }
 
         if (file) {
             if (file.name.endsWith('midi') || file.name.endsWith('mid')) {
@@ -39,7 +50,21 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
         }
 
         rollCopy.location = location
-        onDone(rollCopy, siglum);
+
+        const newVersion: Version = {
+            siglum,
+            id: v4(),
+            edits: [],
+            motivations: [],
+            type: 'edition'
+        }
+
+        newVersion.edits = fillEdits(newVersion, asSymbols(rollCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
+
+        apply(d => {
+            d.copies.push(rollCopy)
+            d.versions.push(newVersion)
+        })
     };
 
     return (
@@ -89,10 +114,10 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone, onRemove }: RollCo
                     Save
                 </Button>
                 <IconButton color='secondary' onClick={() => {
-                    if (copy) {
-                        onRemove(copy)
-                        onClose()
-                    }
+                    if (!copy) return
+                    apply(draft => {
+                        draft.copies.splice(draft.copies.indexOf(copy), 1)
+                    })
                 }}>
                     <Delete />
                 </IconButton>

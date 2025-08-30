@@ -1,4 +1,4 @@
-import { enablePatches, produceWithPatches, applyPatches, Patch, Draft } from "immer";
+import { enablePatches, produceWithPatches, applyPatches, Patch, Draft, enableMapSet } from "immer";
 import { assign, Edit, Edition, EditionMetadata } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
@@ -62,6 +62,7 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         enablePatches();
+        enableMapSet();
     }, []);
 
     const apply = (op: EditionOp) => {

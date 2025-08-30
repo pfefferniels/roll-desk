@@ -1,16 +1,17 @@
 import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { alignFeatures, flat, RollCopy } from "linked-rolls";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { EditionContext } from "../../providers/EditionContext";
 
 interface AlignCopiesProps {
     open: boolean
     onClose: () => void
     copy: RollCopy
-    copies: RollCopy[]
     onDone: (shift: number, stretch: number) => void
 }
 
-export const AlignCopies = ({ copy, copies, onDone, onClose, open }: AlignCopiesProps) => {
+export const AlignCopies = ({ copy, onDone, onClose, open }: AlignCopiesProps) => {
+    const { edition } = useContext(EditionContext)
     const [copyB, setCopyB] = useState<RollCopy>()
 
     let shift: number | undefined, stretch: number | undefined
@@ -29,6 +30,8 @@ export const AlignCopies = ({ copy, copies, onDone, onClose, open }: AlignCopies
         flat(copy.productionEvent?.date)
     )
 
+    if (!edition) return null
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth>
             <DialogContent>
@@ -37,9 +40,9 @@ export const AlignCopies = ({ copy, copies, onDone, onClose, open }: AlignCopies
                         Choose Second Copy
                     </Typography>
                     <Select value={copyB?.id || ''} onChange={(e) => {
-                        setCopyB(copies.find(copy => copy.id === e.target.value))
+                        setCopyB(edition.copies.find(copy => copy.id === e.target.value))
                     }}>
-                        {copies.map(copy => {
+                        {edition.copies.map(copy => {
                             return (
                                 <MenuItem value={copy.id} key={`alignSymbols_${copy.id}`}>
                                     {date} ({copy.location})

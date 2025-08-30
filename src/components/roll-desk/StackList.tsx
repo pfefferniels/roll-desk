@@ -1,42 +1,47 @@
 import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText } from "@mui/material"
-import { flat, PaperStretch, RollCopy } from "linked-rolls"
+import { flat, PaperStretch } from "linked-rolls"
 import { useContext, useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
 import { EditionContext } from "../../providers/EditionContext"
 
-export interface Layer {
-    copy: RollCopy
+export interface LayerInfo {
     color: string
     symbolOpacity: number
     facsimileOpacity: number
+    copyId: string
 }
 
 interface LayerStackProps {
-    active?: Layer
-    stack: Layer[]
+    activeId?: string
+    layerInfos: LayerInfo[]
 
-    onChange: (stack: Layer[]) => void
-    onClick: (layer: Layer) => void
+    onChange: (stack: LayerInfo[]) => void
+    onClick: (copyId: string) => void
 }
 
-export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps) => {
+export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerStackProps) => {
     const { edition } = useContext(EditionContext)
-    const [clickedLayer, setClickedLayer] = useState<Layer>();
+    const [clickedLayer, setClickedLayer] = useState<LayerInfo>();
+
+    if (!edition) return null
 
     return (
         <>
             <List dense>
-                {stack.map((layer, i) => {
-                    const date = layer.copy.productionEvent?.date
+                {layerInfos.map((layer, i) => {
+                    const copy = edition.copies.find(c => c.id === layer.copyId)
+                    if (!copy) return null
+
+                    const date = copy.productionEvent?.date
                         ? (
                             <Arguable
-                                path={['copies', edition?.copies.indexOf(layer.copy) || 0, 'productionEvent', 'date']}
+                                path={['copies', edition.copies.indexOf(copy) || 0, 'productionEvent', 'date']}
                                 viewOnly={false}
                             >
                                 {new Intl.DateTimeFormat().format(
-                                    flat(layer.copy.productionEvent.date)
+                                    flat(copy.productionEvent.date)
                                 )}
                             </Arguable>
                         )
@@ -61,29 +66,29 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                     tabIndex={-1}
                                     onClick={() => {
                                         layer.symbolOpacity = 1 - layer.symbolOpacity
-                                        onChange([...stack])
+                                        onChange([...layerInfos])
                                     }}
                                 >
                                     {layer.symbolOpacity === 1 ? <Visibility /> : <VisibilityOff />}
                                 </IconButton>
                             </ListItemIcon>
-                            <ListItemButton onClick={() => onClick(layer)}>
+                            <ListItemButton onClick={() => onClick(layer.copyId)}>
                                 <ListItemText
-                                    style={{ border: layer === active ? '3px' : '1px' }}
+                                    style={{ border: layer.copyId === activeId ? '3px' : '1px' }}
                                     primary={
-                                        <span style={{ fontWeight: layer === active ? 'bold' : 'normal' }}>
+                                        <span style={{ fontWeight: layer.copyId === activeId ? 'bold' : 'normal' }}>
                                             {date}
                                         </span>
                                     }
                                     secondary={
                                         <div>
-                                            {layer.copy.location}
+                                            {copy.location}
                                             <br/>
-                                            {layer.copy.conditions.map((c, idx) => {
+                                            {copy.conditions.map((c, idx) => {
                                                 return (
                                                     <Arguable
                                                         key={`condition_${idx}` }
-                                                        path={['copies', edition?.copies.indexOf(layer.copy) || 0, 'conditions', idx]}
+                                                        path={['copies', edition?.copies.indexOf(copy) || 0, 'conditions', idx]}
                                                         viewOnly={false}
                                                     >
                                                         <span>
@@ -113,8 +118,7 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                         clickedLayer.color = color
                         clickedLayer.symbolOpacity = symbolOpacity
                         clickedLayer.facsimileOpacity = facsimileOpacity
-                        stack = stack.map(l => l === clickedLayer ? clickedLayer : l)
-                        onChange([...stack])
+                        onChange([...layerInfos.map(l => l === clickedLayer ? clickedLayer : l)])
                     }}
                 />
             )}

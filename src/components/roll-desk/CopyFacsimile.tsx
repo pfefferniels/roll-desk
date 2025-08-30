@@ -4,12 +4,14 @@ import {
     RollFeature
 } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
-import { JSX, useLayoutEffect, useRef, useState } from "react";
+import { JSX, useContext, useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 import useIsVisible from "../../hooks/useIsVisible.tsx";
 import { Arguable } from "./Arguable.tsx";
+import { EditionContext } from "../../providers/EditionContext.tsx";
+import { AssumptionPath } from "../../hooks/useAssumption.tsx";
 
 interface IIIFInfo {
     "@id": string;
@@ -96,6 +98,7 @@ export const CopyFacsimile = ({
     facsimileOpacity,
     onChange
 }: CopyFacsimileProps) => {
+    const { edition, apply } = useContext(EditionContext);
     const { zoom, trackHeight, trackToY } = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
 
@@ -157,6 +160,8 @@ export const CopyFacsimile = ({
         renderIIIF();
     }, [svgRef, trackHeight, zoom, copy, facsimile, trackToY]);
 
+    if (!edition) return null
+
     return (
         <>
             <g className="roll-copy" ref={svgRef}>
@@ -184,16 +189,25 @@ export const CopyFacsimile = ({
                     />
                 )}
 
-                {copy.features.map(feature => {
+                {copy.features.map((feature, featureIndex) => {
                     return (
                         <Feature
                             key={feature.id}
                             feature={feature}
+                            conditionPath={['copies', edition.copies.indexOf(copy), 'features', featureIndex, 'condition']}
                             onClick={() => onClick(feature)}
                             color={color}
                             showFacsimile={facsimileOpacity === 0}
                             onChange={() => {
-                                onChange(copy.shallowClone())
+                                apply(draft => {
+                                    const editionCopy = draft.copies.find(c => c.id === copy.id)
+                                    if (!editionCopy) return
+
+                                    const index = editionCopy.features.findIndex(f => f.id === feature.id)
+                                    if (index === -1) return
+
+                                    editionCopy.features[index] = feature
+                                })
                             }}
                         />
                     )
@@ -226,13 +240,14 @@ const KeyboardDivision = () => {
 
 interface FeatureProps {
     feature: RollFeature;
+    conditionPath: AssumptionPath
     onClick: React.MouseEventHandler;
     onChange: (feature: RollFeature) => void;
     color: string;
     showFacsimile?: boolean
 }
 
-const Feature = ({ feature, onClick, color, showFacsimile, onChange }: FeatureProps) => {
+const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: FeatureProps) => {
     const ref = useRef<SVGRectElement>(null);
     const isVisible = useIsVisible(ref)
     const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
@@ -289,10 +304,10 @@ const Feature = ({ feature, onClick, color, showFacsimile, onChange }: FeaturePr
                     fontSize={10}
                     transform={`rotate(-90 ${x} ${y})`}
                 >
-                    <Arguable about={feature.condition} viewOnly={false} onChange={condition => {
-                        feature.condition = condition;
-                        onChange(feature);
-                    }}>
+                    <Arguable
+                        path={conditionPath}
+                        viewOnly={false}
+                    >
                         {flat(feature.condition).type.replaceAll('-', ' ')}
                     </Arguable>
                 </foreignObject>

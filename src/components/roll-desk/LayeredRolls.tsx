@@ -1,18 +1,19 @@
-import { useRef } from "react"
+import { useContext, useRef } from "react"
 import { Glow } from "./Glow"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { VersionView } from "./VersionView"
-import { Edition, Motivation, Version } from "linked-rolls"
+import { Edition, Motivation, RollCopy, Version } from "linked-rolls"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
-import { Layer } from "./StackList"
+import { LayerInfo } from "./StackList"
 import { UserSelection } from "./RollDesk"
 import { SelectionFilter } from "./Selection"
 import { MotivationView } from "./MotivationView"
+import { EditionContext } from "../../providers/EditionContext"
 
 interface LayeredRollsProps {
-    stack: Layer[]
-    active?: Layer
+    layerInfos: LayerInfo[]
+    activeId?: string
     currentVersion?: Version
     currentMotivation?: Motivation<string>
     selection: UserSelection[]
@@ -20,22 +21,24 @@ interface LayeredRollsProps {
 }
 
 export const LayeredRolls = ({
-    stack,
-    active,
+    layerInfos,
+    activeId,
     currentVersion,
     currentMotivation,
     selection,
     onChangeSelection
 }: LayeredRollsProps
 ) => {
+    const { edition } = useContext(EditionContext)
     const svgRef = useRef<SVGGElement>(null)
 
     // makes sure that the active layer comes last
-    const orderedLayers = [...stack].reverse()
+    const orderedLayers = [...layerInfos].reverse()
 
-    if (active) {
-        orderedLayers.splice(orderedLayers.indexOf(active), 1)
-        orderedLayers.push(active)
+    if (activeId) {
+        orderedLayers.push(
+            ...orderedLayers.splice(orderedLayers.findIndex(li => li.copyId === activeId), 1)
+        )
     }
 
     const onAddToSelection = (item: UserSelection) => {
@@ -59,15 +62,18 @@ export const LayeredRolls = ({
                         .map((stackItem, i) => {
                             if (stackItem.symbolOpacity === 0) return null
 
+                            const copy = edition?.copies.find(c => c.id === stackItem.copyId)
+                            if (!copy) return null
+
                             return (
                                 <CopyFacsimile
                                     key={`copy_${i}`}
-                                    copy={stackItem.copy}
-                                    active={stackItem.copy === active?.copy}
+                                    copy={copy}
+                                    active={stackItem.copyId === activeId}
                                     color={stackItem.color}
                                     facsimileOpacity={stackItem.facsimileOpacity}
                                     onClick={onAddToSelection}
-                                    onChange={() => {}}
+                                    onChange={() => { }}
                                     onSelectionDone={dimension => onChangeSelection([{
                                         ...dimension
                                     }])}

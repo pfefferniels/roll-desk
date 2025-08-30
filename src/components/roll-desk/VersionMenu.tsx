@@ -160,7 +160,7 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
                     startIcon={<EditIcon />}
                     size='small'
                 >
-                    Edit Siglum
+                    Siglum
                 </Button>
             </Ribbon>
             {selection.length > 0 && (
@@ -204,7 +204,7 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
                                         startIcon={<Lightbulb />}
                                         onClick={() => addMotivation(selection)}
                                     >
-                                        Add Motivation
+                                        Motivate
                                     </Button>
                                     <Button
                                         onClick={() => {
