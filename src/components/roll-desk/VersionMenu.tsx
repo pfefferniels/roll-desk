@@ -304,8 +304,7 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
 
                         const snapshot = getSnapshot(version)
                         version.basedOn = assign('derivation', previousVersion)
-                        version.edits = []
-                        fillEdits(version, snapshot, { toleranceStart: 3, toleranceEnd: 3 })
+                        version.edits = fillEdits(version, snapshot, { toleranceStart: 3, toleranceEnd: 3 })
                     })
                 }}
                 versions={edition.versions}

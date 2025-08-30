@@ -1,9 +1,10 @@
 import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText } from "@mui/material"
 import { flat, PaperStretch, RollCopy } from "linked-rolls"
-import { useState } from "react"
+import { useContext, useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
+import { EditionContext } from "../../providers/EditionContext"
 
 export interface Layer {
     copy: RollCopy
@@ -21,6 +22,7 @@ interface LayerStackProps {
 }
 
 export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps) => {
+    const { edition } = useContext(EditionContext)
     const [clickedLayer, setClickedLayer] = useState<Layer>();
 
     return (
@@ -30,8 +32,7 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                     const date = layer.copy.productionEvent?.date
                         ? (
                             <Arguable
-                                about={layer.copy.productionEvent.date}
-                                onChange={() => { }}
+                                path={['copies', edition?.copies.indexOf(layer.copy) || 0, 'productionEvent', 'date']}
                                 viewOnly={false}
                             >
                                 {new Intl.DateTimeFormat().format(
@@ -82,10 +83,7 @@ export const LayerStack = ({ stack, active, onChange, onClick }: LayerStackProps
                                                 return (
                                                     <Arguable
                                                         key={`condition_${idx}` }
-                                                        about={c}
-                                                        onChange={() => {
-                                                            onChange([...stack])
-                                                        }}
+                                                        path={['copies', edition?.copies.indexOf(layer.copy) || 0, 'conditions', idx]}
                                                         viewOnly={false}
                                                     >
                                                         <span>

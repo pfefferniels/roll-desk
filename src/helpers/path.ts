@@ -7,7 +7,7 @@ type IsFn<T> = T extends (...a: any[]) => any ? true : false;
 // depth counter to prevent runaway recursion
 type Prev = [0, 0, 1, 2, 3, 4, 5];
 
-// All valid paths (tuples) inside T up to depth D (default 7)
+// All valid paths (tuples) inside T up to depth D (default 4)
 export type Path<T, D extends number = 4> =
     D extends 0
     ? [] // stop

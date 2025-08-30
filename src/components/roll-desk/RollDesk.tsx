@@ -81,7 +81,6 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const [stretch, setStretch] = useState(2)
 
     const [layers, setLayers] = useState<Layer[]>([])
-    const [activeLayer, setActiveLayer] = useState<Layer>()
 
     const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
@@ -91,6 +90,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [isPlaying, setIsPlaying] = useState(false)
 
+    const [currentCopy, setCurrentCopy] = useState<Layer>()
     const [currentVersion, setCurrentVersion] = useState<Version>()
     const [currentMotivation, setCurrentMotivation] = useState<Motivation<string>>()
 
@@ -181,9 +181,9 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                 </IconButton>
                             </Ribbon>
                         </RibbonGroup>
-                        {(!viewOnly && !currentVersion && activeLayer) && (
+                        {(!viewOnly && !currentVersion && currentCopy) && (
                             <CopyFacsimileMenu
-                                copy={activeLayer.copy}
+                                copy={currentCopy.copy}
                                 onChange={(copy) => {
                                     const layer = layers.find(layer => layer.copy === copy)
                                     if (layer) {
@@ -297,11 +297,10 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
 
                 <TabPanel value={currentTab} index={1}>
                     <Stemma
-                        versions={edition.versions}
-                        currentVersion={currentVersion}
+                        currentVersionId={currentVersion?.id}
                         onClick={(version) => {
                             setCurrentVersion(version)
-                            setActiveLayer(undefined)
+                            setCurrentCopy(undefined)
                             setSelection([])
                         }}
                         onHoverMotivation={(motivation) => {
@@ -333,11 +332,11 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                 })
                                 : layers
                         }
-                        active={activeLayer}
+                        active={currentCopy}
                         onChange={stack => setLayers([...stack])}
                         onClick={(layer) => {
                             setCurrentVersion(undefined)
-                            setActiveLayer(layer)
+                            setCurrentCopy(layer)
                         }}
                     />
 
@@ -394,7 +393,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
             <Box overflow='scroll'>
                 <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
                     <LayeredRolls
-                        active={activeLayer}
+                        active={currentCopy}
                         stack={layers}
                         selection={selection}
                         onChangeSelection={setSelection}
@@ -433,11 +432,14 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                 open={editCopy}
                 onClose={() => setEditCopy(false)}
                 onDone={(newCopy, siglum) => {
-                    layers.push({
-                        copy: newCopy,
-                        color: stringToColor(newCopy.id),
-                        symbolOpacity: 1,
-                        facsimileOpacity: 0
+                    setLayers(prev => {
+                        return [...prev, {
+                            copy: newCopy,
+                            color: stringToColor(newCopy.id),
+                            symbolOpacity: 1,
+                            facsimileOpacity: 0
+
+                        }]
                     })
 
                     const newVersion: Version = {
@@ -448,8 +450,10 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         type: 'edition'
                     }
 
-                    fillEdits(newVersion, asSymbols(newCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
+                    newVersion.edits = fillEdits(newVersion, asSymbols(newCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
+
                     apply(draft => {
+                        draft.copies.push(newCopy)
                         draft.versions.push(newVersion)
                     })
                 }}

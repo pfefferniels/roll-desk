@@ -5,7 +5,7 @@ import { Draft } from "immer";
 import { Edition, EditorialAssumption, Certainty, AnyArgumentation } from "linked-rolls";
 import { v4 } from "uuid";
 
-export type AssumptionPath = PathTo<Edition, EditorialAssumption<any, any>>;
+export type AssumptionPath = PathTo<Edition, EditorialAssumption<any, any> | undefined>;
 
 export const onAssumptionAt =
     <P extends AssumptionPath>(

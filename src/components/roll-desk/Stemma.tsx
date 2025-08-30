@@ -1,106 +1,79 @@
-import { assignGenerations, Edit, flat, isEdit, MeaningComprehension, Motivation, Version, VersionType } from 'linked-rolls'
+import { assignGenerations, Edit, Edition, flat, isEdit, MeaningComprehension, Motivation, Version, VersionType } from 'linked-rolls'
 import { Box, IconButton, Popover, Portal } from "@mui/material";
-import { useLayoutEffect, useRef, useState } from "react"
+import { useContext, useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
 import { Arguable } from './Arguable';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { EditString } from './EditString';
-
-export function chaikin(points: number[][], iterations = 2) {
-    let pts = points;
-    for (let k = 0; k < iterations; k++) {
-        const next = [];
-        for (let i = 0; i < pts.length; i++) {
-            const [x0, y0] = pts[i];
-            const [x1, y1] = pts[(i + 1) % pts.length];
-            next.push([0.75 * x0 + 0.25 * x1, 0.75 * y0 + 0.25 * y1]);
-            next.push([0.25 * x0 + 0.75 * x1, 0.25 * y0 + 0.75 * y1]);
-        }
-        pts = next;
-    }
-    return pts;
-}
+import { EditionContext } from '../../providers/EditionContext';
+import { AssumptionPath, useAssumption } from '../../hooks/useAssumption';
+import { getAt } from '../../helpers/path';
 
 type Pt = [number, number];
 
-function toSvgPath(poly: Pt[]): string {
-    if (!poly.length) return '';
-    const [x0, y0] = poly[0];
-    const body = poly.slice(1).map(([x, y]) => `L ${x} ${y}`).join(' ');
-    return `M ${x0} ${y0} ${body} Z`;
-}
-
 interface Stemma {
-    versions: Version[]
-    currentVersion?: Version
+    currentVersionId?: string
     onClick: (version: Version) => void
     onHoverMotivation: (motivation: Motivation<string> | null) => void
 }
 
-export const Stemma = ({ versions, onClick, onHoverMotivation }: Stemma) => {
+export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
+    const { edition, apply } = useContext(EditionContext)
     const [nodes, setNodes] = useState<Node[]>([])
     const [links, setLinks] = useState<Link[]>([])
-    const [bboxes, setBBoxes] = useState<DOMRect[]>([])
 
     const svgRef = useRef<SVGSVGElement>(null)
     const svgWidth = 400
     const svgHeight = 400
 
     useEffect(() => {
-        const nodes: Node[] = []
-        assignGenerations(versions).forEach(version => {
-            nodes.push({
-                id: version.id,
-                label: version.siglum,
-                type: version.type,
-                generation: version.generation,
-                overlayInfo: (
-                    <Box sx={{ p: 1 }}>
-                        {version.actor && (
-                            <Arguable
-                                about={version.actor}
-                                onChange={() => {
-                                    setNodes([...nodes])
-                                }}
-                                viewOnly={false}
-                            >
-                                Actor: <b>{flat(version.actor).name}</b>
-                            </Arguable>
-                        )}
+        if (!edition) return
 
-                        <div>
-                            Type: <b>{version.type}</b>
-                        </div>
-                    </Box>
-                )
+        const nodes: Node[] = []
+        assignGenerations(edition.versions)
+            .forEach(version => {
+                nodes.push({
+                    id: version.id,
+                    label: version.siglum,
+                    type: version.type,
+                    generation: version.generation,
+                    overlayInfo: (
+                        <Box sx={{ p: 1 }}>
+                            {version.actor && (
+                                <Arguable
+                                    path={['versions', edition.versions.indexOf(version), 'actor'] as const}
+                                    viewOnly={false}
+                                >
+                                    Actor: <b>{flat(version.actor).name}</b>
+                                </Arguable>
+                            )}
+
+                            <div>
+                                Type: <b>{version.type}</b>
+                            </div>
+                        </Box>
+                    )
+                })
             })
-        })
 
         const links: Link[] = []
-        for (const version of versions) {
-            const basedOn = version.basedOn?.assigned
-            if (!basedOn) continue
-            for (const motivation of version.motivations) {
+        edition.versions.forEach((version, versionIndex) => {
+            version.motivations.forEach((_, motivationIndex) => {
+                const basedOn = version.basedOn?.assigned
+                if (!basedOn) return
+
                 links.push({
                     source: nodes.find(n => n.id === version.id) || 'unknown',
                     target: nodes.find(n => n.id === basedOn.id) || 'unknown',
-                    motivation,
+                    motivationPath: ['versions', versionIndex, 'motivations', motivationIndex],
                 })
-            }
-        }
+            })
+        })
+
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
-    }, [versions])
-
-    useLayoutEffect(() => {
-        const svg = svgRef.current
-        if (!svg) return
-        setBBoxes(Array
-            .from(svg.querySelectorAll<SVGGraphicsElement>('path,circle,text'))
-            .map(el => el.getBBox())
-        )
-    }, [nodes, links, svgWidth, svgHeight])
+    }, [edition?.versions])
 
     return (
         <svg
@@ -132,7 +105,10 @@ export const Stemma = ({ versions, onClick, onHoverMotivation }: Stemma) => {
                     <NavigationNode
                         key={`interpretation_${i}`}
                         node={node}
-                        onClick={() => onClick(versions.find(v => v.id === node.id)!)}
+                        onClick={() => {
+                            if (!edition) return
+                            onClick(edition.versions.find(v => v.id === node.id)!)
+                        }}
                     />
                 ))}
             </svg>
@@ -153,7 +129,7 @@ export interface Node extends d3.SimulationNodeDatum {
 
 export interface Link extends d3.SimulationLinkDatum<Node> {
     index?: number;
-    motivation: Motivation<string>
+    motivationPath: AssumptionPath
 }
 
 export const calculatePositions = async (
@@ -295,6 +271,8 @@ interface LinkContainerProps {
 
 export const LinkContainer = ({ positionedNodes, links, separationFactor, onHoverMotivation, onChange }: LinkContainerProps) => {
     const numberOfLinks = setLinkIndices(links);
+    const { edition, apply } = useContext(EditionContext)
+
 
     return links.map((link, i) => {
         const source = positionedNodes.find(node => node.id === (link.source as Node).id);
@@ -342,16 +320,17 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
             dr = dr / (1 + ((separationFactor || 2.5) / totalNumberOfLinks) * (link.index - 1));
         }
 
+        const motivation = getAt<Edition, AssumptionPath>(link.motivationPath, edition) as Motivation<string>
+
         return (
             <MotivationArc
                 key={`link_${i}`}
                 source={{ x: source.x, y: source.y }}
                 radius={dr}
                 target={{ x: target.x, y: target.y }}
-                motivation={link.motivation}
-                onChange={() => onChange()}
+                motivationPath={link.motivationPath}
                 svgProps={{
-                    onMouseEnter: () => onHoverMotivation(link.motivation),
+                    onMouseEnter: () => onHoverMotivation(motivation),
                     onMouseLeave: () => onHoverMotivation(null),
                 }}
             />
@@ -360,15 +339,6 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
 }
 
 type Point = { x: number, y: number }
-
-interface ArcProps {
-    source: Point
-    radius: number
-    target: Point
-    motivation: Motivation<string>
-    svgProps?: SVGProps<SVGTextElement>
-    onChange: (motivation: Motivation<string>) => void
-}
 
 type TPt = { x: number; y: number; angle: number };
 
@@ -413,8 +383,19 @@ function computeTextEndOnPath(
     return { x: p1.x, y: p1.y, angle };
 }
 
-export const MotivationArc = ({ source, radius, target, motivation, svgProps, onChange }: ArcProps) => {
+interface ArcProps {
+    source: Point
+    radius: number
+    target: Point
+    motivationPath: AssumptionPath
+    svgProps?: SVGProps<SVGTextElement>
+}
+
+export const MotivationArc = ({ source, radius, target, motivationPath, svgProps }: ArcProps) => {
     const [editMotivation, setEditMotivation] = useState(false)
+
+    const { apply } = useContext(EditionContext)
+    const { assumption: motivation } = useAssumption(motivationPath) as { assumption: Motivation<string> }
 
     const elRef = useRef<SVGPathElement>(null)
     const textPathRef = useRef<SVGTextPathElement | null>(null);
@@ -466,16 +447,19 @@ export const MotivationArc = ({ source, radius, target, motivation, svgProps, on
                     value={flat(motivation)}
                     onClose={() => setEditMotivation(false)}
                     onDone={(str) => {
-                        motivation.assigned = str
-                        onChange({ ...motivation })
+                        apply(
+                            draft => {
+                                const motivation = getAt<Edition, AssumptionPath>(motivationPath, draft) as Motivation<string>
+                                motivation.assigned = str
+                            }
+                        )
                         setEditMotivation(false)
                     }}
                 />
             </Portal>
 
             <Arguable
-                about={motivation}
-                onChange={(motivation) => onChange(motivation)}
+                path={motivationPath}
                 viewOnly={false}
                 asSVG={{
                     buttonPlacement: endPt || { x: 0, y: 0, angle: 0 }
