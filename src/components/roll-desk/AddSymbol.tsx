@@ -203,7 +203,7 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: A
 
                         const base = {
                             id: v4(),
-                            carriers: [assign('carrierAssignment', feature)],
+                            carriers: [assign('carrierAssignment', feature.id)],
                         }
 
                         let newSymbol: AnySymbol | undefined = undefined

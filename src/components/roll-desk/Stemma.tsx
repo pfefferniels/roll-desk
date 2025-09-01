@@ -1,4 +1,4 @@
-import { assignGenerations, Edit, Edition, flat, isEdit, MeaningComprehension, Motivation, Version, VersionType } from 'linked-rolls'
+import { Edit, Edition, flat, getAt, isEdit, MeaningComprehension, Motivation, Version, VersionType } from 'linked-rolls'
 import { Box, IconButton, Popover, Portal } from "@mui/material";
 import { useContext, useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
@@ -8,18 +8,17 @@ import { Edit as EditIcon } from '@mui/icons-material';
 import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { AssumptionPath, useAssumption } from '../../hooks/useAssumption';
-import { getAt } from '../../helpers/path';
 
 type Pt = [number, number];
 
 interface Stemma {
     currentVersionId?: string
-    onClick: (version: Version) => void
+    onClick: (versionId: string) => void
     onHoverMotivation: (motivation: Motivation<string> | null) => void
 }
 
 export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
-    const { edition, apply } = useContext(EditionContext)
+    const { edition, editionView, apply } = useContext(EditionContext)
     const [nodes, setNodes] = useState<Node[]>([])
     const [links, setLinks] = useState<Link[]>([])
 
@@ -31,7 +30,7 @@ export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
         if (!edition) return
 
         const nodes: Node[] = []
-        assignGenerations(edition.versions)
+        editionView?.assignGenerations()
             .forEach(version => {
                 nodes.push({
                     id: version.id,
@@ -60,12 +59,12 @@ export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
         const links: Link[] = []
         edition.versions.forEach((version, versionIndex) => {
             version.motivations.forEach((_, motivationIndex) => {
-                const basedOn = version.basedOn?.assigned
-                if (!basedOn) return
+                if (!version.basedOn) return
+                const basedOn = flat(version.basedOn)
 
                 links.push({
                     source: nodes.find(n => n.id === version.id) || 'unknown',
-                    target: nodes.find(n => n.id === basedOn.id) || 'unknown',
+                    target: nodes.find(n => n.id === basedOn) || 'unknown',
                     motivationPath: ['versions', versionIndex, 'motivations', motivationIndex],
                 })
             })
@@ -107,7 +106,7 @@ export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
                         node={node}
                         onClick={() => {
                             if (!edition) return
-                            onClick(edition.versions.find(v => v.id === node.id)!)
+                            onClick(node.id)
                         }}
                     />
                 ))}
@@ -330,7 +329,7 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
                 target={{ x: target.x, y: target.y }}
                 motivationPath={link.motivationPath}
                 svgProps={{
-                    onMouseEnter: () => onHoverMotivation(motivation),
+                    onMouseEnter: () => motivation && onHoverMotivation(motivation),
                     onMouseLeave: () => onHoverMotivation(null),
                 }}
             />
@@ -449,7 +448,9 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
                     onDone={(str) => {
                         apply(
                             draft => {
-                                const motivation = getAt<Edition, AssumptionPath>(motivationPath, draft) as Motivation<string>
+                                const motivation = getAt<Edition, AssumptionPath>(motivationPath, draft)
+                                if (!motivation) return
+
                                 motivation.assigned = str
                             }
                         )

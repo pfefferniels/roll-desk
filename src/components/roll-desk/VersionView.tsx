@@ -1,10 +1,11 @@
-import { useRef } from "react"
+import { useContext, useRef, useState } from "react"
 // import { usePiano } from "react-pianosound"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, traverseVersions, flat, Edit, Motivation, getSnapshot } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, flat, Edit, Motivation } from "linked-rolls"
 import { Dynamics } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
-import { AnySymbol, dimensionOf, Expression } from "linked-rolls/lib/Symbol"
+import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"
 import { EditView } from "./EditView"
+import { EditionContext } from "../../providers/EditionContext"
 
 interface VersionViewProps {
     version: Version
@@ -13,24 +14,29 @@ interface VersionViewProps {
 
 export const VersionView = ({ version, onClick }: VersionViewProps) => {
     // const { playSingleNote } = usePiano()
+    const { edition, editionView } = useContext(EditionContext)
+
+    console.log(edition?.versions.map(v => v.edits.length), 'vs', editionView?.edition.versions.map(v => v.edits.length), 'vs', version.edits.length)
 
     const svgRef = useRef<SVGGElement>(null)
 
-    const emulation = new Emulation()
-    emulation.emulateVersion(version)
+    if (!editionView) return null
 
-    const prevVersion = version.basedOn && flat(version.basedOn)
+    const emulation = new Emulation()
+    emulation.emulateVersion(version, editionView)
+
+    const prevVersion = editionView.predecessorOf(version)
     let prevEmulation: Emulation | undefined = undefined
     if (prevVersion) {
         prevEmulation = new Emulation()
-        prevEmulation.emulateVersion(prevVersion)
+        prevEmulation.emulateVersion(prevVersion, editionView)
     }
 
     // all symbols up to the current version
     const snapshot: (AnySymbol & { age: number })[] = [];
     const deletions: AnySymbol[] = []
     let age = 0
-    traverseVersions(version, s => {
+    editionView.travelUp(version, s => {
         // collect all inserted symbols and tell them their age
         for (const edit of s.edits) {
             for (const symbol of edit.insert ?? []) {
@@ -56,22 +62,23 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     })
 
     snapshot.sort((a, b) => {
-        return dimensionOf(a).horizontal.from - dimensionOf(b).horizontal.from
+        return editionView.dimensionOf(a).horizontal.from - editionView.dimensionOf(b).horizontal.from
     })
 
     // draw edits of current version, but only 
     // if the version is based on a previous version
     const edits = []
     //if (prevVersion) {
-        for (const edit of version.edits) {
-            edits.push(
-                <EditView
-                    key={edit.id}
-                    edit={edit}
-                    onClick={() => onClick(edit)}
-                />
-            )
-        }
+    for (const edit of version.edits) {
+        edits.push(
+            <EditView
+                key={edit.id}
+                edit={edit}
+                onClick={() => onClick(edit)}
+            />
+        )
+    }
+
     //}
 
     // draw dynamics of prev version and dynamics of current version (for comparison)
@@ -116,13 +123,13 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                     if (symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn') {
                         const partner = snapshot
                             .sort((a, b) => {
-                                return dimensionOf(a).horizontal.from - dimensionOf(b).horizontal.from
+                                return editionView.dimensionOf(a).horizontal.from - editionView.dimensionOf(b).horizontal.from
                             })
                             .find(candidate => {
                                 return (
                                     candidate.type === 'expression'
                                     && candidate.expressionType === 'SustainPedalOff'
-                                    && dimensionOf(candidate).horizontal.from > dimensionOf(symbol).horizontal.from
+                                    && editionView.dimensionOf(candidate).horizontal.from > editionView.dimensionOf(symbol).horizontal.from
                                 )
                             })
                         if (!partner) return null

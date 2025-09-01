@@ -1,8 +1,8 @@
 import { useMemo, useContext } from "react";
-import { getAt, onPath, type PathTo, type PathValue } from "../helpers/path";
+import { onPath } from "../helpers/path";
 import { EditionContext, EditionOp } from "../providers/EditionContext";
 import { Draft } from "immer";
-import { Edition, EditorialAssumption, Certainty, AnyArgumentation } from "linked-rolls";
+import { Edition, EditorialAssumption, Certainty, AnyArgumentation, PathTo, getAt, PathValue } from "linked-rolls";
 import { v4 } from "uuid";
 
 export type AssumptionPath = PathTo<Edition, EditorialAssumption<any, any> | undefined>;

@@ -2,7 +2,7 @@
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
-import { AnySymbol, asSymbols, Emulation, fillEdits, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition, RollCopy } from 'linked-rolls'
+import { AnySymbol, Emulation, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -75,7 +75,7 @@ interface DeskProps {
 export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
-    const { edition, undo, redo, canUndo, canRedo } = useContext(EditionContext)
+    const { edition, undo, redo, canUndo, canRedo, editionView } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
@@ -90,15 +90,17 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
-    const [currentVersion, setCurrentVersion] = useState<Version>()
+    const [currentVersionId, setCurrentVersionId] = useState<string>()
     const [currentMotivation, setCurrentMotivation] = useState<Motivation<string>>()
 
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
 
     const [currentTab, setCurrentTab] = useState(2)
 
+    const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
+
     const downloadMIDI = useCallback(async () => {
-        if (!currentVersion) return
+        if (!currentVersion || !editionView) return
 
         const emulation = new Emulation();
 
@@ -107,18 +109,13 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
         }
 
         if (emulation.midiEvents.length === 0) {
-            emulation.emulateVersion(currentVersion);
+            emulation.emulateVersion(currentVersion, editionView);
         }
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile('output.mid', dataBuf, 'audio/midi')
     }, [currentVersion, conversionMethod])
-
-    useEffect(() => {
-        if (!versionId) return
-        setCurrentVersion(edition?.versions.find(v => v.id === versionId))
-    }, [versionId, edition])
 
     useEffect(() => {
         if (!edition) return
@@ -155,8 +152,13 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
         )
     }
 
+    const handleUpdateSelection = (newSelection: UserSelection[]) => {
+        console.log('updating user selection', newSelection)
+        setSelection(newSelection)
+    }
+
     return (
-        <SelectionContext.Provider value={{ selection, setSelection }}>
+        <SelectionContext.Provider value={{ selection, setSelection: handleUpdateSelection as any }}>
             <AppBar
                 position={viewOnly ? 'absolute' : 'static'}
                 sx={{
@@ -192,24 +194,10 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                             </Ribbon>
                         </RibbonGroup>
                         {(!viewOnly && !currentVersion && currentCopyId) && (
-                            <CopyFacsimileMenu
-                                copyId={currentCopyId}
-                                onChangeSelection={selection => setSelection(selection)}
-                                selection={selection.filter(item => isRollFeature(item))}
-                            />
+                            <CopyFacsimileMenu copyId={currentCopyId} />
                         )}
                         {(!viewOnly && currentVersion) && (
-                            <VersionMenu
-                                versionId={currentVersion.id}
-                                onClearSelection={() => {
-                                    setSelection([])
-                                }}
-                                selection={selection.filter(item => {
-                                    return isEdit(item)
-                                        || isMotivation(item)
-                                        || isSymbol(item)
-                                }) as (AnySymbol | Motivation<any> | Version)[]}
-                            />
+                            <VersionMenu versionId={currentVersion.id} />
                         )}
 
                         <Ribbon title='Emulation'>
@@ -228,7 +216,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                             <IconButton
                                 disabled={!currentVersion}
                                 onClick={() => {
-                                    if (!currentVersion) return
+                                    if (!currentVersion || !editionView) return
 
                                     if (isPlaying) {
                                         stop()
@@ -240,7 +228,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                     if (conversionMethod) {
                                         emulation.placeTimeConversion = conversionMethod
                                     }
-                                    emulation.emulateVersion(currentVersion, undefined, true)
+                                    emulation.emulateVersion(currentVersion, editionView, undefined, true)
 
                                     //play(emulation.asMIDI())
                                     setIsPlaying(true)
@@ -300,8 +288,8 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                 <TabPanel value={currentTab} index={1}>
                     <Stemma
                         currentVersionId={currentVersion?.id}
-                        onClick={(version) => {
-                            setCurrentVersion(version)
+                        onClick={(versionId) => {
+                            setCurrentVersionId(versionId)
                             setCurrentCopyId(undefined)
                             setSelection([])
                         }}
@@ -330,7 +318,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                         .flat()
                                         .map(symbol => symbol.carriers)
                                         .flat()
-                                        .map(feature => flat(feature).id)
+                                        .map(feature => flat(feature))
 
                                     const intersection = new Set(features).intersection(new Set(versionFeatures))
                                     return intersection.size !== 0
@@ -340,7 +328,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         activeId={currentCopyId}
                         onChange={layerInfos => setLayerInfos([...layerInfos])}
                         onClick={(copyId) => {
-                            setCurrentVersion(undefined)
+                            setCurrentVersionId(undefined)
                             setCurrentCopyId(copyId)
                         }}
                     />

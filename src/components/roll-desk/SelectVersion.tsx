@@ -5,16 +5,16 @@ import { useState } from "react";
 interface SelectVersionProps {
     open: boolean;
     onClose: () => void;
-    onDone: (version: Version) => void;
+    onDone: (versionId: string) => void;
     versions: Version[];
 }
 
 export const SelectVersion = ({ open, onClose, onDone, versions }: SelectVersionProps) => {
-    const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
+    const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 
     const handleDone = () => {
-        if (selectedVersion) {
-            onDone(selectedVersion);
+        if (selectedVersionId) {
+            onDone(selectedVersionId);
             onClose();
         }
     };
@@ -24,15 +24,8 @@ export const SelectVersion = ({ open, onClose, onDone, versions }: SelectVersion
             <DialogTitle>Select Version</DialogTitle>
             <DialogContent>
                 <Select
-                    value={selectedVersion?.id || ''}
-                    onChange={(e) => {
-                        const versionId = e.target.value;
-                        const version = versions.find(s => s.id === versionId);
-                        if (version) {
-                            setSelectedVersion(version);
-                        }
-                    }}
-                    fullWidth
+                    value={selectedVersionId || ''}
+                    onChange={(e) => setSelectedVersionId(e.target.value)}
                 >
                     {versions.map((version) => (
                         <MenuItem
@@ -46,7 +39,7 @@ export const SelectVersion = ({ open, onClose, onDone, versions }: SelectVersion
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleDone} disabled={!selectedVersion}>
+                <Button onClick={handleDone} disabled={!selectedVersionId}>
                     Select
                 </Button>
             </DialogActions>

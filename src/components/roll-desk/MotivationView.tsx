@@ -2,6 +2,8 @@ import { Edit, isEdit, isMeaningComprehension, Motivation } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getEditBBoxes } from "./EditView";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
+import { useContext } from "react";
+import { EditionContext } from "../../providers/EditionContext";
 
 export interface MotivationViewProps {
     motivation: Motivation<string>;
@@ -9,15 +11,18 @@ export interface MotivationViewProps {
 }
 
 export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => {
+    const { editionView } = useContext(EditionContext)
     const translation = usePinchZoom()
+
+    if (!editionView) return null
 
     const hulls = (motivation.belief?.reasons || [])
         .filter(reason => isMeaningComprehension<Edit>(reason, isEdit))
         .map(({ comprehends }) => comprehends)
         .flat()
-        .map(edit => getEditBBoxes(edit, translation))
+        .map(edit => getEditBBoxes(edit, editionView, translation))
         .map(bboxes => getHull(bboxes, 10))
-    
+
     return (
         <g>
             {hulls.map(hull => {

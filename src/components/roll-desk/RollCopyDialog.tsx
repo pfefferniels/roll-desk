@@ -1,9 +1,10 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { asSymbols, fillEdits, readFromSpencerMIDI, readFromStanfordAton, RollCopy, Version } from "linked-rolls";
+import { AnySymbol, asSymbols, Edition, readFromSpencerMIDI, readFromStanfordAton, RollCopy, RollFeature, Version } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
+import { getAt, Path, PathTo } from "linked-rolls/lib/path";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -12,7 +13,7 @@ interface RollCopyDialogProps {
 }
 
 export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => {
-    const { edition, apply } = useContext(EditionContext)
+    const { edition, apply, editionView } = useContext(EditionContext)
     const [file, setFile] = useState<File | null>(null);
     const [location, setLocation] = useState('') // P55 has current location
     const [siglum, setSiglum] = useState('')
@@ -21,6 +22,8 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
         if (!copy) return
         setLocation(copy.location)
     }, [copy])
+
+    if (!editionView) return null
 
     const handleUpload = async () => {
         if (!edition) return
@@ -51,19 +54,28 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
 
         rollCopy.location = location
 
-        const newVersion: Version = {
-            siglum,
-            id: v4(),
-            edits: [],
-            motivations: [],
-            type: 'edition'
-        }
+        apply(draft => {
+            const newVersion: Version = {
+                siglum,
+                id: v4(),
+                edits: [],
+                motivations: [],
+                type: 'edition'
+            }
 
-        newVersion.edits = fillEdits(newVersion, asSymbols(rollCopy.features), { toleranceStart: 3, toleranceEnd: 3 })
+            editionView.planEdits(
+                newVersion,
+                asSymbols(rollCopy.features),
+                { toleranceStart: 3, toleranceEnd: 3 },
+                (symbolPath, carrierAssignments) => {
+                    const symbol = getAt<AnySymbol, any>(symbolPath, draft)
+                    symbol?.carriers.push(...carrierAssignments)
+                },
+                (edits) => newVersion.edits.push(...edits)
+            )
 
-        apply(d => {
-            d.copies.push(rollCopy)
-            d.versions.push(newVersion)
+            draft.copies.push(rollCopy)
+            draft.versions.push(newVersion)
         })
     };
 

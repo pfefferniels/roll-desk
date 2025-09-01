@@ -11,6 +11,7 @@ import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from 
 import { AlignCopies } from "./AlignCopies"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
+import { useSelection } from "../../providers/SelectionContext"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
@@ -69,11 +70,10 @@ const shiftAndStretch = (copyId: string, shift: Shift, stretch: EditorialAssumpt
 
 interface MenuProps {
     copyId: string
-    selection: FacsimileSelection[]
-    onChangeSelection: (selection: FacsimileSelection[]) => void
 }
 
-export const CopyFacsimileMenu = ({ copyId, selection, onChangeSelection }: MenuProps) => {
+export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
+    const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item))
     const { edition, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
@@ -114,10 +114,10 @@ export const CopyFacsimileMenu = ({ copyId, selection, onChangeSelection }: Menu
                     <Button
                         onClick={() => {
                             if (selection.length === copy.features.length) {
-                                onChangeSelection([])
+                                setSelection([])
                             }
                             else {
-                                onChangeSelection(copy.features)
+                                setSelection(copy.features)
                             }
                         }}
                         startIcon={selection.length === copy.features.length

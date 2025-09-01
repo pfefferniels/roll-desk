@@ -1,18 +1,19 @@
-import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, MoveUp, TypeSpecimen } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, Version, isMotivation, MeaningComprehension, fillEdits, getSnapshot, merge, split, versionTypes, editMotivations, EditMotivation, flat } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, MeaningComprehension, versionTypes, flat, getAt, EditionView, isMotivation } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
-// import { EditAssumption } from "./EditAssumption"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
+import { useSelection } from "../../providers/SelectionContext"
 
-const mergeEdits = (versionId: string, edits: Edit[]): EditionOp => {
+const mergeEdits = (versionId: string, edits: Edit[], editionView: EditionView): EditionOp => {
     return (draft) => {
+        console.log('invoke')
         if (edits.length < 2) {
             return
         }
@@ -20,26 +21,26 @@ const mergeEdits = (versionId: string, edits: Edit[]): EditionOp => {
         const version = draft.versions.find(v => v.id === versionId)
         if (!version) return
 
-        const newEdit = merge(edits)
+        const newEdit = editionView.planMerge(edits)
+        console.log('I am going to push', newEdit, 'to', version, 'and remove', edits, 'version', version, version.edits.length)
+        version.edits.push(newEdit)
         for (const edit of edits) {
             version.edits.splice(
-                version.edits.indexOf(edit), 1
+                version.edits.findIndex(e => e.id === edit.id), 1
             )
         }
-        version.edits.push(newEdit)
     }
 }
 
-const splitEdits = (versionId: string, selection: Edit[]): EditionOp => {
+const splitEdits = (versionId: string, selection: Edit[], editionView: EditionView): EditionOp => {
     return (draft) => {
         const version = draft.versions.find(v => v.id === versionId)
         if (!version) return
 
-        version.edits.push(...split(selection[0]))
+        version.edits.push(...editionView.planSplit(selection[0]))
         version.edits.splice(
             version.edits.indexOf(selection[0]), 1
         )
-
     }
 }
 
@@ -59,7 +60,7 @@ const deriveVersion = (versionId: string, selection: VersionSelection[]): Editio
         draft.versions.push({
             siglum: version.siglum + '_derived',
             id: v4(),
-            basedOn: assign('derivation', version),
+            basedOn: assign('derivation', version.id),
             edits,
             motivations: [],
             type: 'authorised-revision'
@@ -98,12 +99,12 @@ export type VersionSelection = AnySymbol | Edit | Motivation<string>
 
 interface MenuProps {
     versionId: string
-    selection: VersionSelection[]
-    onClearSelection: () => void
 }
 
-export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProps) => {
-    const { edition, apply } = useContext(EditionContext)
+export const VersionMenu = ({ versionId }: MenuProps) => {
+    const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isMotivation(item))
+    const { edition, editionView, getSnapshot, apply } = useContext(EditionContext)
+
     const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
@@ -115,8 +116,9 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
             case 'm':
                 if (!selection.every(isEdit)) return
                 apply(mergeEdits(
-                    versionId, selection
+                    versionId, selection, editionView!
                 ));
+                setSelection([])
                 break;
         }
     })
@@ -129,7 +131,7 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
     if (!edition) return null
 
     const version = edition.versions.find(v => v.id === versionId)
-    if (!version) return null
+    if (!version || !editionView) return null
 
     return (
         <>
@@ -209,9 +211,9 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
                                     <Button
                                         onClick={() => {
                                             apply(
-                                                mergeEdits(versionId, selection)
+                                                mergeEdits(versionId, selection, editionView)
                                             )
-                                            onClearSelection()
+                                            setSelection([])
                                         }}
                                         startIcon={<GroupAdd />}
                                         size='small'
@@ -224,9 +226,9 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
                                 <Button
                                     onClick={() => {
                                         apply(
-                                            splitEdits(versionId, selection)
+                                            splitEdits(versionId, selection, editionView)
                                         )
-                                        onClearSelection()
+                                        setSelection([])
                                     }}
                                     size='small'
                                     startIcon={<GroupRemove />}
@@ -297,14 +299,30 @@ export const VersionMenu = ({ versionId, onClearSelection, selection }: MenuProp
             <SelectVersion
                 open={attachTo}
                 onClose={() => setAttachTo(false)}
-                onDone={(previousVersion) => {
+                onDone={(previousVersionId) => {
+                    const snapshot = getSnapshot(version)
+
                     apply((draft) => {
                         const version = draft.versions.find(v => v.id === versionId)
                         if (!version) return
 
-                        const snapshot = getSnapshot(version)
-                        version.basedOn = assign('derivation', previousVersion)
-                        version.edits = fillEdits(version, snapshot, { toleranceStart: 3, toleranceEnd: 3 })
+                        version.basedOn = assign('derivation', previousVersionId)
+                        version.edits = []
+
+                        editionView?.planEdits(
+                            version,
+                            snapshot as AnySymbol[],
+                            { toleranceStart: 3, toleranceEnd: 3 },
+                            (symbolPath, carrierAssignments) => {
+                                const symbol = getAt<AnySymbol, any>(symbolPath, draft)
+                                console.log('changing a symbol:', symbol?.id, carrierAssignments.map(a => flat(a)))
+                                symbol?.carriers.push(...carrierAssignments)
+                            },
+                            (edits) => {
+                                version.edits = edits
+                                console.log('replaced existing edits with', edits)
+                            }
+                        )
                     })
                 }}
                 versions={edition.versions}
