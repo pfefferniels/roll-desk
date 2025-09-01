@@ -1,24 +1,21 @@
-import { Edit, Edition, flat, getAt, isEdit, MeaningComprehension, Motivation, Version, VersionType } from 'linked-rolls'
-import { Box, IconButton, Popover, Portal } from "@mui/material";
+import { Edit, Edition, flat, getAt, MeaningComprehension, Motivation, VersionType } from 'linked-rolls'
+import { Box, Popover, Portal } from "@mui/material";
 import { useContext, useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
 import { Arguable } from './Arguable';
-import { Edit as EditIcon } from '@mui/icons-material';
 import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { AssumptionPath, useAssumption } from '../../hooks/useAssumption';
 
-type Pt = [number, number];
-
 interface Stemma {
-    currentVersionId?: string
+    currentVersionId: string | undefined
     onClick: (versionId: string) => void
     onHoverMotivation: (motivation: Motivation<string> | null) => void
 }
 
-export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
-    const { edition, editionView, apply } = useContext(EditionContext)
+export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma) => {
+    const { edition, editionView } = useContext(EditionContext)
     const [nodes, setNodes] = useState<Node[]>([])
     const [links, setLinks] = useState<Link[]>([])
 
@@ -37,20 +34,16 @@ export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
                     label: version.siglum,
                     type: version.type,
                     generation: version.generation,
-                    overlayInfo: (
+                    overlayInfo: version.actor && (
                         <Box sx={{ p: 1 }}>
                             {version.actor && (
                                 <Arguable
-                                    path={['versions', edition.versions.indexOf(version), 'actor'] as const}
+                                    path={['versions', edition.versions.findIndex(v => v.id === version.id), 'actor'] as const}
                                     viewOnly={false}
                                 >
                                     Actor: <b>{flat(version.actor).name}</b>
                                 </Arguable>
                             )}
-
-                            <div>
-                                Type: <b>{version.type}</b>
-                            </div>
                         </Box>
                     )
                 })
@@ -58,21 +51,28 @@ export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
 
         const links: Link[] = []
         edition.versions.forEach((version, versionIndex) => {
-            version.motivations.forEach((_, motivationIndex) => {
-                if (!version.basedOn) return
-                const basedOn = flat(version.basedOn)
+            if (!version.basedOn) return
+            const basedOn = flat(version.basedOn)
 
+            version.motivations.forEach((_, motivationIndex) => {
                 links.push({
                     source: nodes.find(n => n.id === version.id) || 'unknown',
                     target: nodes.find(n => n.id === basedOn) || 'unknown',
                     motivationPath: ['versions', versionIndex, 'motivations', motivationIndex],
                 })
             })
+
+            if (version.motivations.length === 0) {
+                links.push({
+                    source: nodes.find(n => n.id === version.id) || 'unknown',
+                    target: nodes.find(n => n.id === basedOn) || 'unknown',
+                })
+            }
         })
 
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
-    }, [edition?.versions])
+    }, [edition?.versions, editionView])
 
     return (
         <svg
@@ -108,6 +108,7 @@ export const Stemma = ({ onClick, onHoverMotivation }: Stemma) => {
                             if (!edition) return
                             onClick(node.id)
                         }}
+                        highlight={currentVersionId === node.id}
                     />
                 ))}
             </svg>
@@ -122,13 +123,12 @@ export interface Node extends d3.SimulationNodeDatum {
     generation: number
     radius?: number;
     type: VersionType;
-    highlight?: boolean
     overlayInfo?: ReactNode
 }
 
 export interface Link extends d3.SimulationLinkDatum<Node> {
     index?: number;
-    motivationPath: AssumptionPath
+    motivationPath?: AssumptionPath
 }
 
 export const calculatePositions = async (
@@ -194,9 +194,10 @@ export function sortLinks(links: Link[]) {
 
 export interface NavigationNodeProps extends SVGProps<SVGGElement> {
     node: Node
+    highlight: boolean
 }
 
-export const NavigationNode = ({ node, ...svgProps }: NavigationNodeProps) => {
+export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeProps) => {
     const [hover, setHover] = useState(false)
     const elRef = useRef<SVGGElement>(null)
 
@@ -219,7 +220,9 @@ export const NavigationNode = ({ node, ...svgProps }: NavigationNodeProps) => {
                     cy={node.y || 10}
                     r={node.radius || (node.type === 'edition' ? 32 : 26)}
                     fill={node.type === 'edition' ? 'darkslategray' : '#8FB1FF'}
-                    fillOpacity={node.highlight === false ? 0.4 : 1}
+                    strokeWidth={highlight ? 3 : 0}
+                    stroke='black'
+                    strokeDasharray={highlight ? '3 2' : undefined}
                 />
                 <text
                     x={node.x || 10}
@@ -234,27 +237,29 @@ export const NavigationNode = ({ node, ...svgProps }: NavigationNodeProps) => {
                     {node.label}
                 </text>
 
-                <Portal>
-                    <Popover
-                        open={hover}
-                        anchorEl={elRef.current}
-                        onClose={() => setHover(false)}
-                        anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'left',
-                        }}
-                        style={{ pointerEvents: 'none' }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div style={{ pointerEvents: 'auto' }}>
-                            {node.overlayInfo}
-                        </div>
-                    </Popover>
-                </Portal>
+                {node.overlayInfo && (
+                    <Portal>
+                        <Popover
+                            open={hover}
+                            anchorEl={elRef.current}
+                            onClose={() => setHover(false)}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'right',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'left',
+                            }}
+                            style={{ pointerEvents: 'none' }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div style={{ pointerEvents: 'auto' }}>
+                                {node.overlayInfo}
+                            </div>
+                        </Popover>
+                    </Portal>
+                )}
             </g>
         </>
     )
@@ -302,7 +307,11 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
         const targetToSource = `${target.id},${source.id}`;
 
         const totalNumberOfLinks = numberOfLinks.get(sourceToTarget) || numberOfLinks.get(targetToSource) || 0
-        if (totalNumberOfLinks === 0) {
+        if (totalNumberOfLinks >= 1) {
+            dr = dr / (1 + ((separationFactor || 2.5) / totalNumberOfLinks) * (link.index - 1));
+        }
+
+        if (!link.motivationPath) {
             return (
                 <line
                     key={`link_${i}`}
@@ -310,13 +319,11 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
                     y1={source.y}
                     x2={target.x}
                     y2={target.y}
-                    strokeWidth={2}
+                    strokeWidth={1}
+                    strokeDasharray='5 5'
                     stroke='gray'
                 />
             )
-        }
-        if (totalNumberOfLinks >= 1) {
-            dr = dr / (1 + ((separationFactor || 2.5) / totalNumberOfLinks) * (link.index - 1));
         }
 
         const motivation = getAt<Edition, AssumptionPath>(link.motivationPath, edition) as Motivation<string>
@@ -408,8 +415,6 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
         console.log(path, tp)
         if (!path || !tp) return;
 
-        console.log('recomputing endpt for', motivation.assigned)
-
         const compute = () => setEndPt(computeTextEndOnPath(tp, path));
         compute();
     }, [motivation, source, target, radius]);
@@ -424,8 +429,6 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
             .map(comprehensions => comprehensions.comprehends)
             .flat()
             .length
-
-    console.log('endpt', endPt)
 
     return (
         <g>

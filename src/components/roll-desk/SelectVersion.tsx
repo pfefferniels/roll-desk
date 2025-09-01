@@ -7,10 +7,11 @@ interface SelectVersionProps {
     onClose: () => void;
     onDone: (versionId: string) => void;
     versions: Version[];
+    currentVersionId: string;
 }
 
-export const SelectVersion = ({ open, onClose, onDone, versions }: SelectVersionProps) => {
-    const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+export const SelectVersion = ({ open, onClose, onDone, versions, currentVersionId }: SelectVersionProps) => {
+    const [selectedVersionId, setSelectedVersionId] = useState<string | null>(versions[0]?.id || null);
 
     const handleDone = () => {
         if (selectedVersionId) {
@@ -31,6 +32,7 @@ export const SelectVersion = ({ open, onClose, onDone, versions }: SelectVersion
                         <MenuItem
                             key={version.id}
                             value={version.id}
+                            disabled={currentVersionId === version.id}
                         >
                             {version.siglum}
                         </MenuItem>

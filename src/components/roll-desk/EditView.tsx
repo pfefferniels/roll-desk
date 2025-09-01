@@ -97,6 +97,18 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         const id = edit.delete?.length
             ? `${edit.id}-insert` :
             edit.id
+        let motivationStr = `+${edit.insert.length}`
+        if (edit.motivation) {
+            if (flat(edit.motivation) === 'additional-accent') {
+                motivationStr = '>'
+            }
+            else if (flat(edit.motivation) === 'correct-error') {
+                motivationStr = `fix`
+            }
+            else {
+                motivationStr += ` ${flat(edit.motivation).replaceAll('-', ' ')}`
+            }
+        }
 
         hulls.push(
             <Hull
@@ -115,8 +127,9 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                         fontSize={12}
                         fill='black'
                         style={{ pointerEvents: 'none' }}
+                        fontWeight='bold'
                     >
-                        +{edit.insert.length} {edit.motivation && flat(edit.motivation).replaceAll('-', ' ')}
+                        {motivationStr}
                     </text>
                 }
             />

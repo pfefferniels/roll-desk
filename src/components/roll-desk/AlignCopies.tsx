@@ -33,7 +33,7 @@ export const AlignCopies = ({ copy, onDone, onClose, open }: AlignCopiesProps) =
     if (!edition) return null
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth>
+        <Dialog open={open} onClose={onClose}>
             <DialogContent>
                 <Stack>
                     <Typography>

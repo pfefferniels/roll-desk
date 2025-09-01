@@ -196,8 +196,8 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         {(!viewOnly && !currentVersion && currentCopyId) && (
                             <CopyFacsimileMenu copyId={currentCopyId} />
                         )}
-                        {(!viewOnly && currentVersion) && (
-                            <VersionMenu versionId={currentVersion.id} />
+                        {(!viewOnly && currentVersionId) && (
+                            <VersionMenu versionId={currentVersionId} />
                         )}
 
                         <Ribbon title='Emulation'>
@@ -287,7 +287,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
 
                 <TabPanel value={currentTab} index={1}>
                     <Stemma
-                        currentVersionId={currentVersion?.id}
+                        currentVersionId={currentVersionId}
                         onClick={(versionId) => {
                             setCurrentVersionId(versionId)
                             setCurrentCopyId(undefined)

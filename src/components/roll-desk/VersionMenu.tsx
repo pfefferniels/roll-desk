@@ -285,18 +285,18 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     apply((draft) => {
                         const version = draft.versions.find(v => v.id === versionId)
                         if (!version) return
-
-                    })
-                    version.actor = assign('actorAssignment', {
-                        name: str,
-                        id: v4(),
-                        sameAs: ['']
+                        version.actor = assign('actorAssignment', {
+                            name: str,
+                            id: v4(),
+                            sameAs: ['']
+                        })
                     })
                     setAssignActor(false)
                 }}
             />
 
             <SelectVersion
+                currentVersionId={versionId}
                 open={attachTo}
                 onClose={() => setAttachTo(false)}
                 onDone={(previousVersionId) => {
