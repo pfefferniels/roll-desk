@@ -25,7 +25,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     const emulation = new Emulation()
     emulation.emulateVersion(version, editionView)
 
-    const prevVersion = editionView.predecessorOf(version)
+    const prevVersion = editionView.predecessorOf(version.id)
     let prevEmulation: Emulation | undefined = undefined
     if (prevVersion) {
         prevEmulation = new Emulation()
@@ -34,9 +34,9 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
 
     // all symbols up to the current version
     const snapshot: (AnySymbol & { age: number })[] = [];
-    const deletions: AnySymbol[] = []
+    const deletions: string[] = []
     let age = 0
-    editionView.travelUp(version, s => {
+    editionView.travelUp(version.id, s => {
         // collect all inserted symbols and tell them their age
         for (const edit of s.edits) {
             for (const symbol of edit.insert ?? []) {
@@ -47,7 +47,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
         // remove deletions
         const deleted = []
         for (const toRemove of deletions) {
-            const idx = snapshot.findIndex(x => x === toRemove)
+            const idx = snapshot.findIndex(x => x.id === toRemove)
             if (idx !== -1) {
                 snapshot.splice(idx, 1)
                 deleted.push(toRemove)
@@ -62,7 +62,8 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     })
 
     snapshot.sort((a, b) => {
-        return editionView.dimensionOf(a).horizontal.from - editionView.dimensionOf(b).horizontal.from
+        return (editionView.dimensionOf(a)?.horizontal.from || 0)
+            - (editionView.dimensionOf(b)?.horizontal.from || 0)
     })
 
     // draw edits of current version, but only 
@@ -123,13 +124,14 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                     if (symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn') {
                         const partner = snapshot
                             .sort((a, b) => {
-                                return editionView.dimensionOf(a).horizontal.from - editionView.dimensionOf(b).horizontal.from
+                                return (editionView.dimensionOf(a)?.horizontal.from || 0)
+                                    - (editionView.dimensionOf(b)?.horizontal.from || 0)
                             })
                             .find(candidate => {
                                 return (
                                     candidate.type === 'expression'
                                     && candidate.expressionType === 'SustainPedalOff'
-                                    && editionView.dimensionOf(candidate).horizontal.from > editionView.dimensionOf(symbol).horizontal.from
+                                    && (editionView.dimensionOf(candidate)?.horizontal.from || 0) > (editionView.dimensionOf(symbol)?.horizontal.from || 0)
                                 )
                             })
                         if (!partner) return null

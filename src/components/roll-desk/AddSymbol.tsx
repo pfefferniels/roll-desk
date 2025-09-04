@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { assign, RollFeature, Version, WelteT100 } from "linked-rolls"
+import { assign, CoverPerforation, Edit, RollFeature, Version, WelteT100 } from "linked-rolls"
 import { useContext, useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
@@ -7,18 +7,18 @@ import { AnySymbol, isSymbol } from "linked-rolls/lib/Symbol"
 import { EditionContext } from "../../providers/EditionContext"
 
 interface AddSymbolProps {
+    copyID: string
     open: boolean
-    selection: EventDimension | AnySymbol
     iiifUrl?: string
     onClose: () => void
-    onDone: (feature: RollFeature) => void
+    selection: EventDimension | AnySymbol
 }
 
 const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', 'rollLabel'] as const
 type EventType = typeof eventTypes[number]
 
-export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: AddSymbolProps) => {
-    const { edition, apply } = useContext(EditionContext)
+export const AddSymbolDialog = ({ copyID, selection, open, onClose, iiifUrl }: AddSymbolProps) => {
+    const { edition, editionView, apply } = useContext(EditionContext)
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -180,6 +180,8 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: A
             <DialogActions>
                 <Button
                     onClick={() => {
+                        if (!editionView) return
+
                         if (isSymbol(selection)) {
                             selection.type = eventType
                             if ('text' in selection) selection.text = text || ''
@@ -223,13 +225,6 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: A
                                 ...base
                             }
                         }
-                        else if (eventType === 'cover') {
-                            newSymbol = {
-                                type: eventType,
-                                note: material,
-                                ...base
-                            }
-                        }
                         else if ((eventType === 'note' || eventType === 'expression') && perforationMeaning) {
                             newSymbol = {
                                 ...perforationMeaning,
@@ -237,7 +232,17 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: A
                             }
                         }
 
-                        if (newSymbol) {
+                        if (eventType === 'cover') {
+                            apply(
+                                new CoverPerforation(
+                                    copyID,
+                                    version.id,
+                                    rollSelection,
+                                    material
+                                )
+                            )
+                        }
+                        else if (newSymbol) {
                             apply(draft => {
                                 const v = draft.versions.find(v => v.id === version.id)
                                 if (v) {
@@ -247,14 +252,15 @@ export const AddSymbolDialog = ({ selection, open, onClose, onDone, iiifUrl }: A
                                     })
                                 }
                             })
-                            onDone(feature)
                         }
+
+                        onClose()
                     }}
                     variant='contained'
                 >
                     Done
                 </Button>
             </DialogActions>
-        </Dialog>
+        </Dialog >
     )
 }

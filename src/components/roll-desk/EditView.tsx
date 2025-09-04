@@ -12,6 +12,7 @@ export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' 
 
 const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, { translateX, trackToY, trackHeight }: Translation) => {
     const dim = editionView.dimensionOf(symbol)
+    if (!dim) return undefined
 
     let height = trackHeight.note
     if (dim.vertical.to) {
@@ -32,7 +33,11 @@ const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, { translateX
 
 export const getEditBBoxes = (edit: Edit, editionView: EditionView, translation: Translation) => {
     const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, editionView, translation)) || [];
-    const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, editionView, translation)) || [];
+    const deletionBBoxes = (edit.delete ?? [])
+        .map(symbolId => editionView.findSymbol(symbolId))
+        .filter(s => !!s)
+        .map(s => getSymbolBBox(s, editionView, translation))
+        .filter(bbox => !!bbox);
 
     return [...insertionBBoxes, ...deletionBBoxes]
 }
@@ -50,16 +55,26 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
 
     const hulls = []
 
-    const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, editionView, translation)) || [];
-    const deletionBBoxes = edit.delete?.map(s => getSymbolBBox(s, editionView, translation)) || [];
+    const insertionBBoxes = (edit.insert ?? [])
+        .map(s => getSymbolBBox(s, editionView, translation))
+        .filter(bbox => !!bbox)
+    const deletionBBoxes = (edit.delete ?? [])
+        .map(symbolId => editionView.findSymbol(symbolId))
+        .filter(s => !!s)
+        .map(s => getSymbolBBox(s, editionView, translation))
+        .filter(bbox => !!bbox);
 
     // draw overall hull only when there are both, insertions
     // as well as deletions
     if (edit.insert?.length && edit.delete?.length) {
         if (edit.insert.length === 1 && edit.delete.length === 1) {
             // do not draw any hull, only the arrow
-            const fromBox = getSymbolBBox(edit.delete[0], editionView, translation)
+            const deletedSymbol = editionView.findSymbol(edit.delete[0])
+            if (!deletedSymbol) return null
+
+            const fromBox = getSymbolBBox(deletedSymbol, editionView, translation)
             const toBox = getSymbolBBox(edit.insert[0], editionView, translation);
+            if (!fromBox || !toBox) return null
 
             fromBox.width = 2
             toBox.width = 2

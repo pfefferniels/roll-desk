@@ -1,4 +1,4 @@
-import { Edit, Edition, flat, getAt, MeaningComprehension, Motivation, VersionType } from 'linked-rolls'
+import { Edit, Edition, flat, getAt, MeaningComprehension, Motivation, Path, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { useContext, useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
@@ -6,7 +6,7 @@ import { ReactNode, SVGProps, useEffect } from "react";
 import { Arguable } from './Arguable';
 import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
-import { AssumptionPath, useAssumption } from '../../hooks/useAssumption';
+import { useAssumption } from '../../hooks/useAssumption';
 
 interface Stemma {
     currentVersionId: string | undefined
@@ -24,11 +24,13 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
     const svgHeight = 400
 
     useEffect(() => {
-        if (!edition) return
+        if (!edition || !editionView) return
 
         const nodes: Node[] = []
-        editionView?.assignGenerations()
+
+        editionView.withGenerations()
             .forEach(version => {
+                console.log('version', version.id)
                 nodes.push({
                     id: version.id,
                     label: version.siglum,
@@ -106,6 +108,7 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
                         node={node}
                         onClick={() => {
                             if (!edition) return
+                            console.log('clicked on', node.id)
                             onClick(node.id)
                         }}
                         highlight={currentVersionId === node.id}
@@ -128,7 +131,7 @@ export interface Node extends d3.SimulationNodeDatum {
 
 export interface Link extends d3.SimulationLinkDatum<Node> {
     index?: number;
-    motivationPath?: AssumptionPath
+    motivationPath?: Path
 }
 
 export const calculatePositions = async (
@@ -326,7 +329,7 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
             )
         }
 
-        const motivation = getAt<Edition, AssumptionPath>(link.motivationPath, edition) as Motivation<string>
+        const motivation = getAt<Motivation<string>>(link.motivationPath, edition)
 
         return (
             <MotivationArc
@@ -393,7 +396,7 @@ interface ArcProps {
     source: Point
     radius: number
     target: Point
-    motivationPath: AssumptionPath
+    motivationPath: Path
     svgProps?: SVGProps<SVGTextElement>
 }
 
@@ -439,7 +442,7 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
                 d={d}
                 fill="none"
                 stroke="black"
-                strokeWidth={editCount ? editCount * 3 : 15}
+                strokeWidth={editCount ? editCount * 2 : 15}
                 strokeOpacity={0.33}
             />
 
@@ -451,7 +454,7 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
                     onDone={(str) => {
                         apply(
                             draft => {
-                                const motivation = getAt<Edition, AssumptionPath>(motivationPath, draft)
+                                const motivation = getAt<Motivation<string>>(motivationPath, draft)
                                 if (!motivation) return
 
                                 motivation.assigned = str

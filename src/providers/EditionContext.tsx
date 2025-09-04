@@ -1,5 +1,5 @@
 import { enablePatches, produceWithPatches, applyPatches, Patch, Draft, enableMapSet } from "immer";
-import { AnySymbol, assign, Edition, EditionMetadata, EditionView, Version } from "linked-rolls";
+import { AnySymbol, assign, Edition, EditionMetadata, EditionView, isPlan, Plan, Version } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
 export type EditionOp = (d: Draft<Edition>) => void;
@@ -38,13 +38,13 @@ export const emptyMetadata: EditionMetadata = {
 export const EditionContext = createContext<{
     edition?: Edition;
     setEdition: (edition: Edition) => void;
-    apply: (op: EditionOp) => void
+    apply: (op: EditionOp | Plan) => void
     undo: () => void;
     redo: () => void;
     canUndo: boolean;
     canRedo: boolean;
     getSnapshot: (version: Version) => readonly AnySymbol[]
-    editionView: EditionView | undefined
+    editionView: EditionView | undefined,
 }>({
     setEdition: () => { },
     apply: () => { },
@@ -53,7 +53,7 @@ export const EditionContext = createContext<{
     canUndo: false,
     canRedo: false,
     getSnapshot: () => { return [] },
-    editionView: undefined
+    editionView: undefined,
 });
 
 export function EditionProvider({ children }: { children: React.ReactNode }) {
@@ -63,18 +63,24 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
         future: [],
         limit: 300,
     });
-    const [editionView, setEditionView] = useState<EditionView>(new EditionView(edition));
+
+    const editionView = useMemo(() => new EditionView(edition), [edition]);
 
     useEffect(() => {
         enablePatches();
         enableMapSet();
     }, []);
 
-    const apply = (op: EditionOp) => {
-        console.log('apply')
+    const apply = (op: EditionOp | Plan) => {
+        if (isPlan(op)) {
+            op.setView(editionView);
+            op.build().forEach(apply)
+            return
+        }
+
         setEdition((prev) => {
-            console.log('apply to', prev)
             const [next, patches, inverse] = produceWithPatches(prev, op);
+
             setHistory((h) => {
                 const nextPast = [...h.past, { patches, inverse }];
                 // respect limit (drop oldest if needed)
@@ -84,8 +90,6 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
                         : nextPast;
                 return { past: clipped, future: [], limit: h.limit };
             });
-
-            setEditionView(new EditionView(next))
             return next;
         });
     };
@@ -119,7 +123,7 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
     };
 
     const getSnapshot = (version: Version) => {
-        return editionView.getSnapshot(version)
+        return editionView.getSnapshot(version.id)
     }
 
     const { canUndo, canRedo } = useMemo(

@@ -20,7 +20,7 @@ export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => 
         .filter(reason => isMeaningComprehension<Edit>(reason, isEdit))
         .map(({ comprehends }) => comprehends)
         .flat()
-        .map(edit => getEditBBoxes(edit, editionView, translation))
+        .map(edit => getEditBBoxes(edit, editionView, translation).filter(bbox => !!bbox))
         .map(bboxes => getHull(bboxes, 10))
 
     return (

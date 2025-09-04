@@ -1,16 +1,16 @@
 import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
 import { Box, Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
-import { AnySymbol, Argumentation, BeliefAdoption, certainties, EditorialAssumption, isEdit, isSymbol, MeaningComprehension } from "linked-rolls";
+import { AnySymbol, Argumentation, BeliefAdoption, certainties, EditorialAssumption, isEdit, isSymbol, MeaningComprehension, Path } from "linked-rolls";
 import { ReactNode, useEffect, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { Doubts } from "doubtful";
 import { EditChoice, EditString } from "./EditString";
-import { AssumptionPath, useAssumption } from "../../hooks/useAssumption";
+import { useAssumption } from "../../hooks/useAssumption";
 
 interface ArguableProps<Name, Type> {
     anchor?: Element
     viewOnly: boolean
-    path: AssumptionPath
+    path: Path
     children: ReactNode
     asSVG?: {
         buttonPlacement: {

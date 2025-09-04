@@ -1,56 +1,53 @@
 import { useMemo, useContext } from "react";
-import { onPath } from "../helpers/path";
 import { EditionContext, EditionOp } from "../providers/EditionContext";
 import { Draft } from "immer";
-import { Edition, EditorialAssumption, Certainty, AnyArgumentation, PathTo, getAt, PathValue } from "linked-rolls";
+import { Edition, EditorialAssumption, Certainty, AnyArgumentation, getAt, Path } from "linked-rolls";
 import { v4 } from "uuid";
 
-export type AssumptionPath = PathTo<Edition, EditorialAssumption<any, any> | undefined>;
-
 export const onAssumptionAt =
-    <P extends AssumptionPath>(
-        path: P,
+    (
+        path: Path,
         op: (a: Draft<EditorialAssumption<any, any>>, d: Draft<Edition>) => void
     ): EditionOp =>
-        d =>
-            onPath<Edition, P>(path, (node, root) => {
-                op(node as Draft<EditorialAssumption<any, any>>, root);
-            })(d);
+        d => {
+            const obj = getAt<EditorialAssumption<any, any>>(path, d)
+            if (obj) op(obj, d);
+        }
 
-const createBelief = <P extends AssumptionPath>(path: P): EditionOp =>
+const createBelief = (path: Path): EditionOp =>
     onAssumptionAt(path, a => {
         a.belief = { type: "belief", id: v4(), certainty: "true", reasons: [] };
     });
 
-const clearBelief = <P extends AssumptionPath>(path: P): EditionOp =>
+const clearBelief = (path: Path): EditionOp =>
     onAssumptionAt(path, a => {
         a.belief = undefined;
     });
 
 const setCertainty =
-    <P extends AssumptionPath>(path: P, c: Certainty): EditionOp =>
+    (path: Path, c: Certainty): EditionOp =>
         onAssumptionAt(path, a => {
             if (a.belief) a.belief.certainty = c;
         });
 
 const addReason =
-    <P extends AssumptionPath>(path: P, reason: AnyArgumentation): EditionOp =>
+    (path: Path, reason: AnyArgumentation): EditionOp =>
         onAssumptionAt(path, a => {
             a.belief?.reasons.push(reason);
         });
 
 const removeReason =
-    <P extends AssumptionPath>(path: P, index: number): EditionOp =>
+    (path: Path, index: number): EditionOp =>
         onAssumptionAt(path, a => {
             a.belief?.reasons.splice(index, 1);
         });
 
 
-export function useAssumption<P extends AssumptionPath>(path: P) {
+export function useAssumption(path: Path) {
     const { edition, apply } = useContext(EditionContext);
 
     const assumption = useMemo(
-        () => getAt<Edition, P>(path, edition) as PathValue<Edition, P> | undefined,
+        () => getAt<EditorialAssumption<any, any>>(path, edition),
         [edition, path]
     );
 

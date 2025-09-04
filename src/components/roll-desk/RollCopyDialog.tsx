@@ -1,10 +1,9 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { AnySymbol, asSymbols, Edition, readFromSpencerMIDI, readFromStanfordAton, RollCopy, RollFeature, Version } from "linked-rolls";
+import { AnySymbol, asSymbols, CreateVersion, getAt, readFromSpencerMIDI, readFromStanfordAton, RollCopy, RollFeature, Version } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
-import { getAt, Path, PathTo } from "linked-rolls/lib/path";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -40,7 +39,7 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
             features: [],
             measurements: {},
             conditions: [],
-            location: '',
+            location: ''
         }
 
         if (file) {
@@ -54,29 +53,7 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
 
         rollCopy.location = location
 
-        apply(draft => {
-            const newVersion: Version = {
-                siglum,
-                id: v4(),
-                edits: [],
-                motivations: [],
-                type: 'edition'
-            }
-
-            editionView.planEdits(
-                newVersion,
-                asSymbols(rollCopy.features),
-                { toleranceStart: 3, toleranceEnd: 3 },
-                (symbolPath, carrierAssignments) => {
-                    const symbol = getAt<AnySymbol, any>(symbolPath, draft)
-                    symbol?.carriers.push(...carrierAssignments)
-                },
-                (edits) => newVersion.edits.push(...edits)
-            )
-
-            draft.copies.push(rollCopy)
-            draft.versions.push(newVersion)
-        })
+        apply(new CreateVersion(siglum, rollCopy))
     };
 
     return (

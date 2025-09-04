@@ -258,7 +258,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                 }}
             >
                 <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
-                    <Tab value={0} label="General" />
+                    <Tab value={0} label="Info" />
                     <Tab value={1} label="Stemma" />
                     <Tab value={2} label="Carriers" />
                 </Tabs>
@@ -289,6 +289,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                     <Stemma
                         currentVersionId={currentVersionId}
                         onClick={(versionId) => {
+                            console.log('setting to', versionId)
                             setCurrentVersionId(versionId)
                             setCurrentCopyId(undefined)
                             setSelection([])
@@ -306,25 +307,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
 
                 <TabPanel value={currentTab} index={2}>
                     <LayerStack
-                        layerInfos={
-                            currentVersion
-                                ? layerInfos.filter(layer => {
-                                    const copy = edition.copies.find(c => c.id === layer.copyId)
-                                    if (!copy) return false
-
-                                    const features = copy.features.map(f => f.id)
-                                    const versionFeatures = currentVersion.edits
-                                        .map(edit => ([...(edit.insert || []), ...(edit.delete || [])]))
-                                        .flat()
-                                        .map(symbol => symbol.carriers)
-                                        .flat()
-                                        .map(feature => flat(feature))
-
-                                    const intersection = new Set(features).intersection(new Set(versionFeatures))
-                                    return intersection.size !== 0
-                                })
-                                : layerInfos
-                        }
+                        layerInfos={layerInfos}
                         activeId={currentCopyId}
                         onChange={layerInfos => setLayerInfos([...layerInfos])}
                         onClick={(copyId) => {

@@ -1,5 +1,5 @@
 import { Button, Stack } from "@mui/material"
-import { applyShift, applyStretch, assign, EditorialAssumption, FeatureConditionAssignment, isRollFeature, PaperStretch, RollConditionAssignment, RollCopy, RollFeature, Shift, Version } from "linked-rolls"
+import { applyShift, applyStretch, assign, EditionView, EditorialAssumption, FeatureConditionAssignment, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollCopy, RollFeature, Shift, Version } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddSymbolDialog } from "./AddSymbol"
 import { useContext, useState } from "react"
@@ -14,17 +14,6 @@ import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 
 export type FacsimileSelection = EventDimension | RollFeature
-
-const removeFeatures = (copyId: string, features: RollFeature[]): EditionOp => {
-    return (draft) => {
-        const copy = draft.copies.find(c => c.id === copyId)
-        if (!copy) return
-
-        for (const feature of features) {
-            copy.features.splice(copy.features.indexOf(feature), 1);
-        }
-    }
-}
 
 const addFeature = (copyId: string, feature: RollFeature): EditionOp => {
     return (draft) => {
@@ -74,7 +63,7 @@ interface MenuProps {
 
 export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item))
-    const { edition, apply } = useContext(EditionContext)
+    const { edition, editionView, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
@@ -82,7 +71,8 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const [editProduction, setEditProduction] = useState(false)
     const [alignCopies, setAlignCopies] = useState(false)
 
-    if (!edition) return null
+    if (!edition || !editionView) return null
+
     const copy = edition.copies.find(c => c.id === copyId)
     if (!copy) return null
 
@@ -141,7 +131,10 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                         <Ribbon title='Feature'>
                             <Button
                                 onClick={() => {
-                                    apply(removeFeatures(copy.id, selection.filter(isRollFeature)))
+                                    apply(
+                                        new RemoveFeature(selection.filter(isRollFeature).map(f => f.id))
+                                    )
+                                    setSelection([])
                                 }}
                                 size='small'
                                 startIcon={<Delete />}
@@ -163,13 +156,10 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
             {selection.length > 0 && (
                 <>
                     <AddSymbolDialog
+                        copyID={copy.id}
                         open={addSymbolDialogOpen}
                         selection={selection[0]}
                         onClose={() => setAddSymbolDialogOpen(false)}
-                        onDone={(feature) => {
-                            apply(addFeature(copy.id, feature))
-                            setAddSymbolDialogOpen(false)
-                        }}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
                     />
 

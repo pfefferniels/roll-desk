@@ -1,5 +1,6 @@
 import {
     flat,
+    Path,
     RollCopy,
     RollFeature
 } from "linked-rolls";
@@ -11,7 +12,6 @@ import { EventDimension } from "./RollDesk.tsx";
 import useIsVisible from "../../hooks/useIsVisible.tsx";
 import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
-import { AssumptionPath } from "../../hooks/useAssumption.tsx";
 
 interface IIIFInfo {
     "@id": string;
@@ -240,7 +240,7 @@ const KeyboardDivision = () => {
 
 interface FeatureProps {
     feature: RollFeature;
-    conditionPath: AssumptionPath
+    conditionPath: Path
     onClick: React.MouseEventHandler;
     onChange: (feature: RollFeature) => void;
     color: string;
