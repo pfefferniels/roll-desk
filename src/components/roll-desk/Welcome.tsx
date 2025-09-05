@@ -1,13 +1,15 @@
 import { Box, Button, Stack } from "@mui/material";
 import { assign, Edition, EditionMetadata } from "linked-rolls";
 import { ImportButton } from "./ImportButton";
-import { useState } from "react";
+import { use, useContext, useState } from "react";
 import EditMetadata from "./EditMetadata";
 import { Create } from "@mui/icons-material";
+import { EditionContext, emptyMetadata } from "../../providers/EditionContext";
 
 export const Welcome = () => {
+    const { setEdition } = useContext(EditionContext)
     const [editMetadata, setEditMetadata] = useState(false)
-    
+
     return (
         <>
             <Box
@@ -43,7 +45,14 @@ export const Welcome = () => {
                         <Button
                             variant="outlined"
                             startIcon={<Create />}
-                            onClick={() => setEditMetadata(true)}
+                            onClick={() => {
+                                setEdition({
+                                    versions: [],
+                                    copies: [],
+                                    ...emptyMetadata
+                                })
+                                setEditMetadata(true)
+                            }}
                         >
                             Create
                         </Button>
