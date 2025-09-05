@@ -1,7 +1,7 @@
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import { FileOpen } from "@mui/icons-material";
-import { Button, IconButton } from "@mui/material";
-import { Edition, importJsonLd } from "linked-rolls";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { Edition, importJsonLd, validate } from "linked-rolls";
 import { EditionContext } from '../../providers/EditionContext';
 
 interface ImportButtonProps {
@@ -10,6 +10,9 @@ interface ImportButtonProps {
 
 export const ImportButton = ({ outlined }: ImportButtonProps) => {
     const { setEdition } = useContext(EditionContext)
+
+    const [errors, setErrors] = useState<string[]>()
+    const [pending, setPending] = useState<any>()
 
     const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -22,17 +25,20 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
             const fileContent = e.target?.result as string;
 
             try {
-                let newEdition: Edition;
-
                 if (fileExtension === 'json') {
                     const jsonDoc = JSON.parse(fileContent);
-                    newEdition = importJsonLd(jsonDoc);
+                    const success = validate(jsonDoc);
+                    if (success) {
+                        setEdition(importJsonLd(jsonDoc))
+                    }
+                    else {
+                        setErrors((validate.errors || []).map(e => e.instancePath + " " + e.message))
+                        setPending(jsonDoc)
+                    }
                 } else {
                     console.log("Unsupported file format. Please select a JSON file.");
                     return;
                 }
-
-                setEdition(newEdition)
             } catch (error) {
                 console.error("Error importing file:", error);
             }
@@ -67,6 +73,32 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
                         </IconButton>
                     )}
             </label>
+
+            {errors && (
+                <Dialog open={true} onClose={() => setErrors(undefined)}>
+                    <DialogTitle>
+                        Import Error
+                    </DialogTitle>
+                    <DialogContent>
+                        {errors.map((error, index) => (
+                            <Alert key={index} severity='error'>
+                                {error}
+                            </Alert>
+                        ))}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setErrors(undefined)} variant='outlined'>
+                            Cancel
+                        </Button>
+                        <Button onClick={() => {
+                            setEdition(importJsonLd(pending))
+                            setPending(undefined)
+                        }} variant='outlined' color='error'>
+                            Proceed Anyways
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
         </>
     );
 };

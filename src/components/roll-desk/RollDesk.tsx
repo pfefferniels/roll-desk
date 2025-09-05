@@ -75,7 +75,7 @@ interface DeskProps {
 export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
-    const { edition, undo, redo, canUndo, canRedo, view } = useContext(EditionContext)
+    const { edition, undo, redo, canUndo, canRedo, view, setEdition } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 

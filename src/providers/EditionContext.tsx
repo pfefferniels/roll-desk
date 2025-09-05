@@ -55,14 +55,14 @@ export const EditionContext = createContext<{
 });
 
 export function EditionProvider({ children }: { children: React.ReactNode }) {
-    const [edition, setEdition] = useState<Edition>({ versions: [], copies: [], ...emptyMetadata });
+    const [edition, setEdition] = useState<Edition>();
     const [history, setHistory] = useState<History>({
         past: [],
         future: [],
         limit: 300,
     });
 
-    const view = useMemo(() => new EditionView(edition), [edition]);
+    const view = useMemo(() => edition && new EditionView(edition), [edition]);
 
     useEffect(() => {
         enablePatches();
@@ -71,6 +71,8 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
 
     const apply = (op: EditionOp | Plan) => {
         if (isPlan(op)) {
+            if (!view) return;
+
             op.setView(view);
             op.build().forEach(apply)
             return
@@ -94,6 +96,8 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
 
     const undo = () => {
         setEdition((current) => {
+            if (!current) return
+
             if (history.past.length === 0) return current;
             const entry = history.past[history.past.length - 1];
             const undone = applyPatches(current, entry.inverse);
@@ -108,6 +112,8 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
 
     const redo = () => {
         setEdition((current) => {
+            if (!current) return
+            
             if (history.future.length === 0) return current;
             const entry = history.future[history.future.length - 1];
             const redone = applyPatches(current, entry.patches);
