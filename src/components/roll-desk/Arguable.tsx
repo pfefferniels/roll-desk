@@ -1,11 +1,12 @@
 import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
 import { Box, Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
 import { AnySymbol, Argumentation, BeliefAdoption, certainties, EditorialAssumption, isEdit, isSymbol, MeaningComprehension, Path } from "linked-rolls";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useContext, useEffect, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { Doubts } from "doubtful";
 import { EditChoice, EditString } from "./EditString";
 import { useAssumption } from "../../hooks/useAssumption";
+import { EditionContext } from "../../providers/EditionContext";
 
 interface ArguableProps<Name, Type> {
     anchor?: Element
@@ -21,6 +22,8 @@ interface ArguableProps<Name, Type> {
 }
 
 export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }: ArguableProps<Name, Type>) {
+    const { view } = useContext(EditionContext)
+
     const [anchorEl, setAnchorEl] = useState<Element | null>(anchor || null)
     const [editValue, setEditValue] = useState(false)
     const [addCitation, setAddCitation] = useState(false)
@@ -118,15 +121,17 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }
                                             >
                                                 <ListItemText
                                                     primary={
-                                                        reason.comprehends.map((subject: any) => {
-                                                            if (typeof subject === 'string') {
+                                                        reason.comprehends.map((subject: string) => {
+                                                            const target = view?.get(subject)
+                                                            if (!target) {
                                                                 return <span>{subject}</span>
                                                             }
-                                                            else if (isEdit(subject)) {
-                                                                return <span>{subject.motivation?.assigned || subject.id.slice(0, 8)} | </span>
+
+                                                            if (isEdit(target)) {
+                                                                return <span>{target.motivation?.assigned || `+${target.insert?.length || 0} -${target.delete?.length}`} | </span>
                                                             }
-                                                            else if (isSymbol(subject)) {
-                                                                return <span>{'text' in subject ? subject.text : subject.type}</span>
+                                                            else if (isSymbol(target)) {
+                                                                return <span>{'text' in target ? target.text : target.type}</span>
                                                             }
                                                             else {
                                                                 return <span>unknown type</span>
@@ -172,13 +177,13 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }
                                         variant='contained'
                                         onClick={() => {
                                             if (!about.belief) return
-                                            const comprehension: MeaningComprehension<AnySymbol> = {
+                                            const comprehension: MeaningComprehension = {
                                                 type: 'meaningComprehension',
                                                 actor: {
                                                     name: '',
                                                     sameAs: []
                                                 },
-                                                comprehends: selection as AnySymbol[]
+                                                comprehends: selection.map(s => s.id)
                                             }
 
                                             addReason(comprehension)

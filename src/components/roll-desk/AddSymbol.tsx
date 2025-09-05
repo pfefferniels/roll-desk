@@ -18,7 +18,7 @@ const eventTypes = ['note', 'expression', 'cover', 'handwrittenText', 'stamp', '
 type EventType = typeof eventTypes[number]
 
 export const AddSymbolDialog = ({ copyID, selection, open, onClose, iiifUrl }: AddSymbolProps) => {
-    const { edition, editionView, apply } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
     const [eventType, setEventType] = useState<EventType>('handwrittenText')
     const [text, setText] = useState<string>()
     const [rotation, setRotation] = useState<number>()
@@ -180,8 +180,6 @@ export const AddSymbolDialog = ({ copyID, selection, open, onClose, iiifUrl }: A
             <DialogActions>
                 <Button
                     onClick={() => {
-                        if (!editionView) return
-
                         if (isSymbol(selection)) {
                             selection.type = eventType
                             if ('text' in selection) selection.text = text || ''

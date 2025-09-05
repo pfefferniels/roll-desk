@@ -1,7 +1,6 @@
 import { Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/Symbol";
 import { useContext, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
-import { flat } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 
 interface PerforationProps {
@@ -12,13 +11,13 @@ interface PerforationProps {
 }
 
 export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProps) => {
-    const { editionView } = useContext(EditionContext)
+    const { view } = useContext(EditionContext)
     const [displayDetails, setDisplayDetails] = useState(false);
     const { translateX, trackToY, trackHeight } = usePinchZoom();
 
-    if (!editionView) return null;
+    if (!view) return null;
 
-    const features = editionView.carriersOf(symbol);
+    const features = view.carriersOf(symbol)
     if (!features) return null;
 
     const onsets = features.map(e => e.horizontal.from).sort();
@@ -30,7 +29,9 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(translateX);
     const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(translateX);
 
-    const dimensions = editionView.dimensionOf(symbol)
+    const dimensions = view.dimensionOf(symbol)
+    if (!dimensions) return null
+
     const meanOnset = dimensions.horizontal.from
     const meanOffset = dimensions.horizontal.to
 
@@ -107,13 +108,13 @@ interface SustainPedalProps {
 }
 
 export const SustainPedal = ({ on, off }: SustainPedalProps) => {
-    const { editionView } = useContext(EditionContext)
+    const { view } = useContext(EditionContext)
     const { translateX, trackToY } = usePinchZoom()
 
-    if (!editionView) return null
+    if (!view) return null
 
-    const onsets = editionView.carriersOf(on).map(e => e.horizontal.from).sort()
-    const offsets = editionView.carriersOf(off).map(e => e.horizontal.to).sort()
+    const onsets = view.carriersOf(on).map(e => e.horizontal.from).sort()
+    const offsets = view.carriersOf(off).map(e => e.horizontal.to).sort()
 
     if (onsets.length === 0 || offsets.length === 0) return null
 
@@ -146,12 +147,15 @@ export const TextSymbol = ({
     event,
     onClick,
 }: TextSymbolProps) => {
-    const { editionView} = useContext(EditionContext)
+    const { view } = useContext(EditionContext)
     const { translateX, trackToY } = usePinchZoom();
 
-    if (!editionView) return null;
+    if (!view) return null;
 
-    const { horizontal, vertical } = editionView.dimensionOf(event);
+    const dimensions = view.dimensionOf(event);
+    if (!dimensions) return null;
+
+    const { horizontal, vertical } = dimensions
 
     const x = translateX(horizontal.from)
     const y = trackToY(vertical.from);

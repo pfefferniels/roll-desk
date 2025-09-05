@@ -15,7 +15,7 @@ interface Stemma {
 }
 
 export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma) => {
-    const { edition, editionView } = useContext(EditionContext)
+    const { edition, view } = useContext(EditionContext)
     const [nodes, setNodes] = useState<Node[]>([])
     const [links, setLinks] = useState<Link[]>([])
 
@@ -24,11 +24,11 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
     const svgHeight = 400
 
     useEffect(() => {
-        if (!edition || !editionView) return
+        if (!edition || !view) return
 
         const nodes: Node[] = []
 
-        editionView.withGenerations()
+        view.withGenerations()
             .forEach(version => {
                 console.log('version', version.id)
                 nodes.push({
@@ -74,7 +74,7 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
 
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
-    }, [edition?.versions, editionView])
+    }, [edition?.versions, view])
 
     return (
         <svg
@@ -428,7 +428,7 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
 
     const editCount =
         motivation.belief?.reasons
-            .filter((r): r is MeaningComprehension<Edit> => r.type === 'meaningComprehension')
+            .filter(r => r.type === 'meaningComprehension')
             .map(comprehensions => comprehensions.comprehends)
             .flat()
             .length

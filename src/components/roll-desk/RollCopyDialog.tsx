@@ -12,7 +12,7 @@ interface RollCopyDialogProps {
 }
 
 export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => {
-    const { edition, apply, editionView } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
     const [file, setFile] = useState<File | null>(null);
     const [location, setLocation] = useState('') // P55 has current location
     const [siglum, setSiglum] = useState('')
@@ -21,8 +21,6 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
         if (!copy) return
         setLocation(copy.location)
     }, [copy])
-
-    if (!editionView) return null
 
     const handleUpload = async () => {
         if (!edition) return

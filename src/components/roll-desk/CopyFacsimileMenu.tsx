@@ -63,7 +63,7 @@ interface MenuProps {
 
 export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item))
-    const { edition, editionView, apply } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
@@ -71,7 +71,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const [editProduction, setEditProduction] = useState(false)
     const [alignCopies, setAlignCopies] = useState(false)
 
-    if (!edition || !editionView) return null
+    if (!edition) return null
 
     const copy = edition.copies.find(c => c.id === copyId)
     if (!copy) return null
@@ -132,7 +132,10 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                             <Button
                                 onClick={() => {
                                     apply(
-                                        new RemoveFeature(selection.filter(isRollFeature).map(f => f.id))
+                                        new RemoveFeature(
+                                            copy.id,
+                                            selection.filter(isRollFeature).map(f => f.id)
+                                        )
                                     )
                                     setSelection([])
                                 }}

@@ -75,7 +75,7 @@ interface DeskProps {
 export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     // const { play, stop } = usePiano()
 
-    const { edition, undo, redo, canUndo, canRedo, editionView } = useContext(EditionContext)
+    const { edition, undo, redo, canUndo, canRedo, view } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
@@ -100,7 +100,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
 
     const downloadMIDI = useCallback(async () => {
-        if (!currentVersion || !editionView) return
+        if (!currentVersion || !view) return
 
         const emulation = new Emulation();
 
@@ -109,7 +109,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
         }
 
         if (emulation.midiEvents.length === 0) {
-            emulation.emulateVersion(currentVersion, editionView);
+            emulation.emulateVersion(currentVersion, view);
         }
 
         const midiFile = emulation.asMIDI()
@@ -216,7 +216,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                             <IconButton
                                 disabled={!currentVersion}
                                 onClick={() => {
-                                    if (!currentVersion || !editionView) return
+                                    if (!currentVersion || !view) return
 
                                     if (isPlaying) {
                                         stop()
@@ -228,7 +228,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                                     if (conversionMethod) {
                                         emulation.placeTimeConversion = conversionMethod
                                     }
-                                    emulation.emulateVersion(currentVersion, editionView, undefined, true)
+                                    emulation.emulateVersion(currentVersion, view, undefined, true)
 
                                     //play(emulation.asMIDI())
                                     setIsPlaying(true)

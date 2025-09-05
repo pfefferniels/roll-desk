@@ -43,8 +43,7 @@ export const EditionContext = createContext<{
     redo: () => void;
     canUndo: boolean;
     canRedo: boolean;
-    getSnapshot: (version: Version) => readonly AnySymbol[]
-    editionView: EditionView | undefined,
+    view: EditionView | undefined,
 }>({
     setEdition: () => { },
     apply: () => { },
@@ -52,8 +51,7 @@ export const EditionContext = createContext<{
     redo: () => { },
     canUndo: false,
     canRedo: false,
-    getSnapshot: () => { return [] },
-    editionView: undefined,
+    view: undefined,
 });
 
 export function EditionProvider({ children }: { children: React.ReactNode }) {
@@ -64,7 +62,7 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
         limit: 300,
     });
 
-    const editionView = useMemo(() => new EditionView(edition), [edition]);
+    const view = useMemo(() => new EditionView(edition), [edition]);
 
     useEffect(() => {
         enablePatches();
@@ -73,7 +71,7 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
 
     const apply = (op: EditionOp | Plan) => {
         if (isPlan(op)) {
-            op.setView(editionView);
+            op.setView(view);
             op.build().forEach(apply)
             return
         }
@@ -122,10 +120,6 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
-    const getSnapshot = (version: Version) => {
-        return editionView.getSnapshot(version.id)
-    }
-
     const { canUndo, canRedo } = useMemo(
         () => ({
             canUndo: history.past.length > 0,
@@ -135,7 +129,7 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <EditionContext.Provider value={{ edition, setEdition, apply, undo, redo, canUndo, canRedo, getSnapshot, editionView }}>
+        <EditionContext.Provider value={{ edition, setEdition, apply, undo, redo, canUndo, canRedo, view }}>
             {children}
         </EditionContext.Provider>
     );

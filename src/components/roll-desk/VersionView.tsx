@@ -14,29 +14,27 @@ interface VersionViewProps {
 
 export const VersionView = ({ version, onClick }: VersionViewProps) => {
     // const { playSingleNote } = usePiano()
-    const { edition, editionView } = useContext(EditionContext)
-
-    console.log(edition?.versions.map(v => v.edits.length), 'vs', editionView?.edition.versions.map(v => v.edits.length), 'vs', version.edits.length)
+    const { view } = useContext(EditionContext)
 
     const svgRef = useRef<SVGGElement>(null)
 
-    if (!editionView) return null
+    if (!view) return null
 
     const emulation = new Emulation()
-    emulation.emulateVersion(version, editionView)
+    emulation.emulateVersion(version, view)
 
-    const prevVersion = editionView.predecessorOf(version.id)
+    const prevVersion = view.predecessorOf(version.id)
     let prevEmulation: Emulation | undefined = undefined
     if (prevVersion) {
         prevEmulation = new Emulation()
-        prevEmulation.emulateVersion(prevVersion, editionView)
+        prevEmulation.emulateVersion(prevVersion, view)
     }
 
     // all symbols up to the current version
     const snapshot: (AnySymbol & { age: number })[] = [];
     const deletions: string[] = []
     let age = 0
-    editionView.travelUp(version.id, s => {
+    view.travelUp(version.id, s => {
         // collect all inserted symbols and tell them their age
         for (const edit of s.edits) {
             for (const symbol of edit.insert ?? []) {
@@ -62,8 +60,8 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     })
 
     snapshot.sort((a, b) => {
-        return (editionView.dimensionOf(a)?.horizontal.from || 0)
-            - (editionView.dimensionOf(b)?.horizontal.from || 0)
+        return (view.dimensionOf(a)?.horizontal.from || 0)
+            - (view.dimensionOf(b)?.horizontal.from || 0)
     })
 
     // draw edits of current version, but only 
@@ -124,14 +122,14 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                     if (symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn') {
                         const partner = snapshot
                             .sort((a, b) => {
-                                return (editionView.dimensionOf(a)?.horizontal.from || 0)
-                                    - (editionView.dimensionOf(b)?.horizontal.from || 0)
+                                return (view.dimensionOf(a)?.horizontal.from || 0)
+                                    - (view.dimensionOf(b)?.horizontal.from || 0)
                             })
                             .find(candidate => {
                                 return (
                                     candidate.type === 'expression'
                                     && candidate.expressionType === 'SustainPedalOff'
-                                    && (editionView.dimensionOf(candidate)?.horizontal.from || 0) > (editionView.dimensionOf(symbol)?.horizontal.from || 0)
+                                    && (view.dimensionOf(candidate)?.horizontal.from || 0) > (view.dimensionOf(symbol)?.horizontal.from || 0)
                                 )
                             })
                         if (!partner) return null

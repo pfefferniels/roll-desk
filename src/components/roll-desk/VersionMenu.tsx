@@ -102,13 +102,13 @@ interface MenuProps {
 
 export const VersionMenu = ({ versionId }: MenuProps) => {
     const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isMotivation(item))
-    const { edition, editionView, getSnapshot, apply } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
 
     const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
-    const [editsToMotivate, setEditsToMotivate] = useState<Edit[]>()
+    const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
 
     useHotkeys(['m', 's'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -129,13 +129,13 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
     const addMotivation = (about: Edit[]) => {
         if (about.length === 0) return
-        setEditsToMotivate(about)
+        setEditsToMotivate(about.map(e => e.id))
     }
 
     if (!edition) return null
 
     const version = edition.versions.find(v => v.id === versionId)
-    if (!version || !editionView) return null
+    if (!version) return null
 
     return (
         <>
@@ -331,7 +331,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 onDone={(motivationDescription) => {
                     if (!editsToMotivate) return
 
-                    const comprehension: MeaningComprehension<Edit> = {
+                    const comprehension: MeaningComprehension = {
                         type: 'meaningComprehension',
                         comprehends: editsToMotivate
                     }
