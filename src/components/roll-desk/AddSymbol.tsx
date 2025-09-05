@@ -249,6 +249,11 @@ export const AddSymbolDialog = ({ copyID, selection, open, onClose, iiifUrl }: A
                                         insert: [newSymbol],
                                     })
                                 }
+
+                                const copy = draft.copies.find(c => c.id === copyID)
+                                if (copy) {
+                                    copy.features.push(feature)
+                                }
                             })
                         }
 
