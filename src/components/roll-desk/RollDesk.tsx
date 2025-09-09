@@ -325,7 +325,6 @@ export const Desk = ({ versionId }: DeskProps) => {
                     <Stemma
                         currentVersionId={currentVersionId}
                         onClick={(versionId) => {
-                            console.log('setting to', versionId)
                             setCurrentVersionId(versionId)
                             setCurrentCopyId(undefined)
                             setSelection([])

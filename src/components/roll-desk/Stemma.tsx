@@ -7,6 +7,7 @@ import { Arguable } from './Arguable';
 import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { useAssumption } from '../../hooks/useAssumption';
+import { Legend } from './Legend';
 
 interface Stemma {
     currentVersionId: string | undefined
@@ -76,45 +77,48 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
     }, [edition?.versions, view])
 
     return (
-        <svg
-            width={svgWidth} height={svgHeight}
-        >
-            <defs>
-                <filter id="f1"
-                    x="-100%" y="-100%"
-                    width="300%" height="300%">
-                    <feOffset in="SourceGraphic" dx="3" dy="3" />
-                    <feGaussianBlur stdDeviation="5" result="blur" />
-                    <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-            </defs>
+        <>
+            <Legend />
+            <svg
+                width={svgWidth} height={svgHeight}
+            >
+                <defs>
+                    <filter id="f1"
+                        x="-100%" y="-100%"
+                        width="300%" height="300%">
+                        <feOffset in="SourceGraphic" dx="3" dy="3" />
+                        <feGaussianBlur stdDeviation="5" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
 
-            <svg ref={svgRef}>
-                <LinkContainer
-                    links={links}
-                    positionedNodes={nodes}
-                    onHoverMotivation={onHoverMotivation}
-                    onChange={() => {
-                        setLinks([...links])
-                    }}
-                />
-                {nodes.map((node, i) => (
-                    <NavigationNode
-                        key={`interpretation_${i}`}
-                        node={node}
-                        onClick={() => {
-                            if (!edition) return
-                            console.log('clicked on', node.id)
-                            onClick(node.id)
+                <svg ref={svgRef}>
+                    <LinkContainer
+                        links={links}
+                        positionedNodes={nodes}
+                        onHoverMotivation={onHoverMotivation}
+                        onChange={() => {
+                            setLinks([...links])
                         }}
-                        highlight={currentVersionId === node.id}
                     />
-                ))}
+                    {nodes.map((node, i) => (
+                        <NavigationNode
+                            key={`interpretation_${i}`}
+                            node={node}
+                            onClick={() => {
+                                if (!edition) return
+                                console.log('clicked on', node.id)
+                                onClick(node.id)
+                            }}
+                            highlight={currentVersionId === node.id}
+                        />
+                    ))}
+                </svg>
             </svg>
-        </svg>
+        </>
     )
 }
 
@@ -143,7 +147,7 @@ export const calculatePositions = async (
     const simulation = d3
         .forceSimulation(nodes)
         .force("center", d3.forceCenter(width / 2, height / 2)
-            .strength(0.2)
+            .strength(0.3)
         )
         .force("charge", d3.forceManyBody())
         .force("collide", d3.forceCollide<Node>(d => {
