@@ -18,7 +18,16 @@ export default defineConfig(() => {
                         formats: ['es']
                     },
                     rollupOptions: {
-                        external: ['react', 'react/jsx-runtime', '@mui/material', 'react-dom'],
+                        external: [
+                            'react',
+                            'react/jsx-runtime',
+                            '@mui/material',
+                            'react-dom',
+                            '@emotion/react',
+                            '@emotion/styled',
+                            'doubtful',
+                            'react-pianosound'
+                        ],
                         output: {
                             globals: {
                                 react: 'React',

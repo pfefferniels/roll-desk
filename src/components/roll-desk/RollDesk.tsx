@@ -25,6 +25,8 @@ import { Arguable } from "./Arguable"
 import { SelectionContext } from "../../providers/SelectionContext"
 import { Draft } from 'immer'
 import { EditionContext } from "../../providers/EditionContext"
+import { usePiano } from "react-pianosound"
+import { useHotkeys } from "react-hotkeys-hook"
 
 export type DocOp = (d: Draft<Edition>) => void;
 
@@ -68,14 +70,13 @@ export type UserSelection = (VersionSelection | FacsimileSelection)
  */
 
 interface DeskProps {
-    viewOnly?: boolean
     versionId?: string
 }
 
-export const Desk = ({ viewOnly, versionId }: DeskProps) => {
-    // const { play, stop } = usePiano()
+export const Desk = ({ versionId }: DeskProps) => {
+    const { play, stop } = usePiano()
 
-    const { edition, undo, redo, canUndo, canRedo, view, setEdition } = useContext(EditionContext)
+    const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
     const [stretch, setStretch] = useState(2)
 
@@ -87,6 +88,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
 
     const [selection, setSelection] = useState<UserSelection[]>([])
+    const [range, setRange] = useState<[number, number]>()
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
@@ -98,6 +100,70 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
     const [currentTab, setCurrentTab] = useState(2)
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
+
+    useHotkeys(['space'], (_, handler) => {
+        switch (handler.keys?.join('')) {
+            case 'space': {
+                playVersion()
+                break
+            }
+        }
+    })
+
+    const playVersion = () => {
+        if (!currentVersion || !view) return
+
+        if (isPlaying) {
+            stop()
+            setIsPlaying(false)
+            return
+        }
+
+        const emulation = new Emulation()
+        if (conversionMethod) {
+            emulation.placeTimeConversion = conversionMethod
+        }
+        emulation.emulateVersion(
+            currentVersion,
+            view,
+            undefined,
+            range,
+            true
+        )
+
+        play(emulation.asMIDI(), (e) => {
+            if (e.type === 'meta' && e.subtype === 'text') {
+                const symbolId = e.text
+                const symbol = document.querySelector(`#${symbolId} rect`)
+                if (!symbol) return
+
+                symbol.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                })
+
+                const originalFill = symbol.getAttribute('fill') ?? window.getComputedStyle(symbol as Element).fill ?? ''
+                const originalStroke = symbol.getAttribute('stroke') ?? ''
+                const originalStrokeWidth = symbol.getAttribute('stroke-width') ?? ''
+
+                symbol.setAttribute('fill', 'orange')
+                symbol.setAttribute('stroke', 'orangered')
+                symbol.setAttribute('stroke-width', '1.5')
+
+                window.setTimeout(() => {
+                    if (originalFill) symbol.setAttribute('fill', originalFill)
+                    else symbol.removeAttribute('fill')
+
+                    if (originalStroke) symbol.setAttribute('stroke', originalStroke)
+                    else symbol.removeAttribute('stroke')
+
+                    if (originalStrokeWidth) symbol.setAttribute('stroke-width', originalStrokeWidth)
+                    else symbol.removeAttribute('stroke-width')
+                }, 600)
+            }
+        })
+        setIsPlaying(true)
+    }
 
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion || !view) return
@@ -152,20 +218,15 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
         )
     }
 
-    const handleUpdateSelection = (newSelection: UserSelection[]) => {
-        console.log('updating user selection', newSelection)
-        setSelection(newSelection)
-    }
-
     return (
-        <SelectionContext.Provider value={{ selection, setSelection: handleUpdateSelection as any }}>
+        <SelectionContext.Provider value={{ selection, setSelection, range, setRange }}>
             <AppBar
                 position={viewOnly ? 'absolute' : 'static'}
                 sx={{
                     bgcolor: "white",
                     color: 'black',
                     width: viewOnly ? 'fit-content' : '100%',
-                    right: viewOnly ? '3rem' : 'inherit'
+                    left: viewOnly ? '3rem' : 'inherit'
                 }}
                 elevation={1}
             >
@@ -178,7 +239,7 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                             </IconButton>
                         </Ribbon>
                         <RibbonGroup>
-                            <Ribbon title='History'>
+                            <Ribbon title='History' visible={!viewOnly}>
                                 <IconButton
                                     onClick={() => undo()}
                                     disabled={!canUndo}
@@ -215,43 +276,19 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                             </IconButton>
                             <IconButton
                                 disabled={!currentVersion}
-                                onClick={() => {
-                                    if (!currentVersion || !view) return
-
-                                    if (isPlaying) {
-                                        stop()
-                                        setIsPlaying(false)
-                                        return
-                                    }
-
-                                    const emulation = new Emulation()
-                                    if (conversionMethod) {
-                                        emulation.placeTimeConversion = conversionMethod
-                                    }
-                                    emulation.emulateVersion(currentVersion, view, undefined, true)
-
-                                    //play(emulation.asMIDI())
-                                    setIsPlaying(true)
-                                }}>
+                                onClick={playVersion}>
                                 {isPlaying ? <Pause /> : <PlayArrow />}
                             </IconButton>
-                        </Ribbon>
-                        <Ribbon title='Zoom'>
-                            <Slider
-                                sx={{ minWidth: 120 }}
-                                min={0.1}
-                                max={3}
-                                step={0.05}
-                                value={stretch}
-                                onChange={(_, newValue) => setStretch(newValue as number)} />
                         </Ribbon>
                     </RibbonGroup>
                 </Toolbar>
             </AppBar>
+
             <Paper
                 sx={{
                     position: 'absolute',
                     margin: 1,
+                    right: 1,
                     backdropFilter: 'blur(17px)',
                     background: 'rgba(255, 255, 255, 0.8)',
                     padding: 2
@@ -270,7 +307,6 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                         {edition.roll.catalogueNumber}{' '}
 
                         <Arguable
-                            viewOnly={viewOnly || false}
                             path={['roll', 'recordingEvent', 'date'] as const}
                         >
                             ({new Intl.DateTimeFormat().format(
@@ -334,7 +370,8 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                     backdropFilter: 'blur(17px)',
                     background: 'rgba(255, 255, 255, 0.8)',
                     padding: 2,
-                    bottom: 1
+                    bottom: 1,
+                    maxWidth: '10rem'
                 }}
             >
                 {selection.length > 0 && (
@@ -367,7 +404,13 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                 )}
             </Paper>
             <Box overflow='scroll'>
-                <PinchZoomProvider zoom={stretch} noteHeight={3} expressionHeight={10}>
+                <PinchZoomProvider
+                    zoom={stretch}
+                    setZoom={setStretch}
+                    noteHeight={3}
+                    expressionHeight={10}
+                    spacing={60}
+                >
                     <LayeredRolls
                         activeId={currentCopyId}
                         layerInfos={layerInfos}
@@ -378,6 +421,25 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
 
                     />
                 </PinchZoomProvider>
+            </Box>
+
+            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, marginLeft: '30%', marginRight: '30%', paddingLeft: '1rem', paddingRight: '1rem', backgroundColor: 'white' }}>
+                <Slider
+                    sx={{ minWidth: '20rem' }}
+                    min={0.1}
+                    max={2.5}
+                    step={0.05}
+                    value={stretch}
+                    onChange={(_, newValue) => setStretch(newValue as number)}
+                    marks={[
+                        { value: 0.1, label: '1%' },
+                        { value: 0.5, label: '50%' },
+                        { value: 1, label: '100%' },
+                        { value: 1.5, label: '150%' },
+                        { value: 2, label: '200%' },
+                        { value: 2.5, label: '250%' },
+                    ]}
+                />
             </Box>
 
             <EmulationSettingsDialog
@@ -405,6 +467,6 @@ export const Desk = ({ viewOnly, versionId }: DeskProps) => {
                 open={editCopy}
                 onClose={() => setEditCopy(false)}
             />
-        </SelectionContext.Provider >
+        </SelectionContext.Provider>
     )
 }

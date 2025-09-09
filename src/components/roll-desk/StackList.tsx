@@ -38,7 +38,6 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                         ? (
                             <Arguable
                                 path={['copies', edition.copies.indexOf(copy) || 0, 'productionEvent', 'date']}
-                                viewOnly={false}
                             >
                                 {new Intl.DateTimeFormat().format(
                                     flat(copy.productionEvent.date)
@@ -81,7 +80,7 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                         </span>
                                     }
                                     secondary={
-                                        <div>
+                                        <>
                                             {copy.location}
                                             <br/>
                                             {copy.conditions.map((c, idx) => {
@@ -89,7 +88,6 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                                     <Arguable
                                                         key={`condition_${idx}` }
                                                         path={['copies', edition?.copies.indexOf(copy) || 0, 'conditions', idx]}
-                                                        viewOnly={false}
                                                     >
                                                         <span>
                                                             {flat(c).type === 'general'
@@ -99,7 +97,7 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                                     </Arguable>
                                                 )
                                             })}
-                                        </div>
+                                        </>
                                     }
                                 />
                             </ListItemButton>

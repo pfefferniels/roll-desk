@@ -306,7 +306,6 @@ const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: Feat
                 >
                     <Arguable
                         path={conditionPath}
-                        viewOnly={false}
                     >
                         {flat(feature.condition).type.replaceAll('-', ' ')}
                     </Arguable>

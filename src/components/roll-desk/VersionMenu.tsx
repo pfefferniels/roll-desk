@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, MeaningComprehension, versionTypes, flat, isMotivation, MergeEdits, SplitEdit, ConnectVersions } from "linked-rolls"
+import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, MeaningComprehension, versionTypes, flat, isMotivation, MergeEdits, SplitEdit, ConnectVersions, getAt } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -102,7 +102,7 @@ interface MenuProps {
 
 export const VersionMenu = ({ versionId }: MenuProps) => {
     const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isMotivation(item))
-    const { edition, apply } = useContext(EditionContext)
+    const { edition, apply, view } = useContext(EditionContext)
 
     const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
@@ -189,6 +189,51 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                                 }}
                             >
                                 Remove
+                            </Button>
+                            <Button
+                                size='small'
+                                onClick={() => {
+                                    const symbols = selection.filter(isSymbol)
+
+                                    apply(draft => {
+                                        if (!view) return
+
+                                        const version = draft.versions.find(v => v.id === versionId)
+                                        if (!version) return
+
+                                        if (!version.basedOn) return
+                                        const snapshot = view.snapshot(version.basedOn.assigned)
+                                        if (!snapshot) return
+
+                                        for (const symbolA of symbols) {
+                                            for (const symbolB of snapshot) {
+                                                if (view.isCollatable(symbolA, symbolB)) {
+                                                    console.log('collatable found')
+                                                    const path = view.getPath(symbolB.id)
+                                                    if (!path) continue
+
+                                                    const symbol = getAt<AnySymbol>(path, draft)
+                                                    if (!symbol) continue
+
+                                                    symbol?.carriers.push(...symbolA.carriers)
+
+                                                    const originalPath = view.getPath(symbolA.id)
+                                                    if (!originalPath) continue
+
+                                                    const insert = getAt<AnySymbol[]>(originalPath.slice(0, -1), draft)
+                                                    if (!insert || !Array.isArray(insert)) continue
+
+                                                    const index = insert.findIndex(s => s.id === symbolA.id)
+                                                    if (index !== -1) {
+                                                        insert.splice(index, 1)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    })
+                                }}
+                            >
+                                Recollate
                             </Button>
                         </Ribbon>
                     )}

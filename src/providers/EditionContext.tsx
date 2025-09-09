@@ -44,6 +44,7 @@ export const EditionContext = createContext<{
     canUndo: boolean;
     canRedo: boolean;
     view: EditionView | undefined,
+    viewOnly: boolean
 }>({
     setEdition: () => { },
     apply: () => { },
@@ -52,10 +53,11 @@ export const EditionContext = createContext<{
     canUndo: false,
     canRedo: false,
     view: undefined,
+    viewOnly: false
 });
 
-export function EditionProvider({ children }: { children: React.ReactNode }) {
-    const [edition, setEdition] = useState<Edition>();
+export function EditionProvider({ edition: existingEdition, children }: { edition?: Edition, children: React.ReactNode }) {
+    const [edition, setEdition] = useState<Edition | undefined>(existingEdition);
     const [history, setHistory] = useState<History>({
         past: [],
         future: [],
@@ -113,7 +115,7 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
     const redo = () => {
         setEdition((current) => {
             if (!current) return
-            
+
             if (history.future.length === 0) return current;
             const entry = history.future[history.future.length - 1];
             const redone = applyPatches(current, entry.patches);
@@ -135,7 +137,17 @@ export function EditionProvider({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <EditionContext.Provider value={{ edition, setEdition, apply, undo, redo, canUndo, canRedo, view }}>
+        <EditionContext.Provider value={{
+            edition,
+            setEdition,
+            apply,
+            undo,
+            redo,
+            canUndo,
+            canRedo,
+            view,
+            viewOnly: !!existingEdition
+        }}>
             {children}
         </EditionContext.Provider>
     );

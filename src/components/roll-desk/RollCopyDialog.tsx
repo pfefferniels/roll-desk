@@ -31,7 +31,7 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
         }
 
         let rollCopy: RollCopy = copy || {
-            ops: new Set(),
+            ops: [],
             type: 'RollCopy',
             id: v4(),
             features: [],

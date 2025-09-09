@@ -41,7 +41,6 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
                             {version.actor && (
                                 <Arguable
                                     path={['versions', edition.versions.findIndex(v => v.id === version.id), 'actor'] as const}
-                                    viewOnly={false}
                                 >
                                     Actor: <b>{flat(version.actor).name}</b>
                                 </Arguable>
@@ -467,7 +466,6 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
 
             <Arguable
                 path={motivationPath}
-                viewOnly={false}
                 asSVG={{
                     buttonPlacement: endPt || { x: 0, y: 0, angle: 0 }
                 }}

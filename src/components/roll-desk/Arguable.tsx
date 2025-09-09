@@ -10,7 +10,6 @@ import { EditionContext } from "../../providers/EditionContext";
 
 interface ArguableProps<Name, Type> {
     anchor?: Element
-    viewOnly: boolean
     path: Path
     children: ReactNode
     asSVG?: {
@@ -21,8 +20,8 @@ interface ArguableProps<Name, Type> {
     }
 }
 
-export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }: ArguableProps<Name, Type>) {
-    const { view } = useContext(EditionContext)
+export function Arguable<Name, Type>({ asSVG, anchor, path, children }: ArguableProps<Name, Type>) {
+    const { view, viewOnly } = useContext(EditionContext)
 
     const [anchorEl, setAnchorEl] = useState<Element | null>(anchor || null)
     const [editValue, setEditValue] = useState(false)
@@ -123,18 +122,20 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }
                                                     primary={
                                                         reason.comprehends.map((subject: string) => {
                                                             const target = view?.get(subject)
+                                                            const key = `comprehends-${subject}`
+
                                                             if (!target) {
                                                                 return <span>{subject}</span>
                                                             }
 
                                                             if (isEdit(target)) {
-                                                                return <span>{target.motivation?.assigned || `+${target.insert?.length || 0} -${target.delete?.length}`} | </span>
+                                                                return <span key={key}>{target.motivation?.assigned || `+${target.insert?.length || 0} -${target.delete?.length}`} | </span>
                                                             }
                                                             else if (isSymbol(target)) {
-                                                                return <span>{'text' in target ? target.text : target.type}</span>
+                                                                return <span key={key}>{'text' in target ? target.text : target.type}</span>
                                                             }
                                                             else {
-                                                                return <span>unknown type</span>
+                                                                return <span key={key}>unknown type</span>
                                                             }
                                                         })
                                                     }
@@ -171,44 +172,46 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }
                                 })}
                             </List>
 
-                            <Stack direction='column' spacing={1}>
-                                {selection.length > 0 && selection.every(el => isSymbol(el)) && (
+                            {!viewOnly && (
+                                <Stack direction='column' spacing={1}>
+                                    {selection.length > 0 && selection.every(el => isSymbol(el) || isEdit(el)) && (
+                                        <Button
+                                            variant='contained'
+                                            onClick={() => {
+                                                if (!about.belief) return
+                                                const comprehension: MeaningComprehension = {
+                                                    type: 'meaningComprehension',
+                                                    actor: {
+                                                        name: '',
+                                                        sameAs: []
+                                                    },
+                                                    comprehends: selection.map(s => s.id)
+                                                }
+
+                                                addReason(comprehension)
+                                            }}
+                                        >
+                                            Comprehend Selection
+                                        </Button>
+                                    )}
+
                                     <Button
                                         variant='contained'
-                                        onClick={() => {
-                                            if (!about.belief) return
-                                            const comprehension: MeaningComprehension = {
-                                                type: 'meaningComprehension',
-                                                actor: {
-                                                    name: '',
-                                                    sameAs: []
-                                                },
-                                                comprehends: selection.map(s => s.id)
-                                            }
-
-                                            addReason(comprehension)
-                                        }}
+                                        startIcon={<Add />}
+                                        onClick={() => setAddCitation(true)}
                                     >
-                                        Comprehend Selection
+                                        Add Citation
                                     </Button>
-                                )}
 
-                                <Button
-                                    variant='contained'
-                                    startIcon={<Add />}
-                                    onClick={() => setAddCitation(true)}
-                                >
-                                    Add Citation
-                                </Button>
-
-                                <Button
-                                    variant='contained'
-                                    startIcon={<Add />}
-                                    onClick={() => setAddPlain(true)}
-                                >
-                                    Add Plain-Text Reason
-                                </Button>
-                            </Stack>
+                                    <Button
+                                        variant='contained'
+                                        startIcon={<Add />}
+                                        onClick={() => setAddPlain(true)}
+                                    >
+                                        Add Plain-Text Reason
+                                    </Button>
+                                </Stack>
+                            )}
                         </div>
 
                         <EditChoice
@@ -271,12 +274,12 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, viewOnly, children }
 
     if (!asSVG) {
         return (
-            <Box>
+            <span>
                 {children}
                 {!anchor && button}
                 {viewOnly && <Doubts about={about.id} />}
                 {popover}
-            </Box>
+            </span>
         )
     }
 

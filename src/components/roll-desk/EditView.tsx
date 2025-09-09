@@ -55,6 +55,8 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
 
     const hulls = []
 
+    console.time('edit view')
+
     const insertionBBoxes = (edit.insert ?? [])
         .map(s => getSymbolBBox(s, view, translation))
         .filter(bbox => !!bbox)
@@ -63,6 +65,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         .filter(s => !!s)
         .map(s => getSymbolBBox(s, view, translation))
         .filter(bbox => !!bbox);
+    console.timeEnd('edit view')
 
     // draw overall hull only when there are both, insertions
     // as well as deletions

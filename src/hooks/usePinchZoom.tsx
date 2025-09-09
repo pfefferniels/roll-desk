@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
 
 export interface PinchZoomContextProps {
     translateX: (x: number) => number
@@ -11,6 +11,7 @@ export interface PinchZoomContextProps {
         expression: number
     }
     zoom: number
+    setZoom: Dispatch<SetStateAction<number>>
     height: number
 }
 
@@ -21,6 +22,7 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     yToTrack: (y: number) => y,
     areaOf: (track: number) => null,
     zoom: 0,
+    setZoom: () => {},
     height: 0
 });
 
@@ -29,10 +31,11 @@ interface PinchZoomProviderProps {
     zoom: number
     noteHeight: number
     expressionHeight: number
+    setZoom: Dispatch<SetStateAction<number>>
     children: ReactNode;
 }
 
-export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, noteHeight, expressionHeight, children, spacing: userSpacing }) => {
+export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, noteHeight, expressionHeight, children, spacing: userSpacing, setZoom }) => {
     const spacing = userSpacing || 40
 
     const areas = {
@@ -79,7 +82,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
 
     const yToTrack = (y: number): number | 'gap' => {
         const inverse = height - y
-        console.log('y to track', 'nverse', inverse, 'height', height, 'y', y)
+        // console.log('y to track', 'nverse', inverse, 'height', height, 'y', y)
 
         const seg1Max = 10 * expressionHeight
         const seg2Min = spacing + 10 * expressionHeight
@@ -110,7 +113,8 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({ zoom, note
                 expression: expressionHeight
             },
             height,
-            areaOf
+            areaOf,
+            setZoom
         }}>
             {children}
         </PinchZoomContext.Provider>

@@ -1,5 +1,5 @@
 import { Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/Symbol";
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { EditionContext } from "../../providers/EditionContext";
 
@@ -20,8 +20,10 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const features = view.carriersOf(symbol)
     if (!features) return null;
 
-    const onsets = features.map(e => e.horizontal.from).sort();
-    const offsets = features.map(e => e.horizontal.to).sort();
+    const { onsets, offsets } = useMemo(() => ({
+        onsets: features.map(e => e.horizontal.from).sort(),
+        offsets: features.map(e => e.horizontal.to).sort()
+    }), [features]);
 
     if (onsets.length === 0 || offsets.length === 0) return null;
 

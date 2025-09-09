@@ -1,47 +1,31 @@
-import { createContext, Dispatch, PropsWithChildren, SetStateAction, useContext, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext } from "react";
 import { UserSelection } from "../components/roll-desk/RollDesk";
 
-interface SelectionContextProps {
-    setSelection: Dispatch<SetStateAction<UserSelection[]>>;
-    selection: UserSelection[];
+interface SelectionContextProps<T extends UserSelection = UserSelection> {
+    selection: T[];
+    setSelection: Dispatch<SetStateAction<T[]>>;
+
+    range?: [number, number];
+    setRange: Dispatch<SetStateAction<[number, number] | undefined>>;
 }
 
 export const SelectionContext = createContext<SelectionContextProps>({
-    // noop that satisfies Dispatch<SetStateAction<...>>
-    setSelection: (() => { }) as Dispatch<SetStateAction<UserSelection[]>>,
     selection: [],
+    setSelection: (() => { }) as Dispatch<SetStateAction<UserSelection[]>>,
+    range: undefined,
+    setRange: (() => { }) as Dispatch<SetStateAction<[number, number] | undefined>>
 });
-/*
-const SelectionProvider = ({ children }: PropsWithChildren) => {
-    const [selection, setSelection] = useState<UserSelection[]>([]);
 
-    return (
-        <SelectionContext.Provider value={{ selection, setSelection }}>
-            {children}
-        </SelectionContext.Provider>
-    );
-}*/
-
-// Overload 1: no filter → full array type
-export function useSelection(): {
-    selection: UserSelection[];
-    setSelection: Dispatch<SetStateAction<UserSelection[]>>;
-};
-
-// Overload 2: type-guard filter → narrowed array type
-export function useSelection<T extends UserSelection>(
-    filter: (item: UserSelection) => item is T
-): {
-    selection: T[];
-    setSelection: Dispatch<SetStateAction<UserSelection[]>>;
-};
-
-// Implementation
-export function useSelection<T extends UserSelection>(
+export function useSelection<T extends UserSelection = UserSelection>(
     filter?: (item: UserSelection) => item is T
-) {
-    const { selection, setSelection } = useContext(SelectionContext);
+): SelectionContextProps<T> {
+    const { selection, setSelection, range, setRange } = useContext(SelectionContext);
     const narrowed = filter ? selection.filter(filter) : selection;
-    // types are handled by overloads
-    return { selection: narrowed as T[] & UserSelection[], setSelection };
+
+    return {
+        selection: narrowed as T[],
+        setSelection: setSelection as Dispatch<SetStateAction<T[]>>,
+        range,
+        setRange
+    };
 }

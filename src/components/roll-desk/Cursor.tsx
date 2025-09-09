@@ -1,5 +1,6 @@
 import { RefObject, useCallback, useEffect, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { useSelection } from "../../providers/SelectionContext"
 
 interface CursorProps {
     svgRef: RefObject<SVGGElement | null>
@@ -8,7 +9,6 @@ interface CursorProps {
 export const Cursor = ({ svgRef }: CursorProps) => {
     const { translateX, zoom } = usePinchZoom()
     const [cursorX, setCursorX] = useState(0)
-    const [fixedX, setFixedX] = useState<number>()
 
     const cursorText = `${(cursorX / 10).toFixed(2)} cm`;
     const translatedX = translateX(cursorX)
@@ -34,25 +34,7 @@ export const Cursor = ({ svgRef }: CursorProps) => {
 
     return (
         <>
-            {fixedX && (
-                <line
-                    x1={translateX(fixedX)}
-                    y1={100}
-                    x2={translateX(cursorX)}
-                    y2={100}
-                    strokeWidth={5}
-                    stroke='gray'
-                />
-            )}
             <line
-                onClick={() => {
-                    if (fixedX === undefined) {
-                        setFixedX(cursorX)
-                    }
-                    else {
-                        setFixedX(undefined)
-                    }
-                }}
                 x1={translatedX}
                 y1={0}
                 x2={translatedX}
@@ -60,6 +42,7 @@ export const Cursor = ({ svgRef }: CursorProps) => {
                 strokeWidth={2}
                 stroke='black'
                 className='cursor'
+                pointerEvents='none'
             />
 
             <text

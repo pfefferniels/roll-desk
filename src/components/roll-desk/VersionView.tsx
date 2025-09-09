@@ -1,11 +1,12 @@
-import { useContext, useRef, useState } from "react"
+import { useContext, useRef } from "react"
 // import { usePiano } from "react-pianosound"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, flat, Edit, Motivation } from "linked-rolls"
-import { Dynamics } from "./Dynamics"
+import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"
 import { EditView } from "./EditView"
 import { EditionContext } from "../../providers/EditionContext"
+import { Ground } from "./Ground"
 
 interface VersionViewProps {
     version: Version
@@ -14,7 +15,7 @@ interface VersionViewProps {
 
 export const VersionView = ({ version, onClick }: VersionViewProps) => {
     // const { playSingleNote } = usePiano()
-    const { view } = useContext(EditionContext)
+    const { view, viewOnly } = useContext(EditionContext)
 
     const svgRef = useRef<SVGGElement>(null)
 
@@ -66,8 +67,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
 
     // draw edits of current version, but only 
     // if the version is based on a previous version
-    const edits = []
-    //if (prevVersion) {
+    let edits = []
     for (const edit of version.edits) {
         edits.push(
             <EditView
@@ -77,19 +77,22 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
             />
         )
     }
-
-    //}
+    if (!prevVersion && viewOnly) {
+        edits = []
+    }
 
     // draw dynamics of prev version and dynamics of current version (for comparison)
     const dynamics = (
         <g className='dynamics'>
+            <DynamicsGrid {...emulation.options} />
+
             {prevEmulation && (
                 <Dynamics
                     forEmulation={prevEmulation}
                     pathProps={{
-                        stroke: 'gray',
-                        strokeWidth: 3,
-                        strokeOpacity: 0.4
+                        stroke: 'lightblue',
+                        strokeWidth: 3.2,
+                        strokeOpacity: 0.7
                     }}
                 />
             )}
@@ -97,8 +100,8 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                 <Dynamics
                     forEmulation={emulation}
                     pathProps={{
-                        stroke: 'black',
-                        strokeWidth: 1.5
+                        stroke: 'darkblue',
+                        strokeWidth: 1.6
                     }}
                 />
             )}
@@ -108,6 +111,9 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     return (
         <g className='versionView' ref={svgRef}>
             {dynamics}
+
+            <Ground x={0} y={-50} width={100000} height={200 + 50} />
+
             {edits}
 
             {snapshot

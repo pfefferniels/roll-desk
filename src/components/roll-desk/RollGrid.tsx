@@ -111,7 +111,7 @@ export const RollGrid = ({
                 y={0}
                 height={height}
                 width={width}
-            ></rect>
+            />
             {lines}
             {rect && (
                 <rect
