@@ -1,4 +1,4 @@
-import { Edit, flat } from "linked-rolls";
+import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext } from "react";
@@ -7,6 +7,7 @@ import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls/lib/EditionView";
 import { EditionContext } from "../../providers/EditionContext";
+import { flat } from "doubtful"
 
 export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' | 'trackHeight'>
 
@@ -115,7 +116,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         const id = edit.delete?.length
             ? `${edit.id}-insert` :
             edit.id
-        let motivationStr = `+${edit.insert.length}`
+        let motivationStr: string | undefined = undefined
         if (edit.motivation) {
             if (flat(edit.motivation) === 'additional-accent') {
                 motivationStr = '>'
@@ -124,7 +125,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 motivationStr = `fix`
             }
             else {
-                motivationStr += ` ${flat(edit.motivation).replaceAll('-', ' ')}`
+                motivationStr = `${flat(edit.motivation).replaceAll('-', ' ')}`
             }
         }
 
@@ -134,7 +135,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 id={id}
                 hull={hull}
                 fillOpacity={0.5}
-                fill='lightgray'
+                fill='#aceebb'
                 onClick={(e) => {
                     onClick && onClick(e)
                 }}
@@ -169,19 +170,8 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 id={id}
                 hull={hull}
                 fillOpacity={0.5}
-                fill='lightgray'
+                fill='#fb7f78ff'
                 onClick={(e) => onClick && onClick(e)}
-                label={
-                    <text
-                        x={bbox.x + 8}
-                        y={bbox.y + bbox.height + 8}
-                        fontSize={12}
-                        fill='black'
-                        style={{ pointerEvents: 'none' }}
-                    >
-                        -{edit.delete.length}
-                    </text>
-                }
             />
         )
     }

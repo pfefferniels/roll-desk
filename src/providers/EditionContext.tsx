@@ -1,5 +1,6 @@
+import { assign } from "doubtful";
 import { enablePatches, produceWithPatches, applyPatches, Patch, Draft, enableMapSet } from "immer";
-import { AnySymbol, assign, Edition, EditionMetadata, EditionView, isPlan, Plan, Version } from "linked-rolls";
+import { Edition, EditionMetadata, EditionView, isPlan, Plan } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
 export type EditionOp = (d: Draft<Edition>) => void;

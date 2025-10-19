@@ -1,4 +1,4 @@
-import { Edit, Edition, flat, getAt, MeaningComprehension, Motivation, Path, VersionType } from 'linked-rolls'
+import { getAt, Motivation, Path, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { useContext, useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
@@ -8,6 +8,7 @@ import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { useAssumption } from '../../hooks/useAssumption';
 import { Legend } from './Legend';
+import { flat } from 'doubtful';
 
 interface Stemma {
     currentVersionId: string | undefined

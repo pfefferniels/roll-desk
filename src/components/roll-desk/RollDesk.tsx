@@ -2,7 +2,7 @@
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
-import { AnySymbol, Emulation, flat, HorizontalSpan, Motivation, isEdit, isMotivation, isRollFeature, isSymbol, PlaceTimeConversion, Version, VerticalSpan, Edition } from 'linked-rolls'
+import { Emulation, HorizontalSpan, Motivation, PlaceTimeConversion, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -27,6 +27,7 @@ import { Draft } from 'immer'
 import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
+import { flat } from "doubtful"
 
 export type DocOp = (d: Draft<Edition>) => void;
 
@@ -180,7 +181,7 @@ export const Desk = ({ versionId }: DeskProps) => {
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
-        downloadFile('output.mid', dataBuf, 'audio/midi')
+        downloadFile(`${currentVersion.siglum}.mid`, dataBuf, 'audio/midi')
     }, [currentVersion, conversionMethod])
 
     useEffect(() => {

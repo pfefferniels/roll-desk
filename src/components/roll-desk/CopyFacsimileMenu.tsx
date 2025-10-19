@@ -1,5 +1,5 @@
 import { Button, Stack } from "@mui/material"
-import { applyShift, applyStretch, assign, EditionView, EditorialAssumption, FeatureConditionAssignment, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollCopy, RollFeature, Shift, Version } from "linked-rolls"
+import { applyShift, applyStretch, FeatureConditionAssignment, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollFeature, Shift } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddSymbolDialog } from "./AddSymbol"
 import { useContext, useState } from "react"
@@ -12,6 +12,7 @@ import { AlignCopies } from "./AlignCopies"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
+import { assign, Assumption } from "doubtful"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
@@ -47,7 +48,7 @@ const addFeatureCondition = (copyId: string, featureIDs: string[], condition: Fe
     }
 }
 
-const shiftAndStretch = (copyId: string, shift: Shift, stretch: EditorialAssumption<'conditionAssignment', PaperStretch>): EditionOp => {
+const shiftAndStretch = (copyId: string, shift: Shift, stretch: Assumption<'conditionAssignment', PaperStretch>): EditionOp => {
     return (draft) => {
         const copy = draft.copies.find(c => c.id === copyId)
         if (!copy) return

@@ -1,10 +1,11 @@
 import { Visibility, VisibilityOff, ColorLens } from "@mui/icons-material"
 import { List, ListItem, ListItemIcon, IconButton, ListItemButton, ListItemText } from "@mui/material"
-import { flat, PaperStretch } from "linked-rolls"
+import { PaperStretch } from "linked-rolls"
 import { useContext, useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
 import { EditionContext } from "../../providers/EditionContext"
+import { flat } from "doubtful"
 
 export interface LayerInfo {
     color: string

@@ -1,6 +1,6 @@
 import { useContext, useRef } from "react"
 // import { usePiano } from "react-pianosound"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, flat, Edit, Motivation } from "linked-rolls"
+import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"

@@ -1,7 +1,6 @@
 import { Box, Button, Stack } from "@mui/material";
-import { assign, Edition, EditionMetadata } from "linked-rolls";
 import { ImportButton } from "./ImportButton";
-import { use, useContext, useState } from "react";
+import { useContext, useState } from "react";
 import EditMetadata from "./EditMetadata";
 import { Create } from "@mui/icons-material";
 import { EditionContext, emptyMetadata } from "../../providers/EditionContext";

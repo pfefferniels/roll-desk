@@ -1,12 +1,13 @@
 import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
-import { Box, Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
-import { AnySymbol, Argumentation, BeliefAdoption, certainties, EditorialAssumption, isEdit, isSymbol, MeaningComprehension, Path } from "linked-rolls";
+import { Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
+import { isEdit, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { Doubts } from "doubtful";
 import { EditChoice, EditString } from "./EditString";
 import { useAssumption } from "../../hooks/useAssumption";
 import { EditionContext } from "../../providers/EditionContext";
+import { Argumentation, BeliefAdoption, MeaningComprehension, certainties } from "doubtful";
 
 interface ArguableProps<Name, Type> {
     anchor?: Element

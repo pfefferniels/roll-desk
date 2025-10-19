@@ -1,6 +1,7 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
-import { assign, EditorialAssumption, FeatureCondition, flat, GeneralRollCondition, PaperStretch } from "linked-rolls";
+import { FeatureCondition, GeneralRollCondition, PaperStretch } from "linked-rolls";
+import { assign, Assumption, flat } from "doubtful";
 
 type ConditionMap = {
     roll: PaperStretch | GeneralRollCondition
@@ -15,9 +16,9 @@ const conditionTypes = {
 interface ConditionStateProps<S extends keyof ConditionMap> {
     open: boolean
     subject: S
-    condition?: EditorialAssumption<'conditionAssignment', ConditionMap[S]>
+    condition?: Assumption<'conditionAssignment', ConditionMap[S]>
     onClose: () => void
-    onDone: (condition: EditorialAssumption<'conditionAssignment', ConditionMap[S]>) => void
+    onDone: (condition: Assumption<'conditionAssignment', ConditionMap[S]>) => void
 }
 
 export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subject, condition, onClose, onDone }: ConditionStateProps<T>) {

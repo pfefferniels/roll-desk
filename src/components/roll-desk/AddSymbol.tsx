@@ -1,6 +1,7 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { assign, CoverPerforation, Edit, RollFeature, Version, WelteT100 } from "linked-rolls"
+import { CoverPerforation, RollFeature, Version, WelteT100 } from "linked-rolls"
 import { useContext, useEffect, useState } from "react"
+import { assign } from "doubtful"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
 import { AnySymbol, isSymbol } from "linked-rolls/lib/Symbol"

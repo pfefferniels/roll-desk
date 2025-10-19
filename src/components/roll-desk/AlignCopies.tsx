@@ -1,7 +1,8 @@
 import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, flat, RollCopy } from "linked-rolls";
+import { alignFeatures, RollCopy } from "linked-rolls";
 import { useContext, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
+import { flat } from "doubtful";
 
 interface AlignCopiesProps {
     open: boolean

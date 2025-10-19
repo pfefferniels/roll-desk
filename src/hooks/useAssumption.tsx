@@ -1,16 +1,17 @@
 import { useMemo, useContext } from "react";
 import { EditionContext, EditionOp } from "../providers/EditionContext";
 import { Draft } from "immer";
-import { Edition, EditorialAssumption, Certainty, AnyArgumentation, getAt, Path } from "linked-rolls";
+import { Edition, getAt, Path } from "linked-rolls";
 import { v4 } from "uuid";
+import { AnyArgumentation, Certainty, Assumption } from "doubtful";
 
 export const onAssumptionAt =
     (
         path: Path,
-        op: (a: Draft<EditorialAssumption<any, any>>, d: Draft<Edition>) => void
+        op: (a: Draft<Assumption<any, any>>, d: Draft<Edition>) => void
     ): EditionOp =>
         d => {
-            const obj = getAt<EditorialAssumption<any, any>>(path, d)
+            const obj = getAt<Assumption<any, any>>(path, d)
             if (obj) op(obj, d);
         }
 
@@ -47,7 +48,7 @@ export function useAssumption(path: Path) {
     const { edition, apply } = useContext(EditionContext);
 
     const assumption = useMemo(
-        () => getAt<EditorialAssumption<any, any>>(path, edition),
+        () => getAt<Assumption<any, any>>(path, edition),
         [edition, path]
     );
 

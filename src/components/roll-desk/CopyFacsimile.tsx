@@ -1,5 +1,4 @@
 import {
-    flat,
     Path,
     RollCopy,
     RollFeature
@@ -12,6 +11,7 @@ import { EventDimension } from "./RollDesk.tsx";
 import useIsVisible from "../../hooks/useIsVisible.tsx";
 import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
+import { flat } from "doubtful";
 
 interface IIIFInfo {
     "@id": string;

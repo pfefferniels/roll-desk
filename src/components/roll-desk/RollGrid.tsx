@@ -3,7 +3,8 @@ import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { WithId } from 'linked-rolls/lib/WithId';
 import { EventDimension } from './RollDesk.tsx';
-import { flat, RollCopy } from 'linked-rolls';
+import { RollCopy } from 'linked-rolls';
+import { flat } from 'doubtful';
 
 interface RollGridProps {
     width: number;

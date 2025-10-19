@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, assign, Edit, Motivation, isEdit, isSymbol, MeaningComprehension, versionTypes, flat, isMotivation, MergeEdits, SplitEdit, ConnectVersions, getAt } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, MergeEdits, SplitEdit, ConnectVersions, getAt } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -10,6 +10,9 @@ import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
+import { assign, flat, MeaningComprehension } from "doubtful"
+
+const isMotivation = (item: any): item is Motivation<string> => item?.type === 'motivationAssignment'
 
 /*
 const mergeEdits = (versionId: string, edits: Edit[], editionView: EditionView): EditionOp => {
