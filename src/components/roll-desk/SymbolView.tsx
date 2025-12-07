@@ -13,7 +13,7 @@ interface PerforationProps {
 export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProps) => {
     const { view } = useContext(EditionContext)
     const [displayDetails, setDisplayDetails] = useState(false);
-    const { translateX, trackToY, trackHeight } = usePinchZoom();
+    const { translateX, trackToY, trackHeight, zoom } = usePinchZoom();
 
     if (!view) return null;
 
@@ -42,6 +42,44 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
 
     const opacity = 1 / ((age || 0) + 1)
     const color = (age || 0) >= 1 ? 'gray' : 'black';
+
+    if (zoom < 0.7) {
+        return (
+            <g
+                data-id={symbol.id}
+                id={symbol.id}
+                className='collated-event'
+                onMouseEnter={() => setDisplayDetails(true)}
+                onMouseLeave={() => setDisplayDetails(false)}
+            >
+                <rect
+                    x={innerBoundaries[0]}
+                    width={innerBoundaries[1] - innerBoundaries[0]}
+                    y={y}
+                    height={height}
+                    fill={highlight ? 'red' : color}
+                    fillOpacity={opacity}
+                    onClick={onClick} />
+                <line
+                    x1={translateX(meanOnset)}
+                    x2={translateX(meanOnset)}
+                    y1={displayDetails ? trackToY(100) : y - 10}
+                    y2={displayDetails ? trackToY(0) : y + 20}
+                    stroke='black'
+                    strokeWidth={0.2}
+                    strokeOpacity={0.7} />
+                <line
+                    x1={translateX(meanOffset)}
+                    x2={translateX(meanOffset)}
+                    y1={displayDetails ? trackToY(100) : y - 10}
+                    y2={displayDetails ? trackToY(0) : y + 20}
+                    stroke='black'
+                    strokeWidth={0.2}
+                    strokeOpacity={0.7} />
+            </g>
+
+        )
+    }
 
     return (
         <g
