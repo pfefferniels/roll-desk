@@ -1,46 +1,53 @@
 import { useMemo, useContext } from "react";
 import { EditionContext, EditionOp } from "../providers/EditionContext";
 import { Draft } from "immer";
-import { Edition, getAt, Path } from "linked-rolls";
+import { AnyArgumentation, Assumption, Certainty, Edition, getAt, Path } from "linked-rolls";
 import { v4 } from "uuid";
-import { AnyArgumentation, Certainty, Assumption } from "doubtful";
 
 export const onAssumptionAt =
     (
         path: Path,
-        op: (a: Draft<Assumption<any, any>>, d: Draft<Edition>) => void
+        op: (a: Draft<Assumption>, d: Draft<Edition>) => void
     ): EditionOp =>
         d => {
-            const obj = getAt<Assumption<any, any>>(path, d)
+            const obj = getAt<Assumption>(path, d)
             if (obj) op(obj, d);
         }
 
 const createBelief = (path: Path): EditionOp =>
     onAssumptionAt(path, a => {
-        a.belief = { type: "belief", id: v4(), certainty: "true", reasons: [] };
+        a['@annotation'] = {
+            id: v4(),
+            belief: {
+                type: "belief",
+                id: v4(),
+                certainty: "true",
+                reasons: []
+            }
+        }
     });
 
 const clearBelief = (path: Path): EditionOp =>
     onAssumptionAt(path, a => {
-        a.belief = undefined;
+        a['@annotation'] = undefined;
     });
 
 const setCertainty =
     (path: Path, c: Certainty): EditionOp =>
         onAssumptionAt(path, a => {
-            if (a.belief) a.belief.certainty = c;
+            if (a['@annotation']) a['@annotation'].belief.certainty = c;
         });
 
 const addReason =
     (path: Path, reason: AnyArgumentation): EditionOp =>
         onAssumptionAt(path, a => {
-            a.belief?.reasons.push(reason);
+            a['@annotation']?.belief.reasons.push(reason);
         });
 
 const removeReason =
     (path: Path, index: number): EditionOp =>
         onAssumptionAt(path, a => {
-            a.belief?.reasons.splice(index, 1);
+            a['@annotation']?.belief.reasons.splice(index, 1);
         });
 
 
@@ -48,7 +55,7 @@ export function useAssumption(path: Path) {
     const { edition, apply } = useContext(EditionContext);
 
     const assumption = useMemo(
-        () => getAt<Assumption<any, any>>(path, edition),
+        () => getAt<Assumption>(path, edition),
         [edition, path]
     );
 

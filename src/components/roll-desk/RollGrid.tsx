@@ -4,7 +4,6 @@ import { v4 } from 'uuid';
 import { WithId } from 'linked-rolls/lib/WithId';
 import { EventDimension } from './RollDesk.tsx';
 import { RollCopy } from 'linked-rolls';
-import { flat } from 'doubtful';
 
 interface RollGridProps {
     width: number;
@@ -145,9 +144,7 @@ export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) =
         to -= copy.measurements.shift.horizontal
     }
 
-    const stretch = copy.conditions
-        .map(condition => flat(condition))
-        .find(condition => condition.type === 'paper-stretch')
+    const stretch = copy.conditions.find(condition => condition.type === 'paper-stretch')
 
     if (stretch) {
         from /= stretch.factor

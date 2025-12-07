@@ -3,11 +3,10 @@ import { Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stac
 import { isEdit, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
-import { Doubts } from "doubtful";
 import { EditChoice, EditString } from "./EditString";
 import { useAssumption } from "../../hooks/useAssumption";
 import { EditionContext } from "../../providers/EditionContext";
-import { Argumentation, BeliefAdoption, MeaningComprehension, certainties } from "doubtful";
+import { Argumentation, BeliefAdoption, MeaningComprehension, certainties } from "linked-rolls";
 
 interface ArguableProps<Name, Type> {
     anchor?: Element
@@ -44,22 +43,24 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
         throw new Error("Assumption not found at path: " + path.join('.'))
     }
 
+    const belief = about['@annotation']?.belief;
+
     const button = (
-        <Tooltip title={about.belief ? about.belief.certainty : 'No Belief'}>
+        <Tooltip title={belief ? belief.certainty : 'No Belief'}>
             <IconButton onClick={e => setAnchorEl(e.currentTarget)}>
-                {about.belief?.certainty === 'true' && (
+                {belief?.certainty === 'true' && (
                     <DoneAll />
                 )}
-                {about.belief?.certainty === 'likely' && (
+                {belief?.certainty === 'likely' && (
                     <Done />
                 )}
-                {about.belief?.certainty === 'possible' && (
+                {belief?.certainty === 'possible' && (
                     <QuestionMarkTwoTone fontSize='small' />
                 )}
-                {(about.belief?.certainty === 'unlikely' || about.belief?.certainty === 'false') && (
+                {(belief?.certainty === 'unlikely' || belief?.certainty === 'false') && (
                     <RemoveDone />
                 )}
-                {!about.belief && (
+                {!belief && (
                     <RadioButtonUnchecked />
                 )}
             </IconButton>
@@ -76,17 +77,17 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                 horizontal: 'left',
             }}
         >
-            {(!about.belief && !viewOnly) && (
+            {(!belief && !viewOnly) && (
                 <Button onClick={() => createBelief()}>
                     Create Belief
                 </Button>
             )
             }
             {
-                about.belief && (
+                belief && (
                     <>
                         <div style={{ padding: '1rem' }}>
-                            held to be: <i>{about.belief?.certainty}</i>
+                            held to be: <i>{belief?.certainty}</i>
 
                             {!viewOnly && (
                                 <>
@@ -102,9 +103,9 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                             )}
                             <br />
 
-                            {about.belief.reasons.length > 0 && <b>Reasons</b>}
+                            {belief.reasons.length > 0 && <b>Reasons</b>}
                             <List style={{ paddingLeft: '1rem', maxWidth: '500px' }}>
-                                {about.belief.reasons.map((reason, i) => {
+                                {belief.reasons.map((reason, i) => {
                                     if (reason.type === 'meaningComprehension') {
                                         return (
                                             <ListItem
@@ -130,7 +131,7 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                                             }
 
                                                             if (isEdit(target)) {
-                                                                return <span key={key}>{target.motivation?.assigned || `+${target.insert?.length || 0} -${target.delete?.length}`} | </span>
+                                                                return <span key={key}>{target.motivation ? target.motivation : `+${target.insert?.length || 0} -${target.delete?.length}`} | </span>
                                                             }
                                                             else if (isSymbol(target)) {
                                                                 return <span key={key}>{'text' in target ? target.text : target.type}</span>
@@ -179,7 +180,7 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                         <Button
                                             variant='contained'
                                             onClick={() => {
-                                                if (!about.belief) return
+                                                if (!belief) return
                                                 const comprehension: MeaningComprehension = {
                                                     type: 'meaningComprehension',
                                                     actor: {
@@ -217,7 +218,7 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
 
                         <EditChoice
                             open={editValue}
-                            value={about.belief.certainty}
+                            value={belief.certainty}
                             items={certainties}
                             onClose={() => setEditValue(false)}
                             onDone={(newValue) => {
@@ -231,7 +232,7 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                             value={"Your reference ..."}
                             onClose={() => setAddCitation(false)}
                             onDone={(str) => {
-                                if (!about.belief) return;
+                                if (!belief) return;
 
                                 const beliefAdoption: BeliefAdoption = {
                                     type: 'beliefAdoption',
@@ -252,7 +253,7 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                             value={"Your reason ..."}
                             onClose={() => setAddPlain(false)}
                             onDone={(str) => {
-                                if (!about.belief) return;
+                                if (!belief) return;
 
                                 const plainArg: Argumentation = {
                                     type: 'simpleArgumentation',
@@ -278,7 +279,6 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
             <span>
                 {children}
                 {!anchor && button}
-                {viewOnly && <Doubts about={about.id} />}
                 {popover}
             </span>
         )
@@ -291,7 +291,6 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                 <div style={{ transform: "scale(0.8)" }}>
                     {button}
                 </div>
-                {viewOnly && <Doubts about={about.id} />}
                 <Portal>
                     {popover}
                 </Portal>

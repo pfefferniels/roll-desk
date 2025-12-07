@@ -11,7 +11,6 @@ import { EventDimension } from "./RollDesk.tsx";
 import useIsVisible from "../../hooks/useIsVisible.tsx";
 import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
-import { flat } from "doubtful";
 
 interface IIIFInfo {
     "@id": string;
@@ -117,9 +116,7 @@ export const CopyFacsimile = ({
                 if (!facsimile) {
                     const baseUrl = copy.scan;
                     const info = await fetchIIIFInfo(baseUrl);
-                    const stretch = copy.conditions
-                        .map(c => flat(c))
-                        .find(c => c.type === 'paper-stretch')
+                    const stretch = copy.conditions.find(c => c.type === 'paper-stretch')
 
                     setTiles(
                         await tilesAsSVGImage(
@@ -307,7 +304,7 @@ const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: Feat
                     <Arguable
                         path={conditionPath}
                     >
-                        {flat(feature.condition).type.replaceAll('-', ' ')}
+                        {feature.condition.type.replaceAll('-', ' ')}
                     </Arguable>
                 </foreignObject>
             )}

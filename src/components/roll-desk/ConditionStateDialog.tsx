@@ -1,7 +1,7 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
 import { FeatureCondition, GeneralRollCondition, PaperStretch } from "linked-rolls";
-import { assign, Assumption, flat } from "doubtful";
+import { assignObject, ObjectAssumption } from "linked-rolls/lib/Assumption";
 
 type ConditionMap = {
     roll: PaperStretch | GeneralRollCondition
@@ -16,9 +16,9 @@ const conditionTypes = {
 interface ConditionStateProps<S extends keyof ConditionMap> {
     open: boolean
     subject: S
-    condition?: Assumption<'conditionAssignment', ConditionMap[S]>
+    condition?: ObjectAssumption<ConditionMap[S]>
     onClose: () => void
-    onDone: (condition: Assumption<'conditionAssignment', ConditionMap[S]>) => void
+    onDone: (condition: ObjectAssumption<ConditionMap[S]>) => void
 }
 
 export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subject, condition, onClose, onDone }: ConditionStateProps<T>) {
@@ -30,12 +30,11 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
     useEffect(() => {
         if (!condition) return
 
-        const flatCondition = flat(condition)
-        setType(flatCondition.type)
-        setDescription(flatCondition.description)
+        setType(condition.type)
+        setDescription(condition.description)
 
-        if (flatCondition.type === 'paper-stretch') {
-            setFactor(flatCondition.factor)
+        if (condition.type === 'paper-stretch') {
+            setFactor(condition.factor)
         }
     }, [condition])
 
@@ -51,7 +50,7 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
             ...(type === 'paper-stretch' && factor !== undefined ? { factor } : {}),
         } as ConditionMap[T];
 
-        onDone(assign('conditionAssignment', newCondition));
+        onDone(assignObject(newCondition));
     };
 
     return (

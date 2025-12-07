@@ -6,17 +6,17 @@ import { useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 
 export interface MotivationViewProps {
-    motivation: Motivation<string>;
-    onClick?: (motivation: Motivation<string>) => void;
+    motivation: Motivation;
+    onClick?: (motivation: Motivation) => void;
 }
 
 export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => {
     const { view } = useContext(EditionContext)
     const translation = usePinchZoom()
 
-    if (!view) return null
+    if (!view || !motivation["@annotation"]) return null
 
-    const hulls = (motivation.belief?.reasons || [])
+    const hulls = (motivation["@annotation"].belief.reasons || [])
         .filter(reason => reason.type === 'meaningComprehension')
         .map(({ comprehends }) => comprehends)
         .flat()
@@ -30,15 +30,17 @@ export const MotivationView = ({ motivation, onClick }: MotivationViewProps) => 
     return (
         <g>
             {hulls.map(hull => {
+                if (!motivation["@annotation"]) return null
+                
                 return (
                     <Hull
                         ref={e => {
                             if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
                         }}
                         data-test="motivation"
-                        key={`${motivation.id}`}
-                        id={`${motivation.id}`}
-                        data-id={`${motivation.id}}`}
+                        key={`${motivation["@annotation"].id}`}
+                        id={`${motivation["@annotation"].id}`}
+                        data-id={motivation["@annotation"].id}
                         hull={hull.hull}
                         fillOpacity={0.5}
                         fill='rgb(244, 123, 123)'

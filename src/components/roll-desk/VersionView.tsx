@@ -10,7 +10,7 @@ import { Ground } from "./Ground"
 
 interface VersionViewProps {
     version: Version
-    onClick: (event: AnySymbol | Motivation<string> | Edit) => void
+    onClick: (event: AnySymbol | Motivation | Edit) => void
 }
 
 export const VersionView = ({ version, onClick }: VersionViewProps) => {

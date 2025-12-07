@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, MergeEdits, SplitEdit, ConnectVersions, getAt } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, MergeEdits, SplitEdit, ConnectVersions, getAt, assignReference, idOf, assignObject, MeaningComprehension } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -10,9 +10,8 @@ import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { assign, flat, MeaningComprehension } from "doubtful"
 
-const isMotivation = (item: any): item is Motivation<string> => item?.type === 'motivationAssignment'
+const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
 
 /*
 const mergeEdits = (versionId: string, edits: Edit[], editionView: EditionView): EditionOp => {
@@ -62,7 +61,7 @@ const deriveVersion = (versionId: string, selection: VersionSelection[]): Editio
         draft.versions.push({
             siglum: version.siglum + '_derived',
             id: v4(),
-            basedOn: assign('derivation', version.id),
+            basedOn: assignReference(version.id),
             edits,
             motivations: [],
             type: 'authorised-revision'
@@ -97,7 +96,7 @@ const remove = (versionId: string): EditionOp => {
     }
 }
 
-export type VersionSelection = AnySymbol | Edit | Motivation<string>
+export type VersionSelection = AnySymbol | Edit | Motivation
 
 interface MenuProps {
     versionId: string
@@ -205,7 +204,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                                         if (!version) return
 
                                         if (!version.basedOn) return
-                                        const snapshot = view.snapshot(version.basedOn.assigned)
+                                        const snapshot = view.snapshot(idOf(version.basedOn))
                                         if (!snapshot) return
 
                                         for (const symbolA of symbols) {
@@ -328,12 +327,12 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
             <EditString
                 open={assignActor}
                 onClose={() => setAssignActor(false)}
-                value={version.actor ? flat(version.actor).name : ''}
+                value={version.actor ? version.actor.name : ''}
                 onDone={(str) => {
                     apply((draft) => {
                         const version = draft.versions.find(v => v.id === versionId)
                         if (!version) return
-                        version.actor = assign('actorAssignment', {
+                        version.actor = assignObject({
                             name: str,
                             id: v4(),
                             sameAs: ['']
@@ -384,15 +383,17 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                         comprehends: editsToMotivate
                     }
 
-                    const motivation: Motivation<string> = {
-                        assigned: motivationDescription,
-                        id: v4(),
-                        type: 'motivationAssignment',
-                        belief: {
-                            type: 'belief',
-                            certainty: 'true',
+                    const motivation: Motivation = {
+                        type: 'motivation',
+                        note: motivationDescription,
+                        '@annotation': {
                             id: v4(),
-                            reasons: [comprehension]
+                            belief: {
+                                type: 'belief',
+                                certainty: 'true',
+                                id: v4(),
+                                reasons: [comprehension]
+                            }
                         }
                     }
 

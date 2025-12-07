@@ -1,8 +1,7 @@
 import { useContext, useRef } from "react"
 import { Glow } from "./Glow"
-import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { VersionView } from "./VersionView"
-import { Edition, Motivation, RollCopy, Version } from "linked-rolls"
+import { Motivation, Version } from "linked-rolls"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
 import { LayerInfo } from "./StackList"
@@ -15,7 +14,7 @@ interface LayeredRollsProps {
     layerInfos: LayerInfo[]
     activeId?: string
     currentVersion?: Version
-    currentMotivation?: Motivation<string>
+    currentMotivation?: Motivation
     selection: UserSelection[]
     onChangeSelection: (userSelection: UserSelection[]) => void
 }

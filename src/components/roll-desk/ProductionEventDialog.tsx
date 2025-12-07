@@ -5,7 +5,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from "dayjs";
-import { assign } from "doubtful";
+import { assignValue } from "linked-rolls/lib/Assumption";
 
 interface ProductionEventDialog {
     open: boolean
@@ -33,7 +33,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
             company,
             system,
             paper,
-            date: assign('dateAssignment', date)
+            date: assignValue(date)
         });
     };
 

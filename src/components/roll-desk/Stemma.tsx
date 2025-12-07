@@ -1,4 +1,4 @@
-import { getAt, Motivation, Path, VersionType } from 'linked-rolls'
+import { getAt, idOf, Motivation, Path, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { useContext, useLayoutEffect, useRef, useState } from "react"
 import * as d3 from "d3";
@@ -8,12 +8,11 @@ import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { useAssumption } from '../../hooks/useAssumption';
 import { Legend } from './Legend';
-import { flat } from 'doubtful';
 
 interface Stemma {
     currentVersionId: string | undefined
     onClick: (versionId: string) => void
-    onHoverMotivation: (motivation: Motivation<string> | null) => void
+    onHoverMotivation: (motivation: Motivation | null) => void
 }
 
 export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma) => {
@@ -22,7 +21,8 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
     const [links, setLinks] = useState<Link[]>([])
 
     const svgRef = useRef<SVGSVGElement>(null)
-    const svgWidth = 400
+    const zoomLayerRef = useRef<SVGGElement>(null)
+    const svgWidth = 500
     const svgHeight = 400
 
     useEffect(() => {
@@ -32,7 +32,6 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
 
         view.withGenerations()
             .forEach(version => {
-                console.log('version', version.id)
                 nodes.push({
                     id: version.id,
                     label: version.siglum,
@@ -44,7 +43,7 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
                                 <Arguable
                                     path={['versions', edition.versions.findIndex(v => v.id === version.id), 'actor'] as const}
                                 >
-                                    Actor: <b>{flat(version.actor).name}</b>
+                                    Actor: <b>{version.actor.name}</b>
                                 </Arguable>
                             )}
                         </Box>
@@ -55,7 +54,7 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
         const links: Link[] = []
         edition.versions.forEach((version, versionIndex) => {
             if (!version.basedOn) return
-            const basedOn = flat(version.basedOn)
+            const basedOn = idOf(version.basedOn)
 
             version.motivations.forEach((_, motivationIndex) => {
                 links.push({
@@ -77,11 +76,63 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
     }, [edition?.versions, view])
 
+    // NEW: zoom / fit-to-nodes
+    useEffect(() => {
+        if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
+
+        const svg = d3.select(svgRef.current)
+        const zoomLayer = d3.select(zoomLayerRef.current)
+
+        const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+            zoomLayer.attr("transform", event.transform.toString())
+        }
+
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.2, 5])        // min / max zoom
+            .on("zoom", zoomed)
+
+        svg.call(zoom)
+
+        // ---- compute bounding box of all nodes ----
+        const xs = nodes.map(n => n.x ?? 0)
+        const ys = nodes.map(n => n.y ?? 0)
+        const minX = Math.min(...xs)
+        const maxX = Math.max(...xs)
+        const minY = Math.min(...ys)
+        const maxY = Math.max(...ys)
+
+        const nodesWidth = maxX - minX || 1
+        const nodesHeight = maxY - minY || 1
+
+        const margin = 40
+        const scale = Math.min(
+            (svgWidth - 2 * margin) / nodesWidth,
+            (svgHeight - 2 * margin) / nodesHeight
+        )
+
+        const midX = (minX + maxX) / 2
+        const midY = (minY + maxY) / 2
+
+        const initialTransform = d3.zoomIdentity
+            .translate(svgWidth / 2, svgHeight / 2)
+            .scale(scale)
+            .translate(-midX, -midY)
+
+        // apply initial “fit all nodes” transform
+        svg.call(zoom.transform, initialTransform)
+
+        return () => {
+            svg.on(".zoom", null)
+        }
+    }, [nodes, svgWidth, svgHeight])
+
     return (
         <>
             <Legend />
             <svg
-                width={svgWidth} height={svgHeight}
+                width={svgWidth}
+                height={svgHeight}
+                ref={svgRef}
             >
                 <defs>
                     <filter id="f1"
@@ -96,7 +147,7 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
                     </filter>
                 </defs>
 
-                <svg ref={svgRef}>
+                <g ref={zoomLayerRef}>
                     <LinkContainer
                         links={links}
                         positionedNodes={nodes}
@@ -105,19 +156,19 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
                             setLinks([...links])
                         }}
                     />
+
                     {nodes.map((node, i) => (
                         <NavigationNode
                             key={`interpretation_${i}`}
                             node={node}
                             onClick={() => {
                                 if (!edition) return
-                                console.log('clicked on', node.id)
                                 onClick(node.id)
                             }}
                             highlight={currentVersionId === node.id}
                         />
                     ))}
-                </svg>
+                </g>
             </svg>
         </>
     )
@@ -276,7 +327,7 @@ interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
     separationFactor?: number;
-    onHoverMotivation: (motivation: Motivation<string> | null) => void
+    onHoverMotivation: (motivation: Motivation | null) => void
     onChange: () => void
 }
 
@@ -333,7 +384,7 @@ export const LinkContainer = ({ positionedNodes, links, separationFactor, onHove
             )
         }
 
-        const motivation = getAt<Motivation<string>>(link.motivationPath, edition)
+        const motivation = getAt<Motivation>(link.motivationPath, edition)
 
         return (
             <MotivationArc
@@ -408,7 +459,8 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
     const [editMotivation, setEditMotivation] = useState(false)
 
     const { apply } = useContext(EditionContext)
-    const { assumption: motivation } = useAssumption(motivationPath) as { assumption: Motivation<string> }
+    const { assumption: motivation } = useAssumption(motivationPath) as { assumption?: Motivation }
+    console.log('motivation in arc', motivation)
 
     const elRef = useRef<SVGPathElement>(null)
     const textPathRef = useRef<SVGTextPathElement | null>(null);
@@ -430,17 +482,21 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
         'A' + radius + ',' + radius + ' 0 0 0,' + source.x + ',' + source.y +
         'A' + radius + ',' + radius + ' 0 0 1,' + target.x + ',' + target.y;
 
+    if (!motivation) return null
+
     const editCount =
-        motivation.belief?.reasons
+        motivation['@annotation']?.belief.reasons
             .filter(r => r.type === 'meaningComprehension')
             .map(comprehensions => comprehensions.comprehends)
             .flat()
             .length
 
+    const id = `arc_${motivation['@annotation']?.id || `${source.x}-${source.y}-${target.x}-${target.y}`}`
+
     return (
         <g>
             <path
-                id={`arc_${motivation.id}`}
+                id={id}
                 style={{ pointerEvents: 'auto' }}
                 ref={elRef}
                 d={d}
@@ -453,15 +509,15 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
             <Portal>
                 <EditString
                     open={editMotivation}
-                    value={flat(motivation)}
+                    value={motivation.note}
                     onClose={() => setEditMotivation(false)}
                     onDone={(str) => {
                         apply(
                             draft => {
-                                const motivation = getAt<Motivation<string>>(motivationPath, draft)
+                                const motivation = getAt<Motivation>(motivationPath, draft)
                                 if (!motivation) return
 
-                                motivation.assigned = str
+                                motivation.note = str
                             }
                         )
                         setEditMotivation(false)
@@ -485,13 +541,13 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
 
                 >
                     <textPath
-                        href={`#arc_${motivation.id}`}
+                        href={`#${id}`}
                         style={{ pointerEvents: 'auto' }}
-                        fontSize={12}
+                        fontSize={8}
                         startOffset={'10%'}
                         ref={textPathRef}
                     >
-                        {flat(motivation)}
+                        {motivation.note}
                     </textPath>
                 </text>
             </Arguable>

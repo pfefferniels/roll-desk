@@ -27,7 +27,7 @@ import { Draft } from 'immer'
 import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
-import { flat } from "doubtful"
+import { valueOf } from "linked-rolls/lib/Assumption"
 
 export type DocOp = (d: Draft<Edition>) => void;
 
@@ -94,7 +94,7 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
-    const [currentMotivation, setCurrentMotivation] = useState<Motivation<string>>()
+    const [currentMotivation, setCurrentMotivation] = useState<Motivation>()
 
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
 
@@ -311,7 +311,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                             path={['roll', 'recordingEvent', 'date'] as const}
                         >
                             ({new Intl.DateTimeFormat().format(
-                                flat(edition.roll.recordingEvent.date)
+                                valueOf(edition.roll.recordingEvent.date)
                             )})
                         </Arguable>
                     </div>

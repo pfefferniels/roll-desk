@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
-import { assign, flat } from 'doubtful';
 import { ImportButton } from './ImportButton';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
 import { EditionContext } from '../../providers/EditionContext';
+import { assignValue, valueOf } from 'linked-rolls';
 
 interface EditMetadataProps {
   open: boolean
@@ -44,7 +44,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
     setPublisherName(edition.creation.publisher.name);
     setPublicationDate(edition.creation.publicationDate);
     setCatalogueNumber(edition.roll.catalogueNumber);
-    setRecordingDate(flat(edition.roll.recordingEvent.date));
+    setRecordingDate(valueOf(edition.roll.recordingEvent.date));
     setRecordingPlace(edition.roll.recordingEvent.place.name);
   }, [edition])
 
@@ -58,7 +58,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
       draft.creation.publisher.name = publisherName
       draft.creation.publicationDate = publicationDate
       draft.roll.catalogueNumber = catalogueNumber
-      draft.roll.recordingEvent.date = assign('dateAssignment', recordingDate)
+      draft.roll.recordingEvent.date = assignValue(recordingDate)
       draft.roll.recordingEvent.place.name = recordingPlace
     })
 

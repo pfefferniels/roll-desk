@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, 
 import { alignFeatures, RollCopy } from "linked-rolls";
 import { useContext, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
-import { flat } from "doubtful";
+import { valueOf } from "linked-rolls/lib/Assumption";
 
 interface AlignCopiesProps {
     open: boolean
@@ -28,7 +28,7 @@ export const AlignCopies = ({ copy, onDone, onClose, open }: AlignCopiesProps) =
     }
 
     const date = copy.productionEvent?.date && new Intl.DateTimeFormat().format(
-        flat(copy.productionEvent?.date)
+        valueOf(copy.productionEvent?.date)
     )
 
     if (!edition) return null

@@ -1,11 +1,11 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
 import { CoverPerforation, RollFeature, Version, WelteT100 } from "linked-rolls"
 import { useContext, useEffect, useState } from "react"
-import { assign } from "doubtful"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
 import { AnySymbol, isSymbol } from "linked-rolls/lib/Symbol"
 import { EditionContext } from "../../providers/EditionContext"
+import { assignReference } from "linked-rolls/lib/Assumption"
 
 interface AddSymbolProps {
     copyID: string
@@ -204,7 +204,7 @@ export const AddSymbolDialog = ({ copyID, selection, open, onClose, iiifUrl }: A
 
                         const base = {
                             id: v4(),
-                            carriers: [assign('carrierAssignment', feature.id)],
+                            carriers: [assignReference(feature.id)],
                         }
 
                         let newSymbol: AnySymbol | undefined = undefined
@@ -246,6 +246,7 @@ export const AddSymbolDialog = ({ copyID, selection, open, onClose, iiifUrl }: A
                                 const v = draft.versions.find(v => v.id === version.id)
                                 if (v) {
                                     v.edits.push({
+                                        type: 'edit',
                                         id: v4(),
                                         insert: [newSymbol],
                                     })

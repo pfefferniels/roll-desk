@@ -1,6 +1,5 @@
-import { assign } from "doubtful";
 import { enablePatches, produceWithPatches, applyPatches, Patch, Draft, enableMapSet } from "immer";
-import { Edition, EditionMetadata, EditionView, isPlan, Plan } from "linked-rolls";
+import { assignValue, Edition, EditionMetadata, EditionView, isPlan, Plan } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
 export type EditionOp = (d: Draft<Edition>) => void;
@@ -30,7 +29,7 @@ export const emptyMetadata: EditionMetadata = {
                 },
                 playing: ''
             },
-            date: assign('dateAssignment', new Date()),
+            date: assignValue(new Date()),
             place: { name: '', sameAs: [] }
         }
     }

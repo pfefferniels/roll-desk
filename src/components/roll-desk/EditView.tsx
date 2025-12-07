@@ -7,7 +7,6 @@ import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls/lib/EditionView";
 import { EditionContext } from "../../providers/EditionContext";
-import { flat } from "doubtful"
 
 export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' | 'trackHeight'>
 
@@ -56,7 +55,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
 
     const hulls = []
 
-    console.time('edit view')
+    // console.time('edit view')
 
     const insertionBBoxes = (edit.insert ?? [])
         .map(s => getSymbolBBox(s, view, translation))
@@ -66,7 +65,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         .filter(s => !!s)
         .map(s => getSymbolBBox(s, view, translation))
         .filter(bbox => !!bbox);
-    console.timeEnd('edit view')
+    // console.timeEnd('edit view')
 
     // draw overall hull only when there are both, insertions
     // as well as deletions
@@ -118,14 +117,14 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
             edit.id
         let motivationStr: string | undefined = undefined
         if (edit.motivation) {
-            if (flat(edit.motivation) === 'additional-accent') {
+            if (edit.motivation === 'additional-accent') {
                 motivationStr = '>'
             }
-            else if (flat(edit.motivation) === 'correct-error') {
+            else if (edit.motivation === 'correct-error') {
                 motivationStr = `fix`
             }
             else {
-                motivationStr = `${flat(edit.motivation).replaceAll('-', ' ')}`
+                motivationStr = `${edit.motivation.replaceAll('-', ' ')}`
             }
         }
 

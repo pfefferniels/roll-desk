@@ -12,10 +12,11 @@ import { AlignCopies } from "./AlignCopies"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { assign, Assumption } from "doubtful"
+import { assignObject, ObjectAssumption } from "linked-rolls/lib/Assumption"
 
 export type FacsimileSelection = EventDimension | RollFeature
 
+/*
 const addFeature = (copyId: string, feature: RollFeature): EditionOp => {
     return (draft) => {
         const copy = draft.copies.find(c => c.id === copyId)
@@ -23,7 +24,7 @@ const addFeature = (copyId: string, feature: RollFeature): EditionOp => {
 
         copy.features.push(feature)
     }
-}
+}*/
 
 const addGeneralCondition = (copyId: string, condition: RollConditionAssignment): EditionOp => {
     return (draft) => {
@@ -48,7 +49,7 @@ const addFeatureCondition = (copyId: string, featureIDs: string[], condition: Fe
     }
 }
 
-const shiftAndStretch = (copyId: string, shift: Shift, stretch: Assumption<'conditionAssignment', PaperStretch>): EditionOp => {
+const shiftAndStretch = (copyId: string, shift: Shift, stretch: ObjectAssumption<PaperStretch>): EditionOp => {
     return (draft) => {
         const copy = draft.copies.find(c => c.id === copyId)
         if (!copy) return
@@ -183,7 +184,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 value={"Generel condition ..."}
                 onClose={() => setReportRollCondition(false)}
                 onDone={(value) => {
-                    apply(addGeneralCondition(copyId, assign('conditionAssignment', {
+                    apply(addGeneralCondition(copyId, assignObject({
                         type: 'general',
                         description: value
                     })))
@@ -216,7 +217,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                         vertical: 0
                     }
 
-                    const stretch = assign('conditionAssignment', {
+                    const stretch = assignObject({
                         factor: stretchValue,
                         description: 'calculated by alignment',
                         type: 'paper-stretch' as 'paper-stretch'

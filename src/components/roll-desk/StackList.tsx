@@ -5,7 +5,7 @@ import { useContext, useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
 import { EditionContext } from "../../providers/EditionContext"
-import { flat } from "doubtful"
+import { valueOf } from "linked-rolls/lib/Assumption"
 
 export interface LayerInfo {
     color: string
@@ -41,7 +41,7 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                 path={['copies', edition.copies.indexOf(copy) || 0, 'productionEvent', 'date']}
                             >
                                 {new Intl.DateTimeFormat().format(
-                                    flat(copy.productionEvent.date)
+                                    valueOf(copy.productionEvent.date)
                                 )}
                             </Arguable>
                         )
@@ -91,9 +91,9 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                                         path={['copies', edition?.copies.indexOf(copy) || 0, 'conditions', idx]}
                                                     >
                                                         <span>
-                                                            {flat(c).type === 'general'
-                                                                ? flat(c).description
-                                                                : `Paper Stretch: ${(flat(c) as PaperStretch).factor.toFixed(3)}`}
+                                                            {c.type === 'general'
+                                                                ? c.description
+                                                                : `Paper Stretch: ${(c as PaperStretch).factor.toFixed(3)}`}
                                                         </span>
                                                     </Arguable>
                                                 )
