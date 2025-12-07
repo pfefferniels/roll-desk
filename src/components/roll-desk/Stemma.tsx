@@ -22,8 +22,8 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
 
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
-    const svgWidth = 500
-    const svgHeight = 400
+    const svgWidth = 400
+    const svgHeight = 500
 
     useEffect(() => {
         if (!edition || !view) return
@@ -76,7 +76,6 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
     }, [edition?.versions, view])
 
-    // NEW: zoom / fit-to-nodes
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
 
@@ -194,38 +193,46 @@ export const calculatePositions = async (
     links: Link[],
     width: number,
     height: number,
-    n: number = 1000
+    n: number = 300
 ): Promise<Node[]> => {
+
+    const rowGap = 200; // vertical distance between generations
+
+    // fix y position based on generation
+    nodes.forEach(node => {
+        const y = 50 + node.generation * rowGap;
+        node.y = y;
+        (node as any).fy = y;               // <- fixed y, D3 won't move it
+    });
+
     const simulation = d3
         .forceSimulation(nodes)
-        .force("center", d3.forceCenter(width / 2, height / 2)
-            .strength(0.3)
+        .force(
+            "link",
+            d3
+                .forceLink(links.filter(l => l.source !== 'unknown' && l.target !== 'unknown'))
+                .id((d: any) => d.id)
+                .strength(0.6)
         )
-        .force("charge", d3.forceManyBody())
-        .force("collide", d3.forceCollide<Node>(d => {
-            if (d.radius) return d.radius;
-            return 105
-        }).strength(0.5))
-        .force("link", d3
-            .forceLink(links.filter(l => l.source !== 'unknown' && l.target !== 'unknown'))
-            .strength(0.6)
-            .id((d: any) => d.id))
-        .force("positionX", d3.forceX<Node>()
-            .x(d => d.generation * 2)
-            .strength(1))
-        .force("positionY", d3.forceY<Node>()
-            .y(d => d.generation * 2)
-            .strength(1)
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force(
+            "x",
+            d3.forceX<Node>()
+                .x(width / 2)                  // roughly center each row
+                .strength(0.01)
+        )
+        .force(
+            "collide",
+            d3.forceCollide<Node>(d => d.radius ?? 40)
+                .strength(1)
         );
 
-    simulation.restart();
-    for (let i = 0; i < n; i++) {
-        simulation.tick();
-    }
     simulation.stop();
+    for (let i = 0; i < n; i++) simulation.tick();
 
     return nodes;
-}
+};
+
 
 export function sortLinks(links: Link[]) {
     links.sort(function (a, b) {
@@ -331,78 +338,128 @@ interface LinkContainerProps {
     onChange: () => void
 }
 
-export const LinkContainer = ({ positionedNodes, links, separationFactor, onHoverMotivation, onChange }: LinkContainerProps) => {
-    const numberOfLinks = setLinkIndices(links);
-    const { edition, apply } = useContext(EditionContext)
+export const LinkContainer = ({
+    positionedNodes,
+    links,
+    separationFactor,
+    onHoverMotivation,
+}: LinkContainerProps) => {
+    const { edition } = useContext(EditionContext)
 
+    // which source→target pair is currently exploded?
+    const [expandedKey, setExpandedKey] = useState<string | null>(null)
 
-    return links.map((link, i) => {
-        const source = positionedNodes.find(node => node.id === (link.source as Node).id);
-        const target = positionedNodes.find(node => node.id === (link.target as Node).id);
+    // group links by directed pair "sourceId->targetId"
+    const grouped = new Map<
+        string,
+        { source: Node; target: Node; links: Link[] }
+    >()
 
-        // console.log('source', source, 'target', target, 'link', link);
-
-        if (!source || !target) {
-            return null;
-        }
-
-        if (!source.x || !source.y || !target.x || !target.y) {
-            return null;
-        }
-
-        if (!link.index) {
-            return null
-        }
-
-        // the following code is inspired by 
-        // https://github.com/zhanghuancs/D3.js-Node-MultiLinks-Node
-        const dx = target.x - source.x
-        const dy = target.y - source.y
-        let dr = Math.sqrt(dx * dx + dy * dy);
-
-        // get the total link numbers between source and target node
-        const sourceToTarget = `${source.id},${target.id}`;
-        const targetToSource = `${target.id},${source.id}`;
-
-        const totalNumberOfLinks = numberOfLinks.get(sourceToTarget) || numberOfLinks.get(targetToSource) || 0
-        if (totalNumberOfLinks >= 1) {
-            dr = dr / (1 + ((separationFactor || 2.5) / totalNumberOfLinks) * (link.index - 1));
-        }
-
-        if (!link.motivationPath) {
-            return (
-                <line
-                    key={`link_${i}`}
-                    x1={source.x}
-                    y1={source.y}
-                    x2={target.x}
-                    y2={target.y}
-                    strokeWidth={1}
-                    strokeDasharray='5 5'
-                    stroke='gray'
-                />
-            )
-        }
-
-        const motivation = getAt<Motivation>(link.motivationPath, edition)
-
-        return (
-            <MotivationArc
-                key={`link_${i}`}
-                source={{ x: source.x, y: source.y }}
-                radius={dr}
-                target={{ x: target.x, y: target.y }}
-                motivationPath={link.motivationPath}
-                svgProps={{
-                    onMouseEnter: () => motivation && onHoverMotivation(motivation),
-                    onMouseLeave: () => onHoverMotivation(null),
-                }}
-            />
+    links.forEach(link => {
+        const source = positionedNodes.find(
+            node => node.id === (link.source as Node).id
         )
+        const target = positionedNodes.find(
+            node => node.id === (link.target as Node).id
+        )
+
+        if (!source || !target || !source.x || !source.y || !target.x || !target.y) {
+            return
+        }
+
+        const key = `${source.id}->${target.id}`
+        if (!grouped.has(key)) {
+            grouped.set(key, { source, target, links: [] })
+        }
+        grouped.get(key)!.links.push(link)
     })
+
+    const groups = Array.from(grouped.entries())
+
+    return (
+        <>
+            {groups.map(([key, group], gi) => {
+                const { source, target, links: gLinks } = group
+
+                const dx = (target.x! - source.x!)
+                const dy = (target.y! - source.y!)
+                const baseDr = Math.sqrt(dx * dx + dy * dy)
+
+                const motivationLinks = gLinks.filter(l => l.motivationPath)
+                const hasMotivations = motivationLinks.length > 0
+                const isExpanded = expandedKey === key
+                const total = motivationLinks.length
+                const spacing = 100   // px distance between onion layers
+
+                // when exploded, each motivation gets its own radius
+                const k = separationFactor || 2.5
+
+                const basePath = makeArcPath(source as Point, target as Point, baseDr)
+
+                return (
+                    <g
+                        key={key}
+                        onMouseEnter={() => hasMotivations && setExpandedKey(key)}
+                        onMouseLeave={() => hasMotivations && setExpandedKey(null)}
+                    >
+                        {/* base arc: always there, but fades when exploded */}
+                        <path
+                            d={basePath}
+                            fill="none"
+                            stroke="lightgray"
+                            strokeWidth={hasMotivations ? 8 : 4}
+                            style={{
+                                pointerEvents: 'auto',
+                                opacity: isExpanded ? 0.1 : 0.8,
+                                transition: 'opacity 250ms ease, stroke-width 250ms ease'
+                            }}
+                            strokeDasharray={hasMotivations ? undefined : '5 5'}
+                        />
+
+                        {/* links with NO motivations keep the simple arc / line only */}
+                        {(!hasMotivations) && (
+                            // nothing more to draw
+                            null
+                        )}
+
+                        {/* exploded motivation arcs */}
+                        {hasMotivations && motivationLinks.map((link, li) => {
+                            const motivation = getAt<Motivation>(link.motivationPath!, edition)
+
+                            // onion: radii symmetrically around baseDr
+                            const offsetIndex = li - (total - 1) / 2        // e.g. -1, 0, 1 for 3 arcs
+                            const dr = baseDr + offsetIndex * spacing
+
+                            return (
+                                <MotivationArc
+                                    key={`motivation_${gi}_${li}`}
+                                    source={{ x: source.x!, y: source.y! }}
+                                    target={{ x: target.x!, y: target.y! }}
+                                    radius={dr}
+                                    motivationPath={link.motivationPath!}
+                                    visible={isExpanded}
+                                    svgProps={{
+                                        onClick: () =>
+                                            motivation && onHoverMotivation(motivation),
+                                        onMouseLeave: () =>
+                                            onHoverMotivation(null),
+                                    }}
+                                />
+                            )
+                        })}
+                    </g>
+                )
+            })}
+        </>
+    )
 }
 
 type Point = { x: number, y: number }
+
+const makeArcPath = (source: Point, target: Point, radius: number) =>
+    `M ${source.x},${source.y}
+   A ${radius},${radius} 0 0 0 ${target.x},${target.y}`;
+
 
 type TPt = { x: number; y: number; angle: number };
 
@@ -453,14 +510,21 @@ interface ArcProps {
     target: Point
     motivationPath: Path
     svgProps?: SVGProps<SVGTextElement>
+    visible?: boolean
 }
 
-export const MotivationArc = ({ source, radius, target, motivationPath, svgProps }: ArcProps) => {
+export const MotivationArc = ({
+    source,
+    radius,
+    target,
+    motivationPath,
+    svgProps,
+    visible = false
+}: ArcProps) => {
     const [editMotivation, setEditMotivation] = useState(false)
 
     const { apply } = useContext(EditionContext)
     const { assumption: motivation } = useAssumption(motivationPath) as { assumption?: Motivation }
-    console.log('motivation in arc', motivation)
 
     const elRef = useRef<SVGPathElement>(null)
     const textPathRef = useRef<SVGTextPathElement | null>(null);
@@ -478,9 +542,7 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
         compute();
     }, [motivation, source, target, radius]);
 
-    const d = 'M' + target.x + ',' + target.y +
-        'A' + radius + ',' + radius + ' 0 0 0,' + source.x + ',' + source.y +
-        'A' + radius + ',' + radius + ' 0 0 1,' + target.x + ',' + target.y;
+    const d = makeArcPath(source, target, radius);
 
     if (!motivation) return null
 
@@ -497,13 +559,16 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
         <g>
             <path
                 id={id}
-                style={{ pointerEvents: 'auto' }}
+                style={{
+                    pointerEvents: visible ? 'auto' : 'none',
+                    transition: 'stroke-opacity 250ms ease, stroke-width 250ms ease'
+                }}
                 ref={elRef}
                 d={d}
                 fill="none"
                 stroke="black"
-                strokeWidth={editCount ? editCount * 2 : 15}
-                strokeOpacity={0.33}
+                strokeWidth={visible ? (editCount ? editCount * 2 : 15) : 0}
+                strokeOpacity={visible ? 0.33 : 0}
             />
 
             <Portal>
@@ -512,45 +577,52 @@ export const MotivationArc = ({ source, radius, target, motivationPath, svgProps
                     value={motivation.note}
                     onClose={() => setEditMotivation(false)}
                     onDone={(str) => {
-                        apply(
-                            draft => {
-                                const motivation = getAt<Motivation>(motivationPath, draft)
-                                if (!motivation) return
-
-                                motivation.note = str
-                            }
-                        )
+                        apply(draft => {
+                            const motivation = getAt<Motivation>(motivationPath, draft)
+                            if (!motivation) return
+                            motivation.note = str
+                        })
                         setEditMotivation(false)
                     }}
                 />
             </Portal>
 
-            <Arguable
-                path={motivationPath}
-                asSVG={{
-                    buttonPlacement: endPt || { x: 0, y: 0, angle: 0 }
-                }}
-            >
-                <text
-                    style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-                    {...svgProps}
-                    onClick={(e) => {
-                        setEditMotivation(true)
-                        svgProps?.onClick?.(e)
+            {visible && (
+                <Arguable
+                    path={motivationPath}
+                    asSVG={{
+                        buttonPlacement: endPt || { x: 0, y: 0, angle: 0 }
                     }}
-
                 >
-                    <textPath
-                        href={`#${id}`}
-                        style={{ pointerEvents: 'auto' }}
-                        fontSize={8}
-                        startOffset={'10%'}
-                        ref={textPathRef}
+                    <text
+                        style={{
+                            cursor: 'pointer',
+                            pointerEvents: visible ? 'auto' : 'none',
+                            transition: 'opacity 200ms ease'
+                        }}
+                        opacity={visible ? 1 : 0}
+                        {...svgProps}
+                        onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey) {
+                                setEditMotivation(true)
+                            }
+                            else {
+                                svgProps?.onClick?.(e)
+                            }
+                        }}
                     >
-                        {motivation.note}
-                    </textPath>
-                </text>
-            </Arguable>
+                        <textPath
+                            href={`#${id}`}
+                            style={{ pointerEvents: 'auto' }}
+                            fontSize={7}
+                            startOffset={'15%'}
+                            ref={textPathRef}
+                        >
+                            {motivation.note}
+                        </textPath>
+                    </text>
+                </Arguable>
+            )}
         </g>
     )
 }
