@@ -129,9 +129,8 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                                             if (!target) {
                                                                 return <span>{subject}</span>
                                                             }
-
                                                             if (isEdit(target)) {
-                                                                return <span key={key}>{target.motivation ? target.motivation : `+${target.insert?.length || 0} -${target.delete?.length}`} | </span>
+                                                                return <span key={key}>{target.editType ? target.editType : `+${target.insert?.length || 0} -${target.delete?.length || 0}`} | </span>
                                                             }
                                                             else if (isSymbol(target)) {
                                                                 return <span key={key}>{'text' in target ? target.text : target.type}</span>

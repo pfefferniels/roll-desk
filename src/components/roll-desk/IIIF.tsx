@@ -96,8 +96,6 @@ export async function tilesAsSVGImage(
                         y={regionY * zoom}
                         width={outputW}
                         height={outputH}
-                    // Optionally, if you want to also apply a client-side rotation:
-                    // transform={`rotate(${rotation}, ${regionX * zoom + outputW/2}, ${regionY * zoom + outputH/2})`}
                     />
                 );
                 tileCache.set(tileUrl, imageElement);

@@ -163,6 +163,20 @@ export const CopyFacsimile = ({
         <>
             <g className="roll-copy" ref={svgRef}>
                 <defs>
+                    <filter id="contrast-brightness">
+                        <feComponentTransfer>
+                            <feFuncR type="linear" slope="1.5" intercept="0.1" />
+                            <feFuncG type="linear" slope="1.5" intercept="0.1" />
+                            <feFuncB type="linear" slope="1.5" intercept="0.1" />
+                        </feComponentTransfer>
+                    </filter>
+                    <filter id="contrast">
+                        <feComponentTransfer>
+                            <feFuncR type="linear" slope="1.5" intercept="-0.25" />
+                            <feFuncG type="linear" slope="1.5" intercept="-0.25" />
+                            <feFuncB type="linear" slope="1.5" intercept="-0.25" />
+                        </feComponentTransfer>
+                    </filter>
                     <filter id="invertFilter">
                         <feComponentTransfer>
                             <feFuncR type="table" tableValues="1 0" />
@@ -271,17 +285,17 @@ const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: Feat
                     x={x}
                     y={y}
                     width={width}
-                    filter="url(#invertFilter)"
                     data-id={feature.id}
                     id={feature.id}
                     onClick={onClick}
+                    filter="url(#contrast-brightness)"
                 />
             )}
 
             <rect
                 ref={ref}
                 fill={color}
-                fillOpacity={0.3}
+                fillOpacity={0.5}
                 strokeWidth={0}
                 x={x}
                 y={y}

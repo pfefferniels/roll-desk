@@ -1,8 +1,8 @@
 'use client'
 
-import { AppBar, Box, Button, IconButton, Paper, Slider, Tab, Tabs, Toolbar } from "@mui/material"
+import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
-import { Emulation, HorizontalSpan, Motivation, PlaceTimeConversion, VerticalSpan, Edition } from 'linked-rolls'
+import { Emulation, HorizontalSpan, PlaceTimeConversion, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -79,7 +79,7 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
-    const [stretch, setStretch] = useState(2)
+    const [stretch, setStretch] = useState(viewOnly ? 0.2 : 1)
 
     const [layerInfos, setLayerInfos] = useState<LayerInfo[]>([])
 
@@ -94,11 +94,10 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
-    const [currentMotivation, setCurrentMotivation] = useState<Motivation>()
 
     const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
 
-    const [currentTab, setCurrentTab] = useState(2)
+    const [currentTab, setCurrentTab] = useState(0)
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
 
@@ -197,7 +196,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                 return {
                     color: distinctColors[i % distinctColors.length],
                     copyId: copy.id,
-                    symbolOpacity: 1,
+                    symbolOpacity: viewOnly ? 0 : 1,
                     facsimileOpacity: 0,
                     facsimile: false
                 }
@@ -211,7 +210,7 @@ export const Desk = ({ versionId }: DeskProps) => {
         if (currentCopyId && !edition.copies.find(c => c.id === currentCopyId)) {
             setCurrentCopyId(undefined)
         }
-    }, [edition?.copies])
+    }, [edition?.copies, viewOnly])
 
     if (!edition) {
         return (
@@ -219,79 +218,113 @@ export const Desk = ({ versionId }: DeskProps) => {
         )
     }
 
-    return (
-        <SelectionContext.Provider value={{ selection, setSelection, range, setRange }}>
-            <AppBar
-                position={viewOnly ? 'absolute' : 'static'}
-                sx={{
-                    bgcolor: "white",
-                    color: 'black',
-                    width: viewOnly ? 'fit-content' : '100%',
-                    left: viewOnly ? '3rem' : 'inherit'
-                }}
-                elevation={1}
-            >
-                <Toolbar>
-                    <RibbonGroup>
-                        <Ribbon title='File' visible={!viewOnly}>
-                            <ImportButton />
-                            <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
-                                <Save />
-                            </IconButton>
-                        </Ribbon>
-                        <RibbonGroup>
-                            <Ribbon title='History' visible={!viewOnly}>
-                                <IconButton
-                                    onClick={() => undo()}
-                                    disabled={!canUndo}
-                                >
-                                    <Undo />
-                                </IconButton>
-                                <IconButton
-                                    onClick={() => redo()}
-                                    disabled={!canRedo}
-                                >
-                                    <Redo />
-                                </IconButton>
-                            </Ribbon>
-                        </RibbonGroup>
-                        {(!viewOnly && !currentVersion && currentCopyId) && (
-                            <CopyFacsimileMenu copyId={currentCopyId} />
-                        )}
-                        {(!viewOnly && currentVersionId) && (
-                            <VersionMenu versionId={currentVersionId} />
-                        )}
+    const viewControl = (
+        <Paper sx={{
+            position: 'absolute',
+            margin: 1,
+            left: 1,
+            backdropFilter: 'blur(17px)',
+            background: 'rgba(255, 255, 255, 0.8)',
+            padding: 1
+        }}>
+            <Stack direction='row' spacing={1}>
+                <IconButton
+                    size='small'
+                    onClick={() => setEmulationSettingsDialogOpen(true)}
+                >
+                    <Settings />
+                </IconButton>
+                <IconButton
+                    size='small'
+                    onClick={downloadMIDI}
+                >
+                    <Download />
+                </IconButton>
+                <IconButton
+                    disabled={!currentVersion}
+                    onClick={playVersion}>
+                    {isPlaying ? <Pause /> : <PlayArrow />}
+                </IconButton>
+            </Stack>
+        </Paper>
+    )
 
-                        <Ribbon title='Emulation'>
+    const toolbar = (
+        <AppBar
+            position={viewOnly ? 'absolute' : 'static'}
+            sx={{
+                bgcolor: "white",
+                color: 'black',
+                width: viewOnly ? 'fit-content' : '100%',
+                left: viewOnly ? '3rem' : 'inherit'
+            }}
+            elevation={1}
+        >
+            <Toolbar>
+                <RibbonGroup>
+                    <Ribbon title='File' visible={!viewOnly}>
+                        <ImportButton />
+                        <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
+                            <Save />
+                        </IconButton>
+                    </Ribbon>
+                    <RibbonGroup>
+                        <Ribbon title='History' visible={!viewOnly}>
                             <IconButton
-                                size='small'
-                                onClick={() => setEmulationSettingsDialogOpen(true)}
+                                onClick={() => undo()}
+                                disabled={!canUndo}
                             >
-                                <Settings />
+                                <Undo />
                             </IconButton>
                             <IconButton
-                                size='small'
-                                onClick={downloadMIDI}
+                                onClick={() => redo()}
+                                disabled={!canRedo}
                             >
-                                <Download />
-                            </IconButton>
-                            <IconButton
-                                disabled={!currentVersion}
-                                onClick={playVersion}>
-                                {isPlaying ? <Pause /> : <PlayArrow />}
+                                <Redo />
                             </IconButton>
                         </Ribbon>
                     </RibbonGroup>
-                </Toolbar>
-            </AppBar>
+                    {(!viewOnly && !currentVersion && currentCopyId) && (
+                        <CopyFacsimileMenu copyId={currentCopyId} />
+                    )}
+                    {(!viewOnly && currentVersionId) && (
+                        <VersionMenu versionId={currentVersionId} />
+                    )}
+
+                    <Ribbon title='Emulation'>
+                        <IconButton
+                            size='small'
+                            onClick={() => setEmulationSettingsDialogOpen(true)}
+                        >
+                            <Settings />
+                        </IconButton>
+                        <IconButton
+                            size='small'
+                            onClick={downloadMIDI}
+                        >
+                            <Download />
+                        </IconButton>
+                        <IconButton
+                            disabled={!currentVersion}
+                            onClick={playVersion}>
+                            {isPlaying ? <Pause /> : <PlayArrow />}
+                        </IconButton>
+                    </Ribbon>
+                </RibbonGroup>
+            </Toolbar>
+        </AppBar>)
+
+    return (
+        <SelectionContext.Provider value={{ selection, setSelection, range, setRange }}>
+            {viewOnly ? viewControl : toolbar}
 
             <Paper
                 sx={{
                     position: 'absolute',
                     margin: 1,
                     right: 1,
-                    backdropFilter: 'blur(17px)',
-                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(10px)',
+                    background: 'rgba(255, 255, 255, 0.6)',
                     padding: 2
                 }}
             >
@@ -330,14 +363,6 @@ export const Desk = ({ versionId }: DeskProps) => {
                             setCurrentCopyId(undefined)
                             setSelection([])
                         }}
-                        onHoverMotivation={(motivation) => {
-                            if (motivation === null) {
-                                setCurrentMotivation(undefined)
-                            }
-                            else {
-                                setCurrentMotivation(motivation)
-                            }
-                        }}
                     />
                 </TabPanel>
 
@@ -363,46 +388,49 @@ export const Desk = ({ versionId }: DeskProps) => {
                 </TabPanel>
             </Paper>
 
-            <Paper
-                sx={{
-                    position: 'absolute',
-                    margin: 1,
-                    backdropFilter: 'blur(17px)',
-                    background: 'rgba(255, 255, 255, 0.8)',
-                    padding: 2,
-                    bottom: 1,
-                    maxWidth: '10rem'
-                }}
-            >
-                {selection.length > 0 && (
-                    <Box>
-                        <div style={{ float: 'left', padding: 8 }}>
-                            <b>{selection.length}</b> item(s) selected
-                            {selection.length < 10 && (
-                                <>
-                                    <br />
-                                    <span style={{ color: 'gray', fontSize: '8pt' }}>
-                                        {selection.map(e => {
-                                            if ('id' in e) {
-                                                return (e.id as any).slice(0, 15)
-                                            }
-                                            else {
-                                                return '[unnamed]'
-                                            }
-                                        }).join(', ')}
-                                    </span>
+            {!viewOnly && (
+                <Paper
+                    sx={{
+                        position: 'absolute',
+                        margin: 1,
+                        backdropFilter: 'blur(17px)',
+                        background: 'rgba(255, 255, 255, 0.8)',
+                        padding: 2,
+                        bottom: 1,
+                        maxWidth: '10rem'
+                    }}
+                >
+                    {selection.length > 0 && (
+                        <Box>
+                            <div style={{ float: 'left', padding: 8 }}>
+                                <b>{selection.length}</b> item(s) selected
+                                {selection.length < 10 && (
+                                    <>
+                                        <br />
+                                        <span style={{ color: 'gray', fontSize: '8pt' }}>
+                                            {selection.map(e => {
+                                                if ('id' in e) {
+                                                    return (e.id as any).slice(0, 15)
+                                                }
+                                                else {
+                                                    return '[unnamed]'
+                                                }
+                                            }).join(', ')}
+                                        </span>
 
-                                </>
-                            )}
-                        </div>
-                        <div style={{ float: 'right' }}>
-                            <IconButton onClick={() => setSelection([])}>
-                                <Clear />
-                            </IconButton>
-                        </div>
-                    </Box>
-                )}
-            </Paper>
+                                    </>
+                                )}
+                            </div>
+                            <div style={{ float: 'right' }}>
+                                <IconButton onClick={() => setSelection([])}>
+                                    <Clear />
+                                </IconButton>
+                            </div>
+                        </Box>
+                    )}
+                </Paper>
+            )}
+
             <Box overflow='scroll'>
                 <PinchZoomProvider
                     zoom={stretch}
@@ -417,8 +445,6 @@ export const Desk = ({ versionId }: DeskProps) => {
                         selection={selection}
                         onChangeSelection={setSelection}
                         currentVersion={currentVersion}
-                        currentMotivation={currentMotivation}
-
                     />
                 </PinchZoomProvider>
             </Box>

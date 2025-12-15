@@ -1,7 +1,7 @@
 import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
-import { MouseEventHandler, useContext } from "react";
+import { MouseEventHandler, useContext, useMemo, useState } from "react";
 import { AnySymbol } from "linked-rolls/lib/Symbol";
 import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
@@ -54,8 +54,6 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     if (!view) return null
 
     const hulls = []
-
-    // console.time('edit view')
 
     const insertionBBoxes = (edit.insert ?? [])
         .map(s => getSymbolBBox(s, view, translation))
@@ -115,16 +113,16 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         const id = edit.delete?.length
             ? `${edit.id}-insert` :
             edit.id
-        let motivationStr: string | undefined = undefined
-        if (edit.motivation) {
-            if (edit.motivation === 'additional-accent') {
-                motivationStr = '>'
+        let typeStr: string | undefined = undefined
+        if (edit.editType) {
+            if (edit.editType === 'additional-accent') {
+                typeStr = '>'
             }
-            else if (edit.motivation === 'correct-error') {
-                motivationStr = `fix`
+            else if (edit.editType === 'correct-error') {
+                typeStr = `fix`
             }
             else {
-                motivationStr = `${edit.motivation.replaceAll('-', ' ')}`
+                typeStr = `${edit.editType.replaceAll('-', ' ')}`
             }
         }
 
@@ -133,7 +131,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 key={`${edit.id}-insert`}
                 id={id}
                 hull={hull}
-                fillOpacity={0.5}
+                fillOpacity={0.8}
                 fill='#aceebb'
                 onClick={(e) => {
                     onClick && onClick(e)
@@ -147,7 +145,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                         style={{ pointerEvents: 'none' }}
                         fontWeight='bold'
                     >
-                        {motivationStr}
+                        {typeStr}
                     </text>
                 }
             />
@@ -168,7 +166,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
                 key={`${edit.id}-delete`}
                 id={id}
                 hull={hull}
-                fillOpacity={0.5}
+                fillOpacity={0.8}
                 fill='#fb7f78ff'
                 onClick={(e) => onClick && onClick(e)}
             />
@@ -181,4 +179,3 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         </g>
     );
 }
-

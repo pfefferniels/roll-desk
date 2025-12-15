@@ -1,20 +1,18 @@
 import { useContext, useRef } from "react"
 import { Glow } from "./Glow"
 import { VersionView } from "./VersionView"
-import { Motivation, Version } from "linked-rolls"
+import { Version } from "linked-rolls"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
 import { LayerInfo } from "./StackList"
 import { UserSelection } from "./RollDesk"
 import { SelectionFilter } from "./Selection"
-import { MotivationView } from "./MotivationView"
 import { EditionContext } from "../../providers/EditionContext"
 
 interface LayeredRollsProps {
     layerInfos: LayerInfo[]
     activeId?: string
     currentVersion?: Version
-    currentMotivation?: Motivation
     selection: UserSelection[]
     onChangeSelection: (userSelection: UserSelection[]) => void
 }
@@ -23,7 +21,6 @@ export const LayeredRolls = ({
     layerInfos,
     activeId,
     currentVersion,
-    currentMotivation,
     selection,
     onChangeSelection
 }: LayeredRollsProps
@@ -84,13 +81,6 @@ export const LayeredRolls = ({
                         <VersionView
                             onClick={onAddToSelection}
                             version={currentVersion}
-                        />
-                    )}
-
-                    {currentMotivation && (
-                        <MotivationView
-                            motivation={currentMotivation}
-                            onClick={onAddToSelection}
                         />
                     )}
 

@@ -1,6 +1,6 @@
 import { getAt, idOf, Motivation, Path, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
-import { useContext, useLayoutEffect, useRef, useState } from "react"
+import { useContext, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
 import { Arguable } from './Arguable';
@@ -8,22 +8,22 @@ import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { useAssumption } from '../../hooks/useAssumption';
 import { Legend } from './Legend';
+import { useSelection } from '../../providers/SelectionContext';
 
 interface Stemma {
     currentVersionId: string | undefined
     onClick: (versionId: string) => void
-    onHoverMotivation: (motivation: Motivation | null) => void
 }
 
-export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma) => {
+export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
     const { edition, view } = useContext(EditionContext)
     const [nodes, setNodes] = useState<Node[]>([])
     const [links, setLinks] = useState<Link[]>([])
 
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
-    const svgWidth = 400
-    const svgHeight = 500
+    const svgWidth = 300
+    const svgHeight = 550
 
     useEffect(() => {
         if (!edition || !view) return
@@ -87,12 +87,11 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
         }
 
         const zoom = d3.zoom<SVGSVGElement, unknown>()
-            .scaleExtent([0.2, 5])        // min / max zoom
+            .scaleExtent([0.2, 5])
             .on("zoom", zoomed)
 
         svg.call(zoom)
 
-        // ---- compute bounding box of all nodes ----
         const xs = nodes.map(n => n.x ?? 0)
         const ys = nodes.map(n => n.y ?? 0)
         const minX = Math.min(...xs)
@@ -127,7 +126,9 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
 
     return (
         <>
-            <Legend />
+            <div style={{ position: 'absolute', bottom: 0, right: 0, padding: '0.5rem', zIndex: 10 }}>
+                <Legend />
+            </div>
             <svg
                 width={svgWidth}
                 height={svgHeight}
@@ -150,7 +151,6 @@ export const Stemma = ({ onClick, onHoverMotivation, currentVersionId }: Stemma)
                     <LinkContainer
                         links={links}
                         positionedNodes={nodes}
-                        onHoverMotivation={onHoverMotivation}
                         onChange={() => {
                             setLinks([...links])
                         }}
@@ -334,7 +334,6 @@ interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
     separationFactor?: number;
-    onHoverMotivation: (motivation: Motivation | null) => void
     onChange: () => void
 }
 
@@ -342,8 +341,8 @@ export const LinkContainer = ({
     positionedNodes,
     links,
     separationFactor,
-    onHoverMotivation,
 }: LinkContainerProps) => {
+    const { selection, setSelection } = useSelection()
     const { edition } = useContext(EditionContext)
 
     // which source→target pair is currently exploded?
@@ -387,14 +386,18 @@ export const LinkContainer = ({
 
                 const motivationLinks = gLinks.filter(l => l.motivationPath)
                 const hasMotivations = motivationLinks.length > 0
-                const isExpanded = expandedKey === key
+                const isExpanded = expandedKey === key || selection.some(s =>
+                    motivationLinks.some(ml => {
+                        const m = getAt<Motivation>(ml.motivationPath!, edition)
+                        return m === s
+                    })
+                )
                 const total = motivationLinks.length
-                const spacing = 100   // px distance between onion layers
+                const spacing = 150   // px distance between onion layers
 
-                // when exploded, each motivation gets its own radius
-                const k = separationFactor || 2.5
+                console.log('basedr', baseDr, 'for', key)
 
-                const basePath = makeArcPath(source as Point, target as Point, baseDr)
+                const basePath = makeArcPath(source as Point, target as Point, baseDr, isExpanded ? 50 : 8)
 
                 return (
                     <g
@@ -405,12 +408,11 @@ export const LinkContainer = ({
                         {/* base arc: always there, but fades when exploded */}
                         <path
                             d={basePath}
-                            fill="none"
-                            stroke="lightgray"
-                            strokeWidth={hasMotivations ? 8 : 4}
+                            fill="lightgray"
+                            stroke="none"
                             style={{
                                 pointerEvents: 'auto',
-                                opacity: isExpanded ? 0.1 : 0.8,
+                                opacity: isExpanded ? 0.01 : 0.8,
                                 transition: 'opacity 250ms ease, stroke-width 250ms ease'
                             }}
                             strokeDasharray={hasMotivations ? undefined : '5 5'}
@@ -425,6 +427,9 @@ export const LinkContainer = ({
                         {/* exploded motivation arcs */}
                         {hasMotivations && motivationLinks.map((link, li) => {
                             const motivation = getAt<Motivation>(link.motivationPath!, edition)
+                            if (!motivation) return null
+
+                            const selected = selection.indexOf(motivation) >= 0
 
                             // onion: radii symmetrically around baseDr
                             const offsetIndex = li - (total - 1) / 2        // e.g. -1, 0, 1 for 3 arcs
@@ -438,11 +443,15 @@ export const LinkContainer = ({
                                     radius={dr}
                                     motivationPath={link.motivationPath!}
                                     visible={isExpanded}
+                                    selected={selected}
                                     svgProps={{
-                                        onClick: () =>
-                                            motivation && onHoverMotivation(motivation),
-                                        onMouseLeave: () =>
-                                            onHoverMotivation(null),
+                                        onMouseOver: () => {
+                                            if (!motivation) return
+                                            setSelection([motivation])
+                                        },
+                                        onMouseOut: () => {
+                                            setSelection([])
+                                        }
                                     }}
                                 />
                             )
@@ -456,61 +465,55 @@ export const LinkContainer = ({
 
 type Point = { x: number, y: number }
 
-const makeArcPath = (source: Point, target: Point, radius: number) =>
-    `M ${source.x},${source.y}
-   A ${radius},${radius} 0 0 0 ${target.x},${target.y}`;
+const makeArcPath = (
+    source: Point,
+    target: Point,
+    radius: number,
+    thickness: number
+) => {
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+    const chord = Math.hypot(dx, dy);
+    if (chord === 0) return "";
 
+    const halfChord = chord / 2;
 
-type TPt = { x: number; y: number; angle: number };
+    // Ensure radius is valid for these endpoints (R >= L/2)
+    const minR = halfChord + 1e-6;
+    const Rmid = Math.max(radius, minR);
 
-function computeTextEndOnPath(
-    tp: SVGTextPathElement,
-    path: SVGPathElement
-): TPt {
-    const total = path.getTotalLength();
+    // sagitta of the original (middle) arc
+    // s = R - sqrt(R^2 - (L/2)^2)
+    const sMid = Rmid - Math.sqrt(Rmid * Rmid - halfChord * halfChord);
 
-    const so = tp.startOffset?.baseVal;
-    let start = 0;
-    if (so) {
-        console.log('so', so)
-        if (so.unitType === SVGLength.SVG_LENGTHTYPE_PERCENTAGE) {
-            start = (so.valueInSpecifiedUnits / 100) * total;
-        } else {
-            // already in user units (px)
-            start = so.value;
-        }
-    }
+    // We want the vertical distance between arc midpoints to be `thickness`
+    const sOuter = sMid + thickness / 2;       // further from the chord
+    const sInner = Math.max(1e-6, sMid - thickness / 2); // closer to the chord
 
-    // --- rendered text length (kerning etc.) ---
-    const textLen = (tp as unknown as SVGTextContentElement).getComputedTextLength();
+    // Given chord length L and sagitta s, circle radius is:
+    // R = L^2 / (8s) + s / 2
+    const sqChord = chord * chord;
+    const ROuter = sqChord / (8 * sOuter) + sOuter / 2;
+    const RInner = sqChord / (8 * sInner) + sInner / 2;
 
-    // --- account for text-anchor and direction (RTL/LTR) ---
-    const parent = tp.parentElement;
-    const anchor =
-        tp.getAttribute("text-anchor") ||
-        parent?.getAttribute("text-anchor") ||
-        "start";
+    // Outer arc (minor, sweep 0), then inner arc back (minor, opposite sweep)
+    return [
+        `M ${source.x},${source.y}`,
+        `A ${ROuter},${ROuter} 0 0 0 ${target.x},${target.y}`,
+        `A ${RInner},${RInner} 0 0 1 ${source.x},${source.y}`,
+        `Z`,
+    ].join(" ");
+};
 
-    let s = start;
-    if (anchor === "start") s += textLen;
-    else if (anchor === "middle") s += textLen / 2;
-
-    // clamp to path and compute tangent angle
-    s = Math.max(0, Math.min(total, s));
-    const p1 = path.getPointAtLength(s);
-    const p0 = path.getPointAtLength(Math.max(0, s - 1));
-    const angle = (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180) / Math.PI;
-
-    return { x: p1.x, y: p1.y, angle };
-}
 
 interface ArcProps {
     source: Point
     radius: number
     target: Point
     motivationPath: Path
-    svgProps?: SVGProps<SVGTextElement>
+    svgProps?: SVGProps<SVGPathElement>
     visible?: boolean
+    selected?: boolean
 }
 
 export const MotivationArc = ({
@@ -519,41 +522,24 @@ export const MotivationArc = ({
     target,
     motivationPath,
     svgProps,
-    visible = false
+    visible = false,
+    selected = false
 }: ArcProps) => {
+    const [hovered, setHovered] = useState(false)
     const [editMotivation, setEditMotivation] = useState(false)
 
-    const { apply } = useContext(EditionContext)
+    const { apply, view } = useContext(EditionContext)
     const { assumption: motivation } = useAssumption(motivationPath) as { assumption?: Motivation }
 
     const elRef = useRef<SVGPathElement>(null)
-    const textPathRef = useRef<SVGTextPathElement | null>(null);
 
-    const [endPt, setEndPt] = useState<TPt | null>(null);
+    if (!motivation || !view) return null
 
-    // recompute whenever layout/font/path/text might change
-    useLayoutEffect(() => {
-        const path = elRef.current;
-        const tp = textPathRef.current;
-        console.log(path, tp)
-        if (!path || !tp) return;
+    const editCount = view.linksTo(motivation.id).length
 
-        const compute = () => setEndPt(computeTextEndOnPath(tp, path));
-        compute();
-    }, [motivation, source, target, radius]);
-
-    const d = makeArcPath(source, target, radius);
-
-    if (!motivation) return null
-
-    const editCount =
-        motivation['@annotation']?.belief.reasons
-            .filter(r => r.type === 'meaningComprehension')
-            .map(comprehensions => comprehensions.comprehends)
-            .flat()
-            .length
-
-    const id = `arc_${motivation['@annotation']?.id || `${source.x}-${source.y}-${target.x}-${target.y}`}`
+    const thickness = visible ? (editCount || 10) * 1.1 : 0
+    const d = makeArcPath(source, target, radius, thickness);
+    const id = `arc_${motivation?.id || `${source.x}-${source.y}-${target.x}-${target.y}`}`
 
     return (
         <g>
@@ -565,16 +551,50 @@ export const MotivationArc = ({
                 }}
                 ref={elRef}
                 d={d}
-                fill="none"
-                stroke="black"
-                strokeWidth={visible ? (editCount ? editCount * 2 : 15) : 0}
-                strokeOpacity={visible ? 0.33 : 0}
+                fill="black"
+                stroke="none"
+                fillOpacity={visible ? (selected || hovered) ? 0.7 : 0.2 : 0}
+                {...svgProps}
+                onMouseOver={(e) => {
+                    setHovered(true)
+                    svgProps?.onMouseOver?.(e)
+                }}
+                onMouseOut={(e) => {
+                    setHovered(false)
+                    svgProps?.onMouseOut?.(e)
+                }}
             />
+
+            {(visible && (hovered || selected)) && (
+                <text>
+                    <textPath
+                        href={`#${id}`}
+                        side="left"
+                        startOffset="25%"
+                        textAnchor="middle"
+                        dominantBaseline="hanging"
+                        fontSize={12}
+                        fill="black"
+                        pointerEvents="none"
+                        lengthAdjust="spacing"
+                    >
+                        {motivation.note && motivation.note.length > 26
+                            ? motivation.note.match(/.{1,26}(\s|$)/g)?.map((chunk, i) => (
+                                <tspan key={i} x="0" dy={i === 0 ? "0.2em" : "1em"}>
+                                    {chunk.trim()}
+                                </tspan>
+                            ))
+                            : motivation.note
+                        }
+                    </textPath>
+                </text>
+            )}
+
 
             <Portal>
                 <EditString
                     open={editMotivation}
-                    value={motivation.note}
+                    value={motivation.note || ''}
                     onClose={() => setEditMotivation(false)}
                     onDone={(str) => {
                         apply(draft => {
@@ -586,43 +606,6 @@ export const MotivationArc = ({
                     }}
                 />
             </Portal>
-
-            {visible && (
-                <Arguable
-                    path={motivationPath}
-                    asSVG={{
-                        buttonPlacement: endPt || { x: 0, y: 0, angle: 0 }
-                    }}
-                >
-                    <text
-                        style={{
-                            cursor: 'pointer',
-                            pointerEvents: visible ? 'auto' : 'none',
-                            transition: 'opacity 200ms ease'
-                        }}
-                        opacity={visible ? 1 : 0}
-                        {...svgProps}
-                        onClick={(e) => {
-                            if (e.metaKey || e.ctrlKey) {
-                                setEditMotivation(true)
-                            }
-                            else {
-                                svgProps?.onClick?.(e)
-                            }
-                        }}
-                    >
-                        <textPath
-                            href={`#${id}`}
-                            style={{ pointerEvents: 'auto' }}
-                            fontSize={7}
-                            startOffset={'15%'}
-                            ref={textPathRef}
-                        >
-                            {motivation.note}
-                        </textPath>
-                    </text>
-                </Arguable>
-            )}
         </g>
     )
 }

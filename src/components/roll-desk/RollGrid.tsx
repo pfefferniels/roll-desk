@@ -105,8 +105,8 @@ export const RollGrid = ({
     return (
         <g id="rollGrid">
             <rect
-                fill="white"
-                fillOpacity={0}
+                fill="gray"
+                fillOpacity={0.7}
                 x={0}
                 y={0}
                 height={height}

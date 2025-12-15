@@ -11,7 +11,7 @@ import { EditType } from "./EditVersionType"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 
-const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
+export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
 
 /*
 const mergeEdits = (versionId: string, edits: Edit[], editionView: EditionView): EditionOp => {
@@ -378,29 +378,22 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 onDone={(motivationDescription) => {
                     if (!editsToMotivate) return
 
-                    const comprehension: MeaningComprehension = {
-                        type: 'meaningComprehension',
-                        comprehends: editsToMotivate
-                    }
-
                     const motivation: Motivation = {
                         type: 'motivation',
+                        id: v4(),
                         note: motivationDescription,
-                        '@annotation': {
-                            id: v4(),
-                            belief: {
-                                type: 'belief',
-                                certainty: 'true',
-                                id: v4(),
-                                reasons: [comprehension]
-                            }
-                        }
                     }
 
                     apply((d) => {
                         const version = d.versions.find(v => v.id === versionId)
                         if (!version) return
                         version.motivations.push(motivation)
+
+                        version.edits
+                            .filter(edit => editsToMotivate.includes(edit.id))
+                            .forEach(edit => {
+                                edit.motivation = motivation.id
+                            })
                     })
                     setEditsToMotivate(undefined)
                 }}

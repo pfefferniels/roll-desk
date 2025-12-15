@@ -59,7 +59,10 @@ export const Hull = ({ ref, id, hull, onClick, label, soft, fill, fillOpacity }:
                 fillOpacity={(fillOpacity || (soft ? 0.2 : 0.8)) + (hovered ? 0.1 : 0)}
                 strokeWidth={1}
                 d={hull}
-                onMouseEnter={() => setHovered(true)}
+                onMouseEnter={() => {
+                    console.log('entered', id)
+                    setHovered(true)
+                }}
                 onMouseLeave={() => setHovered(false)}
             />
             <g style={{

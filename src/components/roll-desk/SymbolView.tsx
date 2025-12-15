@@ -11,7 +11,7 @@ interface PerforationProps {
 }
 
 export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProps) => {
-    const { view } = useContext(EditionContext)
+    const { view, viewOnly } = useContext(EditionContext)
     const [displayDetails, setDisplayDetails] = useState(false);
     const { translateX, trackToY, trackHeight, zoom } = usePinchZoom();
 
@@ -49,6 +49,9 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
                 data-id={symbol.id}
                 id={symbol.id}
                 className='collated-event'
+                style={{
+                    pointerEvents: viewOnly ? 'none' : 'auto'
+                }}
                 onMouseEnter={() => setDisplayDetails(true)}
                 onMouseLeave={() => setDisplayDetails(false)}
             >
@@ -60,22 +63,26 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
                     fill={highlight ? 'red' : color}
                     fillOpacity={opacity}
                     onClick={onClick} />
-                <line
-                    x1={translateX(meanOnset)}
-                    x2={translateX(meanOnset)}
-                    y1={displayDetails ? trackToY(100) : y - 10}
-                    y2={displayDetails ? trackToY(0) : y + 20}
-                    stroke='black'
-                    strokeWidth={0.2}
-                    strokeOpacity={0.7} />
-                <line
-                    x1={translateX(meanOffset)}
-                    x2={translateX(meanOffset)}
-                    y1={displayDetails ? trackToY(100) : y - 10}
-                    y2={displayDetails ? trackToY(0) : y + 20}
-                    stroke='black'
-                    strokeWidth={0.2}
-                    strokeOpacity={0.7} />
+                {zoom >= 0.3 && (
+                    <>
+                        <line
+                            x1={translateX(meanOnset)}
+                            x2={translateX(meanOnset)}
+                            y1={displayDetails ? trackToY(100) : y - 10}
+                            y2={displayDetails ? trackToY(0) : y + 20}
+                            stroke='black'
+                            strokeWidth={0.2}
+                            strokeOpacity={0.7} />
+                        <line
+                            x1={translateX(meanOffset)}
+                            x2={translateX(meanOffset)}
+                            y1={displayDetails ? trackToY(100) : y - 10}
+                            y2={displayDetails ? trackToY(0) : y + 20}
+                            stroke='black'
+                            strokeWidth={0.2}
+                            strokeOpacity={0.7} />
+                    </>
+                )}
             </g>
 
         )

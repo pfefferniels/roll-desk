@@ -1,12 +1,15 @@
 import { useContext, useRef } from "react"
-// import { usePiano } from "react-pianosound"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
 import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"
-import { EditView } from "./EditView"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
+import { MotivationView } from "./MotivationView"
+import { EditView } from "./EditView"
+import { usePiano } from "react-pianosound"
+import { useSelection } from "../../providers/SelectionContext"
+import { isMotivation } from "./VersionMenu"
 
 interface VersionViewProps {
     version: Version
@@ -14,7 +17,8 @@ interface VersionViewProps {
 }
 
 export const VersionView = ({ version, onClick }: VersionViewProps) => {
-    // const { playSingleNote } = usePiano()
+    const { selection, setSelection } = useSelection(s => isMotivation(s))
+    const { playSingleNote } = usePiano()
     const { view, viewOnly } = useContext(EditionContext)
 
     const svgRef = useRef<SVGGElement>(null)
@@ -65,21 +69,23 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
             - (view.dimensionOf(b)?.horizontal.from || 0)
     })
 
+    const edits = version.edits
+        .map(e => <EditView
+            key={`editView_${e.id}`}
+            edit={e}
+            onClick={() => onClick(e)}
+        />)
+
     // draw edits of current version, but only 
     // if the version is based on a previous version
-    let edits = []
-    for (const edit of version.edits) {
-        edits.push(
-            <EditView
-                key={edit.id}
-                edit={edit}
-                onClick={() => onClick(edit)}
-            />
+    const motivations = version.motivations
+        .map(m => <MotivationView
+            key={m.id}
+            expanded={selection.includes(m)}
+            motivation={m}
+            onMouseOver={() => setSelection(prev => [...prev, m])}
+            onMouseLeave={() => setSelection([])} />
         )
-    }
-    if (!prevVersion && viewOnly) {
-        edits = []
-    }
 
     // draw dynamics of prev version and dynamics of current version (for comparison)
     const dynamics = (
@@ -114,41 +120,37 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
 
             <Ground x={0} y={-50} width={100000} height={200 + 50} />
 
-            {edits}
+            {!viewOnly && edits}
+            {motivations}
 
             {snapshot
-                // .filter(symbol => {
-                //     const found = version.edits.findIndex(edit => (
-                //         (edit.insert || []).includes(symbol) ||
-                //         (edit.delete || []).includes(symbol)
-                //     ))
-                //     return found === -1
-                // })
-                .map((symbol, i) => {
-                    if (symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn') {
-                        const partner = snapshot
-                            .sort((a, b) => {
-                                return (view.dimensionOf(a)?.horizontal.from || 0)
-                                    - (view.dimensionOf(b)?.horizontal.from || 0)
-                            })
-                            .find(candidate => {
-                                return (
-                                    candidate.type === 'expression'
-                                    && candidate.expressionType === 'SustainPedalOff'
-                                    && (view.dimensionOf(candidate)?.horizontal.from || 0) > (view.dimensionOf(symbol)?.horizontal.from || 0)
-                                )
-                            })
-                        if (!partner) return null
+                .filter(symbol => symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn')
+                .map(symbol => {
+                    const partner = snapshot
+                        .find(candidate => {
+                            return (
+                                candidate.type === 'expression'
+                                && candidate.expressionType === 'SustainPedalOff'
+                                && (view.dimensionOf(candidate)?.horizontal.from || 0) > (view.dimensionOf(symbol)?.horizontal.from || 0)
+                            )
+                        })
 
-                        return (
-                            <SustainPedal
-                                key={`sustain_${symbol.id || i}`}
-                                on={symbol}
-                                off={partner as Expression}
-                            />
-                        )
-                    }
-                    else if (symbol.type === 'expression' || symbol.type === 'note') {
+                    return { on: symbol, off: partner }
+                })
+                .filter(({ off }) => !!off)
+                .map(({ on: symbol, off: partner }, i) => {
+                    return (
+                        <SustainPedal
+                            key={`sustain_${symbol.id || i}`}
+                            on={symbol as Expression}
+                            off={partner as Expression}
+                        />
+                    )
+                })}
+
+            {snapshot
+                .map((symbol, i) => {
+                    if (symbol.type === 'expression' || symbol.type === 'note') {
                         return (
                             <Perforation
                                 key={`${symbol.id || i}`}
@@ -160,7 +162,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                                     const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
                                     const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
                                     if (noteOn && noteOff) {
-                                        // playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                                        playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
                                     }
 
                                     onClick(symbol)
