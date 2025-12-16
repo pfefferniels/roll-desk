@@ -1,4 +1,4 @@
-import { getAt, idOf, Motivation, Path, VersionType } from 'linked-rolls'
+import { idOf, Path, Version, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { useContext, useRef, useState } from "react"
 import * as d3 from "d3";
@@ -6,9 +6,9 @@ import { ReactNode, SVGProps, useEffect } from "react";
 import { Arguable } from './Arguable';
 import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
-import { useAssumption } from '../../hooks/useAssumption';
 import { Legend } from './Legend';
 import { useSelection } from '../../providers/SelectionContext';
+import { SlicedBalloon } from './SlicedBalloon';
 
 interface Stemma {
     currentVersionId: string | undefined
@@ -23,7 +23,7 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
     const svgWidth = 300
-    const svgHeight = 550
+    const svgHeight = 600
 
     useEffect(() => {
         if (!edition || !view) return
@@ -51,26 +51,16 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
                 })
             })
 
-        const links: Link[] = []
-        edition.versions.forEach((version, versionIndex) => {
-            if (!version.basedOn) return
-            const basedOn = idOf(version.basedOn)
+        const links: Link[] = edition.versions
+            .filter(v => v.basedOn !== undefined)
+            .map((version) => {
+                const basedOn = idOf(version.basedOn!)
 
-            version.motivations.forEach((_, motivationIndex) => {
-                links.push({
+                return {
                     source: nodes.find(n => n.id === version.id) || 'unknown',
                     target: nodes.find(n => n.id === basedOn) || 'unknown',
-                    motivationPath: ['versions', versionIndex, 'motivations', motivationIndex],
-                })
+                }
             })
-
-            if (version.motivations.length === 0) {
-                links.push({
-                    source: nodes.find(n => n.id === version.id) || 'unknown',
-                    target: nodes.find(n => n.id === basedOn) || 'unknown',
-                })
-            }
-        })
 
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
@@ -233,30 +223,6 @@ export const calculatePositions = async (
     return nodes;
 };
 
-
-export function sortLinks(links: Link[]) {
-    links.sort(function (a, b) {
-        if (a.source > b.source) {
-            return 1;
-        }
-        else if (a.source < b.source) {
-            return -1;
-        }
-        else {
-            if (a.target > b.target) {
-                return 1;
-            }
-            if (a.target < b.target) {
-                return -1;
-            }
-            else {
-                return 0;
-            }
-        }
-    });
-}
-
-
 export interface NavigationNodeProps extends SVGProps<SVGGElement> {
     node: Node
     highlight: boolean
@@ -299,7 +265,14 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     fontSize={14}
                     fill="white"
                 >
-                    {node.label}
+                    {node.label.includes('_') ? (
+                        <tspan>
+                            {node.label.split('_')[0]}
+                            <tspan baselineShift='super' fontSize={9}>{node.label.split('_')[1]}</tspan>
+                        </tspan>
+                    ) : (
+                        node.label
+                    )}
                 </text>
 
                 {node.overlayInfo && (
@@ -333,307 +306,50 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
 interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
-    separationFactor?: number;
     onChange: () => void
 }
 
 export const LinkContainer = ({
     positionedNodes,
     links,
-    separationFactor,
 }: LinkContainerProps) => {
-    const { selection, setSelection } = useSelection()
-    const { edition } = useContext(EditionContext)
-
-    // which source→target pair is currently exploded?
-    const [expandedKey, setExpandedKey] = useState<string | null>(null)
-
-    // group links by directed pair "sourceId->targetId"
-    const grouped = new Map<
-        string,
-        { source: Node; target: Node; links: Link[] }
-    >()
-
-    links.forEach(link => {
-        const source = positionedNodes.find(
-            node => node.id === (link.source as Node).id
-        )
-        const target = positionedNodes.find(
-            node => node.id === (link.target as Node).id
-        )
-
-        if (!source || !target || !source.x || !source.y || !target.x || !target.y) {
-            return
-        }
-
-        const key = `${source.id}->${target.id}`
-        if (!grouped.has(key)) {
-            grouped.set(key, { source, target, links: [] })
-        }
-        grouped.get(key)!.links.push(link)
-    })
-
-    const groups = Array.from(grouped.entries())
+    const { selection } = useSelection()
+    const { view } = useContext(EditionContext)
 
     return (
         <>
-            {groups.map(([key, group], gi) => {
-                const { source, target, links: gLinks } = group
-
-                const dx = (target.x! - source.x!)
-                const dy = (target.y! - source.y!)
-                const baseDr = Math.sqrt(dx * dx + dy * dy)
-
-                const motivationLinks = gLinks.filter(l => l.motivationPath)
-                const hasMotivations = motivationLinks.length > 0
-                const isExpanded = expandedKey === key || selection.some(s =>
-                    motivationLinks.some(ml => {
-                        const m = getAt<Motivation>(ml.motivationPath!, edition)
-                        return m === s
-                    })
+            {links.map((link, i) => {
+                const source = positionedNodes.find(
+                    node => node.id === (link.source as Node).id
                 )
-                const total = motivationLinks.length
-                const spacing = 150   // px distance between onion layers
+                const target = positionedNodes.find(
+                    node => node.id === (link.target as Node).id
+                )
 
-                console.log('basedr', baseDr, 'for', key)
+                if (!source || !source.x || !source.y || !target || !target.x || !target.y) {
+                    return null
+                }
 
-                const basePath = makeArcPath(source as Point, target as Point, baseDr, isExpanded ? 50 : 8)
+                const motivations = view?.get<Version>(source.id)?.motivations || []
 
                 return (
-                    <g
-                        key={key}
-                        onMouseEnter={() => hasMotivations && setExpandedKey(key)}
-                        onMouseLeave={() => hasMotivations && setExpandedKey(null)}
-                    >
-                        {/* base arc: always there, but fades when exploded */}
-                        <path
-                            d={basePath}
-                            fill="lightgray"
-                            stroke="none"
-                            style={{
-                                pointerEvents: 'auto',
-                                opacity: isExpanded ? 0.01 : 0.8,
-                                transition: 'opacity 250ms ease, stroke-width 250ms ease'
-                            }}
-                            strokeDasharray={hasMotivations ? undefined : '5 5'}
-                        />
-
-                        {/* links with NO motivations keep the simple arc / line only */}
-                        {(!hasMotivations) && (
-                            // nothing more to draw
-                            null
-                        )}
-
-                        {/* exploded motivation arcs */}
-                        {hasMotivations && motivationLinks.map((link, li) => {
-                            const motivation = getAt<Motivation>(link.motivationPath!, edition)
-                            if (!motivation) return null
-
-                            const selected = selection.indexOf(motivation) >= 0
-
-                            // onion: radii symmetrically around baseDr
-                            const offsetIndex = li - (total - 1) / 2        // e.g. -1, 0, 1 for 3 arcs
-                            const dr = baseDr + offsetIndex * spacing
-
-                            return (
-                                <MotivationArc
-                                    key={`motivation_${gi}_${li}`}
-                                    source={{ x: source.x!, y: source.y! }}
-                                    target={{ x: target.x!, y: target.y! }}
-                                    radius={dr}
-                                    motivationPath={link.motivationPath!}
-                                    visible={isExpanded}
-                                    selected={selected}
-                                    svgProps={{
-                                        onMouseOver: () => {
-                                            if (!motivation) return
-                                            setSelection([motivation])
-                                        },
-                                        onMouseOut: () => {
-                                            setSelection([])
-                                        }
-                                    }}
-                                />
-                            )
-                        })}
-                    </g>
+                    <SlicedBalloon
+                        key={`link_${i}`}
+                        slices={
+                            motivations.map(m => {
+                                return {
+                                    count: view?.linksTo(m.id).length || 0,
+                                    id: m.id,
+                                    selected: selection.includes(m),
+                                    description: m.note || 'No description'
+                                }
+                            })
+                        }
+                        a={{ x: source.x!, y: source.y! }}
+                        b={{ x: target.x!, y: target.y! }}
+                    />
                 )
             })}
         </>
     )
-}
-
-type Point = { x: number, y: number }
-
-const makeArcPath = (
-    source: Point,
-    target: Point,
-    radius: number,
-    thickness: number
-) => {
-    const dx = target.x - source.x;
-    const dy = target.y - source.y;
-    const chord = Math.hypot(dx, dy);
-    if (chord === 0) return "";
-
-    const halfChord = chord / 2;
-
-    // Ensure radius is valid for these endpoints (R >= L/2)
-    const minR = halfChord + 1e-6;
-    const Rmid = Math.max(radius, minR);
-
-    // sagitta of the original (middle) arc
-    // s = R - sqrt(R^2 - (L/2)^2)
-    const sMid = Rmid - Math.sqrt(Rmid * Rmid - halfChord * halfChord);
-
-    // We want the vertical distance between arc midpoints to be `thickness`
-    const sOuter = sMid + thickness / 2;       // further from the chord
-    const sInner = Math.max(1e-6, sMid - thickness / 2); // closer to the chord
-
-    // Given chord length L and sagitta s, circle radius is:
-    // R = L^2 / (8s) + s / 2
-    const sqChord = chord * chord;
-    const ROuter = sqChord / (8 * sOuter) + sOuter / 2;
-    const RInner = sqChord / (8 * sInner) + sInner / 2;
-
-    // Outer arc (minor, sweep 0), then inner arc back (minor, opposite sweep)
-    return [
-        `M ${source.x},${source.y}`,
-        `A ${ROuter},${ROuter} 0 0 0 ${target.x},${target.y}`,
-        `A ${RInner},${RInner} 0 0 1 ${source.x},${source.y}`,
-        `Z`,
-    ].join(" ");
-};
-
-
-interface ArcProps {
-    source: Point
-    radius: number
-    target: Point
-    motivationPath: Path
-    svgProps?: SVGProps<SVGPathElement>
-    visible?: boolean
-    selected?: boolean
-}
-
-export const MotivationArc = ({
-    source,
-    radius,
-    target,
-    motivationPath,
-    svgProps,
-    visible = false,
-    selected = false
-}: ArcProps) => {
-    const [hovered, setHovered] = useState(false)
-    const [editMotivation, setEditMotivation] = useState(false)
-
-    const { apply, view } = useContext(EditionContext)
-    const { assumption: motivation } = useAssumption(motivationPath) as { assumption?: Motivation }
-
-    const elRef = useRef<SVGPathElement>(null)
-
-    if (!motivation || !view) return null
-
-    const editCount = view.linksTo(motivation.id).length
-
-    const thickness = visible ? (editCount || 10) * 1.1 : 0
-    const d = makeArcPath(source, target, radius, thickness);
-    const id = `arc_${motivation?.id || `${source.x}-${source.y}-${target.x}-${target.y}`}`
-
-    return (
-        <g>
-            <path
-                id={id}
-                style={{
-                    pointerEvents: visible ? 'auto' : 'none',
-                    transition: 'stroke-opacity 250ms ease, stroke-width 250ms ease'
-                }}
-                ref={elRef}
-                d={d}
-                fill="black"
-                stroke="none"
-                fillOpacity={visible ? (selected || hovered) ? 0.7 : 0.2 : 0}
-                {...svgProps}
-                onMouseOver={(e) => {
-                    setHovered(true)
-                    svgProps?.onMouseOver?.(e)
-                }}
-                onMouseOut={(e) => {
-                    setHovered(false)
-                    svgProps?.onMouseOut?.(e)
-                }}
-            />
-
-            {(visible && (hovered || selected)) && (
-                <text>
-                    <textPath
-                        href={`#${id}`}
-                        side="left"
-                        startOffset="25%"
-                        textAnchor="middle"
-                        dominantBaseline="hanging"
-                        fontSize={12}
-                        fill="black"
-                        pointerEvents="none"
-                        lengthAdjust="spacing"
-                    >
-                        {motivation.note && motivation.note.length > 26
-                            ? motivation.note.match(/.{1,26}(\s|$)/g)?.map((chunk, i) => (
-                                <tspan key={i} x="0" dy={i === 0 ? "0.2em" : "1em"}>
-                                    {chunk.trim()}
-                                </tspan>
-                            ))
-                            : motivation.note
-                        }
-                    </textPath>
-                </text>
-            )}
-
-
-            <Portal>
-                <EditString
-                    open={editMotivation}
-                    value={motivation.note || ''}
-                    onClose={() => setEditMotivation(false)}
-                    onDone={(str) => {
-                        apply(draft => {
-                            const motivation = getAt<Motivation>(motivationPath, draft)
-                            if (!motivation) return
-                            motivation.note = str
-                        })
-                        setEditMotivation(false)
-                    }}
-                />
-            </Portal>
-        </g>
-    )
-}
-
-// any links with duplicate source and target get an incremented 'index'
-export const setLinkIndices = (links: Link[]) => {
-    const numberOfLinks: Map<string, number> = new Map()
-
-    for (let i = 0; i < links.length; i++) {
-        if (i != 0 &&
-            links[i].source == links[i - 1].source &&
-            links[i].target == links[i - 1].target) {
-            links[i].index = links[i - 1].index! + 1;
-        }
-        else {
-            links[i].index = 1;
-        }
-
-        const sourceToTarget = (links[i].source as Node).id + "," + (links[i].target as Node).id;
-        const targetToSource = (links[i].target as Node).id + "," + (links[i].source as Node).id;
-
-        if (numberOfLinks.get(targetToSource) !== undefined) {
-            numberOfLinks.set(targetToSource, links[i].index!);
-        }
-        else {
-            numberOfLinks.set(sourceToTarget, links[i].index!);
-        }
-    }
-
-    return numberOfLinks;
 }

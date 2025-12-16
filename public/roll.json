@@ -83,7 +83,8 @@
                         }
                     ],
                     "@id": "5ab3f742-d6af-4e34-aa2c-5ee0b3184d78",
-                    "@type": "edit"
+                    "@type": "edit",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -412,12 +413,29 @@
                     "@type": "edit"
                 },
                 {
-                    "insert": [],
+                    "insert": [
+                        {
+                            "@id": "symbol_a0149af3-192d-4d93-8c29-b51aefa2ace7",
+                            "expressionType": "SlowCrescendoOn",
+                            "scope": "bass",
+                            "@type": "expression",
+                            "carriers": [
+                                {
+                                    "@id": "42001994-6b72-4232-82bf-572e628d53f0"
+                                },
+                                {
+                                    "@id": "e526c70c-7dac-42e7-9ecd-633e8697b683"
+                                }
+                            ]
+                        }
+                    ],
                     "delete": [
                         "symbol_d5639aa1-c681-4d7d-8d3c-deecde234110"
                     ],
                     "@id": "6599687d-abbe-447d-ac54-875b59eaa133",
-                    "@type": "edit"
+                    "@type": "edit",
+                    "editType": "shift",
+                    "motivation": "anacrusis-accent"
                 },
                 {
                     "insert": [],
@@ -425,7 +443,8 @@
                         "symbol_094529d8-ffa4-4398-b18a-e4b9a3e6881e"
                     ],
                     "@id": "c3e51f1e-8f65-4633-9adb-3b8059fbfac8",
-                    "@type": "edit"
+                    "@type": "edit",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [],
@@ -599,7 +618,8 @@
                     ],
                     "@id": "d574fca5-9ca0-46e4-9eda-9ac0dbf73721",
                     "@type": "edit",
-                    "editType": "additional-accent"
+                    "editType": "additional-accent",
+                    "motivation": "chord-shading"
                 },
                 {
                     "insert": [
@@ -623,7 +643,8 @@
                     ],
                     "@id": "bea8963d-12a3-49c0-bece-197a05403cda",
                     "@type": "edit",
-                    "editType": "correct-error"
+                    "editType": "shift",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -658,7 +679,8 @@
                     ],
                     "@id": "e740916e-da39-49a8-82ce-f022fa79194f",
                     "@type": "edit",
-                    "editType": "additional-accent"
+                    "editType": "additional-accent",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -693,7 +715,8 @@
                     ],
                     "@id": "40deac98-7425-4296-b30e-8f492c42cbd6",
                     "@type": "edit",
-                    "editType": "additional-accent"
+                    "editType": "additional-accent",
+                    "motivation": "melodic-differentiation"
                 },
                 {
                     "insert": [
@@ -732,7 +755,8 @@
                     ],
                     "@id": "d96204a1-950d-4b5d-a842-0697c2dad82c",
                     "@type": "edit",
-                    "editType": "shift"
+                    "editType": "shift",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -771,7 +795,8 @@
                     ],
                     "@id": "42b53c67-39a1-4fc7-b1db-0470041095fc",
                     "@type": "edit",
-                    "editType": "shift"
+                    "editType": "shift",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -810,31 +835,18 @@
                     ],
                     "@id": "c0a64618-51b4-4daf-a73a-0f3d8ebce8ac",
                     "@type": "edit",
-                    "editType": "shift"
+                    "editType": "shift",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
-                    "insert": [
-                        {
-                            "@id": "symbol_a0149af3-192d-4d93-8c29-b51aefa2ace7",
-                            "expressionType": "SlowCrescendoOn",
-                            "scope": "bass",
-                            "@type": "expression",
-                            "carriers": [
-                                {
-                                    "@id": "42001994-6b72-4232-82bf-572e628d53f0"
-                                },
-                                {
-                                    "@id": "e526c70c-7dac-42e7-9ecd-633e8697b683"
-                                }
-                            ]
-                        }
-                    ],
+                    "insert": [],
                     "delete": [
                         "symbol_93a33469-9270-433b-8279-e0660afa037b"
                     ],
                     "@id": "8b5c2445-c45e-46c3-969c-3afff11f62f8",
                     "@type": "edit",
-                    "editType": "correct-error"
+                    "editType": "remove-redundancy",
+                    "motivation": "cleanup"
                 },
                 {
                     "insert": [
@@ -869,7 +881,8 @@
                     ],
                     "@id": "72d6fe1e-52a4-44d3-93ad-8a5a340fb632",
                     "@type": "edit",
-                    "editType": "additional-accent"
+                    "editType": "additional-accent",
+                    "motivation": "anacrusis-accent"
                 },
                 {
                     "insert": [
@@ -904,7 +917,8 @@
                     ],
                     "@id": "073c922f-cb31-4ae3-ade4-c5acba2c30b0",
                     "@type": "edit",
-                    "editType": "additional-accent"
+                    "editType": "additional-accent",
+                    "motivation": "chord-shading"
                 },
                 {
                     "insert": [
@@ -939,7 +953,8 @@
                     ],
                     "@id": "dbbb5d20-b44c-4fcf-a93b-3507894224e3",
                     "@type": "edit",
-                    "editType": "additional-accent"
+                    "editType": "additional-accent",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -963,7 +978,8 @@
                     ],
                     "@id": "5e387a5d-fd9c-4785-886f-c3cf7bbba9bb",
                     "@type": "edit",
-                    "editType": "correct-error"
+                    "editType": "shift",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -987,7 +1003,8 @@
                     ],
                     "@id": "cc66f515-a90d-4c7a-b6e5-d654b295e108",
                     "@type": "edit",
-                    "editType": "correct-error"
+                    "editType": "shift",
+                    "motivation": "shift-to-metrical-accent"
                 },
                 {
                     "insert": [
@@ -3245,6 +3262,21 @@
                     "@type": "motivation",
                     "note": "Differenzierung der Melodie",
                     "@id": "melodic-differentiation"
+                },
+                {
+                    "@type": "motivation",
+                    "note": "Verschiebung auf betonte Zeit",
+                    "@id": "shift-to-metrical-accent"
+                },
+                {
+                    "@type": "motivation",
+                    "note": "Betonte Auftaktfigur",
+                    "@id": "anacrusis-accent"
+                },
+                {
+                    "@type": "motivation",
+                    "note": "Bereinigung",
+                    "@id": "cleanup"
                 }
             ],
             "basedOn": {

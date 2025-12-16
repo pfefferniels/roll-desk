@@ -6,15 +6,6 @@ import { EditionContext } from "../../providers/EditionContext";
 import { chaikin } from "../../helpers/concaveHull";
 import { Point } from "../../helpers/kmeans";
 
-const determineType = (edits: Edit[]): "insert" | "delete" | "replace" => {
-    const hasInsert = (e: Edit) => (e.insert?.length ?? 0) > 0;
-    const hasDelete = (e: Edit) => (e.delete?.length ?? 0) > 0;
-
-    if (edits.every((edit) => hasInsert(edit) && !hasDelete(edit))) return "insert";
-    if (edits.every((edit) => hasDelete(edit) && !hasInsert(edit))) return "delete";
-    return "replace";
-};
-
 function cross(o: Point, a: Point, b: Point): number {
     return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 }
@@ -96,7 +87,7 @@ const MotivationComprehension = ({ edits, expanded, ...svgProps }: MotivationCom
 
     const color = "gray";
 
-    const hullFillOpacity = expanded ? 0.1 : 0.44;
+    const hullFillOpacity = expanded ? 0.1 : 0.4;
     const editsOpacity = expanded ? 1 : 0;
     const editsPointerEvents = expanded ? "auto" : "none";
 
@@ -141,6 +132,7 @@ export const MotivationView = ({
     ...svgProps
 }: MotivationViewProps) => {
     const { view } = useContext(EditionContext);
+    const translation = usePinchZoom();
     if (!view) return null;
 
     const edits = view
@@ -148,15 +140,75 @@ export const MotivationView = ({
         .map(path => view.atPath<Edit>(path.slice(0, -1)))
         .filter(e => e !== null)
 
-    // TODO split into comprehensions through clustering algorithm
-    const comprehensions = [edits]
+    const positionedEdits = edits
+        .map((edit) => {
+            const bboxes = getEditBBoxes(edit, view, translation).filter((bbox) => !!bbox);
+            if (!bboxes.length) return null;
+
+            const minX = Math.min(...bboxes.map((bbox) => bbox.x));
+            const maxX = Math.max(...bboxes.map((bbox) => bbox.x + bbox.width));
+            const minY = Math.min(...bboxes.map((bbox) => bbox.y));
+            const maxY = Math.max(...bboxes.map((bbox) => bbox.y + bbox.height));
+
+            return {
+                edit,
+                center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+                diag: Math.hypot(maxX - minX, maxY - minY),
+            };
+        })
+        .filter((entry): entry is { edit: Edit; center: Point; diag: number } => !!entry);
+
+    const averageDiag =
+        positionedEdits.reduce((sum, { diag }) => sum + diag, 0) /
+        (positionedEdits.length || 1);
+    const distanceThreshold = Math.max(200, averageDiag * 1.5);
+
+    const clusters: { centroid: Point; edits: Edit[] }[] = [];
+
+    positionedEdits
+        .sort((a, b) => a.center.x - b.center.x)
+        .forEach(({ edit, center }) => {
+            let bestIndex = -1;
+            let bestDistance = Infinity;
+
+            clusters.forEach((cluster, idx) => {
+                const dx = cluster.centroid.x - center.x;
+                const dy = cluster.centroid.y - center.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestIndex = idx;
+                }
+            });
+
+            if (bestIndex >= 0 && bestDistance <= distanceThreshold) {
+                const cluster = clusters[bestIndex];
+                const count = cluster.edits.length;
+                cluster.centroid = {
+                    x: (cluster.centroid.x * count + center.x) / (count + 1),
+                    y: (cluster.centroid.y * count + center.y) / (count + 1),
+                };
+                cluster.edits.push(edit);
+            } else {
+                clusters.push({ centroid: center, edits: [edit] });
+            }
+        });
+
+    const clusteredEdits = clusters.map((c) => c.edits);
+    const positionedIds = new Set(positionedEdits.map(({ edit }) => edit.id));
+    const missingEdits = edits.filter((edit) => !positionedIds.has(edit.id));
+    if (missingEdits.length) {
+        missingEdits.forEach((edit) => clusteredEdits.push([edit]));
+    }
+
+    const groups = clusteredEdits.length ? clusteredEdits : [edits];
 
     return (
         <g>
-            {comprehensions.map((comp, i) => (
+            {groups.map((comp, i) => (
                 <MotivationComprehension
-                    key={JSON.stringify(comp)}
-                    edits={edits}
+                    key={`${motivation.id}-${i}`}
+                    edits={comp}
                     expanded={expanded}
                     {...svgProps}
                 />
@@ -164,4 +216,3 @@ export const MotivationView = ({
         </g>
     );
 }
-
