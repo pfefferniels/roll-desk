@@ -150,6 +150,8 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
 
             {snapshot
                 .map((symbol, i) => {
+                    if (symbol.type === 'text') return null
+                    
                     return (
                         <Perforation
                             key={`${symbol.id || i}`}

@@ -102,13 +102,13 @@ export const Desk = ({ versionId }: DeskProps) => {
     const [currentTab, setCurrentTab] = useState(0)
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
+
     const orderedLayers = [...layerInfos].reverse()
     if (currentCopyId) {
         orderedLayers.push(
             ...orderedLayers.splice(orderedLayers.findIndex(li => li.copyId === currentCopyId), 1)
         )
     }
-
 
     useHotkeys(['space'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -205,9 +205,10 @@ export const Desk = ({ versionId }: DeskProps) => {
                 return {
                     color: distinctColors[i % distinctColors.length],
                     copyId: copy.id,
-                    symbolOpacity: viewOnly ? 0 : 1,
+                    symbolOpacity: 1,
                     facsimileOpacity: 0,
-                    facsimile: false
+                    facsimile: false,
+                    visible: !viewOnly
                 }
             })
 
@@ -385,7 +386,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                             setCurrentCopyId(copyId)
 
                             const li = layerInfos.find(li => li.copyId === copyId)
-                            if (li) li.symbolOpacity = 1
+                            if (li) li.visible = true
                         }}
                     />
 
@@ -460,9 +461,8 @@ export const Desk = ({ versionId }: DeskProps) => {
                                 />)
                             : (
                                 orderedLayers
+                                    .filter(item => item.visible)
                                     .map((stackItem, i) => {
-                                        if (stackItem.symbolOpacity === 0) return null
-
                                         const copy = edition?.copies.find(c => c.id === stackItem.copyId)
                                         if (!copy) return null
 

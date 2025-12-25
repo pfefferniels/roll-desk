@@ -10,9 +10,9 @@ import { JSX, useContext, useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
-import useIsVisible from "../../hooks/useIsVisible.tsx";
 import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
+import { ModificationView } from "./ModificationView.tsx";
 
 interface IIIFInfo {
     "@id": string;
@@ -223,6 +223,15 @@ export const CopyFacsimile = ({
                         />
                     )
                 })}
+
+                {copy.modifications.map((modification, i) => {
+                    return (
+                        <ModificationView
+                            key={`modification_${i}`}
+                            modification={modification}
+                        />
+                    )
+                })}
             </g>
 
             <KeyboardDivision />
@@ -313,7 +322,7 @@ const GluedOnFeature = ({ feature, color }: FeatureProps<GluedOn>) => {
         <>
             <rect
                 fill={color}
-                fillOpacity={0.5}
+                fillOpacity={0.2}
                 strokeWidth={0}
                 x={x}
                 y={y}
@@ -432,11 +441,11 @@ const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
     return (
         <text
             transform={`rotate(90 ${x + width / 2} ${y + height / 2})`}
-            x={x}
-            y={y + height}
+            x={x + width / 2}
+            y={y + height / 2}
             fontSize={8}
             fill={color}
-            data-id={feature.id}
+            textAnchor="middle"
             id={feature.id}
         >
             {chunks.map((chunk, i) => (
@@ -451,11 +460,13 @@ const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
 const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
     const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
 
+    const isExpression = areaOf(feature.vertical.from)?.includes('expression')
+
     const x = translateX(feature.horizontal.from);
     const y = trackToY(feature.vertical.from);
     const width = translateX(feature.horizontal.to - feature.horizontal.from);
     let height = 0
-    if (areaOf(feature.vertical.from)?.includes('expression')) {
+    if (isExpression) {
         height = trackHeight.expression
     }
     else if (areaOf(feature.vertical.from)?.includes('note')) {
@@ -465,16 +476,21 @@ const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
         height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
     }
 
+    if (isExpression) {
+        return (
+            <rect x={x} y={y} width={width} height={height} fill={color} id={feature.id} onClick={onClick} />
+        )
+    }
     return (
-        <rect
-            fill={color}
-            fillOpacity={0.5}
-            strokeWidth={0}
-            x={x}
-            y={y}
-            width={width}
-            height={height}
-            data-id={feature.id}
+        <line
+            x1={x + height / 2}
+            y1={y + height / 2}
+            x2={x + width - height / 2}
+            y2={y + height / 2}
+            stroke={color}
+            strokeWidth={height}
+            strokeLinecap="round"
+            strokeDasharray={`2 4`}
             id={feature.id}
             onClick={onClick}
         />

@@ -6,13 +6,13 @@ import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
 import { EditionContext } from "../../providers/EditionContext"
 import { valueOf } from "linked-rolls/lib/Assumption"
-import { ModificationList } from "./ModificationList"
 
 export interface LayerInfo {
     color: string
     symbolOpacity: number
     facsimileOpacity: number
     copyId: string
+    visible: boolean
 }
 
 interface LayerStackProps {
@@ -27,7 +27,6 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
     const { edition } = useContext(EditionContext)
 
     const [clickedLayer, setClickedLayer] = useState<LayerInfo>();
-    const [expanded, setExpanded] = useState<number[]>([]);
 
     if (!edition) return null
 
@@ -71,11 +70,11 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                         edge="start"
                                         tabIndex={-1}
                                         onClick={() => {
-                                            layer.symbolOpacity = 1 - layer.symbolOpacity
+                                            layer.visible = !layer.visible
                                             onChange([...layerInfos])
                                         }}
                                     >
-                                        {layer.symbolOpacity === 1 ? <Visibility /> : <VisibilityOff />}
+                                        {layer.visible ? <Visibility /> : <VisibilityOff />}
                                     </IconButton>
                                 </ListItemIcon>
                                 <ListItemButton onClick={() => onClick(layer.copyId)}>
@@ -107,41 +106,8 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                             </>
                                         }
                                     />
-
-                                    {expanded.includes(i) ? (
-                                        <IconButton
-                                            edge="end"
-                                            onClick={(e) => {
-                                                e.preventDefault()
-                                                setExpanded(expanded.filter(e => e !== i))
-                                            }}
-                                        >
-                                            <ExpandLess />
-                                        </IconButton>
-                                    ) : (
-                                        <IconButton
-                                            edge="end"
-                                            onClick={(e) => {
-                                                e.preventDefault()
-                                                setExpanded([...expanded, i])
-                                            }}
-                                        >
-                                            <ExpandMore />
-                                        </IconButton>
-                                    )}
                                 </ListItemButton>
                             </ListItem>
-
-                            {copy.modifications.length > 0 && (
-                                <Collapse in={expanded.includes(i)} timeout="auto" unmountOnExit>
-                                    <ModificationList
-                                        modifications={copy.modifications}
-                                        onClick={(modification) => {
-                                            // TODO
-                                        }}
-                                    />
-                                </Collapse>
-                            )}
                         </>
                     )
                 })}
@@ -158,7 +124,7 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                         clickedLayer.color = color
                         clickedLayer.symbolOpacity = symbolOpacity
                         clickedLayer.facsimileOpacity = facsimileOpacity
-                        onChange([...layerInfos.map(l => l === clickedLayer ? clickedLayer : l)])
+                        onChange([...layerInfos])
                     }}
                 />
             )
