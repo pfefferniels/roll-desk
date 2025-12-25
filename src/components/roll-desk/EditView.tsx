@@ -16,8 +16,7 @@ const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, { translateX
 
     let height = trackHeight.note
     if (dim.vertical.to) {
-        height = trackToY(dim.vertical.to - dim.vertical.from);
-        console.log('new height', height)
+        height = trackToY(dim.vertical.to) - trackToY(dim.vertical.from);
     }
     else if (symbol.type === 'note' || symbol.type === 'expression') {
         height = trackHeight[symbol.type];
@@ -26,7 +25,7 @@ const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, { translateX
     return {
         x: translateX(dim.horizontal.from),
         y: trackToY(dim.vertical.from),
-        width: translateX(dim.horizontal.to - dim.horizontal.from),
+        width: translateX(dim.horizontal.to) - translateX(dim.horizontal.from),
         height
     }
 }

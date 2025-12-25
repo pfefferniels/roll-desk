@@ -42446,7 +42446,9 @@
                     "@type": "Hole"
                 },
                 {
+                    "@type": "Writing",
                     "@id": "6785938e-f472-4fc8-9cb1-ba423a7909ea",
+                    "depiction": "https://stacks.stanford.edu/image/iiif/wv912mm2332%2Fwv912mm2332_0001//3780,123060,140,930/full/270/default.jpg",
                     "horizontal": {
                         "from": 10307.153695913461,
                         "to": 10387.922926682691,
@@ -42457,8 +42459,11 @@
                         "to": 97,
                         "unit": "track"
                     },
-                    "depiction": "https://stacks.stanford.edu/image/iiif/wv912mm2332%2Fwv912mm2332_0001//3769,123203,75,956/full/270/default.jpg",
-                    "@type": "Hole"
+                    "transcription": {
+                        "@type": "text",
+                        "@id": "9bf2fd33-2403-4f96-a05e-65ad09074907",
+                        "text": "225. 14. 114."
+                    }
                 }
             ],
             "measurements": {
@@ -42506,7 +42511,7 @@
                                         "sameAs": []
                                     },
                                     "comprehends": [
-                                        "490178b3-39b4-465c-8a51-29b414b43638"
+                                        "9bf2fd33-2403-4f96-a05e-65ad09074907"
                                     ]
                                 }
                             ]
@@ -42519,7 +42524,7 @@
                     "@type": "Addition",
                     "purpose": "dating",
                     "added": [
-                        "490178b3-39b4-465c-8a51-29b414b43638"
+                        "6785938e-f472-4fc8-9cb1-ba423a7909ea"
                     ]
                 },
                 {

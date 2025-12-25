@@ -464,7 +464,7 @@ const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
 
     const x = translateX(feature.horizontal.from);
     const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to - feature.horizontal.from);
+    const width = translateX(feature.horizontal.to) - translateX(feature.horizontal.from);
     let height = 0
     if (isExpression) {
         height = trackHeight.expression

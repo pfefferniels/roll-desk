@@ -1,5 +1,4 @@
-import { AnyFeature, Edit, Modification, Motivation } from "linked-rolls";
-import { EditView, getEditBBoxes, Translation } from "./EditView";
+import { AnyFeature, Modification } from "linked-rolls";
 import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
@@ -10,7 +9,7 @@ import { Arguable } from "./Arguable";
 const getFeatureBBox = (dim: AnyFeature, { translateX, trackToY, trackHeight, areaOf }: PinchZoomContextProps) => {
     let height = trackHeight.note
     if (dim.vertical.to) {
-        height = trackToY(dim.vertical.to - dim.vertical.from);
+        height = trackToY(dim.vertical.to) - trackToY(dim.vertical.from);
     }
     else {
         if (areaOf(dim.vertical.from)?.includes('expression')) {
@@ -20,24 +19,7 @@ const getFeatureBBox = (dim: AnyFeature, { translateX, trackToY, trackHeight, ar
             height = trackHeight.note
         }
     }
-
-    if (dim.type === 'Writing') {
-        // For 90° rotation, width and height are swapped
-        const originalWidth = translateX(dim.horizontal.to - dim.horizontal.from);
-        const originalHeight = height;
-
-        const centerX = translateX(dim.horizontal.from + (dim.horizontal.to - dim.horizontal.from) / 2);
-        const centerY = trackToY(dim.vertical.from) + height / 2;
-
-        // After 90° rotation, the bounding box dimensions are swapped
-        return {
-            x: centerX - originalHeight / 2,
-            y: centerY - originalWidth / 2,
-            width: originalHeight,
-            height: originalWidth
-        };
-    }
-
+    
     return {
         x: translateX(dim.horizontal.from),
         y: trackToY(dim.vertical.from),

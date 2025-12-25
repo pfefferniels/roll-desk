@@ -1,6 +1,6 @@
 import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
 import { Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
-import { isEdit, isRollFeature, isSymbol, Path } from "linked-rolls";
+import { AnyFeature, isEdit, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { EditChoice, EditString } from "./EditString";
@@ -101,8 +101,9 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                     </IconButton>
                                 </>
                             )}
-                            <br />
+                        </div>
 
+                        <div style={{ paddingLeft: '1rem' }}>
                             {belief.reasons.length > 0 && <b>Reasons</b>}
                             <List style={{ paddingLeft: '1rem', maxWidth: '500px' }}>
                                 {belief.reasons.map((reason, i) => {
@@ -122,6 +123,9 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                             >
                                                 <ListItemText
                                                     primary={
+                                                        <span>Meaning Comprehension</span>
+                                                    }
+                                                    secondary={
                                                         reason.comprehends.map((subject: string) => {
                                                             const target = view?.get(subject)
                                                             const key = `comprehends-${subject}`
@@ -130,17 +134,26 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                                                 return <span>{subject}</span>
                                                             }
 
-                                                            if (isSymbol(target)) {
-                                                                return <span key={key}>{'text' in target ? target.text : 'no text'}</span>
+                                                            if (!isSymbol(target)) {
+                                                                // Meaning Comprehension can only target symbols
+                                                                // (E73 Information Object, to be more precise)
+                                                                return <span key={key}>unknown type</span>
                                                             }
 
-                                                            console.log('target', target)
+                                                            const featurePath = view?.getPath(subject)?.slice(0, -1)
+                                                            let feature
+                                                            if (featurePath) {
+                                                                feature = view?.atPath<AnyFeature>(featurePath)
+                                                            }
 
-                                                            return <span key={key}>unknown type</span>
+                                                            return (
+                                                                <div key={key}>
+                                                                    <div>{'text' in target ? target.text : 'no text'}</div>
+                                                                    <img src={feature?.depiction} width={200} />
+                                                                </div>
+                                                            )
                                                         })
-                                                    }
-                                                    secondary={
-                                                        <span>Meaning Comprehension</span>
+
                                                     }
                                                 />
                                             </ListItem>
