@@ -1,49 +1,18 @@
-import { useContext, useRef } from "react"
+import { useRef } from "react"
 import { Glow } from "./Glow"
-import { VersionView } from "./VersionView"
-import { Version } from "linked-rolls"
-import { CopyFacsimile } from "./CopyFacsimile"
 import { PatchPattern } from "./PatchPattern"
-import { LayerInfo } from "./StackList"
-import { UserSelection } from "./RollDesk"
 import { SelectionFilter } from "./Selection"
-import { EditionContext } from "../../providers/EditionContext"
+import { Spray } from "./Spray"
 
-interface LayeredRollsProps {
-    layerInfos: LayerInfo[]
-    activeId?: string
-    currentVersion?: Version
-    selection: UserSelection[]
-    onChangeSelection: (userSelection: UserSelection[]) => void
+interface CanvasProps {
+    children: React.ReactNode
 }
 
-export const LayeredRolls = ({
-    layerInfos,
-    activeId,
-    currentVersion,
-    selection,
-    onChangeSelection
-}: LayeredRollsProps
+export const Canvas = ({
+    children
+}: CanvasProps
 ) => {
-    const { edition } = useContext(EditionContext)
     const svgRef = useRef<SVGGElement>(null)
-
-    // makes sure that the active layer comes last
-    const orderedLayers = [...layerInfos].reverse()
-
-    if (activeId) {
-        orderedLayers.push(
-            ...orderedLayers.splice(orderedLayers.findIndex(li => li.copyId === activeId), 1)
-        )
-    }
-
-    const onAddToSelection = (item: UserSelection) => {
-        onChangeSelection([...selection, item])
-    }
-
-    const onRemoveFromSelection = (item: UserSelection) => {
-        onChangeSelection([...selection.filter(x => x !== item)])
-    }
 
     const margin = 100
 
@@ -52,43 +21,13 @@ export const LayeredRolls = ({
             <g transform={`translate(0 ${margin})`}>
                 <Glow />
                 <PatchPattern />
+                <Spray />
 
                 <g ref={svgRef}>
-                    {orderedLayers
-                        .map((stackItem, i) => {
-                            if (stackItem.symbolOpacity === 0) return null
-
-                            const copy = edition?.copies.find(c => c.id === stackItem.copyId)
-                            if (!copy) return null
-
-                            return (
-                                <CopyFacsimile
-                                    key={`copy_${i}`}
-                                    copy={copy}
-                                    active={stackItem.copyId === activeId}
-                                    color={stackItem.color}
-                                    facsimileOpacity={stackItem.facsimileOpacity}
-                                    onClick={onAddToSelection}
-                                    onChange={() => { }}
-                                    onSelectionDone={dimension => onChangeSelection([{
-                                        ...dimension
-                                    }])}
-                                />
-                            )
-                        })}
-
-                    {currentVersion && (
-                        <VersionView
-                            onClick={onAddToSelection}
-                            version={currentVersion}
-                        />
-                    )}
+                    {children}
 
                     {svgRef.current && (
-                        <SelectionFilter
-                            items={selection}
-                            remove={onRemoveFromSelection}
-                        />
+                        <SelectionFilter />
                     )}
                 </g>
             </g>

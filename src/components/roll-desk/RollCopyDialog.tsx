@@ -1,7 +1,7 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { AnySymbol, asSymbols, CreateVersion, getAt, readFromSpencerMIDI, readFromStanfordAton, RollCopy, RollFeature, Version } from "linked-rolls";
+import { CreateVersion, readFromSpencerMIDI, readFromStanfordAton, RollCopy } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
 
@@ -34,10 +34,11 @@ export const RollCopyDialog = ({ open, copy, onClose }: RollCopyDialogProps) => 
             ops: [],
             type: 'RollCopy',
             id: v4(),
-            features: [],
             measurements: {},
             conditions: [],
-            location: ''
+            location: '',
+            modifications: [],
+            features: [],
         }
 
         if (file) {

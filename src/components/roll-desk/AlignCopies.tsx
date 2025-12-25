@@ -27,8 +27,8 @@ export const AlignCopies = ({ copy, onDone, onClose, open }: AlignCopiesProps) =
         verticalStretch = copyB.measurements.dimensions.height / copy.measurements.dimensions.height
     }
 
-    const date = copy.productionEvent?.date && new Intl.DateTimeFormat().format(
-        valueOf(copy.productionEvent?.date)
+    const date = copy.production?.date && new Intl.DateTimeFormat().format(
+        valueOf(copy.production?.date)
     )
 
     if (!edition) return null

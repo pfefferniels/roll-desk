@@ -1,7 +1,7 @@
 import { useContext, useRef } from "react"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
-import { Perforation, SustainPedal, TextSymbol } from "./SymbolView"
+import { Perforation, SustainPedal } from "./SymbolView"
 import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
@@ -150,39 +150,26 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
 
             {snapshot
                 .map((symbol, i) => {
-                    if (symbol.type === 'expression' || symbol.type === 'note') {
-                        return (
-                            <Perforation
-                                key={`${symbol.id || i}`}
-                                symbol={symbol}
-                                age={symbol.age}
-                                highlight={version ? false : (symbol.carriers?.length !== 0)}
-                                onClick={() => {
-                                    const performingEvents = emulation.findEventsPerforming(symbol.id)
-                                    const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
-                                    const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
-                                    if (noteOn && noteOff) {
-                                        playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
-                                    }
+                    return (
+                        <Perforation
+                            key={`${symbol.id || i}`}
+                            symbol={symbol}
+                            age={symbol.age}
+                            highlight={version ? false : (symbol.carriers?.length !== 0)}
+                            onClick={() => {
+                                const performingEvents = emulation.findEventsPerforming(symbol.id)
+                                const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
+                                const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
+                                if (noteOn && noteOff) {
+                                    playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                                }
 
-                                    onClick(symbol)
-                                }}
-                            />
-                        )
-                    }
-                    else if (symbol.type === 'handwrittenText' || symbol.type === 'rollLabel' || symbol.type === 'stamp') {
-                        return (
-                            <TextSymbol
-                                key={`textSymbol_${symbol.id || i}`}
-                                event={symbol}
-                                onClick={() => onClick(symbol)}
-                            />
-                        )
-                    }
-                    else if (symbol.type === 'cover') {
-                        // TODO
-                    }
-                })}
+                                onClick(symbol)
+                            }}
+                        />
+                    )
+                })
+            }
         </g>
     )
 }

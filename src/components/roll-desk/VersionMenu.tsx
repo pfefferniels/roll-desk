@@ -64,7 +64,7 @@ const deriveVersion = (versionId: string, selection: VersionSelection[]): Editio
             basedOn: assignReference(version.id),
             edits,
             motivations: [],
-            type: 'authorised-revision'
+            type: 'unicum'
         })
     }
 
@@ -322,24 +322,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     setEditSiglum(false)
                 }}
                 onClose={() => setEditSiglum(false)}
-            />
-
-            <EditString
-                open={assignActor}
-                onClose={() => setAssignActor(false)}
-                value={version.actor ? version.actor.name : ''}
-                onDone={(str) => {
-                    apply((draft) => {
-                        const version = draft.versions.find(v => v.id === versionId)
-                        if (!version) return
-                        version.actor = assignObject({
-                            name: str,
-                            id: v4(),
-                            sameAs: ['']
-                        })
-                    })
-                    setAssignActor(false)
-                }}
             />
 
             <SelectVersion

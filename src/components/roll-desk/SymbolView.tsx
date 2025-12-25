@@ -1,4 +1,4 @@
-import { Expression, HandwrittenText, Note, RollLabel, Stamp } from "linked-rolls/lib/Symbol";
+import { Expression, Note } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { EditionContext } from "../../providers/EditionContext";
@@ -184,67 +184,3 @@ export const SustainPedal = ({ on, off }: SustainPedalProps) => {
         />
     )
 }
-
-interface TextSymbolProps {
-    event: HandwrittenText | Stamp | RollLabel;
-    onClick: () => void;
-}
-
-export const TextSymbol = ({
-    event,
-    onClick,
-}: TextSymbolProps) => {
-    const { view } = useContext(EditionContext)
-    const { translateX, trackToY } = usePinchZoom();
-
-    if (!view) return null;
-
-    const dimensions = view.dimensionOf(event);
-    if (!dimensions) return null;
-
-    const { horizontal, vertical } = dimensions
-
-    const x = translateX(horizontal.from)
-    const y = trackToY(vertical.from);
-
-    const width = translateX(horizontal.to - horizontal.from);
-    const height = vertical.to === undefined
-        ? trackToY(0) - trackToY(vertical.from)
-        : trackToY(vertical.to) - trackToY(vertical.from);
-
-    return (
-        <g className="textEvent" data-id={event.id} onClick={onClick}>
-            <rect
-                fill="white"
-                fillOpacity={0.5}
-                onClick={onClick}
-                strokeWidth={0}
-                x={x}
-                y={y}
-                width={width}
-                height={height}
-            />
-            <text
-                fill="black"
-                stroke="black"
-                fillOpacity={0.9}
-                strokeOpacity={0.9}
-                transform={`translate(${x + width}, ${y + height / 2}) rotate(${event.type === "rollLabel" ? 90 : event.rotation || 90
-                    })`}
-                fontSize={12}
-            >
-                {event.text.split("\n").map((line) => (
-                    <tspan
-                        x={0}
-                        dy="1.2em"
-                        alignmentBaseline="middle"
-                        textAnchor="middle"
-                        key={`span_${line}`}
-                    >
-                        {line}
-                    </tspan>
-                ))}
-            </text>
-        </g>
-    );
-};

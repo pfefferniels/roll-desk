@@ -1,7 +1,9 @@
 import {
+    AnyFeature,
+    GluedOn,
     Path,
     RollCopy,
-    RollFeature
+    Writing,
 } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
 import { JSX, useContext, useLayoutEffect, useRef, useState } from "react";
@@ -79,7 +81,7 @@ async function tilesAsSVGImage(
 interface CopyFacsimileProps {
     copy: RollCopy;
     active: boolean;
-    onClick: (e: RollFeature) => void;
+    onClick: (e: AnyFeature) => void;
     onChange: (copy: RollCopy) => void;
     color: string;
     onSelectionDone: (dimension: EventDimension) => void;
@@ -95,7 +97,6 @@ export const CopyFacsimile = ({
     onSelectionDone,
     facsimile,
     facsimileOpacity,
-    onChange
 }: CopyFacsimileProps) => {
     const { edition, apply } = useContext(EditionContext);
     const { zoom, trackHeight, trackToY } = usePinchZoom();
@@ -177,7 +178,7 @@ export const CopyFacsimile = ({
                             <feFuncB type="linear" slope="1.5" intercept="-0.25" />
                         </feComponentTransfer>
                     </filter>
-                    <filter id="invertFilter">
+                    <filter id="invert">
                         <feComponentTransfer>
                             <feFuncR type="table" tableValues="1 0" />
                             <feFuncG type="table" tableValues="1 0" />
@@ -208,7 +209,6 @@ export const CopyFacsimile = ({
                             conditionPath={['copies', edition.copies.indexOf(copy), 'features', featureIndex, 'condition']}
                             onClick={() => onClick(feature)}
                             color={color}
-                            showFacsimile={facsimileOpacity === 0}
                             onChange={() => {
                                 apply(draft => {
                                     const editionCopy = draft.copies.find(c => c.id === copy.id)
@@ -249,18 +249,15 @@ const KeyboardDivision = () => {
     );
 };
 
-interface FeatureProps {
-    feature: RollFeature;
-    conditionPath: Path
+interface FeatureProps<FeatureType extends AnyFeature = AnyFeature> {
+    feature: FeatureType;
+    conditionPath?: Path
     onClick: React.MouseEventHandler;
-    onChange: (feature: RollFeature) => void;
+    onChange?: (feature: FeatureType) => void;
     color: string;
-    showFacsimile?: boolean
 }
 
-const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: FeatureProps) => {
-    const ref = useRef<SVGRectElement>(null);
-    const isVisible = useIsVisible(ref)
+const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
     const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
 
     const x = translateX(feature.horizontal.from);
@@ -279,34 +276,12 @@ const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: Feat
 
     return (
         <g className="feature">
-            {(showFacsimile && feature.annotates && isVisible) && (
-                <image
-                    xlinkHref={feature.annotates.replace('default.jpg', 'gray.jpg')}
-                    x={x}
-                    y={y}
-                    width={width}
-                    data-id={feature.id}
-                    id={feature.id}
-                    onClick={onClick}
-                    filter="url(#contrast-brightness)"
-                />
-            )}
+            {(feature.type === 'GluedOn') && <GluedOnFeature feature={feature} color={color} onClick={onClick} />}
+            {feature.type === 'Writing' && <WritingFeature feature={feature} color={color} onClick={onClick} />}
+            {(feature.type === 'Hole') && <HoleFeature feature={feature} color={color} onClick={onClick} />}
+            {(feature.type === 'Mark') && <MarkFeature feature={feature} color={color} onClick={onClick} />}
 
-            <rect
-                ref={ref}
-                fill={color}
-                fillOpacity={0.5}
-                strokeWidth={0}
-                x={x}
-                y={y}
-                width={width}
-                height={height}
-                data-id={feature.id}
-                id={feature.id}
-                onClick={onClick}
-            />
-
-            {feature.condition && (
+            {(feature.condition && conditionPath) && (
                 <foreignObject
                     x={x + 10}
                     y={y - 10}
@@ -325,3 +300,207 @@ const Feature = ({ feature, conditionPath, onClick, color, showFacsimile }: Feat
         </g>
     );
 }
+
+const GluedOnFeature = ({ feature, color }: FeatureProps<GluedOn>) => {
+    const { translateX, trackToY } = usePinchZoom();
+
+    const x = translateX(feature.horizontal.from);
+    const y = trackToY(feature.vertical.from);
+    const width = translateX(feature.horizontal.to - feature.horizontal.from);
+    const height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
+
+    return (
+        <>
+            <rect
+                fill={color}
+                fillOpacity={0.5}
+                strokeWidth={0}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                data-id={feature.id}
+                id={feature.id}
+                filter="url(#spray)"
+            />
+
+            {feature.features?.map((subFeature, index) => {
+                if (subFeature.type !== "Writing") return null;
+
+                const text = (subFeature as Writing).transcription.text;
+                const chunks = text.split("\n");
+
+                const cx = x + width;
+                const cy = y + height / 2;
+
+                return (
+                    <ScaledRotatedText
+                        key={`subfeature_${index}`}
+                        cx={cx}
+                        cy={cy}
+                        boxWidth={width}
+                        boxHeight={height}
+                        color={color}
+                        chunks={chunks}
+                    />
+                );
+            })}
+        </>
+    );
+};
+
+function ScaledRotatedText({
+    cx,
+    cy,
+    boxWidth,
+    boxHeight,
+    color,
+    chunks,
+}: {
+    cx: number;
+    cy: number;
+    boxWidth: number;
+    boxHeight: number;
+    color: string;
+    chunks: string[];
+}) {
+    const textRef = useRef<SVGTextElement | null>(null);
+    const [scale, setScale] = useState(1);
+
+    const fontSize = 8;
+    const lineHeight = 12;
+
+    // padding so it doesn't touch edges
+    const pad = 4;
+    const availW = Math.max(0, boxWidth - pad * 2);
+    const availH = Math.max(0, boxHeight - pad * 2);
+
+    useLayoutEffect(() => {
+        const el = textRef.current;
+        if (!el) return;
+
+        // Important: bbox is in the element's current user space.
+        // Measure BEFORE we apply our scale (or reset scale to 1 before measuring).
+        const bbox = el.getBBox();
+        const w = bbox.width || 1;
+        const h = bbox.height || 1;
+
+        // Uniform scale to fit
+        const s = Math.min(availW / w, availH / h);
+
+        // clamp so it doesn't get absurdly tiny/huge (tweak to taste)
+        const clamped = Math.max(0.3, Math.min(6, s));
+
+        setScale(clamped);
+    }, [chunks.join("\n"), availW, availH]);
+
+    // Apply scale around the same rotation center.
+    // Order matters: rotate around (cx,cy), then scale around (cx,cy).
+    const transform = `rotate(90 ${cx} ${cy}) translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`;
+
+    return (
+        <text
+            ref={textRef}
+            transform={transform}
+            x={cx}
+            y={cy}
+            fontSize={fontSize}
+            fill={color}
+            textAnchor="middle"
+            dominantBaseline="hanging" // keep your current baseline choice
+            style={{ userSelect: "none" }}
+        >
+            {chunks.map((chunk, i) => (
+                <tspan key={i} x={cx} dy={i === 0 ? 0 : lineHeight}>
+                    {chunk}
+                </tspan>
+            ))}
+        </text>
+    );
+}
+
+const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
+    const { translateX, trackToY } = usePinchZoom();
+
+    const x = translateX(feature.horizontal.from);
+    const y = trackToY(feature.vertical.from);
+    const width = translateX(feature.horizontal.to - feature.horizontal.from);
+    const height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
+
+    const chunks = feature.transcription.text.split("\n");
+
+    return (
+        <text
+            transform={`rotate(90 ${x + width / 2} ${y + height / 2})`}
+            x={x}
+            y={y + height}
+            fontSize={8}
+            fill={color}
+            data-id={feature.id}
+            id={feature.id}
+        >
+            {chunks.map((chunk, i) => (
+                <tspan key={i} x={x + width / 2} dy={i === 0 ? 0 : 12}>
+                    {chunk}
+                </tspan>
+            ))}
+        </text>
+    );
+};
+
+const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
+    const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
+
+    const x = translateX(feature.horizontal.from);
+    const y = trackToY(feature.vertical.from);
+    const width = translateX(feature.horizontal.to - feature.horizontal.from);
+    let height = 0
+    if (areaOf(feature.vertical.from)?.includes('expression')) {
+        height = trackHeight.expression
+    }
+    else if (areaOf(feature.vertical.from)?.includes('note')) {
+        height = trackHeight.note
+    }
+    else if (feature.vertical.to !== undefined) {
+        height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
+    }
+
+    return (
+        <rect
+            fill={color}
+            fillOpacity={0.5}
+            strokeWidth={0}
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            data-id={feature.id}
+            id={feature.id}
+            onClick={onClick}
+        />
+    );
+}
+
+const MarkFeature = ({ feature, onClick }: FeatureProps) => {
+    const { translateX, trackToY } = usePinchZoom();
+
+    if (!feature.depiction) return null;
+
+    const x = translateX(feature.horizontal.from);
+    const y = trackToY(feature.vertical.from);
+    const width = translateX(feature.horizontal.to - feature.horizontal.from);
+
+    return (
+        <image
+            xlinkHref={feature.depiction.replace('default.jpg', 'gray.jpg')}
+            x={x}
+            y={y}
+            width={width}
+            data-id={feature.id}
+            id={feature.id}
+            onClick={onClick}
+            filter={"url(#contrast-brightness)"}
+        />
+    );
+}
+

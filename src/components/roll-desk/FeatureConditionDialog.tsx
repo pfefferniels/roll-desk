@@ -1,42 +1,33 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
-import { FeatureCondition, GeneralRollCondition, PaperStretch } from "linked-rolls";
-import { assignObject, ObjectAssumption } from "linked-rolls/lib/Assumption";
+import { AnyFeature, conditions, ConditionState } from "linked-rolls";
 
-type ConditionMap = {
-    roll: PaperStretch | GeneralRollCondition
-    feature: FeatureCondition
-}
-
-const conditionTypes = {
-    'roll': ['paper-stretch', 'general'] as const,
-    'feature': ['missing-perforation', 'damaged-perforation', 'illegible'] as const,
-} as const
-
-interface ConditionStateProps<S extends keyof ConditionMap> {
+interface FeatureConditionDialogProps {
     open: boolean
-    subject: S
-    condition?: ObjectAssumption<ConditionMap[S]>
+    feature: AnyFeature
     onClose: () => void
-    onDone: (condition: ObjectAssumption<ConditionMap[S]>) => void
+    onDone: (condition: ConditionState<any>) => void
 }
 
-export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subject, condition, onClose, onDone }: ConditionStateProps<T>) {
-    const types = conditionTypes[subject]
-    const [type, setType] = useState<typeof types[number]>(types[0])
+export function FeatureConditionDialog({ open, feature, onClose, onDone }: FeatureConditionDialogProps) {
+    type FeatureT = typeof feature.type
+    type ConditionT = typeof conditions[FeatureT][number]
+
+    const [type, setType] = useState<ConditionT>(conditions[feature.type][0])
     const [description, setDescription] = useState<string>()
-    const [factor, setFactor] = useState<number>()
+
+    const allTypes: readonly ConditionT[] = conditions[feature.type]
 
     useEffect(() => {
-        if (!condition) return
-
-        setType(condition.type)
-        setDescription(condition.description)
-
-        if (condition.type === 'paper-stretch') {
-            setFactor(condition.factor)
+        if (!feature.condition) {
+            setType(conditions[feature.type][0])
+            setDescription(undefined)
+            return
         }
-    }, [condition])
+
+        setType(feature.condition.type)
+        setDescription(feature.condition.description)
+    }, [feature])
 
     const handleDone = async () => {
         if (!type) {
@@ -44,13 +35,7 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
             return;
         }
 
-        const newCondition = {
-            type,
-            description: description || '',
-            ...(type === 'paper-stretch' && factor !== undefined ? { factor } : {}),
-        } as ConditionMap[T];
-
-        onDone(assignObject(newCondition));
+        onDone({ type, description });
     };
 
     return (
@@ -64,9 +49,9 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
                         <Select
                             labelId="condition-type-label"
                             value={type}
-                            onChange={e => setType(e.target.value as typeof types[number])}
+                            onChange={e => setType(e.target.value)}
                         >
-                            {types.map(t => {
+                            {allTypes.map(t => {
                                 return (
                                     <MenuItem key={t} value={t}>
                                         {t.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
@@ -83,17 +68,6 @@ export function ConditionStateDialog<T extends keyof ConditionMap>({ open, subje
                         onChange={e => setDescription(e.target.value)}
                         fullWidth
                     />
-
-                    {type === 'paper-stretch' && (
-                        <TextField
-                            size="small"
-                            type="number"
-                            value={factor ?? ''}
-                            placeholder="Factor (e.g. 1.5)"
-                            onChange={e => setFactor(Number(e.target.value))}
-                            fullWidth
-                        />
-                    )}
                 </Stack>
             </DialogContent>
             <DialogActions>

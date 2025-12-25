@@ -1,10 +1,9 @@
 import { Button, Stack } from "@mui/material"
-import { applyShift, applyStretch, FeatureConditionAssignment, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollFeature, Shift } from "linked-rolls"
+import { AnyFeature, applyShift, applyStretch, ConditionState, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollFeature, Shift } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
-import { AddSymbolDialog } from "./AddSymbol"
+import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
 import { selectionAsIIIFLink } from "./RollGrid"
-import { ConditionStateDialog } from "./ConditionStateDialog"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
@@ -13,18 +12,9 @@ import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 import { assignObject, ObjectAssumption } from "linked-rolls/lib/Assumption"
+import { FeatureConditionDialog } from "./FeatureConditionDialog"
 
-export type FacsimileSelection = EventDimension | RollFeature
-
-/*
-const addFeature = (copyId: string, feature: RollFeature): EditionOp => {
-    return (draft) => {
-        const copy = draft.copies.find(c => c.id === copyId)
-        if (!copy) return
-
-        copy.features.push(feature)
-    }
-}*/
+export type FacsimileSelection = EventDimension | AnyFeature
 
 const addGeneralCondition = (copyId: string, condition: RollConditionAssignment): EditionOp => {
     return (draft) => {
@@ -35,17 +25,15 @@ const addGeneralCondition = (copyId: string, condition: RollConditionAssignment)
     }
 }
 
-const addFeatureCondition = (copyId: string, featureIDs: string[], condition: FeatureConditionAssignment): EditionOp => {
+const addFeatureCondition = (copyId: string, featureId: string, condition: ConditionState<any>): EditionOp => {
     return (draft) => {
         const copy = draft.copies.find(c => c.id === copyId)
         if (!copy) return
 
-        for (const featureID of featureIDs) {
-            const feature = copy.features.find(f => f.id === featureID)
-            if (!feature) return
+        const feature = copy.features.find(f => f.id === featureId)
+        if (!feature) return
 
-            feature.condition = condition
-        }
+        feature.condition = condition
     }
 }
 
@@ -64,7 +52,7 @@ interface MenuProps {
 }
 
 export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
-    const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item))
+    const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item) || ('horizontal' in item && 'vertical' in item))
     const { edition, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
@@ -77,6 +65,8 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
     const copy = edition.copies.find(c => c.id === copyId)
     if (!copy) return null
+
+    console.log('selection', selection)
 
     return (
         <>
@@ -118,19 +108,20 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     >
                         {selection.length === copy.features.length ? 'Deselect' : 'Select'} All
                     </Button>
-                    {selection.length > 0 && (
-                        <Button
-                            onClick={() => setAddSymbolDialogOpen(true)}
-                            size='small'
-                            startIcon={<Add />}
-                        >
-                            Add
-                        </Button>
-                    )}
                 </Ribbon>
                 {selection.length > 0 && (
                     <>
                         <Ribbon title='Feature'>
+                            {selection.length > 0 && (
+                                <Button
+                                    onClick={() => setAddSymbolDialogOpen(true)}
+                                    size='small'
+                                    startIcon={<Add />}
+                                >
+                                    Add
+                                </Button>
+                            )}
+
                             <Button
                                 onClick={() => {
                                     apply(
@@ -160,23 +151,29 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
             {selection.length > 0 && (
                 <>
-                    <AddSymbolDialog
+                    <AddWritingFeature
                         copyID={copy.id}
                         open={addSymbolDialogOpen}
-                        selection={selection[0]}
                         onClose={() => setAddSymbolDialogOpen(false)}
                         iiifUrl={selectionAsIIIFLink(selection[0], copy)}
                     />
-
-                    <ConditionStateDialog
-                        open={reportFeatureCondition}
-                        onClose={() => setReportFeatureCondition(false)}
-                        subject='feature'
-                        onDone={condition => {
-                            apply(addFeatureCondition(copyId, selection.filter(isRollFeature).map(f => f.id), condition))
-                        }}
-                    />
                 </>
+            )}
+
+            {(selection.length === 1 && isRollFeature(selection[0])) && (
+                <FeatureConditionDialog
+                    open={reportFeatureCondition}
+                    feature={selection[0]}
+                    onClose={() => setReportFeatureCondition(false)}
+                    onDone={(condition) => {
+                        apply(addFeatureCondition(
+                            copyId,
+                            (selection[0] as AnyFeature).id,
+                            condition
+                        ))
+                        setReportFeatureCondition(false)
+                    }}
+                />
             )}
 
             <EditString
@@ -194,14 +191,14 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
             <ProductionEventDialog
                 open={editProduction}
-                event={copy.productionEvent}
+                event={copy.production}
                 onClose={() => setEditProduction(false)}
                 onDone={(event) => {
                     apply(draft => {
                         const copy = draft.copies.find(c => c.id === copyId)
                         if (!copy) return
 
-                        copy.productionEvent = event
+                        copy.production = event
                     })
                     setEditProduction(false)
                 }}

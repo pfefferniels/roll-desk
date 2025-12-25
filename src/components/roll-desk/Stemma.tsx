@@ -4,7 +4,6 @@ import { useContext, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
 import { Arguable } from './Arguable';
-import { EditString } from './EditString';
 import { EditionContext } from '../../providers/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../../providers/SelectionContext';
@@ -37,17 +36,7 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
                     label: version.siglum,
                     type: version.type,
                     generation: version.generation,
-                    overlayInfo: version.actor && (
-                        <Box sx={{ p: 1 }}>
-                            {version.actor && (
-                                <Arguable
-                                    path={['versions', edition.versions.findIndex(v => v.id === version.id), 'actor'] as const}
-                                >
-                                    Actor: <b>{version.actor.name}</b>
-                                </Arguable>
-                            )}
-                        </Box>
-                    )
+                    overlayInfo: null
                 })
             })
 

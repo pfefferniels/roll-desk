@@ -1,6 +1,6 @@
 import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
 import { Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
-import { isEdit, isSymbol, Path } from "linked-rolls";
+import { isEdit, isRollFeature, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { EditChoice, EditString } from "./EditString";
@@ -129,15 +129,14 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
                                                             if (!target) {
                                                                 return <span>{subject}</span>
                                                             }
-                                                            if (isEdit(target)) {
-                                                                return <span key={key}>{target.editType ? target.editType : `+${target.insert?.length || 0} -${target.delete?.length || 0}`} | </span>
+
+                                                            if (isSymbol(target)) {
+                                                                return <span key={key}>{'text' in target ? target.text : 'no text'}</span>
                                                             }
-                                                            else if (isSymbol(target)) {
-                                                                return <span key={key}>{'text' in target ? target.text : target.type}</span>
-                                                            }
-                                                            else {
-                                                                return <span key={key}>unknown type</span>
-                                                            }
+
+                                                            console.log('target', target)
+
+                                                            return <span key={key}>unknown type</span>
                                                         })
                                                     }
                                                     secondary={

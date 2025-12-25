@@ -1,14 +1,16 @@
+import { useSelection } from "../../providers/SelectionContext";
 import { UserSelection } from "./RollDesk";
 
-interface SelectionProps {
-    items: UserSelection[]
-    remove: (item: UserSelection) => void
-}
+export const SelectionFilter = () => {
+    const { selection, setSelection } = useSelection();
 
-export const SelectionFilter = ({ items: items, remove }: SelectionProps) => {
+    const remove = (item: UserSelection) => {
+        setSelection(selection.filter(x => x !== item));
+    }
+
     return (
         <g className="selection">
-            {items.map((item, i) => {
+            {selection.map((item, i) => {
                 const id = 'id' in item ? item.id : `selection_${i}`;
                 return (
                     <use

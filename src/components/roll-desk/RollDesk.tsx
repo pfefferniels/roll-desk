@@ -8,7 +8,7 @@ import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { write } from "midifile-ts"
 import { LayerInfo, LayerStack } from "./StackList"
-import { LayeredRolls } from "./LayeredRolls"
+import { Canvas } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
@@ -28,6 +28,8 @@ import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
 import { valueOf } from "linked-rolls/lib/Assumption"
+import { VersionView } from "./VersionView"
+import { CopyFacsimile } from "./CopyFacsimile"
 
 export type DocOp = (d: Draft<Edition>) => void;
 
@@ -100,6 +102,13 @@ export const Desk = ({ versionId }: DeskProps) => {
     const [currentTab, setCurrentTab] = useState(0)
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
+    const orderedLayers = [...layerInfos].reverse()
+    if (currentCopyId) {
+        orderedLayers.push(
+            ...orderedLayers.splice(orderedLayers.findIndex(li => li.copyId === currentCopyId), 1)
+        )
+    }
+
 
     useHotkeys(['space'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -374,6 +383,9 @@ export const Desk = ({ versionId }: DeskProps) => {
                         onClick={(copyId) => {
                             setCurrentVersionId(undefined)
                             setCurrentCopyId(copyId)
+
+                            const li = layerInfos.find(li => li.copyId === copyId)
+                            if (li) li.symbolOpacity = 1
                         }}
                     />
 
@@ -439,13 +451,39 @@ export const Desk = ({ versionId }: DeskProps) => {
                     expressionHeight={10}
                     spacing={60}
                 >
-                    <LayeredRolls
-                        activeId={currentCopyId}
-                        layerInfos={layerInfos}
-                        selection={selection}
-                        onChangeSelection={setSelection}
-                        currentVersion={currentVersion}
-                    />
+                    <Canvas>
+                        {currentVersion
+                            ? (
+                                <VersionView
+                                    onClick={e => setSelection(prev => [...prev, e])}
+                                    version={currentVersion}
+                                />)
+                            : (
+                                orderedLayers
+                                    .map((stackItem, i) => {
+                                        if (stackItem.symbolOpacity === 0) return null
+
+                                        const copy = edition?.copies.find(c => c.id === stackItem.copyId)
+                                        if (!copy) return null
+
+                                        return (
+                                            <CopyFacsimile
+                                                key={`copy_${i}`}
+                                                copy={copy}
+                                                active={stackItem.copyId === currentCopyId}
+                                                color={stackItem.color}
+                                                facsimileOpacity={stackItem.facsimileOpacity}
+                                                onClick={e => setSelection(prev => [...prev, e])}
+                                                onChange={() => { }}
+                                                onSelectionDone={dimension => setSelection([{
+                                                    ...dimension
+                                                }])}
+                                            />
+                                        )
+                                    })
+                            )
+                        }
+                    </Canvas>
                 </PinchZoomProvider>
             </Box>
 
