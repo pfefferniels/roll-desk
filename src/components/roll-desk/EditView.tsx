@@ -120,6 +120,8 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
             else if (edit.editType === 'correct-error') {
                 typeStr = `fix`
             }
+            else if (edit.editType === 'shift') {
+            }
             else {
                 typeStr = `${edit.editType.replaceAll('-', ' ')}`
             }

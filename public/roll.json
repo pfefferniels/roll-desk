@@ -3308,6 +3308,15 @@
             "@id": "c9050e75-97a8-4862-9533-0f4b1439802b",
             "edits": [
                 {
+                    "delete": [
+                        "symbol_aedcbbdf-580a-43f7-8e3d-73475aa3ce6a"
+                    ],
+                    "@id": "955e15aa-e56a-440c-a362-1e98d7909c38",
+                    "@type": "edit",
+                    "editType": "remove-redundancy",
+                    "motivation": "cleanup"
+                },
+                {
                     "insert": [
                         {
                             "@id": "symbol_7b9c76ae-2e74-4073-950e-a549bf18d518",
@@ -5446,6 +5455,11 @@
                     "@type": "motivation",
                     "note": "Differenzierung der Mittelstimmen",
                     "@id": "426a0404-1911-49d7-a070-c53ca269bc83"
+                },
+                {
+                    "@type": "motivation",
+                    "note": "Bereinigung",
+                    "@id": "cleanup"
                 }
             ],
             "basedOn": {
@@ -17022,7 +17036,28 @@
                                 {
                                     "@id": "6f4d8724-9348-472b-b9b8-07f1ec36385d"
                                 }
-                            ]
+                            ],
+                            "alignedWith": {
+                                "@value": "symbol_62b8eaa9-1cd2-440a-b071-0dbaee9918c4",
+                                "@annotation": {
+                                    "@id": "75462383-f69d-40dc-b12b-5dbc785133e9",
+                                    "belief": {
+                                        "@type": "belief",
+                                        "@id": "efdc2093-2353-4b11-9d25-c62dfc11fc35",
+                                        "certainty": "true",
+                                        "reasons": [
+                                            {
+                                                "@type": "simpleArgumentation",
+                                                "actor": {
+                                                    "name": "Niels Pfeffer",
+                                                    "sameAs": []
+                                                },
+                                                "note": "Bezieht sich das Forzando ab nicht auf die zwei unmittelbar folgenden Noten, so hat das vorlaufende Crescendo keinen Sinn."
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
                         }
                     ],
                     "@id": "fe7badc0-3bfa-4c1a-b437-06c62f0009d7",

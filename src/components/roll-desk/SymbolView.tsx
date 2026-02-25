@@ -1,5 +1,5 @@
 import { Expression, Note } from "linked-rolls";
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { EditionContext } from "../../providers/EditionContext";
 
@@ -43,9 +43,23 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const opacity = 1 / ((age || 0) + 1)
     const color = (age || 0) >= 1 ? 'gray' : 'black';
 
+    const ref = useRef<SVGGElement>(null);
+
+    useEffect(() => {
+        const handlePlaybackEvent = () => {
+            setDisplayDetails(true);
+        }
+        const currentRef = ref.current;
+        currentRef?.addEventListener('playback-event', handlePlaybackEvent);
+        return () => {
+            currentRef?.removeEventListener('playback-event', handlePlaybackEvent);
+        }
+    }, []);
+
     if (zoom < 0.7) {
         return (
             <g
+                ref={ref}
                 data-id={symbol.id}
                 id={symbol.id}
                 className='collated-event'

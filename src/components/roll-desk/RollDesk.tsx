@@ -143,6 +143,14 @@ export const Desk = ({ versionId }: DeskProps) => {
         play(emulation.asMIDI(), (e) => {
             if (e.type === 'meta' && e.subtype === 'text') {
                 const symbolId = e.text
+
+                const group = document.querySelector(`#${symbolId}`)
+                if (group) {
+                    group.dispatchEvent(new CustomEvent('playback-event', {
+                        detail: {}
+                    }))
+                }
+
                 const symbol = document.querySelector(`#${symbolId} rect`)
                 if (!symbol) return
 
@@ -341,7 +349,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                 <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
                     <Tab value={0} label="Info" />
                     <Tab value={1} label="Stemma" />
-                    <Tab value={2} label="Carriers" />
+                    <Tab value={2} label="Sources" />
                 </Tabs>
 
                 <TabPanel value={currentTab} index={0}>

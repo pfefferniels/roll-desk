@@ -97,7 +97,7 @@ export const RollGrid = ({
                 y1={y}
                 y2={y}
                 stroke="black"
-                strokeWidth={0.05}
+                strokeWidth={0.1}
             />
         );
     }
@@ -106,7 +106,7 @@ export const RollGrid = ({
         <g id="rollGrid">
             <rect
                 fill="white"
-                fillOpacity={0.7}
+                fillOpacity={0.1}
                 x={0}
                 y={0}
                 height={height}
