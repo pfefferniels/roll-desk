@@ -10,6 +10,9 @@ const isLib = process.env.BUILD_LIB === 'true';
 
 export default defineConfig(() => {
     return {
+        resolve: {
+            dedupe: ['react', 'react-dom'],
+        },
         build:
             isLib
                 ? {

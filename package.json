@@ -22,7 +22,6 @@
     "curved-arrows": "^0.3.0",
     "d3": "^7.9.0",
     "dayjs": "^1.11.13",
-    "doubtful": "file:../doubtful",
     "immer": "^10.1.1",
     "linked-rolls": "file:../linked-rolls",
     "midi-parser-js": "^4.0.4",

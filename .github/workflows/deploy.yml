@@ -1,0 +1,57 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout measuring-early-records
+        uses: actions/checkout@v4
+        with:
+          path: measuring-early-records
+
+      - name: Checkout linked-rolls
+        uses: actions/checkout@v4
+        with:
+          repository: pfefferniels/linked-rolls
+          path: linked-rolls
+
+      - name: Checkout react-pianosound
+        uses: actions/checkout@v4
+        with:
+          repository: pfefferniels/react-pianosound
+          path: react-pianosound
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build linked-rolls
+        working-directory: linked-rolls
+        run: |
+          npm install
+          npm run build
+
+      - name: Build react-pianosound
+        working-directory: react-pianosound
+        run: |
+          npm install
+          npm run build
+
+      - name: Install and build
+        working-directory: measuring-early-records
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build --project-name measuring-early-records
+          workingDirectory: measuring-early-records
