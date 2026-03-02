@@ -1,6 +1,6 @@
-import { Delete, Edit as EditIcon, Person, Link, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
-import { Button } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, MergeEdits, SplitEdit, ConnectVersions, getAt, assignReference, idOf, assignObject, MeaningComprehension } from "linked-rolls"
+import { Delete, Edit as EditIcon, Person, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, MergeEdits, SplitEdit, ConnectVersions, DetachVersion, getAt, assignReference, idOf, assignObject, MeaningComprehension } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -111,6 +111,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
     const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
+    const [confirmDetach, setConfirmDetach] = useState(false)
 
     useHotkeys(['m', 's'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -241,35 +242,24 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     )}
                     {selection.every(isEdit) && (
                         <Ribbon title='Edits'>
-                            {selection.length === 1 && (
-                                <Button
-                                    onClick={() => addMotivation(selection)}
-                                    size='small'
-                                    startIcon={<TypeSpecimen />}
-                                >
-                                    Type
-                                </Button>
-                            )}
+                            <Button
+                                size='small'
+                                startIcon={<Lightbulb />}
+                                onClick={() => addMotivation(selection)}
+                            >
+                                Motivate
+                            </Button>
                             {selection.length >= 2 && (
-                                <>
-                                    <Button
-                                        size='small'
-                                        startIcon={<Lightbulb />}
-                                        onClick={() => addMotivation(selection)}
-                                    >
-                                        Motivate
-                                    </Button>
-                                    <Button
-                                        onClick={() => {
-                                            apply(new MergeEdits(versionId, selection))
-                                            setSelection([])
-                                        }}
-                                        startIcon={<GroupAdd />}
-                                        size='small'
-                                    >
-                                        Merge
-                                    </Button>
-                                </>
+                                <Button
+                                    onClick={() => {
+                                        apply(new MergeEdits(versionId, selection))
+                                        setSelection([])
+                                    }}
+                                    startIcon={<GroupAdd />}
+                                    size='small'
+                                >
+                                    Merge
+                                </Button>
                             )}
                             {selection.length === 1 && (
                                 <Button
@@ -288,13 +278,23 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 </>
             )}
             <Ribbon title='Derivation'>
-                <Button
-                    onClick={() => setAttachTo(true)}
-                    size='small'
-                    startIcon={<Link />}
-                >
-                    Attach To
-                </Button>
+                {version.basedOn ? (
+                    <Button
+                        onClick={() => setConfirmDetach(true)}
+                        size='small'
+                        startIcon={<LinkOff />}
+                    >
+                        Detach
+                    </Button>
+                ) : (
+                    <Button
+                        onClick={() => setAttachTo(true)}
+                        size='small'
+                        startIcon={<Link />}
+                    >
+                        Attach To
+                    </Button>
+                )}
                 {selection.length > 0 && selection.every(isEdit) && (
                     <Button
                         onClick={() => {
@@ -305,7 +305,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                         startIcon={<CallSplit />}
                         size='small'
                     >
-                        Derive New Version
+                        Extract to New Version
                     </Button>
                 )}
             </Ribbon>
@@ -352,6 +352,28 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 value={version.type}
                 types={versionTypes}
             />
+
+            <Dialog open={confirmDetach} onClose={() => setConfirmDetach(false)}>
+                <DialogTitle>Detach Version</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Detaching {version.siglum}
+                        {version.basedOn
+                            ? ` from ${edition.versions.find(v => v.id === idOf(version.basedOn!))?.siglum ?? 'parent'}`
+                            : ''
+                        } will discard edit classifications and motivation references.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDetach(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                        apply(new DetachVersion(versionId))
+                        setConfirmDetach(false)
+                    }}>
+                        Detach
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <EditString
                 open={!!editsToMotivate}
