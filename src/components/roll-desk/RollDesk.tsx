@@ -7,13 +7,12 @@ import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, U
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { write } from "midifile-ts"
-import { LayerInfo, LayerStack } from "./StackList"
+import { SourceStack } from "./SourceStack"
 import { Canvas } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
-import { distinctColors } from "../../helpers/distinctColors"
 import EditMetadata from "./EditMetadata"
 import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
@@ -83,8 +82,6 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const [stretch, setStretch] = useState(viewOnly ? 0.2 : 1)
 
-    const [layerInfos, setLayerInfos] = useState<LayerInfo[]>([])
-
     const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
@@ -102,13 +99,6 @@ export const Desk = ({ versionId }: DeskProps) => {
     const [currentTab, setCurrentTab] = useState(0)
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
-
-    const orderedLayers = [...layerInfos].reverse()
-    if (currentCopyId) {
-        orderedLayers.push(
-            ...orderedLayers.splice(orderedLayers.findIndex(li => li.copyId === currentCopyId), 1)
-        )
-    }
 
     useHotkeys(['space'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -203,32 +193,11 @@ export const Desk = ({ versionId }: DeskProps) => {
     useEffect(() => {
         if (!edition) return
 
-        setLayerInfos(prev => {
-            const prevMap = new Map(prev.map(li => [li.copyId, li]))
-
-            const newList: LayerInfo[] = edition.copies.map((copy, i) => {
-                const existing = prevMap.get(copy.id)
-                if (existing) return existing
-
-                return {
-                    color: distinctColors[i % distinctColors.length],
-                    copyId: copy.id,
-                    symbolOpacity: 1,
-                    facsimileOpacity: 0,
-                    facsimile: false,
-                    visible: !viewOnly
-                }
-            })
-
-            const unchanged = prev.length === newList.length && prev.every((p, i) => p.copyId === newList[i].copyId && p === newList[i])
-            return unchanged ? prev : newList
-        })
-
         // If the currently active copy was removed from the edition, clear it
         if (currentCopyId && !edition.copies.find(c => c.id === currentCopyId)) {
             setCurrentCopyId(undefined)
         }
-    }, [edition?.copies, viewOnly])
+    }, [edition?.copies])
 
     if (!edition) {
         return (
@@ -385,16 +354,11 @@ export const Desk = ({ versionId }: DeskProps) => {
                 </TabPanel>
 
                 <TabPanel value={currentTab} index={2}>
-                    <LayerStack
-                        layerInfos={layerInfos}
+                    <SourceStack
                         activeId={currentCopyId}
-                        onChange={layerInfos => setLayerInfos([...layerInfos])}
                         onClick={(copyId) => {
                             setCurrentVersionId(undefined)
                             setCurrentCopyId(copyId)
-
-                            const li = layerInfos.find(li => li.copyId === copyId)
-                            if (li) li.visible = true
                         }}
                     />
 
@@ -467,29 +431,25 @@ export const Desk = ({ versionId }: DeskProps) => {
                                     onClick={e => setSelection(prev => [...prev, e])}
                                     version={currentVersion}
                                 />)
-                            : (
-                                orderedLayers
-                                    .filter(item => item.visible)
-                                    .map((stackItem, i) => {
-                                        const copy = edition?.copies.find(c => c.id === stackItem.copyId)
-                                        if (!copy) return null
+                            : (() => {
+                                const copy = edition?.copies.find(c => c.id === currentCopyId)
+                                if (!copy) return null
 
-                                        return (
-                                            <CopyFacsimile
-                                                key={`copy_${i}`}
-                                                copy={copy}
-                                                active={stackItem.copyId === currentCopyId}
-                                                color={stackItem.color}
-                                                facsimileOpacity={stackItem.facsimileOpacity}
-                                                onClick={e => setSelection(prev => [...prev, e])}
-                                                onChange={() => { }}
-                                                onSelectionDone={dimension => setSelection([{
-                                                    ...dimension
-                                                }])}
-                                            />
-                                        )
-                                    })
-                            )
+                                return (
+                                    <CopyFacsimile
+                                        key={`copy_${currentCopyId}`}
+                                        copy={copy}
+                                        active={true}
+                                        color="#444"
+                                        facsimileOpacity={0}
+                                        onClick={e => setSelection(prev => [...prev, e])}
+                                        onChange={() => { }}
+                                        onSelectionDone={dimension => setSelection([{
+                                            ...dimension
+                                        }])}
+                                    />
+                                )
+                            })()
                         }
                     </Canvas>
                 </PinchZoomProvider>
@@ -538,6 +498,11 @@ export const Desk = ({ versionId }: DeskProps) => {
             <RollCopyDialog
                 open={editCopy}
                 onClose={() => setEditCopy(false)}
+                onDone={(copyId) => {
+                    setCurrentCopyId(copyId)
+                    setCurrentVersionId(undefined)
+                    setSelection([])
+                }}
             />
         </SelectionContext.Provider>
     )

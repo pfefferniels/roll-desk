@@ -47,21 +47,21 @@ export function Arguable<Name, Type>({ asSVG, anchor, path, children }: Arguable
 
     const button = (
         <Tooltip title={belief ? belief.certainty : 'No Belief'}>
-            <IconButton onClick={e => setAnchorEl(e.currentTarget)}>
+            <IconButton size='small' sx={{ padding: '2px' }} onClick={e => setAnchorEl(e.currentTarget)}>
                 {belief?.certainty === 'true' && (
-                    <DoneAll />
+                    <DoneAll sx={{ fontSize: 14 }} />
                 )}
                 {belief?.certainty === 'likely' && (
-                    <Done />
+                    <Done sx={{ fontSize: 14 }} />
                 )}
                 {belief?.certainty === 'possible' && (
-                    <QuestionMarkTwoTone fontSize='small' />
+                    <QuestionMarkTwoTone sx={{ fontSize: 14 }} />
                 )}
                 {(belief?.certainty === 'unlikely' || belief?.certainty === 'false') && (
-                    <RemoveDone />
+                    <RemoveDone sx={{ fontSize: 14 }} />
                 )}
                 {!belief && (
-                    <RadioButtonUnchecked />
+                    <RadioButtonUnchecked sx={{ fontSize: 14 }} />
                 )}
             </IconButton>
         </Tooltip>
