@@ -7,7 +7,7 @@ import { selectionAsIIIFLink } from "./RollGrid"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
-import { AlignCopies } from "./AlignCopies"
+import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
@@ -44,6 +44,32 @@ const shiftAndStretch = (copyId: string, shift: Shift, stretch: ObjectAssumption
 
         applyShift(shift, copy)
         applyStretch(stretch, copy)
+    }
+}
+
+const removeAlignment = (copyId: string): EditionOp => {
+    return (draft) => {
+        const copy = draft.copies.find(c => c.id === copyId)
+        if (!copy) return
+
+        const shift = copy.measurements.shift
+        const stretchCondition = copy.conditions.find(c => c.type === 'paper-stretch') as PaperStretch | undefined
+        const factor = stretchCondition?.factor ?? 1
+
+        for (const feature of copy.features) {
+            feature.horizontal.from = feature.horizontal.from / factor - (shift?.horizontal ?? 0)
+            if (feature.horizontal.to) {
+                feature.horizontal.to = feature.horizontal.to / factor - (shift?.horizontal ?? 0)
+            }
+            feature.vertical.from = feature.vertical.from - (shift?.vertical ?? 0)
+            if (feature.vertical.to) {
+                feature.vertical.to = feature.vertical.to - (shift?.vertical ?? 0)
+            }
+        }
+
+        copy.ops = copy.ops.filter(op => op !== 'shifted' && op !== 'stretched')
+        delete copy.measurements.shift
+        copy.conditions = copy.conditions.filter(c => c.type !== 'paper-stretch')
     }
 }
 
@@ -86,11 +112,21 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     </Button>
                 </Ribbon>
                 <Ribbon title='Alignment'>
-                    <Button
-                        onClick={() => setAlignCopies(true)}
-                    >
-                        Align Copies
-                    </Button>
+                    {copy.ops.includes('shifted') || copy.ops.includes('stretched') ? (
+                        <Button
+                            onClick={() => {
+                                apply(removeAlignment(copyId))
+                            }}
+                        >
+                            Remove Alignment
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={() => setAlignCopies(true)}
+                        >
+                            Align to...
+                        </Button>
+                    )}
                 </Ribbon>
                 <Ribbon title='Symbols'>
                     <Button
@@ -204,7 +240,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 }}
             />
 
-            <AlignCopies
+            <AlignToDialog
                 copy={copy}
                 open={alignCopies}
                 onClose={() => setAlignCopies(false)}
