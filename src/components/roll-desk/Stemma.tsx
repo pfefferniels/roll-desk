@@ -133,6 +133,7 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
                         onChange={() => {
                             setLinks([...links])
                         }}
+                        onVersionClick={onClick}
                     />
 
                     {nodes.map((node, i) => (
@@ -296,13 +297,15 @@ interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
     onChange: () => void
+    onVersionClick: (versionId: string) => void
 }
 
 export const LinkContainer = ({
     positionedNodes,
     links,
+    onVersionClick,
 }: LinkContainerProps) => {
-    const { selection } = useSelection()
+    const { selection, setSelection } = useSelection()
     const { view } = useContext(EditionContext)
 
     return (
@@ -329,13 +332,24 @@ export const LinkContainer = ({
                                 return {
                                     count: view?.linksTo(m.id).length || 0,
                                     id: m.id,
-                                    selected: selection.includes(m),
+                                    selected: selection.some(s => 'id' in s && s.id === m.id),
                                     description: m.note || 'No description'
                                 }
                             })
                         }
                         a={{ x: source.x!, y: source.y! }}
                         b={{ x: target.x!, y: target.y! }}
+                        onSliceClick={(slice) => {
+                            if (slice) {
+                                const m = motivations.find(m => m.id === slice.id)
+                                if (m) {
+                                    onVersionClick(source.id)
+                                    queueMicrotask(() => setSelection([m]))
+                                }
+                            } else {
+                                setSelection([])
+                            }
+                        }}
                     />
                 )
             })}

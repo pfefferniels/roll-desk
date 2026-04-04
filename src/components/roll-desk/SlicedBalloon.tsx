@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /** A 2D point in SVG user space. */
 export type Pt = { x: number; y: number };
@@ -16,6 +16,7 @@ export type SlicedBalloonProps = {
     b: Pt;
     slices: Slice[];
     onSliceHover?: (slice: Slice | null) => void;
+    onSliceClick?: (slice: Slice | null) => void;
 };
 
 /**
@@ -161,9 +162,10 @@ export function boundaryCubicPathReversed(a: Pt, b: Pt, offset: number): string 
  * Sliced balloon between A and B. Slice widths are proportional to count.
  * The largest slices are centered via ordering.
  */
-export function SlicedBalloon({ a, b, slices }: SlicedBalloonProps) {
+export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps) {
     const [hovered, setHovered] = React.useState(false);
     const [currentSlice, setCurrentSlice] = useState<Slice>()
+    const clickTime = useRef(0)
 
     const geom = useMemo(() => computeSliceGeometry(slices), [slices]);
 
@@ -205,7 +207,12 @@ export function SlicedBalloon({ a, b, slices }: SlicedBalloonProps) {
     return (
         <g
             onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            onMouseLeave={() => {
+                setHovered(false)
+                if (Date.now() - clickTime.current > 200) {
+                    onSliceClick?.(null)
+                }
+            }}
         >
             {hovered ?
                 (slicePaths.map(({ slice, d }) => (
@@ -222,6 +229,10 @@ export function SlicedBalloon({ a, b, slices }: SlicedBalloonProps) {
                         }}
                         onMouseLeave={() => {
                             setCurrentSlice(undefined)
+                        }}
+                        onClick={() => {
+                            clickTime.current = Date.now()
+                            onSliceClick?.(slice)
                         }}
                     />
                 ))
