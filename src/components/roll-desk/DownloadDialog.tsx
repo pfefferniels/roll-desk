@@ -17,9 +17,11 @@ interface DownloadDialogProps {
     open: boolean;
     onClose: () => void;
     edition: Edition;
+    onDownloadMIDI?: () => void;
+    versionSiglum?: string;
 }
 
-const DownloadDialog: React.FC<DownloadDialogProps> = ({ open, onClose, edition }) => {
+const DownloadDialog: React.FC<DownloadDialogProps> = ({ open, onClose, edition, onDownloadMIDI, versionSiglum }) => {
     const downloadJsonLd = () => {
         const jsonld = asJsonLd(edition)
         downloadFile('roll.json', JSON.stringify(jsonld, null, 4), 'application/ld+json')
@@ -35,8 +37,24 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({ open, onClose, edition 
                             <ListItemText
                                 primary="JSON-LD"
                                 secondary={`
-                                    The edition will be serialized using the JSON-LD format, 
+                                    The edition will be serialized using the JSON-LD format,
                                     based on Roll-O data model. This format is recommended.`} />
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem>
+                        <ListItemButton
+                            disabled={!versionSiglum}
+                            onClick={() => {
+                                onDownloadMIDI?.()
+                                onClose()
+                            }}
+                        >
+                            <ListItemText
+                                primary={versionSiglum ? `MIDI (${versionSiglum})` : 'MIDI'}
+                                secondary={versionSiglum
+                                    ? 'Download the selected version as a MIDI file.'
+                                    : 'Select a version to enable MIDI download.'
+                                } />
                         </ListItemButton>
                     </ListItem>
                 </List>

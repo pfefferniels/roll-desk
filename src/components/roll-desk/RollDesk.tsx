@@ -223,7 +223,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                 </IconButton>
                 <IconButton
                     size='small'
-                    onClick={downloadMIDI}
+                    onClick={() => setDownloadDialogOpen(true)}
                 >
                     <Download />
                 </IconButton>
@@ -488,6 +488,8 @@ export const Desk = ({ versionId }: DeskProps) => {
                 open={downloadDialogOpen}
                 edition={edition}
                 onClose={() => setDownloadDialogOpen(false)}
+                onDownloadMIDI={downloadMIDI}
+                versionSiglum={currentVersion?.siglum}
             />
 
             <EditMetadata
