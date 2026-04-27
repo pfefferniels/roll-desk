@@ -866,7 +866,7 @@
           "@id": "8b5c2445-c45e-46c3-969c-3afff11f62f8",
           "@type": "edit",
           "editType": "remove-redundancy",
-          "motivation": "cleanup"
+          "motivation": "cleanup-b"
         },
         {
           "insert": [
@@ -3296,7 +3296,7 @@
         {
           "@type": "motivation",
           "note": "Bereinigung",
-          "@id": "cleanup"
+          "@id": "cleanup-b"
         }
       ],
       "basedOn": {
@@ -3314,7 +3314,7 @@
           "@id": "955e15aa-e56a-440c-a362-1e98d7909c38",
           "@type": "edit",
           "editType": "remove-redundancy",
-          "motivation": "cleanup"
+          "motivation": "cleanup-c"
         },
         {
           "insert": [
@@ -5459,7 +5459,7 @@
         {
           "@type": "motivation",
           "note": "Bereinigung",
-          "@id": "cleanup"
+          "@id": "cleanup-c"
         }
       ],
       "basedOn": {
