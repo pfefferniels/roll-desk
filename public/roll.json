@@ -17061,7 +17061,8 @@
             }
           ],
           "@id": "fe7badc0-3bfa-4c1a-b437-06c62f0009d7",
-          "@type": "edit"
+          "@type": "edit",
+          "motivation": "03d22e22-cf8a-48b1-9917-8ed4de2362a0"
         },
         {
           "insert": [
@@ -17087,6 +17088,11 @@
           "@type": "motivation",
           "note": "Crescendo zu melodischen H\u00f6hepunkten",
           "@id": "b64a5621-2785-4db2-9586-67b5701f681f"
+        },
+        {
+          "@type": "motivation",
+          "note": "Dynamische Differenzierung",
+          "@id": "03d22e22-cf8a-48b1-9917-8ed4de2362a0"
         }
       ],
       "@type": "edition"
