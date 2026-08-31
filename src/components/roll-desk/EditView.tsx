@@ -3,31 +3,19 @@ import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext, useMemo, useState } from "react";
 import { AnySymbol } from "linked-rolls/lib/Symbol";
-import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
+import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls/lib/EditionView";
 import { EditionContext } from "../../providers/EditionContext";
+import { boxOf, Translation } from "../../helpers/rollGeometry";
 
-export type Translation = Pick<PinchZoomContextProps, 'translateX' | 'trackToY' | 'trackHeight'>
+export type { Translation }
 
-const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, { translateX, trackToY, trackHeight }: Translation) => {
+const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
     const dim = editionView.dimensionOf(symbol)
     if (!dim) return undefined
 
-    let height = trackHeight.note
-    if (dim.vertical.to) {
-        height = trackToY(dim.vertical.to) - trackToY(dim.vertical.from);
-    }
-    else if (symbol.type === 'note' || symbol.type === 'expression') {
-        height = trackHeight[symbol.type];
-    }
-
-    return {
-        x: translateX(dim.horizontal.from),
-        y: trackToY(dim.vertical.from),
-        width: translateX(dim.horizontal.to) - translateX(dim.horizontal.from),
-        height
-    }
+    return boxOf(dim, translation)
 }
 
 export const getEditBBoxes = (edit: Edit, editionView: EditionView, translation: Translation) => {

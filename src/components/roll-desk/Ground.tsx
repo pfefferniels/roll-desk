@@ -6,7 +6,7 @@ import { Cursor } from "./Cursor";
 export const Ground = ({
     x, y, width, height,
 }: { x: number; y: number; width: number; height: number; }) => {
-    const { zoom, translateX, trackToY } = usePinchZoom();
+    const { zoom, translateX, height: rollHeight } = usePinchZoom();
     const { setRange } = useSelection();
 
     const [left, setLeft] = useState<number | null>(null);
@@ -77,7 +77,7 @@ export const Ground = ({
                         x={translateX(left)}
                         y={0}
                         width={translateX(right) - translateX(left)}
-                        height={trackToY(0) - trackToY(100)}
+                        height={rollHeight}
                         stroke="orange"
                         fillOpacity={0.3}
                         fill='orange'

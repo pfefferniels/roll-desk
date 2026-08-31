@@ -3,7 +3,7 @@ import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { WithId } from 'linked-rolls/lib/WithId';
 import { EventDimension } from './RollDesk.tsx';
-import { RollCopy } from 'linked-rolls';
+import { calibrationOf, columnsOf, RollCopy, welteT100 } from 'linked-rolls';
 
 interface RollGridProps {
     width: number;
@@ -16,7 +16,7 @@ export const RollGrid = ({
     selectionMode,
     onSelectionDone,
 }: RollGridProps) => {
-    const { zoom, yToTrack, trackToY, height } = usePinchZoom();
+    const { zoom, yToTrack, bandOf, trackToY, height } = usePinchZoom();
 
     const [rect, setRect] = useState<EventDimension & WithId>();
     const [isDrawing, setIsDrawing] = useState(false);
@@ -49,13 +49,13 @@ export const RollGrid = ({
         setRect({
             id: v4(),
             horizontal: {
-                from: startPoint.x / zoom,
-                to: offsetX / zoom,
+                from: Math.min(startPoint.x, offsetX) / zoom,
+                to: Math.max(startPoint.x, offsetX) / zoom,
                 unit: 'mm'
             },
             vertical: {
-                from,
-                to,
+                from: Math.min(from, to),
+                to: Math.max(from, to),
                 unit: 'track'
             }
         });
@@ -86,21 +86,19 @@ export const RollGrid = ({
         }
     }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
-    const lines = [];
-    for (let i = 0; i < 100; i++) {
-        const y = trackToY(i);
-        lines.push(
+    const lines = Array
+        .from({ length: welteT100.trackCount }, (_, i) => i + 1)
+        .map(track => (
             <line
-                key={`gridLine_${i}`}
+                key={`gridLine_${track}`}
                 x1={0}
                 x2={width}
-                y1={y}
-                y2={y}
+                y1={trackToY(track)}
+                y2={trackToY(track)}
                 stroke="black"
                 strokeWidth={0.1}
             />
-        );
-    }
+        ));
 
     return (
         <g id="rollGrid">
@@ -116,9 +114,8 @@ export const RollGrid = ({
             {rect && (
                 <rect
                     x={rect.horizontal.from * zoom}
-                    y={trackToY(rect.vertical.from)}
                     width={(rect.horizontal.to - rect.horizontal.from) * zoom}
-                    height={trackToY(rect.vertical.to!) - trackToY(rect.vertical.from)}
+                    {...bandOf(rect.vertical)}
                     fill="rgba(0, 0, 255, 0.3)"
                     stroke="blue"
                     strokeWidth={0.5}
@@ -133,34 +130,38 @@ const mmToPixels = (mm: number, dpi: number): number => {
     return mm * dpi * inchesPerMM;
 }
 
+/**
+ * Crops the scan back to a selection. The horizontal edges have to be
+ * taken back through whatever was done to align this copy with the
+ * others; the vertical ones come from the copy's own calibration, since
+ * the scan grid sits wherever the roll happened to lie on the scanner.
+ *
+ * The scans are stored rotated, so the region's first pair of numbers
+ * is the vertical extent of the selection.
+ */
 export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) => {
     const dpi = 300.25
-
-    const { horizontal } = selection
-    let { from, to } = horizontal
-
-    if (copy.measurements.shift) {
-        from -= copy.measurements.shift.horizontal
-        to -= copy.measurements.shift.horizontal
-    }
+    const calibration = calibrationOf(copy)
+    if (!calibration) return undefined
 
     const stretch = copy.conditions.find(condition => condition.type === 'paper-stretch')
-
-    if (stretch) {
-        from /= stretch.factor
-        to /= stretch.factor
+    const asScanned = (mm: number) => {
+        const unshifted = mm - (copy.measurements.shift?.horizontal || 0)
+        return mmToPixels(stretch ? unshifted / stretch.factor : unshifted, dpi)
     }
 
-    let x1 = mmToPixels(from, dpi)
-    let x2 = mmToPixels(to, dpi)
+    const x1 = asScanned(selection.horizontal.from)
+    const x2 = asScanned(selection.horizontal.to)
 
-    let y1 = ((selection.vertical.to || selection.vertical.from + 1) + 2)
-        * (copy.measurements.holeSeparation?.value || 1)
-        + (copy.measurements.margins?.bass || 0)
-    let y2 = (selection.vertical.from + 2)
-        * (copy.measurements.holeSeparation?.value || 1)
-        + (copy.measurements.margins?.bass || 0)
+    const columns = columnsOf(
+        selection.vertical.from,
+        selection.vertical.to ?? selection.vertical.from,
+        calibration
+    )
 
-    const region = `${Math.floor(y1)},${Math.floor(x1)},${Math.floor(Math.abs(y2 - y1))},${Math.floor(x2 - x1)}`
+    const region = [columns.from, x1, columns.width, x2 - x1]
+        .map(value => Math.floor(value))
+        .join(',')
+
     return `${copy.scan}/${region}/full/0/default.jpg`
 }

@@ -13,7 +13,7 @@ interface PerforationProps {
 export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProps) => {
     const { view, viewOnly } = useContext(EditionContext)
     const [displayDetails, setDisplayDetails] = useState(false);
-    const { translateX, trackToY, trackHeight, zoom } = usePinchZoom();
+    const { translateX, trackToY, laneHeight, height: canvasHeight, zoom } = usePinchZoom();
 
     if (!view) return null;
 
@@ -38,7 +38,7 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const meanOffset = dimensions.horizontal.to
 
     const y = trackToY(features[0].vertical.from);
-    const height = symbol.type === 'note' ? trackHeight.note : trackHeight.expression;
+    const height = laneHeight(features[0].vertical.from);
 
     const opacity = 1 / ((age || 0) + 1)
     const color = (age || 0) >= 1 ? 'gray' : 'black';
@@ -82,16 +82,16 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
                         <line
                             x1={translateX(meanOnset)}
                             x2={translateX(meanOnset)}
-                            y1={displayDetails ? trackToY(100) : y - 10}
-                            y2={displayDetails ? trackToY(0) : y + 20}
+                            y1={displayDetails ? 0 : y - 10}
+                            y2={displayDetails ? canvasHeight : y + 20}
                             stroke='black'
                             strokeWidth={0.2}
                             strokeOpacity={0.7} />
                         <line
                             x1={translateX(meanOffset)}
                             x2={translateX(meanOffset)}
-                            y1={displayDetails ? trackToY(100) : y - 10}
-                            y2={displayDetails ? trackToY(0) : y + 20}
+                            y1={displayDetails ? 0 : y - 10}
+                            y2={displayDetails ? canvasHeight : y + 20}
                             stroke='black'
                             strokeWidth={0.2}
                             strokeOpacity={0.7} />
@@ -121,16 +121,16 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
             <line
                 x1={translateX(meanOnset)}
                 x2={translateX(meanOnset)}
-                y1={displayDetails ? trackToY(100) : y - 10}
-                y2={displayDetails ? trackToY(0) : y + 20}
+                y1={displayDetails ? 0 : y - 10}
+                y2={displayDetails ? canvasHeight : y + 20}
                 stroke='black'
                 strokeWidth={0.2}
                 strokeOpacity={0.7} />
             <line
                 x1={translateX(meanOffset)}
                 x2={translateX(meanOffset)}
-                y1={displayDetails ? trackToY(100) : y - 10}
-                y2={displayDetails ? trackToY(0) : y + 20}
+                y1={displayDetails ? 0 : y - 10}
+                y2={displayDetails ? canvasHeight : y + 20}
                 stroke='black'
                 strokeWidth={0.2}
                 strokeOpacity={0.7} />
@@ -170,7 +170,7 @@ interface SustainPedalProps {
 
 export const SustainPedal = ({ on, off }: SustainPedalProps) => {
     const { view } = useContext(EditionContext)
-    const { translateX, trackToY } = usePinchZoom()
+    const { translateX, bandOf } = usePinchZoom()
 
     if (!view) return null
 
@@ -180,16 +180,14 @@ export const SustainPedal = ({ on, off }: SustainPedalProps) => {
     if (onsets.length === 0 || offsets.length === 0) return null
 
     const innerBoundaries = [onsets[0], offsets[0]].map(translateX)
-    const y1 = trackToY(88)
-    const y2 = trackToY(12)
-    const height = y2 - y1
+    const { y, height } = bandOf({ from: 12, to: 88 })
 
     return (
         <rect
             className='pedal'
             x={innerBoundaries[0]}
             width={innerBoundaries[1] - innerBoundaries[0]}
-            y={y1}
+            y={y}
             height={height}
             fill='gray'
             fillOpacity={0.1}

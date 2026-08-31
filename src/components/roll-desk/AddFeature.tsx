@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, Divider, FormControl, FormControlLabel, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { AnyFeature, FeatureType, Version, WelteT100, Writing, WritingMethod } from "linked-rolls"
+import { WritingMethod } from "linked-rolls"
 import { useContext, useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"

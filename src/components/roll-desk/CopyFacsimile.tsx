@@ -1,11 +1,16 @@
 import {
     AnyFeature,
+    calibrationOf,
+    columnsOf,
+    defaultEmulationOptions,
     GluedOn,
     Path,
     RollCopy,
+    TrackCalibration,
     Writing,
 } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
+import { boxOf, RollGeometry } from "../../helpers/rollGeometry.ts";
 import { JSX, useContext, useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
@@ -31,51 +36,48 @@ function pixelsToMM(pixels: number, dpi: number): number {
     return (pixels / dpi) * millimetersPerInch;
 }
 
-async function tilesAsSVGImage(
+const columnsOfLength = (length: number, step: number) =>
+    Array.from({ length: Math.ceil(length / step) }, (_, i) => i * step)
+
+/**
+ * One strip of the scan per block of the tracker bar, so that the gaps
+ * the drawing leaves between the blocks are not filled with paper that
+ * is not there. Both the crop and the placement come from the copy's
+ * calibration, so the facsimile lies where the features do.
+ */
+function tilesAsSVGImage(
     baseUrl: string,
     iiifInfo: IIIFInfo,
-    holeSeparation: number,
-    margins: { treble: number; bass: number },
+    calibration: TrackCalibration,
     stretchX: number,
-    trackToY: (track: number) => number,
+    geometry: RollGeometry,
     shiftOp: number,
     stretchOp: number
 ) {
     const dpi = 300.25;
-    const width = iiifInfo.height;
     const stepSize = 10000
 
-    const images: JSX.Element[] = [];
-    const areas = [[0, 9], [10, 89], [90, 99]]
-    for (const [from, to] of areas) {
-        for (let x = 0; x < width; x += stepSize) {
-            const y = Math.ceil((from + 2) * holeSeparation + margins.bass);
-            const height = Math.ceil(holeSeparation * (to - from + 1));
-            const region = `${y},${x},${height},${stepSize}`;
-            const size = `256,`;
-            const tileUrl = `${baseUrl}/${region}/${size}/270/default.jpg`;
+    return geometry.areas.flatMap(area => {
+        const columns = columnsOf(area.from, area.to, calibration)
+        const band = geometry.areaBand(area)
 
-            const svgX = (pixelsToMM(x, dpi) + shiftOp) * stretchX * stretchOp;
-            const svgWidth = pixelsToMM(stepSize, dpi) * stretchX * stretchOp;
-            if (trackToY(from) === null || trackToY(to) === null) {
-                continue
-            }
-            const svgHeight = trackToY(from) - trackToY(to);
+        return columnsOfLength(iiifInfo.height, stepSize).map(x => {
+            const region = `${Math.floor(columns.from)},${x},${Math.ceil(columns.width)},${stepSize}`;
+            const tileUrl = `${baseUrl}/${region}/256,/270/default.jpg`;
 
-            images.push(
+            return (
                 <image
-                    key={`tile_${to}_${x}`}
+                    key={`tile_${area.role}_${x}`}
                     xlinkHref={tileUrl}
-                    x={svgX}
-                    y={trackToY(to)}
-                    width={svgWidth}
-                    height={svgHeight}
+                    x={(pixelsToMM(x, dpi) + shiftOp) * stretchX * stretchOp}
+                    y={band.y}
+                    width={pixelsToMM(stepSize, dpi) * stretchX * stretchOp}
+                    height={band.height}
                     preserveAspectRatio="none"
                 />
             );
-        }
-    }
-    return images;
+        })
+    })
 }
 
 interface CopyFacsimileProps {
@@ -99,7 +101,8 @@ export const CopyFacsimile = ({
     facsimileOpacity,
 }: CopyFacsimileProps) => {
     const { edition, apply } = useContext(EditionContext);
-    const { zoom, trackHeight, trackToY } = usePinchZoom();
+    const geometry = usePinchZoom();
+    const { zoom, trackHeight } = geometry;
     const svgRef = useRef<SVGGElement>(null);
 
     const [tiles, setTiles] = useState<JSX.Element[]>();
@@ -109,9 +112,8 @@ export const CopyFacsimile = ({
             if (!svgRef.current) return;
 
             if (!copy.scan) return;
-            const holeSeparation = copy.measurements.holeSeparation?.value
-            const margins = copy.measurements.margins
-            if (!holeSeparation || !margins) return;
+            const calibration = calibrationOf(copy)
+            if (!calibration) return;
 
             if (facsimileOpacity > 0) {
                 if (!facsimile) {
@@ -120,13 +122,12 @@ export const CopyFacsimile = ({
                     const stretch = copy.conditions.find(c => c.type === 'paper-stretch')
 
                     setTiles(
-                        await tilesAsSVGImage(
+                        tilesAsSVGImage(
                             baseUrl,
                             info,
-                            holeSeparation,
-                            margins,
+                            calibration,
                             zoom,
-                            trackToY,
+                            geometry,
                             copy.measurements.shift?.horizontal || 0,
                             stretch?.factor || 1
                         )
@@ -156,7 +157,7 @@ export const CopyFacsimile = ({
         };
 
         renderIIIF();
-    }, [svgRef, trackHeight, zoom, copy, facsimile, trackToY]);
+    }, [svgRef, trackHeight, zoom, copy, facsimile, geometry, facsimileOpacity]);
 
     if (!edition) return null
 
@@ -234,15 +235,14 @@ export const CopyFacsimile = ({
                 })}
             </g>
 
-            <KeyboardDivision />
+            <KeyboardDivision division={defaultEmulationOptions.division} />
         </>
     );
 };
 
-const KeyboardDivision = () => {
+const KeyboardDivision = ({ division }: { division: number }) => {
     const { trackToY } = usePinchZoom();
 
-    const division = 54;
     const y = trackToY(division);
 
     return (
@@ -267,21 +267,7 @@ interface FeatureProps<FeatureType extends AnyFeature = AnyFeature> {
 }
 
 const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
-    const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
-
-    const x = translateX(feature.horizontal.from);
-    const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to - feature.horizontal.from);
-    let height = 0
-    if (areaOf(feature.vertical.from)?.includes('expression')) {
-        height = trackHeight.expression
-    }
-    else if (areaOf(feature.vertical.from)?.includes('note')) {
-        height = trackHeight.note
-    }
-    else if (feature.vertical.to !== undefined) {
-        height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
-    }
+    const { x, y } = boxOf(feature, usePinchZoom());
 
     return (
         <g className="feature">
@@ -311,12 +297,7 @@ const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
 }
 
 const GluedOnFeature = ({ feature, color }: FeatureProps<GluedOn>) => {
-    const { translateX, trackToY } = usePinchZoom();
-
-    const x = translateX(feature.horizontal.from);
-    const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to - feature.horizontal.from);
-    const height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
+    const { x, y, width, height } = boxOf(feature, usePinchZoom());
 
     return (
         <>
@@ -429,12 +410,7 @@ function ScaledRotatedText({
 }
 
 const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
-    const { translateX, trackToY } = usePinchZoom();
-
-    const x = translateX(feature.horizontal.from);
-    const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to - feature.horizontal.from);
-    const height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
+    const { x, y, width, height } = boxOf(feature, usePinchZoom());
 
     const chunks = feature.transcription.text.split("\n");
 
@@ -458,23 +434,10 @@ const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
 };
 
 const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
-    const { translateX, trackToY, trackHeight, areaOf } = usePinchZoom();
+    const geometry = usePinchZoom();
 
-    const isExpression = areaOf(feature.vertical.from)?.includes('expression')
-
-    const x = translateX(feature.horizontal.from);
-    const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to) - translateX(feature.horizontal.from);
-    let height = 0
-    if (isExpression) {
-        height = trackHeight.expression
-    }
-    else if (areaOf(feature.vertical.from)?.includes('note')) {
-        height = trackHeight.note
-    }
-    else if (feature.vertical.to !== undefined) {
-        height = trackToY(feature.vertical.to!) - trackToY(feature.vertical.from);
-    }
+    const isExpression = geometry.roleOf(feature.vertical.from)?.includes('expression')
+    const { x, y, width, height } = boxOf(feature, geometry);
 
     if (isExpression) {
         return (
@@ -498,13 +461,9 @@ const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
 }
 
 const MarkFeature = ({ feature, onClick }: FeatureProps) => {
-    const { translateX, trackToY } = usePinchZoom();
+    const { x, y, width } = boxOf(feature, usePinchZoom());
 
     if (!feature.depiction) return null;
-
-    const x = translateX(feature.horizontal.from);
-    const y = trackToY(feature.vertical.from);
-    const width = translateX(feature.horizontal.to - feature.horizontal.from);
 
     return (
         <image

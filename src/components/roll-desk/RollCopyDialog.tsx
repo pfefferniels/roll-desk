@@ -62,7 +62,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 rollCopy = readFromSpencerMIDI(await file.arrayBuffer());
             }
             else if (file.name.endsWith('txt')) {
-                rollCopy = readFromStanfordAton(await file.text(), true);
+                rollCopy = readFromStanfordAton(await file.text());
             }
 
             rollCopy.location = location

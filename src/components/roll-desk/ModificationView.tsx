@@ -1,32 +1,14 @@
 import { AnyFeature, Modification } from "linked-rolls";
-import { PinchZoomContextProps, usePinchZoom } from "../../hooks/usePinchZoom";
+import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { chaikin } from "../../helpers/concaveHull";
 import { Point } from "../../helpers/kmeans";
 import { Arguable } from "./Arguable";
+import { boxOf, Translation } from "../../helpers/rollGeometry";
 
-const getFeatureBBox = (dim: AnyFeature, { translateX, trackToY, trackHeight, areaOf }: PinchZoomContextProps) => {
-    let height = trackHeight.note
-    if (dim.vertical.to) {
-        height = trackToY(dim.vertical.to) - trackToY(dim.vertical.from);
-    }
-    else {
-        if (areaOf(dim.vertical.from)?.includes('expression')) {
-            height = trackHeight.expression
-        }
-        else if (areaOf(dim.vertical.from)?.includes('note')) {
-            height = trackHeight.note
-        }
-    }
-    
-    return {
-        x: translateX(dim.horizontal.from),
-        y: trackToY(dim.vertical.from),
-        width: translateX(dim.horizontal.to - dim.horizontal.from),
-        height
-    }
-}
+const getFeatureBBox = (feature: AnyFeature, translation: Translation) =>
+    boxOf(feature, translation)
 
 function cross(o: Point, a: Point, b: Point): number {
     return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
