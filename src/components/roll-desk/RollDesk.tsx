@@ -2,7 +2,7 @@
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
-import { Emulation, HorizontalSpan, PlaceTimeConversion, VerticalSpan, Edition } from 'linked-rolls'
+import { Emulation, EmulationOptions, HorizontalSpan, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -94,7 +94,7 @@ export const Desk = ({ versionId }: DeskProps) => {
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
 
-    const [conversionMethod, setConversionMethod] = useState<PlaceTimeConversion>()
+    const [emulationOptions, setEmulationOptions] = useState<EmulationOptions>()
 
     const [currentTab, setCurrentTab] = useState(0)
 
@@ -118,17 +118,8 @@ export const Desk = ({ versionId }: DeskProps) => {
             return
         }
 
-        const emulation = new Emulation()
-        if (conversionMethod) {
-            emulation.placeTimeConversion = conversionMethod
-        }
-        emulation.emulateVersion(
-            currentVersion,
-            view,
-            undefined,
-            range,
-            true
-        )
+        const emulation = new Emulation(emulationOptions)
+        emulation.emulateVersion(currentVersion, view, { range, skipToFirstNote: true })
 
         play(emulation.asMIDI(), (e) => {
             if (e.type === 'meta' && e.subtype === 'text') {
@@ -175,20 +166,13 @@ export const Desk = ({ versionId }: DeskProps) => {
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion || !view) return
 
-        const emulation = new Emulation();
-
-        if (conversionMethod) {
-            emulation.placeTimeConversion = conversionMethod
-        }
-
-        if (emulation.midiEvents.length === 0) {
-            emulation.emulateVersion(currentVersion, view);
-        }
+        const emulation = new Emulation(emulationOptions)
+        emulation.emulateVersion(currentVersion, view)
 
         const midiFile = emulation.asMIDI()
         const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
         downloadFile(`${currentVersion.siglum}.mid`, dataBuf, 'audio/midi')
-    }, [currentVersion, conversionMethod])
+    }, [currentVersion, emulationOptions])
 
     useEffect(() => {
         if (!edition) return
@@ -479,9 +463,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                 onClose={() => {
                     setEmulationSettingsDialogOpen(false)
                 }}
-                onDone={(conversion) => {
-                    setConversionMethod(conversion)
-                }}
+                onDone={setEmulationOptions}
             />
 
             <DownloadDialog

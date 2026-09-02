@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
-import { WithId } from 'linked-rolls/lib/WithId';
 import { EventDimension } from './RollDesk.tsx';
-import { calibrationOf, columnsOf, RollCopy, welteT100 } from 'linked-rolls';
+import { calibrationOf, columnsOf, RollCopy, welteT100, WithId } from 'linked-rolls';
 
 interface RollGridProps {
     width: number;
