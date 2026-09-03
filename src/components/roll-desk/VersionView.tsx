@@ -1,8 +1,9 @@
-import { useContext, useRef } from "react"
+import { useContext, useMemo, useRef } from "react"
 import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Perforation, SustainPedal } from "./SymbolView"
 import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"
+import { EditionView } from "linked-rolls/lib/EditionView"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
 import { MotivationView } from "./MotivationView"
@@ -11,35 +12,15 @@ import { usePiano } from "react-pianosound"
 import { useSelection } from "../../providers/SelectionContext"
 import { isMotivation } from "./VersionMenu"
 
-interface VersionViewProps {
-    version: Version
-    onClick: (event: AnySymbol | Motivation | Edit) => void
-}
+type AgedSymbol = AnySymbol & { age: number }
 
-export const VersionView = ({ version, onClick }: VersionViewProps) => {
-    const { selection, setSelection } = useSelection(s => isMotivation(s))
-    const { playSingleNote } = usePiano()
-    const { view, viewOnly } = useContext(EditionContext)
-
-    const svgRef = useRef<SVGGElement>(null)
-
-    if (!view) return null
-
-    const emulation = new Emulation()
-    emulation.emulateVersion(version, view)
-
-    const prevVersion = view.predecessorOf(version.id)
-    let prevEmulation: Emulation | undefined = undefined
-    if (prevVersion) {
-        prevEmulation = new Emulation()
-        prevEmulation.emulateVersion(prevVersion, view)
-    }
-
-    // all symbols up to the current version
-    const snapshot: (AnySymbol & { age: number })[] = [];
+/** Every symbol in force at a version, each told how many versions back it was inserted. */
+const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
+    const snapshot: AgedSymbol[] = []
     const deletions: string[] = []
     let age = 0
-    view.travelUp(version.id, s => {
+
+    view.travelUp(versionId, s => {
         // collect all inserted symbols and tell them their age
         for (const edit of s.edits) {
             for (const symbol of edit.insert ?? []) {
@@ -64,10 +45,72 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
         age += 1
     })
 
-    snapshot.sort((a, b) => {
+    return snapshot.sort((a, b) => {
         return (view.dimensionOf(a)?.horizontal.from || 0)
             - (view.dimensionOf(b)?.horizontal.from || 0)
     })
+}
+
+/** Each pedal-on paired with the first pedal-off that follows it. */
+const sustainSpans = (snapshot: AgedSymbol[], view: EditionView) => {
+    const startOf = (symbol: AnySymbol) => view.dimensionOf(symbol)?.horizontal.from || 0
+
+    const isPedal = (symbol: AnySymbol, which: 'SustainPedalOn' | 'SustainPedalOff') =>
+        symbol.type === 'expression' && symbol.expressionType === which
+
+    return snapshot
+        .filter(symbol => isPedal(symbol, 'SustainPedalOn'))
+        .map(on => ({
+            on: on as Expression,
+            off: snapshot.find(candidate =>
+                isPedal(candidate, 'SustainPedalOff') && startOf(candidate) > startOf(on)
+            ) as Expression | undefined
+        }))
+        .filter((span): span is { on: Expression, off: Expression } => !!span.off)
+}
+
+interface VersionViewProps {
+    version: Version
+    onClick: (event: AnySymbol | Motivation | Edit) => void
+}
+
+export const VersionView = ({ version, onClick }: VersionViewProps) => {
+    const { selection, setSelection } = useSelection(s => isMotivation(s))
+    const { playSingleNote } = usePiano()
+    const { view, viewOnly } = useContext(EditionContext)
+
+    const svgRef = useRef<SVGGElement>(null)
+
+    // None of what follows depends on the zoom, and emulating a version
+    // costs a few hundred milliseconds, so it must not be redone per frame.
+    const emulation = useMemo(() => {
+        if (!view) return undefined
+
+        const emulation = new Emulation()
+        emulation.emulateVersion(version, view)
+        return emulation
+    }, [version, view])
+
+    const prevEmulation = useMemo(() => {
+        const previous = view?.predecessorOf(version.id)
+        if (!view || !previous) return undefined
+
+        const emulation = new Emulation()
+        emulation.emulateVersion(previous, view)
+        return emulation
+    }, [version, view])
+
+    const snapshot = useMemo(
+        () => view ? snapshotUpTo(view, version.id) : [],
+        [version, view]
+    )
+
+    const pedalSpans = useMemo(
+        () => view ? sustainSpans(snapshot, view) : [],
+        [snapshot, view]
+    )
+
+    if (!view || !emulation) return null
 
     const edits = version.edits
         .map(e => <EditView
@@ -76,7 +119,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
             onClick={() => onClick(e)}
         />)
 
-    // draw edits of current version, but only 
+    // draw edits of current version, but only
     // if the version is based on a previous version
     const motivations = version.motivations
         .map(m => <MotivationView
@@ -102,15 +145,13 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                     }}
                 />
             )}
-            {emulation && (
-                <Dynamics
-                    forEmulation={emulation}
-                    pathProps={{
-                        stroke: 'darkblue',
-                        strokeWidth: 1.6
-                    }}
-                />
-            )}
+            <Dynamics
+                forEmulation={emulation}
+                pathProps={{
+                    stroke: 'darkblue',
+                    strokeWidth: 1.6
+                }}
+            />
         </g>
     )
 
@@ -123,35 +164,18 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
             {!viewOnly && edits}
             {motivations}
 
-            {snapshot
-                .filter(symbol => symbol.type === 'expression' && symbol.expressionType === 'SustainPedalOn')
-                .map(symbol => {
-                    const partner = snapshot
-                        .find(candidate => {
-                            return (
-                                candidate.type === 'expression'
-                                && candidate.expressionType === 'SustainPedalOff'
-                                && (view.dimensionOf(candidate)?.horizontal.from || 0) > (view.dimensionOf(symbol)?.horizontal.from || 0)
-                            )
-                        })
-
-                    return { on: symbol, off: partner }
-                })
-                .filter(({ off }) => !!off)
-                .map(({ on: symbol, off: partner }, i) => {
-                    return (
-                        <SustainPedal
-                            key={`sustain_${symbol.id || i}`}
-                            on={symbol as Expression}
-                            off={partner as Expression}
-                        />
-                    )
-                })}
+            {pedalSpans.map(({ on, off }, i) => (
+                <SustainPedal
+                    key={`sustain_${on.id || i}`}
+                    on={on}
+                    off={off}
+                />
+            ))}
 
             {snapshot
                 .map((symbol, i) => {
                     if (symbol.type === 'text') return null
-                    
+
                     return (
                         <Perforation
                             key={`${symbol.id || i}`}

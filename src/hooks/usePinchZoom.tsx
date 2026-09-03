@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { RollGeometry, rollGeometry } from '../helpers/rollGeometry';
 
 export interface PinchZoomContextProps extends RollGeometry {
@@ -9,7 +9,7 @@ export interface PinchZoomContextProps extends RollGeometry {
         expression: number
     }
     zoom: number
-    setZoom: Dispatch<SetStateAction<number>>
+    setZoom: (zoom: number) => void
 }
 
 const emptyGeometry = rollGeometry({ note: 0, expression: 0 }, 0)
@@ -27,7 +27,7 @@ interface PinchZoomProviderProps {
     zoom: number
     noteHeight: number
     expressionHeight: number
-    setZoom: Dispatch<SetStateAction<number>>
+    setZoom: (zoom: number) => void
     children: ReactNode;
 }
 
@@ -49,14 +49,16 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         [trackHeight, spacing]
     )
 
+    const value = useMemo(() => ({
+        ...geometry,
+        trackHeight,
+        translateX: (x: number) => zoom * x,
+        zoom,
+        setZoom
+    }), [geometry, trackHeight, zoom, setZoom])
+
     return (
-        <PinchZoomContext.Provider value={{
-            ...geometry,
-            trackHeight,
-            translateX: (x: number) => zoom * x,
-            zoom,
-            setZoom
-        }}>
+        <PinchZoomContext.Provider value={value}>
             {children}
         </PinchZoomContext.Provider>
     );

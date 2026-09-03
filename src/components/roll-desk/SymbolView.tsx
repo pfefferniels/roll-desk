@@ -1,5 +1,5 @@
 import { Expression, Note } from "linked-rolls";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { EditionContext } from "../../providers/EditionContext";
 
@@ -15,24 +15,30 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const [displayDetails, setDisplayDetails] = useState(false);
     const { translateX, trackToY, laneHeight, height: canvasHeight, zoom } = usePinchZoom();
 
-    if (!view) return null;
+    /** Playback announces the symbol it has reached on the group itself. */
+    const followPlayback = useCallback((node: SVGGElement | null) => {
+        if (!node) return
 
-    const features = view.carriersOf(symbol)
-    if (!features) return null;
+        const show = () => setDisplayDetails(true)
+        node.addEventListener('playback-event', show)
+        return () => node.removeEventListener('playback-event', show)
+    }, [])
+
+    const features = useMemo(() => view?.carriersOf(symbol) ?? [], [view, symbol]);
 
     const { onsets, offsets } = useMemo(() => ({
         onsets: features.map(e => e.horizontal.from).sort(),
         offsets: features.map(e => e.horizontal.to).sort()
     }), [features]);
 
+    const dimensions = view?.dimensionOf(symbol)
+
+    if (!view || !dimensions) return null;
     if (onsets.length === 0 || offsets.length === 0) return null;
 
     const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(translateX);
     const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(translateX);
     const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(translateX);
-
-    const dimensions = view.dimensionOf(symbol)
-    if (!dimensions) return null
 
     const meanOnset = dimensions.horizontal.from
     const meanOffset = dimensions.horizontal.to
@@ -43,23 +49,10 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const opacity = 1 / ((age || 0) + 1)
     const color = (age || 0) >= 1 ? 'gray' : 'black';
 
-    const ref = useRef<SVGGElement>(null);
-
-    useEffect(() => {
-        const handlePlaybackEvent = () => {
-            setDisplayDetails(true);
-        }
-        const currentRef = ref.current;
-        currentRef?.addEventListener('playback-event', handlePlaybackEvent);
-        return () => {
-            currentRef?.removeEventListener('playback-event', handlePlaybackEvent);
-        }
-    }, []);
-
     if (zoom < 0.7) {
         return (
             <g
-                ref={ref}
+                ref={followPlayback}
                 data-id={symbol.id}
                 id={symbol.id}
                 className='collated-event'
@@ -104,6 +97,7 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
 
     return (
         <g
+            ref={followPlayback}
             data-id={symbol.id}
             id={symbol.id}
             className='collated-event'
