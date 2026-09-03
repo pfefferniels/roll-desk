@@ -1,111 +1,91 @@
-import React, { JSX } from 'react';
-
-interface IIIFTile {
-    width: number;
-    height: number;
-    scaleFactors: number[];
-}
-
-export interface IIIFInfo {
-    '@id': string;
-    height: number;
-    width: number;
-    tiles: IIIFTile[];
-}
-
-interface Viewport {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-// Global cache for tile elements keyed by their tile URL
-const tileCache = new Map<string, JSX.Element>();
-
 /**
- * Returns an array of SVG <image> elements for the visible IIIF tiles.
- * 
- * This function dynamically calculates the proper resolution for each tile
- * based on the current zoom level, constructs the IIIF URL including the 
- * rotation parameter, and only creates tiles for the given viewport.
- *
- * @param baseUrl - Base IIIF URL (e.g. the scan endpoint up to the identifier)
- * @param iiifInfo - IIIF info object with image dimensions and tile info.
- * @param viewport - The visible area in screen coordinates.
- * @param zoom - Zoom factor (1 = full resolution; lower values request a scaled tile).
- * @param rotation - Rotation in degrees to be applied (passed to IIIF URL).
- * @returns An array of JSX <image> elements to be rendered within an SVG.
+ * Tiles of a scan behind an IIIF image service, asked for in the only
+ * way the Image API's level 0 allows: regions aligned to the tile grid
+ * at one of the declared scale factors, unrotated, at the width the
+ * region has once divided by the factor. A server that can do more,
+ * such as Stanford's, answers the same requests; a directory of tiles
+ * cut in advance (see scripts/facsimile_tiles.py) answers nothing else.
  */
-export async function tilesAsSVGImage(
-    baseUrl: string,
-    iiifInfo: IIIFInfo,
-    viewport: Viewport,
-    zoom: number,
-    rotation: number = 0
-): Promise<JSX.Element[]> {
-    // Determine the tile size from IIIF info (assume uniform square tiles)
-    const tileSize = iiifInfo.tiles[0].width;
+export interface ImageService {
+    baseUrl: string
+    width: number
+    height: number
+    tileWidth: number
+    scaleFactors: number[]
+}
 
-    // Calculate the visible region in the original image coordinates.
-    // If the viewport is in screen pixels, adjust for the zoom factor.
-    const originalViewportWidth = viewport.width / zoom;
-    const originalViewportHeight = viewport.height / zoom;
-    const x0 = Math.max(0, viewport.x);
-    const y0 = Math.max(0, viewport.y);
-    const x1 = Math.min(iiifInfo.width, viewport.x + originalViewportWidth);
-    const y1 = Math.min(iiifInfo.height, viewport.y + originalViewportHeight);
+export interface Tile {
+    /** The region of the scan the tile shows, in pixels of the scan. */
+    x: number
+    y: number
+    width: number
+    height: number
 
-    // Determine the range of tile indices that cover the visible region.
-    const startTileX = Math.floor(x0 / tileSize);
-    const endTileX = Math.floor((x1 - 1) / tileSize);
-    const startTileY = Math.floor(y0 / tileSize);
-    const endTileY = Math.floor((y1 - 1) / tileSize);
+    /** The size of the tile itself. */
+    tileWidth: number
+    tileHeight: number
 
-    const tiles: JSX.Element[] = [];
+    url: string
+}
 
-    for (let ty = startTileY; ty <= endTileY; ty++) {
-        for (let tx = startTileX; tx <= endTileX; tx++) {
-            const regionX = tx * tileSize;
-            const regionY = ty * tileSize;
-            const regionW = Math.min(tileSize, iiifInfo.width - regionX);
-            const regionH = Math.min(tileSize, iiifInfo.height - regionY);
-
-            // Build the IIIF region parameter: "x,y,width,height"
-            const regionParam = `${regionX},${regionY},${regionW},${regionH}`;
-
-            // Calculate the output width (and height) for this tile based on the zoom.
-            const outputW = Math.ceil(regionW * zoom);
-            const outputH = Math.ceil(regionH * zoom);
-            // Use IIIF's width-only size parameter (the server will preserve aspect ratio)
-            const sizeParam = `${outputW},`;
-
-            // Construct the tile URL, including the rotation parameter.
-            const tileUrl = `${baseUrl}/${regionParam}/${sizeParam}/${rotation}/default.jpg`;
-
-            // Check the cache to reuse an already created tile element.
-            let imageElement = tileCache.get(tileUrl);
-            if (!imageElement) {
-                // Create an SVG <image> element.
-                imageElement = (
-                    <image
-                        key={`tile_${ty}_${tx}`
-                        }
-                        xlinkHref={tileUrl}
-                        x={regionX * zoom}
-                        y={regionY * zoom}
-                        width={outputW}
-                        height={outputH}
-                    />
-                );
-                tileCache.set(tileUrl, imageElement);
-            }
-            tiles.push(imageElement);
-        }
+export const fetchImageService = async (scan: string): Promise<ImageService> => {
+    const baseUrl = scan.replace(/\/+$/, '')
+    const response = await fetch(`${baseUrl}/info.json`)
+    if (!response.ok) {
+        throw new Error(`${baseUrl}/info.json answered ${response.status}`)
     }
 
-    // (Optional) Preload adjacent tiles outside the viewport for smoother panning.
-    // You can add a similar loop here without appending to the DOM.
+    const info = await response.json()
+    const tiling = info.tiles?.[0]
 
-    return tiles;
+    return {
+        baseUrl,
+        width: info.width,
+        height: info.height,
+        tileWidth: tiling?.width ?? 1024,
+        scaleFactors: tiling?.scaleFactors ?? [1]
+    }
+}
+
+/**
+ * The coarsest scale factor that still gives at least one scan pixel
+ * per screen pixel, or the finest one on offer when none does.
+ */
+export const scaleFactorFor = (service: ImageService, screenPixelsPerScanPixel: number) => {
+    const coarseEnough = service.scaleFactors.filter(factor => factor <= 1 / screenPixelsPerScanPixel)
+    return coarseEnough.length
+        ? Math.max(...coarseEnough)
+        : Math.min(...service.scaleFactors)
+}
+
+const range = (from: number, to: number) =>
+    Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
+
+/**
+ * The tiles at one scale factor that cover a span of scan columns
+ * along the whole length of the scan.
+ */
+export const tilesOf = (
+    service: ImageService,
+    scaleFactor: number,
+    columns: { from: number, to: number }
+): Tile[] => {
+    const span = service.tileWidth * scaleFactor
+    const firstColumn = Math.max(0, Math.floor(columns.from / span))
+    const lastColumn = Math.min(Math.ceil(service.width / span) - 1, Math.floor((columns.to - 1) / span))
+    const rows = range(0, Math.ceil(service.height / span) - 1)
+
+    return rows.flatMap(row => range(firstColumn, lastColumn).map((column): Tile => {
+        const x = column * span
+        const y = row * span
+        const width = Math.min(span, service.width - x)
+        const height = Math.min(span, service.height - y)
+        const tileWidth = Math.ceil(width / scaleFactor)
+        const tileHeight = Math.ceil(height / scaleFactor)
+
+        return {
+            x, y, width, height, tileWidth, tileHeight,
+            url: `${service.baseUrl}/${x},${y},${width},${height}/${tileWidth},/0/default.jpg`
+        }
+    }))
 }

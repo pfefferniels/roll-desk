@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Box, Button, IconButton, Paper, Stack, Tab, Tabs, Toolbar } from "@mui/material"
+import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { Emulation, HorizontalSpan, VerticalSpan, Edition, valueOf } from 'linked-rolls'
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
@@ -19,8 +19,9 @@ import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { useLiveZoom } from "../../hooks/useLiveZoom"
+import { usePinchGesture } from "../../hooks/usePinchGesture"
 import { rollLength } from "../../helpers/rollLength"
-import { ZoomSlider } from "./ZoomSlider"
+import { ZoomSlider, zoomRange } from "./ZoomSlider"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
@@ -84,7 +85,8 @@ export const Desk = ({ versionId }: DeskProps) => {
     const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
     const initialStretch = viewOnly ? 0.2 : 1
-    const stretch = useLiveZoom(initialStretch)
+    const stretch = useLiveZoom(initialStretch, zoomRange)
+    usePinchGesture(stretch.viewportRef, { onPinch: stretch.scrubBy, onEnd: stretch.settle })
 
     const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
 
@@ -99,12 +101,14 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
+    const [facsimileOpacity, setFacsimileOpacity] = useState(1)
 
     const [emulationOptions, setEmulationOptions] = useState<WelteT100Options>()
 
     const [currentTab, setCurrentTab] = useState(0)
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
+    const currentCopy = edition?.copies.find(c => c.id === currentCopyId)
 
     useHotkeys(['space'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -352,6 +356,21 @@ export const Desk = ({ versionId }: DeskProps) => {
                         }}
                     />
 
+                    {currentCopy?.scan && (
+                        <Stack direction='row' spacing={2} alignItems='center' sx={{ px: 1 }}>
+                            <Typography variant='caption' color='text.secondary'>Scan</Typography>
+                            <Slider
+                                size='small'
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={facsimileOpacity}
+                                onChange={(_, value) => setFacsimileOpacity(value as number)}
+                                aria-label='scan opacity'
+                            />
+                        </Stack>
+                    )}
+
                     {!viewOnly && (
                         <Button
                             startIcon={<Add />}
@@ -406,7 +425,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                 </Paper>
             )}
 
-            <Box overflow='scroll' ref={stretch.viewportRef}>
+            <Box overflow='scroll' ref={stretch.viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
                 <PinchZoomProvider
                     zoom={stretch.committed}
                     rollLength={length}
@@ -422,32 +441,27 @@ export const Desk = ({ versionId }: DeskProps) => {
                                     onClick={e => setSelection(prev => [...prev, e])}
                                     version={currentVersion}
                                 />)
-                            : (() => {
-                                const copy = edition?.copies.find(c => c.id === currentCopyId)
-                                if (!copy) return null
-
-                                return (
-                                    <CopyFacsimile
-                                        key={`copy_${currentCopyId}`}
-                                        copy={copy}
-                                        active={true}
-                                        color="#444"
-                                        facsimileOpacity={0}
-                                        onClick={e => setSelection(prev => [...prev, e])}
-                                        onChange={() => { }}
-                                        onSelectionDone={dimension => setSelection([{
-                                            ...dimension
-                                        }])}
-                                    />
-                                )
-                            })()
+                            : currentCopy && (
+                                <CopyFacsimile
+                                    key={`copy_${currentCopyId}`}
+                                    copy={currentCopy}
+                                    active={true}
+                                    color="#444"
+                                    facsimileOpacity={facsimileOpacity}
+                                    onClick={e => setSelection(prev => [...prev, e])}
+                                    onChange={() => { }}
+                                    onSelectionDone={dimension => setSelection([{
+                                        ...dimension
+                                    }])}
+                                />
+                            )
                         }
                     </Canvas>
                 </PinchZoomProvider>
             </Box>
 
             <ZoomSlider
-                initial={initialStretch}
+                zoom={stretch.committed}
                 onScrub={stretch.scrub}
                 onSettle={stretch.settle}
             />

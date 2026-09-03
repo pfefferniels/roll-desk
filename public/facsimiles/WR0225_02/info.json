@@ -1,0 +1,28 @@
+{
+  "@context": "http://iiif.io/api/image/2/context.json",
+  "@id": "/facsimiles/WR0225_02",
+  "protocol": "http://iiif.io/api/image",
+  "profile": [
+    "http://iiif.io/api/image/2/level0.json"
+  ],
+  "width": 4096,
+  "height": 104024,
+  "sizes": [
+    {
+      "width": 128,
+      "height": 3251
+    }
+  ],
+  "tiles": [
+    {
+      "width": 1024,
+      "scaleFactors": [
+        2,
+        4,
+        8,
+        16,
+        32
+      ]
+    }
+  ]
+}

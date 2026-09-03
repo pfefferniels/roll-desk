@@ -1,84 +1,21 @@
 import {
     AnyFeature,
-    calibrationOf,
-    columnsOf,
     GluedOn,
     Path,
     RollCopy,
-    TrackCalibration,
     Writing,
 } from "linked-rolls";
 import { defaultWelteT100Options } from "linked-rolls/welte-t100";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
-import { boxOf, RollGeometry } from "../../helpers/rollGeometry.ts";
-import { JSX, useContext, useLayoutEffect, useRef, useState } from "react";
+import { boxOf } from "../../helpers/rollGeometry.ts";
+import { useContext, useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
 import { EventDimension } from "./RollDesk.tsx";
 import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
 import { ModificationView } from "./ModificationView.tsx";
-
-interface IIIFInfo {
-    "@id": string;
-    height: number;
-    width: number;
-    tiles: { width: number; height: number; scaleFactors: number[] }[];
-}
-
-async function fetchIIIFInfo(url: string): Promise<IIIFInfo> {
-    const response = await fetch(`${url}/info.json`);
-    return response.json();
-}
-
-function pixelsToMM(pixels: number, dpi: number): number {
-    const millimetersPerInch = 25.4;
-    return (pixels / dpi) * millimetersPerInch;
-}
-
-const columnsOfLength = (length: number, step: number) =>
-    Array.from({ length: Math.ceil(length / step) }, (_, i) => i * step)
-
-/**
- * One strip of the scan per block of the tracker bar, so that the gaps
- * the drawing leaves between the blocks are not filled with paper that
- * is not there. Both the crop and the placement come from the copy's
- * calibration, so the facsimile lies where the features do.
- */
-function tilesAsSVGImage(
-    baseUrl: string,
-    iiifInfo: IIIFInfo,
-    calibration: TrackCalibration,
-    stretchX: number,
-    geometry: RollGeometry,
-    shiftOp: number,
-    stretchOp: number
-) {
-    const dpi = 300.25;
-    const stepSize = 10000
-
-    return geometry.areas.flatMap(area => {
-        const columns = columnsOf(area.from, area.to, calibration)
-        const band = geometry.areaBand(area)
-
-        return columnsOfLength(iiifInfo.height, stepSize).map(x => {
-            const region = `${Math.floor(columns.from)},${x},${Math.ceil(columns.width)},${stepSize}`;
-            const tileUrl = `${baseUrl}/${region}/256,/270/default.jpg`;
-
-            return (
-                <image
-                    key={`tile_${area.role}_${x}`}
-                    xlinkHref={tileUrl}
-                    x={(pixelsToMM(x, dpi) + shiftOp) * stretchX * stretchOp}
-                    y={band.y}
-                    width={pixelsToMM(stepSize, dpi) * stretchX * stretchOp}
-                    height={band.height}
-                    preserveAspectRatio="none"
-                />
-            );
-        })
-    })
-}
+import { Facsimile } from "./Facsimile.tsx";
 
 interface CopyFacsimileProps {
     copy: RollCopy;
@@ -87,7 +24,6 @@ interface CopyFacsimileProps {
     onChange: (copy: RollCopy) => void;
     color: string;
     onSelectionDone: (dimension: EventDimension) => void;
-    facsimile?: File;
     facsimileOpacity: number;
 }
 
@@ -97,67 +33,11 @@ export const CopyFacsimile = ({
     color,
     onClick,
     onSelectionDone,
-    facsimile,
     facsimileOpacity,
 }: CopyFacsimileProps) => {
     const { edition, apply } = useContext(EditionContext);
     const geometry = usePinchZoom();
-    const { zoom, trackHeight } = geometry;
     const svgRef = useRef<SVGGElement>(null);
-
-    const [tiles, setTiles] = useState<JSX.Element[]>();
-
-    useLayoutEffect(() => {
-        const renderIIIF = async () => {
-            if (!svgRef.current) return;
-
-            if (!copy.scan) return;
-            const calibration = calibrationOf(copy)
-            if (!calibration) return;
-
-            if (facsimileOpacity > 0) {
-                if (!facsimile) {
-                    const baseUrl = copy.scan;
-                    const info = await fetchIIIFInfo(baseUrl);
-                    const stretch = copy.conditions.find(c => c.type === 'paper-stretch')
-
-                    setTiles(
-                        tilesAsSVGImage(
-                            baseUrl,
-                            info,
-                            calibration,
-                            zoom,
-                            geometry,
-                            copy.measurements.shift?.horizontal || 0,
-                            stretch?.factor || 1
-                        )
-                    );
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        const url = reader.result as string;
-                        console.log("url=", url);
-                        setTiles([
-                            <image
-                                className="facsimile"
-                                key="facsimile"
-                                xlinkHref={url}
-                                x={0}
-                                y={0}
-                                width={1000}
-                                height={500}
-                            />,
-                        ]);
-                    };
-                    reader.readAsDataURL(facsimile);
-                }
-            } else {
-                setTiles([]);
-            }
-        };
-
-        renderIIIF();
-    }, [svgRef, trackHeight, zoom, copy, facsimile, geometry, facsimileOpacity]);
 
     if (!edition) return null
 
@@ -188,9 +68,7 @@ export const CopyFacsimile = ({
                     </filter>
                 </defs>
 
-                <g className='facsimile' opacity={facsimileOpacity}>
-                    {tiles}
-                </g>
+                <Facsimile copy={copy} opacity={facsimileOpacity} />
 
                 <Cursor svgRef={svgRef} />
 
