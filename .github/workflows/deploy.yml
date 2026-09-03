@@ -1,57 +1,48 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout measuring-early-records
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
         with:
-          path: measuring-early-records
+          node-version: 24
+          cache: npm
 
-      - name: Checkout linked-rolls
-        uses: actions/checkout@v4
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm run test:run
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
         with:
-          repository: pfefferniels/linked-rolls
-          path: linked-rolls
+          path: build
 
-      - name: Checkout react-pianosound
-        uses: actions/checkout@v4
-        with:
-          repository: pfefferniels/react-pianosound
-          path: react-pianosound
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build linked-rolls
-        working-directory: linked-rolls
-        run: |
-          npm install
-          npm run build
-
-      - name: Build react-pianosound
-        working-directory: react-pianosound
-        run: |
-          npm install
-          npm run build
-
-      - name: Install and build
-        working-directory: measuring-early-records
-        run: |
-          npm install
-          npm run build
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build --project-name measuring-early-records
-          workingDirectory: measuring-early-records
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
