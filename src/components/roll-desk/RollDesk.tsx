@@ -1,7 +1,7 @@
 'use client'
 
 import { AppBar, Box, Button, IconButton, Paper, Stack, Tab, Tabs, Toolbar } from "@mui/material"
-import { useCallback, useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { Emulation, EmulationOptions, HorizontalSpan, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -18,6 +18,7 @@ import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { useLiveZoom } from "../../hooks/useLiveZoom"
+import { rollLength } from "../../helpers/rollLength"
 import { ZoomSlider } from "./ZoomSlider"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
@@ -84,6 +85,8 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const initialStretch = viewOnly ? 0.2 : 1
     const stretch = useLiveZoom(initialStretch)
+
+    const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
 
     const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
@@ -406,6 +409,7 @@ export const Desk = ({ versionId }: DeskProps) => {
             <Box overflow='scroll' ref={stretch.viewportRef}>
                 <PinchZoomProvider
                     zoom={stretch.committed}
+                    rollLength={length}
                     setZoom={stretch.jump}
                     noteHeight={3}
                     expressionHeight={10}

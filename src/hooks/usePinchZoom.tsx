@@ -4,6 +4,9 @@ import { RollGeometry, rollGeometry } from '../helpers/rollGeometry';
 export interface PinchZoomContextProps extends RollGeometry {
     translateX: (x: number) => number
 
+    /** How far the roll runs, in millimetres. */
+    rollLength: number
+
     trackHeight: {
         note: number
         expression: number
@@ -18,6 +21,7 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     ...emptyGeometry,
     trackHeight: { note: 0, expression: 0 },
     translateX: (x: number) => x,
+    rollLength: 0,
     zoom: 0,
     setZoom: () => { }
 });
@@ -25,6 +29,7 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
 interface PinchZoomProviderProps {
     spacing?: number
     zoom: number
+    rollLength: number
     noteHeight: number
     expressionHeight: number
     setZoom: (zoom: number) => void
@@ -33,6 +38,7 @@ interface PinchZoomProviderProps {
 
 export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     zoom,
+    rollLength,
     noteHeight,
     expressionHeight,
     children,
@@ -53,9 +59,10 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         ...geometry,
         trackHeight,
         translateX: (x: number) => zoom * x,
+        rollLength,
         zoom,
         setZoom
-    }), [geometry, trackHeight, zoom, setZoom])
+    }), [geometry, trackHeight, rollLength, zoom, setZoom])
 
     return (
         <PinchZoomContext.Provider value={value}>

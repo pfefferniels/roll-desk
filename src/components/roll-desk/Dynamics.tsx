@@ -50,12 +50,12 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
 }
 
 export const DynamicsGrid = ({ velocity }: Pick<EmulationOptions, 'velocity'>) => {
-    const { translateX, trackToY } = usePinchZoom()
+    const { translateX, trackToY, rollLength } = usePinchZoom()
 
     const bassShift = trackToY(bassSpace)
     const trebleShift = trackToY(trebleSpace)
 
-    const width = translateX(100000)
+    const width = translateX(rollLength)
 
     const lineAt = (y: number, dashed = false) => (
         <line

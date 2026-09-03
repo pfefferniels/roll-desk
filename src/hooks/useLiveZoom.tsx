@@ -43,8 +43,13 @@ export const useLiveZoom = (initial: number): LiveZoom => {
     const live = useRef(initial)
     const frame = useRef<number>(undefined)
 
+    const gesturing = useRef(false)
+
     /** Roll position held under the middle of the viewport for the running gesture. */
     const anchor = useRef<number>(undefined)
+
+    /** Canvas width the running gesture started from, which it scales along. */
+    const baseWidth = useRef<number>(undefined)
 
     const holdAnchor = useCallback(() => {
         const viewport = viewportRef.current
@@ -60,6 +65,14 @@ export const useLiveZoom = (initial: number): LiveZoom => {
         if (!stage) return
 
         const ratio = live.current / committedRef.current
+
+        // The canvas has to grow with the gesture, or zooming in would run
+        // the drawing past the edge of the SVG viewport and clip it.
+        const canvas = stage.ownerSVGElement
+        if (canvas && baseWidth.current !== undefined) {
+            canvas.setAttribute('width', String(baseWidth.current * ratio))
+        }
+
         stage.setAttribute('transform', `scale(${ratio} 1)`)
         stage.style.setProperty('--counter-scale', String(1 / ratio))
 
@@ -67,9 +80,14 @@ export const useLiveZoom = (initial: number): LiveZoom => {
     }, [holdAnchor])
 
     const scrub = useCallback((zoom: number) => {
-        const viewport = viewportRef.current
-        if (anchor.current === undefined && viewport) {
-            anchor.current = (viewport.scrollLeft + viewport.clientWidth / 2) / live.current
+        if (!gesturing.current) {
+            gesturing.current = true
+
+            const viewport = viewportRef.current
+            anchor.current = viewport
+                ? (viewport.scrollLeft + viewport.clientWidth / 2) / live.current
+                : undefined
+            baseWidth.current = stageRef.current?.ownerSVGElement?.width.baseVal.value
         }
 
         live.current = zoom
@@ -83,6 +101,7 @@ export const useLiveZoom = (initial: number): LiveZoom => {
             cancelAnimationFrame(frame.current)
             frame.current = undefined
         }
+        gesturing.current = false
         setCommitted(live.current)
     }, [])
 
@@ -104,7 +123,6 @@ export const useLiveZoom = (initial: number): LiveZoom => {
         }
 
         holdAnchor()
-        anchor.current = undefined
     }, [committed, holdAnchor])
 
     useEffect(() => () => {

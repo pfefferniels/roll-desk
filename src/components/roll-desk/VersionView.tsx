@@ -10,6 +10,7 @@ import { MotivationView } from "./MotivationView"
 import { EditView } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../../providers/SelectionContext"
+import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { isMotivation } from "./VersionMenu"
 
 type AgedSymbol = AnySymbol & { age: number }
@@ -78,6 +79,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(s => isMotivation(s))
     const { playSingleNote } = usePiano()
     const { view, viewOnly } = useContext(EditionContext)
+    const { translateX, rollLength } = usePinchZoom()
 
     const svgRef = useRef<SVGGElement>(null)
 
@@ -159,7 +161,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
         <g className='versionView' ref={svgRef}>
             {dynamics}
 
-            <Ground x={0} y={-50} width={100000} height={200 + 50} />
+            <Ground x={0} y={-50} width={translateX(rollLength)} height={200 + 50} />
 
             {!viewOnly && edits}
             {motivations}

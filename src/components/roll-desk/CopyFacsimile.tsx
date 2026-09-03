@@ -198,7 +198,7 @@ export const CopyFacsimile = ({
                     <RollGrid
                         selectionMode={active}
                         onSelectionDone={onSelectionDone}
-                        width={100000}
+                        width={geometry.translateX(geometry.rollLength)}
                     />
                 )}
 
@@ -241,7 +241,7 @@ export const CopyFacsimile = ({
 };
 
 const KeyboardDivision = ({ division }: { division: number }) => {
-    const { trackToY } = usePinchZoom();
+    const { trackToY, translateX, rollLength } = usePinchZoom();
 
     const y = trackToY(division);
 
@@ -249,7 +249,7 @@ const KeyboardDivision = ({ division }: { division: number }) => {
         <line
             x1={0}
             y1={y}
-            x2={100000}
+            x2={translateX(rollLength)}
             y2={y}
             stroke="black"
             strokeWidth={1}
