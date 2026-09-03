@@ -1,14 +1,17 @@
-import { useRef } from "react"
+import { RefObject, useRef } from "react"
 import { Glow } from "./Glow"
 import { PatchPattern } from "./PatchPattern"
 import { SelectionFilter } from "./Selection"
 import { Spray } from "./Spray"
 
 interface CanvasProps {
+    /** The group a running zoom gesture scales, see `useLiveZoom`. */
+    stageRef?: RefObject<SVGGElement | null>
     children: React.ReactNode
 }
 
 export const Canvas = ({
+    stageRef,
     children
 }: CanvasProps
 ) => {
@@ -23,12 +26,14 @@ export const Canvas = ({
                 <PatchPattern />
                 <Spray />
 
-                <g ref={svgRef}>
-                    {children}
+                <g className='zoomStage' ref={stageRef}>
+                    <g ref={svgRef}>
+                        {children}
 
-                    {svgRef.current && (
-                        <SelectionFilter />
-                    )}
+                        {svgRef.current && (
+                            <SelectionFilter />
+                        )}
+                    </g>
                 </g>
             </g>
         </svg>

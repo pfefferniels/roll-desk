@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { useSelection } from "../../providers/SelectionContext";
+import { rollXAt } from "../../helpers/pointer";
 import { Cursor } from "./Cursor";
 
 export const Ground = ({
@@ -18,8 +19,7 @@ export const Ground = ({
     const getLocalX = useCallback((e: MouseEvent | WheelEvent) => {
         const svg = svgRef.current;
         if (!svg) return null;
-        const rect = svg.getBoundingClientRect();
-        return (e.clientX - rect.left) / zoom;
+        return rollXAt(svg, e.clientX, zoom) ?? null;
     }, [zoom]);
 
     const onMouseDown = useCallback((e: MouseEvent) => {

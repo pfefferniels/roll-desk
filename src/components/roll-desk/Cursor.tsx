@@ -1,6 +1,6 @@
 import { RefObject, useCallback, useEffect, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { useSelection } from "../../providers/SelectionContext"
+import { rollXAt } from "../../helpers/pointer"
 
 interface CursorProps {
     svgRef: RefObject<SVGGElement | null>
@@ -14,12 +14,12 @@ export const Cursor = ({ svgRef }: CursorProps) => {
     const translatedX = translateX(cursorX)
 
     const onMouseMove = useCallback((event: MouseEvent) => {
-        if (!event.target) return
+        const ground = svgRef.current
+        if (!ground) return
 
-        const rect = (event.target as Element).getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        setCursorX(x / zoom)
-    }, [zoom])
+        const x = rollXAt(ground, event.clientX, zoom)
+        if (x !== undefined) setCursorX(x)
+    }, [svgRef, zoom])
 
     useEffect(() => {
         const svg = svgRef.current
@@ -49,7 +49,7 @@ export const Cursor = ({ svgRef }: CursorProps) => {
                 x={translatedX}
                 y={10}
                 fontSize={12}
-                textAnchor='left'
+                textAnchor='start'
                 fill='black'
                 className='cursor'
             >

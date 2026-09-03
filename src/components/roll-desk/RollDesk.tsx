@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar } from "@mui/material"
+import { AppBar, Box, Button, IconButton, Paper, Stack, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useState } from "react"
 import { Emulation, EmulationOptions, HorizontalSpan, VerticalSpan, Edition } from 'linked-rolls'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
@@ -17,6 +17,8 @@ import EditMetadata from "./EditMetadata"
 import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
+import { useLiveZoom } from "../../hooks/useLiveZoom"
+import { ZoomSlider } from "./ZoomSlider"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
@@ -80,7 +82,8 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
-    const [stretch, setStretch] = useState(viewOnly ? 0.2 : 1)
+    const initialStretch = viewOnly ? 0.2 : 1
+    const stretch = useLiveZoom(initialStretch)
 
     const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
@@ -400,15 +403,15 @@ export const Desk = ({ versionId }: DeskProps) => {
                 </Paper>
             )}
 
-            <Box overflow='scroll'>
+            <Box overflow='scroll' ref={stretch.viewportRef}>
                 <PinchZoomProvider
-                    zoom={stretch}
-                    setZoom={setStretch}
+                    zoom={stretch.committed}
+                    setZoom={stretch.jump}
                     noteHeight={3}
                     expressionHeight={10}
                     spacing={60}
                 >
-                    <Canvas>
+                    <Canvas stageRef={stretch.stageRef}>
                         {currentVersion
                             ? (
                                 <VersionView
@@ -439,24 +442,11 @@ export const Desk = ({ versionId }: DeskProps) => {
                 </PinchZoomProvider>
             </Box>
 
-            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, marginLeft: '30%', marginRight: '30%', paddingLeft: '1rem', paddingRight: '1rem', backgroundColor: 'white' }}>
-                <Slider
-                    sx={{ minWidth: '20rem' }}
-                    min={0.1}
-                    max={2.5}
-                    step={0.05}
-                    value={stretch}
-                    onChange={(_, newValue) => setStretch(newValue as number)}
-                    marks={[
-                        { value: 0.1, label: '1%' },
-                        { value: 0.5, label: '50%' },
-                        { value: 1, label: '100%' },
-                        { value: 1.5, label: '150%' },
-                        { value: 2, label: '200%' },
-                        { value: 2.5, label: '250%' },
-                    ]}
-                />
-            </Box>
+            <ZoomSlider
+                initial={initialStretch}
+                onScrub={stretch.scrub}
+                onSettle={stretch.settle}
+            />
 
             <EmulationSettingsDialog
                 open={emulationSettingsDialogOpen}

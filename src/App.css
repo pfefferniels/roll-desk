@@ -1,3 +1,27 @@
 .slur path {
     stroke-width: 0 !important;
 }
+
+/*
+ * While a zoom gesture runs, the stage carries a horizontal scale (see
+ * useLiveZoom). Widths on the roll are durations and should stretch with
+ * it; stroke weights and labels are not part of the roll's geometry and
+ * should not. At rest the scale is one and none of this does anything.
+ */
+.zoomStage * {
+    vector-effect: non-scaling-stroke;
+}
+
+.zoomStage text {
+    transform: scaleX(var(--counter-scale, 1));
+    transform-box: fill-box;
+    transform-origin: left center;
+}
+
+.zoomStage text[text-anchor="middle"] {
+    transform-origin: center center;
+}
+
+.zoomStage text[text-anchor="end"] {
+    transform-origin: right center;
+}
