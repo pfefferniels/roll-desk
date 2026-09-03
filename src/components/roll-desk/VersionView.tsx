@@ -1,9 +1,8 @@
 import { useContext, useMemo, useRef } from "react"
-import { Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, EditionView, Emulation, Expression, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
+import { welteT100System } from "linked-rolls/welte-t100"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Perforation, SustainPedal } from "./SymbolView"
-import { AnySymbol, Expression } from "linked-rolls/lib/Symbol"
-import { EditionView } from "linked-rolls/lib/EditionView"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
 import { MotivationView } from "./MotivationView"
@@ -88,7 +87,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     const emulation = useMemo(() => {
         if (!view) return undefined
 
-        const emulation = new Emulation()
+        const emulation = new Emulation(welteT100System)
         emulation.emulateVersion(version, view)
         return emulation
     }, [version, view])
@@ -97,7 +96,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
         const previous = view?.predecessorOf(version.id)
         if (!view || !previous) return undefined
 
-        const emulation = new Emulation()
+        const emulation = new Emulation(welteT100System)
         emulation.emulateVersion(previous, view)
         return emulation
     }, [version, view])
@@ -135,7 +134,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     // draw dynamics of prev version and dynamics of current version (for comparison)
     const dynamics = (
         <g className='dynamics'>
-            <DynamicsGrid {...emulation.options} />
+            <DynamicsGrid velocity={emulation.options.velocity} />
 
             {prevEmulation && (
                 <Dynamics

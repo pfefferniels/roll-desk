@@ -1,4 +1,5 @@
-import { Emulation, EmulationOptions, NuanceCurve } from "linked-rolls"
+import { DynamicsCurve, Emulation } from "linked-rolls"
+import { WelteT100Options } from "linked-rolls/welte-t100"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
 const bassSpace = 20
@@ -8,39 +9,38 @@ const trebleSpace = 93
 const SAMPLE_STRIDE = 25
 
 type DynamicsProps = {
-    forEmulation: Emulation
+    forEmulation: Emulation<WelteT100Options>
     pathProps: React.SVGProps<SVGPathElement>
 }
 
 export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) => {
     const { translateX, trackToY } = usePinchZoom()
 
-    const curves = emulation.curves
-    if (!curves) return null
+    const curveNamed = (name: string) =>
+        emulation.curves.find((curve): curve is DynamicsCurve => curve.kind === 'dynamics' && curve.name === name)
 
-    const bassShift = trackToY(bassSpace)
-    const trebleShift = trackToY(trebleSpace)
-
-    const pathOf = (curve: NuanceCurve, shift: number) =>
-        Array.from({ length: Math.ceil(curve.place.length / SAMPLE_STRIDE) }, (_, sample) => {
+    const pathOf = (curve: DynamicsCurve | undefined, shift: number) => {
+        if (!curve) return ""
+        return Array.from({ length: Math.ceil(curve.place.length / SAMPLE_STRIDE) }, (_, sample) => {
             const i = sample * SAMPLE_STRIDE
             return [translateX(curve.place[i]), 127 - curve.velocity[i] + shift]
         })
             .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
             .join(" ")
+    }
 
     return (
         <>
             <g className="trebleVelocities">
                 <path
-                    d={pathOf(curves.nuance.treble, trebleShift)}
+                    d={pathOf(curveNamed('treble'), trackToY(trebleSpace))}
                     fill="none"
                     {...pathProps}
                 />
             </g>
             <g className="bassVelocities">
                 <path
-                    d={pathOf(curves.nuance.bass, bassShift)}
+                    d={pathOf(curveNamed('bass'), trackToY(bassSpace))}
                     fill="none"
                     {...pathProps}
                 />
@@ -49,13 +49,13 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
     )
 }
 
-export const DynamicsGrid = ({ velocity }: Pick<EmulationOptions, 'velocity'>) => {
-    const { translateX, trackToY, rollLength } = usePinchZoom()
+export const DynamicsGrid = ({ velocity }: Pick<WelteT100Options, 'velocity'>) => {
+    const { translateX, trackToY } = usePinchZoom()
 
     const bassShift = trackToY(bassSpace)
     const trebleShift = trackToY(trebleSpace)
 
-    const width = translateX(rollLength)
+    const width = translateX(100000)
 
     const lineAt = (y: number, dashed = false) => (
         <line

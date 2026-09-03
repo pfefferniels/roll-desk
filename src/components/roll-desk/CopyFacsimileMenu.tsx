@@ -11,7 +11,7 @@ import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { assignObject, ObjectAssumption } from "linked-rolls/lib/Assumption"
+import { assignObject, ObjectAssumption } from "linked-rolls"
 import { FeatureConditionDialog } from "./FeatureConditionDialog"
 
 export type FacsimileSelection = EventDimension | AnyFeature

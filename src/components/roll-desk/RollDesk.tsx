@@ -2,7 +2,8 @@
 
 import { AppBar, Box, Button, IconButton, Paper, Stack, Tab, Tabs, Toolbar } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { Emulation, EmulationOptions, HorizontalSpan, VerticalSpan, Edition } from 'linked-rolls'
+import { Emulation, HorizontalSpan, VerticalSpan, Edition, valueOf } from 'linked-rolls'
+import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -29,7 +30,6 @@ import { Draft } from 'immer'
 import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
-import { valueOf } from "linked-rolls/lib/Assumption"
 import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
 
@@ -100,7 +100,7 @@ export const Desk = ({ versionId }: DeskProps) => {
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
 
-    const [emulationOptions, setEmulationOptions] = useState<EmulationOptions>()
+    const [emulationOptions, setEmulationOptions] = useState<WelteT100Options>()
 
     const [currentTab, setCurrentTab] = useState(0)
 
@@ -124,7 +124,7 @@ export const Desk = ({ versionId }: DeskProps) => {
             return
         }
 
-        const emulation = new Emulation(emulationOptions)
+        const emulation = new Emulation(welteT100System, emulationOptions)
         emulation.emulateVersion(currentVersion, view, { range, skipToFirstNote: true })
 
         play(emulation.asMIDI(), (e) => {
@@ -172,7 +172,7 @@ export const Desk = ({ versionId }: DeskProps) => {
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion || !view) return
 
-        const emulation = new Emulation(emulationOptions)
+        const emulation = new Emulation(welteT100System, emulationOptions)
         emulation.emulateVersion(currentVersion, view)
 
         const midiFile = emulation.asMIDI()

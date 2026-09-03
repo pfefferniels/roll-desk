@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, 
 import { alignFeatures, RollCopy } from "linked-rolls";
 import { useContext, useEffect, useRef, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
-import { valueOf } from "linked-rolls/lib/Assumption";
+import { valueOf } from "linked-rolls";
 
 interface AlignToDialogProps {
     open: boolean

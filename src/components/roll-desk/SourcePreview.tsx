@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { PaperStretch, RollCopy } from 'linked-rolls'
-import { valueOf } from 'linked-rolls/lib/Assumption'
+import { valueOf } from 'linked-rolls'
 import { Arguable } from './Arguable'
 import { EditionContext } from '../../providers/EditionContext'
 

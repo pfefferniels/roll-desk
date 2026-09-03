@@ -2,13 +2,13 @@ import {
     AnyFeature,
     calibrationOf,
     columnsOf,
-    defaultEmulationOptions,
     GluedOn,
     Path,
     RollCopy,
     TrackCalibration,
     Writing,
 } from "linked-rolls";
+import { defaultWelteT100Options } from "linked-rolls/welte-t100";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
 import { boxOf, RollGeometry } from "../../helpers/rollGeometry.ts";
 import { JSX, useContext, useLayoutEffect, useRef, useState } from "react";
@@ -235,7 +235,7 @@ export const CopyFacsimile = ({
                 })}
             </g>
 
-            <KeyboardDivision division={defaultEmulationOptions.division} />
+            <KeyboardDivision division={defaultWelteT100Options.division} />
         </>
     );
 };

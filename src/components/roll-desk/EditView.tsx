@@ -2,10 +2,10 @@ import { Edit } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext, useMemo, useState } from "react";
-import { AnySymbol } from "linked-rolls/lib/Symbol";
+import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
-import { EditionView } from "linked-rolls/lib/EditionView";
+import { EditionView } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { boxOf, Translation } from "../../helpers/rollGeometry";
 

@@ -3,9 +3,9 @@ import { WritingMethod } from "linked-rolls"
 import { useContext, useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension } from "./RollDesk"
-import { AnySymbol, isSymbol } from "linked-rolls/lib/Symbol"
+import { AnySymbol, isSymbol } from "linked-rolls"
 import { EditionContext } from "../../providers/EditionContext"
-import { assignReference } from "linked-rolls/lib/Assumption"
+import { assignReference } from "linked-rolls"
 import { useSelection } from "../../providers/SelectionContext"
 
 const isEventDimension = (selection: any): selection is EventDimension => {

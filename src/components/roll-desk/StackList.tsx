@@ -5,7 +5,7 @@ import { useContext, useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
 import { EditionContext } from "../../providers/EditionContext"
-import { valueOf } from "linked-rolls/lib/Assumption"
+import { valueOf } from "linked-rolls"
 
 export interface LayerInfo {
     color: string

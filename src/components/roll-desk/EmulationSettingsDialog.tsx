@@ -1,17 +1,17 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
-import { defaultEmulationOptions, EmulationOptions } from "linked-rolls"
+import { defaultWelteT100Options, WelteT100Options } from "linked-rolls/welte-t100"
 import { useState } from "react"
 
 interface EmulationSettingsDialogProps {
     open: boolean
     onClose: () => void
-    onDone: (options: EmulationOptions) => void
+    onDone: (options: WelteT100Options) => void
 }
 
 const pedalModes = ['continuous', 'switch'] as const
 
 export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSettingsDialogProps) => {
-    const [options, setOptions] = useState<EmulationOptions>(defaultEmulationOptions)
+    const [options, setOptions] = useState<WelteT100Options>(defaultWelteT100Options)
     const { spool, velocity } = options
 
     const numberField = (label: string, value: number, onChange: (value: number) => void, step = 1) => (
@@ -53,7 +53,7 @@ export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSett
                         <Select
                             value={options.pedalMode}
                             size='small'
-                            onChange={e => setOptions({ ...options, pedalMode: e.target.value as EmulationOptions['pedalMode'] })}
+                            onChange={e => setOptions({ ...options, pedalMode: e.target.value as WelteT100Options['pedalMode'] })}
                         >
                             {pedalModes.map(mode => (
                                 <MenuItem key={mode} value={mode}>{mode}</MenuItem>
