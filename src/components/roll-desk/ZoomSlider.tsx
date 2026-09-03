@@ -1,5 +1,8 @@
 import { Box, Slider } from "@mui/material"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { ZoomRange } from "../../hooks/useLiveZoom"
+
+export const zoomRange: ZoomRange = { min: 0.1, max: 2.5 }
 
 const marks = [
     { value: 0.1, label: '1%' },
@@ -11,7 +14,8 @@ const marks = [
 ]
 
 interface ZoomSliderProps {
-    initial: number
+    /** The zoom the roll is laid out at. The thumb follows it when it moves elsewhere. */
+    zoom: number
     onScrub: (zoom: number) => void
     onSettle: () => void
 }
@@ -20,8 +24,10 @@ interface ZoomSliderProps {
  * Holds the thumb position itself, so that dragging it redraws the slider
  * alone and leaves the roll to `useLiveZoom`.
  */
-export const ZoomSlider = ({ initial, onScrub, onSettle }: ZoomSliderProps) => {
-    const [value, setValue] = useState(initial)
+export const ZoomSlider = ({ zoom, onScrub, onSettle }: ZoomSliderProps) => {
+    const [value, setValue] = useState(zoom)
+
+    useEffect(() => setValue(zoom), [zoom])
 
     return (
         <Box sx={{
@@ -37,8 +43,8 @@ export const ZoomSlider = ({ initial, onScrub, onSettle }: ZoomSliderProps) => {
         }}>
             <Slider
                 sx={{ minWidth: '20rem' }}
-                min={0.1}
-                max={2.5}
+                min={zoomRange.min}
+                max={zoomRange.max}
                 step={0.05}
                 value={value}
                 onChange={(_, newValue) => {
