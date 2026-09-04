@@ -59,12 +59,13 @@ const deriveVersion = (versionId: string, selection: VersionSelection[]): Editio
         }
 
         draft.versions.push({
+            type: 'Version',
             siglum: version.siglum + '_derived',
             id: v4(),
             basedOn: assignReference(version.id),
             edits,
             motivations: [],
-            type: 'unicum'
+            versionType: 'unicum'
         })
     }
 
@@ -346,10 +347,10 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     apply((draft) => {
                         const version = draft.versions.find(v => v.id === versionId)
                         if (!version) return
-                        version.type = type
+                        version.versionType = type
                     })
                 }}
-                value={version.type}
+                value={version.versionType}
                 types={versionTypes}
             />
 

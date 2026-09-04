@@ -18,7 +18,7 @@ export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
 
     for (const copy of edition.copies) {
         const shift = copy.measurements.shift?.horizontal || 0
-        const stretchCondition = copy.conditions.find(c => c.type === 'paper-stretch')
+        const stretchCondition = copy.conditions.find(c => c.conditionType === 'paper-stretch')
         const stretch = stretchCondition ? (stretchCondition as PaperStretch).factor : 1
 
         for (const feature of copy.features) {

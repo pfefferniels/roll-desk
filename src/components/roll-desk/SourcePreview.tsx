@@ -99,7 +99,7 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds }
                 alignItems: 'center',
             }}>
                 <span>{date}</span>
-                <span>{copy.location}</span>
+                <span>{copy.keeper.name}</span>
             </div>
         </div>
     )
@@ -122,7 +122,7 @@ function drawPreview(
     const drawW = w - pad * 2
 
     const shift = copy.measurements.shift?.horizontal || 0
-    const stretchCondition = copy.conditions.find(c => c.type === 'paper-stretch')
+    const stretchCondition = copy.conditions.find(c => c.conditionType === 'paper-stretch')
     const stretch = stretchCondition ? (stretchCondition as PaperStretch).factor : 1
 
     // Feature extents in collated space

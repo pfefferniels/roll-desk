@@ -7,12 +7,15 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
 import { EditionContext } from '../../providers/EditionContext';
-import { assignValue, valueOf } from 'linked-rolls';
+import { assignValue, Concept, systemOf, valueOf, welteT100 } from 'linked-rolls';
 
 interface EditMetadataProps {
   open: boolean
   onClose: () => void
 }
+
+/** The reproducing systems the library can read. */
+const systems: Concept[] = [systemOf(welteT100)]
 
 const licenses = [
   { name: 'Creative Commons Attribution 4.0', url: 'https://creativecommons.org/licenses/by/4.0/' },
@@ -30,6 +33,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   const [license, setLicense] = useState<string>('');
   const [baseURI, setBaseURI] = useState<string>('');
   const [catalogueNumber, setCatalogueNumber] = useState<string>('');
+  const [system, setSystem] = useState<Concept>(systems[0]);
   const [recordingDate, setRecordingDate] = useState<Date>(new Date());
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
@@ -44,6 +48,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
     setPublisherName(edition.creation.publisher.name);
     setPublicationDate(edition.creation.publicationDate);
     setCatalogueNumber(edition.roll.catalogueNumber);
+    setSystem(edition.roll.system);
     setRecordingDate(valueOf(edition.roll.recordingEvent.date));
     setRecordingPlace(edition.roll.recordingEvent.place.name);
   }, [edition])
@@ -58,6 +63,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
       draft.creation.publisher.name = publisherName
       draft.creation.publicationDate = publicationDate
       draft.roll.catalogueNumber = catalogueNumber
+      draft.roll.system = system
       draft.roll.recordingEvent.date = assignValue(recordingDate)
       draft.roll.recordingEvent.place.name = recordingPlace
     })
@@ -120,6 +126,19 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
               value={catalogueNumber}
               onChange={(e) => setCatalogueNumber(e.target.value)}
             />
+            <TextField
+              label="Reproducing System"
+              fullWidth
+              select
+              value={system.id ?? ''}
+              onChange={(e) => setSystem(systems.find(s => s.id === e.target.value) ?? system)}
+            >
+              {systems.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {s.name}
+                </MenuItem>
+              ))}
+            </TextField>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 value={dayjs(recordingDate)}

@@ -34,7 +34,7 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
                 nodes.push({
                     id: version.id,
                     label: version.siglum,
-                    type: version.type,
+                    type: version.versionType,
                     generation: version.generation,
                     overlayInfo: null
                 })

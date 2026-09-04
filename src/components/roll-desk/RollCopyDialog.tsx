@@ -15,20 +15,23 @@ interface RollCopyDialogProps {
 export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogProps) => {
     const { edition, apply } = useContext(EditionContext)
     const [file, setFile] = useState<File | null>(null);
-    const [location, setLocation] = useState('')
+    const [keeper, setKeeper] = useState('')
+    const [keeperAuthority, setKeeperAuthority] = useState('')
     const [siglum, setSiglum] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string>()
 
     useEffect(() => {
         if (!copy) return
-        setLocation(copy.location)
+        setKeeper(copy.keeper.name)
+        setKeeperAuthority(copy.keeper.sameAs[0] ?? '')
     }, [copy])
 
     useEffect(() => {
         if (!open) {
             setFile(null)
-            setLocation(copy?.location ?? '')
+            setKeeper(copy?.keeper.name ?? '')
+            setKeeperAuthority(copy?.keeper.sameAs[0] ?? '')
             setSiglum('')
             setError(undefined)
             setLoading(false)
@@ -53,7 +56,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 id: v4(),
                 measurements: {},
                 conditions: [],
-                location: '',
+                keeper: { name: '', sameAs: [] },
                 modifications: [],
                 features: [],
             }
@@ -65,7 +68,10 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 rollCopy = readFromStanfordAton(await file.text());
             }
 
-            rollCopy.location = location
+            rollCopy.keeper = {
+                name: keeper.trim(),
+                sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : []
+            }
 
             apply(new CreateVersion(siglum, rollCopy))
             onDone?.(rollCopy.id)
@@ -84,13 +90,20 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 <Stack spacing={1}>
                     {error && <Alert severity="error">{error}</Alert>}
 
-                    <Typography>Physical Location</Typography>
+                    <Typography>Holding Institution</Typography>
                     <TextField
                         size='small'
-                        value={location}
-                        onChange={e => setLocation(e.target.value)}
-                        placeholder='e. g. Stanford University Archive'
-                        label='Physical location'
+                        value={keeper}
+                        onChange={e => setKeeper(e.target.value)}
+                        placeholder='e. g. Stanford University Libraries'
+                        label='Holding institution'
+                    />
+                    <TextField
+                        size='small'
+                        value={keeperAuthority}
+                        onChange={e => setKeeperAuthority(e.target.value)}
+                        placeholder='e. g. https://d-nb.info/gnd/…'
+                        label='Authority record (GND, Wikidata, ISIL)'
                     />
 
                     <Typography>(Preliminary) Siglum</Typography>

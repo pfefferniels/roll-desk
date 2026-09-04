@@ -53,7 +53,7 @@ const removeAlignment = (copyId: string): EditionOp => {
         if (!copy) return
 
         const shift = copy.measurements.shift
-        const stretchCondition = copy.conditions.find(c => c.type === 'paper-stretch') as PaperStretch | undefined
+        const stretchCondition = copy.conditions.find(c => c.conditionType === 'paper-stretch') as PaperStretch | undefined
         const factor = stretchCondition?.factor ?? 1
 
         for (const feature of copy.features) {
@@ -69,7 +69,7 @@ const removeAlignment = (copyId: string): EditionOp => {
 
         copy.ops = copy.ops.filter(op => op !== 'shifted' && op !== 'stretched')
         delete copy.measurements.shift
-        copy.conditions = copy.conditions.filter(c => c.type !== 'paper-stretch')
+        copy.conditions = copy.conditions.filter(c => c.conditionType !== 'paper-stretch')
     }
 }
 
@@ -218,7 +218,8 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 onClose={() => setReportRollCondition(false)}
                 onDone={(value) => {
                     apply(addGeneralCondition(copyId, assignObject({
-                        type: 'general',
+                        type: 'ConditionState',
+                        conditionType: 'general',
                         description: value
                     })))
                     setReportRollCondition(false)
@@ -250,10 +251,11 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                         vertical: 0
                     }
 
-                    const stretch = assignObject({
+                    const stretch = assignObject<PaperStretch>({
+                        type: 'ConditionState',
+                        conditionType: 'paper-stretch',
                         factor: stretchValue,
-                        description: 'calculated by alignment',
-                        type: 'paper-stretch' as 'paper-stretch'
+                        description: 'calculated by alignment'
                     })
 
                     apply(

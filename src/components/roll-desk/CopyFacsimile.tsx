@@ -166,7 +166,7 @@ const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
                     <Arguable
                         path={conditionPath}
                     >
-                        {feature.condition.type.replaceAll('-', ' ')}
+                        {feature.condition.conditionType.replaceAll('-', ' ')}
                     </Arguable>
                 </foreignObject>
             )}

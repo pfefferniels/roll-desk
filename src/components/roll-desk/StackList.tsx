@@ -87,7 +87,7 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                         }
                                         secondary={
                                             <>
-                                                {copy.location}
+                                                {copy.keeper.name}
                                                 <br />
                                                 {copy.conditions.map((c, idx) => {
                                                     return (
@@ -96,7 +96,7 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                                             path={['copies', edition?.copies.indexOf(copy) || 0, 'conditions', idx]}
                                                         >
                                                             <span>
-                                                                {c.type === 'general'
+                                                                {c.conditionType === 'general'
                                                                     ? c.description
                                                                     : `Paper Stretch: ${(c as PaperStretch).factor.toFixed(3)}`}
                                                             </span>

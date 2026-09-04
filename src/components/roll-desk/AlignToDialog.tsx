@@ -64,7 +64,7 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
                             )
                             return (
                                 <MenuItem value={c.id} key={`alignSymbols_${c.id}`}>
-                                    {date} ({c.location})
+                                    {date} ({c.keeper.name})
                                 </MenuItem>
                             )
                         })}

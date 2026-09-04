@@ -1,5 +1,5 @@
 import { enablePatches, produceWithPatches, applyPatches, Patch, Draft, enableMapSet } from "immer";
-import { assignValue, Edition, EditionMetadata, EditionView, isPlan, Plan } from "linked-rolls";
+import { assignValue, Edition, EditionMetadata, EditionView, isPlan, Plan, systemOf, welteT100 } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
 export type EditionOp = (d: Draft<Edition>) => void;
@@ -21,6 +21,7 @@ export const emptyMetadata: EditionMetadata = {
     },
     roll: {
         catalogueNumber: '',
+        system: systemOf(welteT100),
         recordingEvent: {
             recorded: {
                 pianist: {

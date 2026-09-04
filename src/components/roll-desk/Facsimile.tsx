@@ -10,7 +10,7 @@ const dpi = 300.25
 const pixelsToMM = (pixels: number) => pixels / dpi * 25.4
 
 const stretchOf = (copy: RollCopy) =>
-    copy.conditions.find((c): c is PaperStretch => c.type === 'paper-stretch')?.factor ?? 1
+    copy.conditions.find((c): c is PaperStretch => c.conditionType === 'paper-stretch')?.factor ?? 1
 
 /** Screen x of a scan row, through whatever alignment the copy was given. */
 const rowToXOf = (copy: RollCopy, translateX: (mm: number) => number) => {

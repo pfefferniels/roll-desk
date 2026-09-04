@@ -13,29 +13,29 @@ export function FeatureConditionDialog({ open, feature, onClose, onDone }: Featu
     type FeatureT = typeof feature.type
     type ConditionT = typeof conditions[FeatureT][number]
 
-    const [type, setType] = useState<ConditionT>(conditions[feature.type][0])
+    const [conditionType, setConditionType] = useState<ConditionT>(conditions[feature.type][0])
     const [description, setDescription] = useState<string>()
 
     const allTypes: readonly ConditionT[] = conditions[feature.type]
 
     useEffect(() => {
         if (!feature.condition) {
-            setType(conditions[feature.type][0])
+            setConditionType(conditions[feature.type][0])
             setDescription(undefined)
             return
         }
 
-        setType(feature.condition.type)
+        setConditionType(feature.condition.conditionType)
         setDescription(feature.condition.description)
     }, [feature])
 
     const handleDone = async () => {
-        if (!type) {
+        if (!conditionType) {
             console.error('Condition type is required');
             return;
         }
 
-        onDone({ type, description });
+        onDone({ type: 'ConditionState', conditionType, description });
     };
 
     return (
@@ -48,8 +48,8 @@ export function FeatureConditionDialog({ open, feature, onClose, onDone }: Featu
                         <InputLabel id="condition-type-label">Condition Type</InputLabel>
                         <Select
                             labelId="condition-type-label"
-                            value={type}
-                            onChange={e => setType(e.target.value)}
+                            value={conditionType}
+                            onChange={e => setConditionType(e.target.value)}
                         >
                             {allTypes.map(t => {
                                 return (
