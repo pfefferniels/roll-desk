@@ -1,8 +1,9 @@
 'use client'
 
 import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
-import { useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { Emulation, HorizontalSpan, VerticalSpan, Edition, valueOf } from 'linked-rolls'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { Emulation, HorizontalSpan, VerticalSpan, Edition, valueOf, isEdit, isRollFeature, isSymbol } from 'linked-rolls'
+import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -77,9 +78,16 @@ export type UserSelection = (VersionSelection | FacsimileSelection)
 
 interface DeskProps {
     versionId?: string
+
+    /**
+     * The id of an entity of the edition to open with: a version, a copy,
+     * or a symbol, feature or edit, whose version or copy is shown and
+     * which is then selected and marked.
+     */
+    show?: string
 }
 
-export const Desk = ({ versionId }: DeskProps) => {
+export const Desk = ({ versionId, show }: DeskProps) => {
     const { play, stop } = usePiano()
 
     const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
@@ -109,6 +117,39 @@ export const Desk = ({ versionId }: DeskProps) => {
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
     const currentCopy = edition?.copies.find(c => c.id === currentCopyId)
+
+    const shown = useRef<string | undefined>(undefined)
+    const [pendingSpotlight, setPendingSpotlight] = useState<string>()
+
+    // A link to an entity opens the version or copy it belongs to and marks it.
+    useEffect(() => {
+        if (!show || !view || !edition || shown.current === show) return
+        const path = view.getPath(show)
+        if (!path) return
+        shown.current = show
+
+        const [collection, index] = path
+        if (collection === 'versions') {
+            setCurrentVersionId(edition.versions[index as number]?.id)
+            setCurrentCopyId(undefined)
+        }
+        else if (collection === 'copies') {
+            setCurrentCopyId(edition.copies[index as number]?.id)
+            setCurrentVersionId(undefined)
+        }
+        else return
+
+        const entity = view.get<object>(show)
+        if (entity && path.length > 2 && (isSymbol(entity) || isRollFeature(entity) || isEdit(entity))) {
+            setSelection([entity as UserSelection])
+            setPendingSpotlight(show)
+        }
+    }, [show, view, edition])
+
+    useEffect(() => {
+        if (!pendingSpotlight) return
+        return spotlightWhenDrawn(pendingSpotlight, () => setPendingSpotlight(undefined))
+    }, [pendingSpotlight, currentVersionId, currentCopyId])
 
     useHotkeys(['space'], (_, handler) => {
         switch (handler.keys?.join('')) {
@@ -142,32 +183,7 @@ export const Desk = ({ versionId }: DeskProps) => {
                     }))
                 }
 
-                const symbol = document.querySelector(`#${symbolId} rect`)
-                if (!symbol) return
-
-                symbol.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                })
-
-                const originalFill = symbol.getAttribute('fill') ?? window.getComputedStyle(symbol as Element).fill ?? ''
-                const originalStroke = symbol.getAttribute('stroke') ?? ''
-                const originalStrokeWidth = symbol.getAttribute('stroke-width') ?? ''
-
-                symbol.setAttribute('fill', 'orange')
-                symbol.setAttribute('stroke', 'orangered')
-                symbol.setAttribute('stroke-width', '1.5')
-
-                window.setTimeout(() => {
-                    if (originalFill) symbol.setAttribute('fill', originalFill)
-                    else symbol.removeAttribute('fill')
-
-                    if (originalStroke) symbol.setAttribute('stroke', originalStroke)
-                    else symbol.removeAttribute('stroke')
-
-                    if (originalStrokeWidth) symbol.setAttribute('stroke-width', originalStrokeWidth)
-                    else symbol.removeAttribute('stroke-width')
-                }, 600)
+                spotlight(symbolId, 600)
             }
         })
         setIsPlaying(true)

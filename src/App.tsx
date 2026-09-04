@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { Snackbar } from '@mui/material';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 
 import { SnackbarContext } from './providers/SnackbarContext';
 import { Desk } from './components/roll-desk/RollDesk';
 import { PianoContextProvider } from 'react-pianosound';
 import { EditionProvider } from './providers/EditionContext';
 import { Edition, importJsonLd } from 'linked-rolls';
+
+/**
+ * The desk opened on one entity of the edition, so that the path of an
+ * entity's IRI, `/symbol_…` or `/copy/…`, shows that entity.
+ */
+const DeskShowing = () => {
+  const { entityId } = useParams()
+  return <Desk show={entityId} />
+}
 
 const App = () => {
   const [message, setMessage] = useState<string>();
@@ -77,6 +86,23 @@ const App = () => {
                   </EditionProvider>
                 }
               />
+
+              {/* an entity of the existing edition, by the path of its IRI */}
+              {['/copy/:entityId', '/:entityId'].map(path => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    isLoadingEdition ? (
+                      <div>Loading…</div>
+                    ) : (
+                      <EditionProvider edition={existingEdition}>
+                        <DeskShowing />
+                      </EditionProvider>
+                    )
+                  }
+                />
+              ))}
             </Routes>
           </BrowserRouter>
         </PianoContextProvider>
