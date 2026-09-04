@@ -7,10 +7,10 @@ import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
-import { write } from "midifile-ts"
 import { SourceStack } from "./SourceStack"
 import { Canvas } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
+import { versionAsMidi, versionsAsMidiArchive } from "../../helpers/versionMidi"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
@@ -176,13 +176,23 @@ export const Desk = ({ versionId }: DeskProps) => {
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion || !view) return
 
-        const emulation = new Emulation(welteT100System, emulationOptions)
-        emulation.emulateVersion(currentVersion, view)
+        downloadFile(
+            `${currentVersion.siglum}.mid`,
+            versionAsMidi(currentVersion, view, emulationOptions),
+            'audio/midi'
+        )
+    }, [currentVersion, view, emulationOptions])
 
-        const midiFile = emulation.asMIDI()
-        const dataBuf = write(midiFile.tracks, midiFile.header.ticksPerBeat);
-        downloadFile(`${currentVersion.siglum}.mid`, dataBuf, 'audio/midi')
-    }, [currentVersion, emulationOptions])
+    const downloadAllMIDI = useCallback(async () => {
+        if (!edition || !view || !edition.versions.length) return
+
+        const archiveName = edition.title.trim().replace(/[^\w.-]+/g, '_') || 'edition'
+        downloadFile(
+            `${archiveName}_midi.zip`,
+            versionsAsMidiArchive(edition.versions, view, emulationOptions),
+            'application/zip'
+        )
+    }, [edition, view, emulationOptions])
 
     useEffect(() => {
         if (!edition) return
@@ -479,7 +489,9 @@ export const Desk = ({ versionId }: DeskProps) => {
                 edition={edition}
                 onClose={() => setDownloadDialogOpen(false)}
                 onDownloadMIDI={downloadMIDI}
+                onDownloadAllMIDI={downloadAllMIDI}
                 versionSiglum={currentVersion?.siglum}
+                versionCount={edition.versions.length}
             />
 
             <EditMetadata
