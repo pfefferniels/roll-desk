@@ -36,11 +36,13 @@ const App = () => {
     };
   }, []);
 
-  // load default edition from public/roll.json
+  // The edition lives in the wm225.org repository, which publishes it as
+  // https://wm225.org/edition.jsonld; that address replaces the raw one
+  // once the domain resolves.
   useEffect(() => {
     const loadEdition = async () => {
       try {
-        const res = await fetch('/roll.json');
+        const res = await fetch('https://raw.githubusercontent.com/pfefferniels/wm225.org/main/edition.jsonld');
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -49,7 +51,7 @@ const App = () => {
         setExistingEdition(edition);
       } catch (err) {
         console.error(err);
-        setMessage('Could not load default edition (roll.json).');
+        setMessage('Could not load the edition of WM 225.');
       } finally {
         setIsLoadingEdition(false);
       }

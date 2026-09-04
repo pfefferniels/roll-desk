@@ -40,7 +40,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
 
     const downloadJsonLd = () => {
         const jsonld = asJsonLd(edition)
-        downloadFile('roll.json', JSON.stringify(jsonld, null, 4), 'application/ld+json')
+        downloadFile('edition.jsonld', JSON.stringify(jsonld, null, 4), 'application/ld+json')
     }
 
     const downloadAllMIDI = async () => {
