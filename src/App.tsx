@@ -36,13 +36,11 @@ const App = () => {
     };
   }, []);
 
-  // The edition lives in the welte225.org repository, which publishes it as
-  // https://welte225.org/edition.jsonld; that address replaces the raw one
-  // once the domain resolves.
+  // The edition is published by the welte225.org repository; this is its only copy.
   useEffect(() => {
     const loadEdition = async () => {
       try {
-        const res = await fetch('https://raw.githubusercontent.com/pfefferniels/welte225.org/main/edition.jsonld');
+        const res = await fetch('https://welte225.org/edition.jsonld');
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
