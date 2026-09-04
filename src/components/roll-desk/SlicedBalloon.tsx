@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Popper } from "@mui/material";
 
 /** A 2D point in SVG user space. */
 export type Pt = { x: number; y: number };
@@ -166,6 +167,7 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
     const [hovered, setHovered] = React.useState(false);
     const [currentSlice, setCurrentSlice] = useState<Slice>()
     const clickTime = useRef(0)
+    const groupRef = useRef<SVGGElement>(null)
 
     const geom = useMemo(() => computeSliceGeometry(slices), [slices]);
 
@@ -187,7 +189,7 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
         const left = boundaryOffsets[i];
         const right = boundaryOffsets[i + 1];
         const d = `${boundaryCubicPath(a, b, left)} ${boundaryCubicPathReversed(a, b, right)}`;
-        return { slice: s, d, left, right };
+        return { slice: s, d };
     });
 
     // Outer outline is the leftmost boundary + rightmost boundary reversed.
@@ -206,6 +208,7 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
 
     return (
         <g
+            ref={groupRef}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => {
                 setHovered(false)
@@ -242,29 +245,24 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
                     fill="gray"
                     fillOpacity={0.5}
                 />)}
-            {currentSlice && (
-                <foreignObject
-                    x={slicePaths.find(p => p.slice === currentSlice)?.left}
-                    y={b.y + (a.y - b.y) / 3}
-                    width={200}
-                    height={100}
-                    textAnchor="middle"
-                    fontSize={14}
-                    fill="black"
-                    pointerEvents="none"
-                >
-                    <div style={{
-                        backgroundColor: 'white',
-                        padding: '4px',
-                        border: '1px solid black',
-                        borderRadius: '4px',
-                        zIndex: 3000,
-                        width: 'fit-content',
-                    }}>
-                        {currentSlice.description}
-                    </div>
-                </foreignObject>
-            )}
+            <Popper
+                open={Boolean(currentSlice)}
+                anchorEl={() => groupRef.current!}
+                placement="left"
+                sx={{ pointerEvents: 'none', zIndex: theme => theme.zIndex.tooltip }}
+            >
+                <div style={{
+                    backgroundColor: '#ffffff',
+                    padding: '4px 8px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '4px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                    maxWidth: 260,
+                    fontSize: 14,
+                }}>
+                    {currentSlice?.description}
+                </div>
+            </Popper>
         </g>
     );
 }
