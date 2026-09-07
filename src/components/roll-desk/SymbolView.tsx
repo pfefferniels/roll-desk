@@ -156,37 +156,3 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
         </g>
     );
 };
-
-interface SustainPedalProps {
-    on: Expression
-    off: Expression
-}
-
-export const SustainPedal = ({ on, off }: SustainPedalProps) => {
-    const { view } = useContext(EditionContext)
-    const { translateX, bandOf } = usePinchZoom()
-
-    if (!view) return null
-
-    const onsets = view.carriersOf(on).map(e => e.horizontal.from).sort()
-    const offsets = view.carriersOf(off).map(e => e.horizontal.to).sort()
-
-    if (onsets.length === 0 || offsets.length === 0) return null
-
-    const innerBoundaries = [onsets[0], offsets[0]].map(translateX)
-    const { y, height } = bandOf({ from: 12, to: 88 })
-
-    return (
-        <rect
-            className='pedal'
-            x={innerBoundaries[0]}
-            width={innerBoundaries[1] - innerBoundaries[0]}
-            y={y}
-            height={height}
-            fill='gray'
-            fillOpacity={0.1}
-            stroke='black'
-            strokeWidth={0.4}
-        />
-    )
-}

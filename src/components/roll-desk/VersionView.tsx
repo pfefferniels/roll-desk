@@ -1,8 +1,9 @@
 import { useContext, useMemo, useRef } from "react"
-import { AnySymbol, EditionView, Emulation, Expression, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, EditionView, Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { welteT100System } from "linked-rolls/welte-t100"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
-import { Perforation, SustainPedal } from "./SymbolView"
+import { Pedals } from "./Pedal"
+import { Perforation } from "./SymbolView"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
 import { MotivationView } from "./MotivationView"
@@ -51,24 +52,6 @@ const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
     })
 }
 
-/** Each pedal-on paired with the first pedal-off that follows it. */
-const sustainSpans = (snapshot: AgedSymbol[], view: EditionView) => {
-    const startOf = (symbol: AnySymbol) => view.dimensionOf(symbol)?.horizontal.from || 0
-
-    const isPedal = (symbol: AnySymbol, which: 'SustainPedalOn' | 'SustainPedalOff') =>
-        symbol.type === 'expression' && symbol.expressionType === which
-
-    return snapshot
-        .filter(symbol => isPedal(symbol, 'SustainPedalOn'))
-        .map(on => ({
-            on: on as Expression,
-            off: snapshot.find(candidate =>
-                isPedal(candidate, 'SustainPedalOff') && startOf(candidate) > startOf(on)
-            ) as Expression | undefined
-        }))
-        .filter((span): span is { on: Expression, off: Expression } => !!span.off)
-}
-
 interface VersionViewProps {
     version: Version
     onClick: (event: AnySymbol | Motivation | Edit) => void
@@ -104,11 +87,6 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     const snapshot = useMemo(
         () => view ? snapshotUpTo(view, version.id) : [],
         [version, view]
-    )
-
-    const pedalSpans = useMemo(
-        () => view ? sustainSpans(snapshot, view) : [],
-        [snapshot, view]
     )
 
     if (!view || !emulation) return null
@@ -165,13 +143,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
             {!viewOnly && edits}
             {motivations}
 
-            {pedalSpans.map(({ on, off }, i) => (
-                <SustainPedal
-                    key={`sustain_${on.id || i}`}
-                    on={on}
-                    off={off}
-                />
-            ))}
+            <Pedals forEmulation={emulation} />
 
             {snapshot
                 .map((symbol, i) => {
