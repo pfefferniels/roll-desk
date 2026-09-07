@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 export interface PinchHandlers {
     /** The pinch stands at `factor` times where it began, centred on viewport x `focus`. */
@@ -38,18 +38,18 @@ const spreadOf = (touches: TouchList) =>
 const middleOf = (touches: TouchList) => (touches[0].clientX + touches[1].clientX) / 2
 
 /**
- * Listens for pinches on `viewport`: two fingers on a touch screen, or two
+ * Listens for pinches on `element`: two fingers on a touch screen, or two
  * on a trackpad, which Chrome and Firefox report as wheel events with the
  * control key held and Safari through gesture events. A pinch is reported
  * as a factor relative to where it began, so whatever it drives multiplies
- * through from its own starting point.
+ * through from its own starting point. Takes the element rather than a ref
+ * to it, so that an element mounted later is listened to as well.
  */
-export const usePinchGesture = (viewport: RefObject<HTMLElement | null>, handlers: PinchHandlers) => {
+export const usePinchGesture = (element: HTMLElement | null, handlers: PinchHandlers) => {
     const latest = useRef(handlers)
     latest.current = handlers
 
     useEffect(() => {
-        const element = viewport.current
         if (!element) return
 
         let factor = 1
@@ -130,5 +130,5 @@ export const usePinchGesture = (viewport: RefObject<HTMLElement | null>, handler
             element.removeEventListener('touchend', onTouchEnd)
             element.removeEventListener('touchcancel', onTouchEnd)
         }
-    }, [viewport])
+    }, [element])
 }

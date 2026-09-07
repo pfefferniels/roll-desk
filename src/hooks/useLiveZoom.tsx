@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { RefCallback, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 export interface ZoomRange {
     min: number
@@ -22,8 +22,15 @@ export interface LiveZoom {
     /** The group carrying the drawing. A running gesture scales it horizontally. */
     stageRef: RefObject<SVGGElement | null>
 
-    /** The scrolling viewport, held at the same place in the roll while zooming. */
-    viewportRef: RefObject<HTMLDivElement | null>
+    /** Attach to the scrolling viewport, held at the same place in the roll while zooming. */
+    viewportRef: RefCallback<HTMLDivElement>
+
+    /**
+     * That viewport, once it is in the document. Offered as the element
+     * itself, so that listeners reach a viewport which only appears later,
+     * as soon as there is something to draw.
+     */
+    viewport: HTMLDivElement | null
 
     /**
      * Feed a continuous gesture. Cheap enough to call on every pointer move.
@@ -54,7 +61,7 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
     const [committed, setCommitted] = useState(initial)
 
     const stageRef = useRef<SVGGElement>(null)
-    const viewportRef = useRef<HTMLDivElement>(null)
+    const [viewport, setViewport] = useState<HTMLDivElement | null>(null)
 
     const committedRef = useRef(initial)
     const live = useRef(initial)
@@ -71,18 +78,16 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
     const baseWidth = useRef<number>(undefined)
 
     const holdAnchor = useCallback(() => {
-        const viewport = viewportRef.current
         if (!viewport || !anchor.current) return
 
         const { roll, offset } = anchor.current
         viewport.scrollLeft = roll * live.current - offset
-    }, [])
+    }, [viewport])
 
     const begin = useCallback((focus?: number) => {
         gesturing.current = true
         origin.current = live.current
 
-        const viewport = viewportRef.current
         if (viewport) {
             const offset = focus ?? viewport.clientWidth / 2
             anchor.current = { roll: (viewport.scrollLeft + offset) / live.current, offset }
@@ -92,7 +97,7 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         }
 
         baseWidth.current = stageRef.current?.ownerSVGElement?.width.baseVal.value
-    }, [])
+    }, [viewport])
 
     const paint = useCallback(() => {
         frame.current = undefined
@@ -163,5 +168,5 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     }, [])
 
-    return { committed, stageRef, viewportRef, scrub, scrubBy, settle, jump }
+    return { committed, stageRef, viewportRef: setViewport, viewport, scrub, scrubBy, settle, jump }
 }

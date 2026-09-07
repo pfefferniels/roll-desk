@@ -93,7 +93,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
 
     const initialStretch = viewOnly ? 0.2 : 1
     const stretch = useLiveZoom(initialStretch, zoomRange)
-    usePinchGesture(stretch.viewportRef, { onPinch: stretch.scrubBy, onEnd: stretch.settle })
+    usePinchGesture(stretch.viewport, { onPinch: stretch.scrubBy, onEnd: stretch.settle })
 
     const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
     const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
