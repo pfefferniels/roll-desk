@@ -5,12 +5,13 @@ import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
-import { SelectVersion } from "./SelectVersion"
+import { AttachToDialog } from "./AttachToDialog"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
 import { ConstraintsRibbon } from "./ConstraintsRibbon"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
+import { keepingTolerance, toleranceOf } from "../../helpers/collationTolerance"
 
 export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
 
@@ -57,6 +58,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
     const version = edition.versions.find(v => v.id === versionId)
     if (!version) return null
+
+    const tolerance = toleranceOf(edition)
 
     return (
         <>
@@ -113,7 +116,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             <Button
                                 size='small'
                                 onClick={() => {
-                                    apply(collateSymbols(view, versionId, selection.map(symbol => symbol.id)))
+                                    apply(collateSymbols(view, versionId, selection.map(symbol => symbol.id), tolerance))
                                     setSelection([])
                                 }}
                             >
@@ -204,15 +207,21 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 onClose={() => setEditSiglum(false)}
             />
 
-            <SelectVersion
-                currentVersionId={versionId}
-                open={attachTo}
-                onClose={() => setAttachTo(false)}
-                onDone={(previousVersionId) => {
-                    apply(connectVersions(view, versionId, previousVersionId))
-                }}
-                versions={edition.versions}
-            />
+            {attachTo && (
+                <AttachToDialog
+                    currentVersionId={versionId}
+                    versions={edition.versions}
+                    tolerance={tolerance}
+                    onClose={() => setAttachTo(false)}
+                    onDone={(previousVersionId, chosenTolerance) => {
+                        apply(keepingTolerance(
+                            chosenTolerance,
+                            connectVersions(view, versionId, previousVersionId, chosenTolerance)
+                        ))
+                        setAttachTo(false)
+                    }}
+                />
+            )}
 
             <EditType
                 open={versionType}

@@ -7,7 +7,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
 import { EditionContext } from '../../providers/EditionContext';
-import { assignValue, Concept, systemOf, valueOf, welteT100 } from 'linked-rolls';
+import { assignValue, CollationTolerance, Concept, systemOf, valueOf, welteT100 } from 'linked-rolls';
+import { toleranceOf } from '../../helpers/collationTolerance';
+import { ToleranceFields } from './ToleranceFields';
 
 interface EditMetadataProps {
   open: boolean
@@ -38,6 +40,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
   const [publicationDate, setPublicationDate] = useState<Date>(new Date());
+  const [tolerance, setTolerance] = useState<CollationTolerance>(toleranceOf(edition));
 
   useEffect(() => {
     if (!edition) return
@@ -47,6 +50,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
     setBaseURI(edition.base);
     setPublisherName(edition.creation.publisher.name);
     setPublicationDate(edition.creation.publicationDate);
+    setTolerance(toleranceOf(edition));
     setCatalogueNumber(edition.roll.catalogueNumber);
     setSystem(edition.roll.system);
     setRecordingDate(valueOf(edition.roll.recordingEvent.date));
@@ -62,6 +66,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
       draft.base = baseURI
       draft.creation.publisher.name = publisherName
       draft.creation.publicationDate = publicationDate
+      draft.creation.collationTolerance = tolerance
       draft.roll.catalogueNumber = catalogueNumber
       draft.roll.system = system
       draft.roll.recordingEvent.date = assignValue(recordingDate)
@@ -118,6 +123,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
               value={publicationDate}
               onChange={e => setPublicationDate(new Date(e.target.value))}
             />
+            <ToleranceFields value={tolerance} onChange={setTolerance} />
           </Stack>
           <Stack sx={{ minWidth: 200 }} spacing={2}>
             <TextField
