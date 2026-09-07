@@ -1,5 +1,5 @@
 import { enablePatches, produceWithPatches, applyPatches, Patch, enableMapSet } from "immer";
-import { assignValue, Edition, EditionMetadata, EditionOp, EditionView, systemOf, welteT100 } from "linked-rolls";
+import { assignValue, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView, systemOf, welteT100 } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
 export type { EditionOp }
@@ -14,10 +14,7 @@ export const emptyMetadata: EditionMetadata = {
     creation: {
         publisher: { name: '', sameAs: [] },
         publicationDate: new Date(),
-        collationTolerance: {
-            toleranceEnd: 5,
-            toleranceStart: 5,
-        }
+        collationTolerance: { ...defaultCollationTolerance }
     },
     roll: {
         catalogueNumber: '',
