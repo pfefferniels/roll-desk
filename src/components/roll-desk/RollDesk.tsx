@@ -35,27 +35,24 @@ import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "./ConstraintsPanel"
 
+type DeskTab = 'info' | 'stemma' | 'sources' | 'problems'
+
 interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
+    children?: React.ReactNode
+    tab: DeskTab
+    current: DeskTab
 }
 
-function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
-
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`simple-tabpanel-${index}`}
-            aria-labelledby={`simple-tab-${index}`}
-            {...other}
-        >
-            {value === index && <Box sx={{ p: 0.5 }}>{children}</Box>}
-        </div>
-    );
-}
+const TabPanel = ({ children, tab, current }: TabPanelProps) => (
+    <div
+        role='tabpanel'
+        hidden={current !== tab}
+        id={`desk-tabpanel-${tab}`}
+        aria-labelledby={`desk-tab-${tab}`}
+    >
+        {current === tab && <Box sx={{ p: 0.5 }}>{children}</Box>}
+    </div>
+)
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -112,7 +109,12 @@ export const Desk = ({ versionId, show }: DeskProps) => {
 
     const [emulationOptions, setEmulationOptions] = useState<WelteT100Options>()
 
-    const [currentTab, setCurrentTab] = useState(0)
+    const [currentTab, setCurrentTab] = useState<DeskTab>('info')
+
+    const hasProblems = problems.length > 0
+
+    // The problems tab goes with the last problem, taking the choice of it along.
+    if (!hasProblems && currentTab === 'problems') setCurrentTab('info')
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
     const currentCopy = edition?.copies.find(c => c.id === currentCopyId)
@@ -347,25 +349,27 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                     padding: 2
                 }}
             >
-                <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
-                    <Tab value={0} label="Info" />
-                    <Tab value={1} label="Stemma" />
-                    <Tab value={2} label="Sources" />
-                    <Tab
-                        value={3}
-                        label={
-                            <Badge
-                                badgeContent={problems.length}
-                                color='error'
-                                sx={{ pr: problems.length > 0 ? 1.5 : 0 }}
-                            >
-                                Constraints
-                            </Badge>
-                        }
-                    />
+                <Tabs value={currentTab} onChange={(_, tab: DeskTab) => setCurrentTab(tab)}>
+                    <Tab value='info' label='Info' />
+                    <Tab value='stemma' label='Stemma' />
+                    <Tab value='sources' label='Sources' />
+                    {hasProblems && (
+                        <Tab
+                            value='problems'
+                            label={
+                                <Badge
+                                    badgeContent={problems.length}
+                                    color='error'
+                                    sx={{ pr: 1.5 }}
+                                >
+                                    Problems
+                                </Badge>
+                            }
+                        />
+                    )}
                 </Tabs>
 
-                <TabPanel value={currentTab} index={0}>
+                <TabPanel current={currentTab} tab='info'>
                     <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
                         <b>{edition.title}</b>
                         <br />
@@ -386,7 +390,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                     </div>
                 </TabPanel>
 
-                <TabPanel value={currentTab} index={1}>
+                <TabPanel current={currentTab} tab='stemma'>
                     <Stemma
                         currentVersionId={currentVersionId}
                         problems={problems}
@@ -398,7 +402,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                     />
                 </TabPanel>
 
-                <TabPanel value={currentTab} index={2}>
+                <TabPanel current={currentTab} tab='sources'>
                     <SourceStack
                         activeId={currentCopyId}
                         onClick={(copyId) => {
@@ -432,7 +436,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                     )}
                 </TabPanel>
 
-                <TabPanel value={currentTab} index={3}>
+                <TabPanel current={currentTab} tab='problems'>
                     <ConstraintsPanel
                         versionId={currentVersionId}
                         problems={problems}

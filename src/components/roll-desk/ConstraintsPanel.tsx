@@ -83,8 +83,8 @@ interface ConstraintsPanelProps {
 }
 
 /**
- * The alignments and pairs of the shown version, each with its belief,
- * and the problems of every version. An entry opens its version and
+ * The problems of every version, then the alignments and pairs of the
+ * shown version, each with its belief. An entry opens its version and
  * marks its symbols.
  */
 export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPanelProps) => {
@@ -104,6 +104,8 @@ export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPan
 
     return (
         <Box sx={{ width: 320, maxHeight: '70vh', overflow: 'auto' }}>
+            <ProblemList problems={problems} onShow={onShow} />
+
             <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ pl: 2 }}>
                 <Typography variant='subtitle2'>
                     {version ? `Constraints in ${version.siglum}` : 'Constraints'}
@@ -141,8 +143,6 @@ export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPan
                     </Section>
                 </>
             )}
-
-            <ProblemList problems={problems} onShow={onShow} />
         </Box>
     )
 }
