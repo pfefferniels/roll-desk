@@ -166,6 +166,10 @@ export const Desk = ({ versionId, show }: DeskProps) => {
         }
     })
 
+    // Dialogs, menus and popovers swallow Escape themselves, so this only
+    // reaches the desk when nothing is open over it.
+    useHotkeys('escape', () => setSelection([]))
+
     const playVersion = () => {
         if (!currentVersion || !view) return
 
