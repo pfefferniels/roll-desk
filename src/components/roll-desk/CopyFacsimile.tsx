@@ -17,6 +17,7 @@ import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
 import { ModificationView } from "./ModificationView.tsx";
 import { Facsimile } from "./Facsimile.tsx";
+import { FacsimileBlend } from "../../helpers/facsimileBlend.ts";
 
 interface CopyFacsimileProps {
     copy: RollCopy;
@@ -25,7 +26,7 @@ interface CopyFacsimileProps {
     onChange: (copy: RollCopy) => void;
     color: string;
     onSelectionDone: (dimension: EventDimension) => void;
-    facsimileOpacity: number;
+    blend: FacsimileBlend;
 }
 
 export const CopyFacsimile = ({
@@ -34,7 +35,7 @@ export const CopyFacsimile = ({
     color,
     onClick,
     onSelectionDone,
-    facsimileOpacity,
+    blend,
 }: CopyFacsimileProps) => {
     const { edition, apply } = useContext(EditionContext);
     const geometry = usePinchZoom();
@@ -44,36 +45,36 @@ export const CopyFacsimile = ({
     if (!edition) return null
 
     return (
-        <>
-            <g className="roll-copy" ref={svgRef}>
-                <defs>
-                    <filter id="contrast-brightness">
-                        <feComponentTransfer>
-                            <feFuncR type="linear" slope="1.5" intercept="0.1" />
-                            <feFuncG type="linear" slope="1.5" intercept="0.1" />
-                            <feFuncB type="linear" slope="1.5" intercept="0.1" />
-                        </feComponentTransfer>
-                    </filter>
-                    <filter id="contrast">
-                        <feComponentTransfer>
-                            <feFuncR type="linear" slope="1.5" intercept="-0.25" />
-                            <feFuncG type="linear" slope="1.5" intercept="-0.25" />
-                            <feFuncB type="linear" slope="1.5" intercept="-0.25" />
-                        </feComponentTransfer>
-                    </filter>
-                    <filter id="invert">
-                        <feComponentTransfer>
-                            <feFuncR type="table" tableValues="1 0" />
-                            <feFuncG type="table" tableValues="1 0" />
-                            <feFuncB type="table" tableValues="1 0" />
-                        </feComponentTransfer>
-                    </filter>
-                </defs>
+        <g className="roll-copy" ref={svgRef}>
+            <defs>
+                <filter id="contrast-brightness">
+                    <feComponentTransfer>
+                        <feFuncR type="linear" slope="1.5" intercept="0.1" />
+                        <feFuncG type="linear" slope="1.5" intercept="0.1" />
+                        <feFuncB type="linear" slope="1.5" intercept="0.1" />
+                    </feComponentTransfer>
+                </filter>
+                <filter id="contrast">
+                    <feComponentTransfer>
+                        <feFuncR type="linear" slope="1.5" intercept="-0.25" />
+                        <feFuncG type="linear" slope="1.5" intercept="-0.25" />
+                        <feFuncB type="linear" slope="1.5" intercept="-0.25" />
+                    </feComponentTransfer>
+                </filter>
+                <filter id="invert">
+                    <feComponentTransfer>
+                        <feFuncR type="table" tableValues="1 0" />
+                        <feFuncG type="table" tableValues="1 0" />
+                        <feFuncB type="table" tableValues="1 0" />
+                    </feComponentTransfer>
+                </filter>
+            </defs>
 
-                <Facsimile copy={copy} opacity={facsimileOpacity} />
+            <Facsimile copy={copy} blend={blend} />
 
-                {drag && <Cursor at={drag.to} />}
+            {drag && <Cursor at={drag.to} />}
 
+            <g className="transcription" opacity={blend.transcription}>
                 {active && (
                     <RollGrid
                         selectionMode={active}
@@ -113,10 +114,10 @@ export const CopyFacsimile = ({
                         />
                     )
                 })}
-            </g>
 
-            <KeyboardDivision division={defaultWelteT100Options.division} />
-        </>
+                <KeyboardDivision division={defaultWelteT100Options.division} />
+            </g>
+        </g>
     );
 };
 

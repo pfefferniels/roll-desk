@@ -2,7 +2,17 @@ import { calibrationOf, columnsOf, PaperStretch, RollCopy, TrackArea } from "lin
 import { useEffect, useRef, useState } from "react"
 import useIsVisible from "../../hooks/useIsVisible"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { Box } from "../../helpers/rollGeometry"
+import { FacsimileBlend } from "../../helpers/facsimileBlend"
+import {
+    betweenBoxes,
+    betweenPlacements,
+    scanBox,
+    scanInBand,
+    ScanColumns,
+    tilePlacement,
+    TilePlacement,
+    wholeScan
+} from "../../helpers/scanPlacement"
 import { fetchImageService, ImageService, scaleFactorFor, Tile, tilesOf } from "./IIIF"
 
 const dpi = 300.25
@@ -19,42 +29,11 @@ const rowToXOf = (copy: RollCopy, translateX: (mm: number) => number) => {
     return (row: number) => translateX((pixelsToMM(row) + shift) * stretch)
 }
 
-interface Placement {
-    transform: string
-    box: Box
-}
-
-/**
- * Where a tile goes. The scan's rows run along the roll and its
- * columns across it, so the tile is turned on its side: its rows are
- * scaled by the copy's alignment, its columns spread over the band
- * the tracker bar block occupies, bass at the bottom.
- */
-const placementOf = (
-    tile: Tile,
-    scaleFactor: number,
-    rowToX: (row: number) => number,
-    band: Box,
-    columns: { to: number, width: number }
-): Placement => {
-    const perRow = rowToX(1) - rowToX(0)
-    const perColumn = band.height / columns.width
-    const left = rowToX(tile.y)
-    const bottom = band.y + perColumn * (columns.to - tile.x)
-    const width = perRow * scaleFactor * tile.tileHeight
-    const height = perColumn * scaleFactor * tile.tileWidth
-
-    return {
-        transform: `matrix(0 ${-perColumn * scaleFactor} ${perRow * scaleFactor} 0 ${left} ${bottom})`,
-        box: { x: left, y: bottom - height, width, height }
-    }
-}
-
 /**
  * Fetched once it has scrolled into view, and kept from then on, so
  * that panning back does not have to wait for it again.
  */
-const FacsimileTile = ({ tile, placement }: { tile: Tile, placement: Placement }) => {
+const FacsimileTile = ({ tile, placement }: { tile: Tile, placement: TilePlacement }) => {
     const ref = useRef<SVGRectElement>(null)
     const visible = useIsVisible(ref)
     const [wanted, setWanted] = useState(false)
@@ -97,41 +76,62 @@ const useImageService = (scan: string | undefined, wanted: boolean) => {
 
 interface FacsimileProps {
     copy: RollCopy
-    opacity: number
+    blend: FacsimileBlend
 }
 
 /**
  * The scan of a copy, laid under its features: one strip per block of
  * the tracker bar, so that the gaps the drawing leaves between the
  * blocks are not filled with paper that is not there.
+ *
+ * The strips only part once the blend asks for it. Until then they lie
+ * on top of one another, each drawing its share of the whole scan.
  */
-export const Facsimile = ({ copy, opacity }: FacsimileProps) => {
+export const Facsimile = ({ copy, blend }: FacsimileProps) => {
     const geometry = usePinchZoom()
-    const service = useImageService(copy.scan, opacity > 0)
+    const service = useImageService(copy.scan, blend.facsimile > 0)
     const calibration = calibrationOf(copy)
 
-    if (!service || !calibration || opacity === 0) return null
+    if (!service || !calibration || blend.facsimile === 0) return null
 
     const rowToX = rowToXOf(copy, geometry.translateX)
-    const scaleFactor = scaleFactorFor(service, rowToX(1) - rowToX(0))
+    const alongRoll = { x0: rowToX(0), perRow: rowToX(1) - rowToX(0) }
+    const scaleFactor = scaleFactorFor(service, alongRoll.perRow)
     const rollWidth = geometry.translateX(geometry.rollLength)
 
-    const strip = (area: TrackArea) => {
+    const scan = { rows: service.height, columns: service.width }
+    const whole = wholeScan(alongRoll, scan, geometry.height)
+    const wholeBox = scanBox(whole, scan)
+
+    /** The paper outside the bar belongs to the strips at either edge. */
+    const sourceColumnsOf = (columns: ScanColumns, index: number): ScanColumns => ({
+        from: index === 0 ? 0 : columns.from,
+        to: index === geometry.areas.length - 1 ? scan.columns : columns.to
+    })
+
+    const strip = (area: TrackArea, index: number) => {
         const columns = columnsOf(area.from, area.to, calibration)
-        const band = { x: 0, width: rollWidth, ...geometry.areaBand(area) }
+        const band = geometry.areaBand(area)
         const clipId = `facsimile-${copy.id}-${area.role}`
+
+        const placement = betweenPlacements(
+            whole,
+            scanInBand(alongRoll, columns, band),
+            blend.layout
+        )
+        const clip = betweenBoxes(wholeBox, { x: 0, width: rollWidth, ...band }, blend.layout)
 
         return (
             <g key={area.role}>
                 <clipPath id={clipId}>
-                    <rect {...band} />
+                    <rect {...clip} />
                 </clipPath>
                 <g clipPath={`url(#${clipId})`}>
-                    {tilesOf(service, scaleFactor, columns).map(tile => (
+                    {tilesOf(service, scaleFactor, sourceColumnsOf(columns, index)).map(tile => (
                         <FacsimileTile
                             key={tile.url}
                             tile={tile}
-                            placement={placementOf(tile, scaleFactor, rowToX, band, columns)}
+                            placement={tilePlacement(placement, tile, scaleFactor)}
                         />
                     ))}
                 </g>
@@ -140,7 +140,7 @@ export const Facsimile = ({ copy, opacity }: FacsimileProps) => {
     }
 
     return (
-        <g className='facsimile' opacity={opacity}>
+        <g className='facsimile' opacity={blend.facsimile}>
             {geometry.areas.map(strip)}
         </g>
     )

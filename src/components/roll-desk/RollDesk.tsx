@@ -23,6 +23,7 @@ import { PinchZoomProvider } from "../../hooks/usePinchZoom"
 import { useLiveZoom } from "../../hooks/useLiveZoom"
 import { usePinchGesture } from "../../hooks/usePinchGesture"
 import { rollLength } from "../../helpers/rollLength"
+import { blendAt, workingPosition } from "../../helpers/facsimileBlend"
 import { ZoomSlider, zoomRange } from "./ZoomSlider"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
@@ -112,7 +113,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
-    const [facsimileOpacity, setFacsimileOpacity] = useState(1)
+    const [blendPosition, setBlendPosition] = useState(workingPosition)
 
     const [emulationOptions, setEmulationOptions] = useState<WelteT100Options>()
 
@@ -425,16 +426,23 @@ export const Desk = ({ versionId, show }: DeskProps) => {
 
                     {currentCopy?.scan && (
                         <Stack direction='row' spacing={2} alignItems='center' sx={{ px: 1 }}>
-                            <Typography variant='caption' color='text.secondary'>Scan</Typography>
+                            <Typography variant='caption' color='text.secondary' noWrap sx={{ flexShrink: 0 }}>
+                                Facsimile
+                            </Typography>
                             <Slider
                                 size='small'
                                 min={0}
                                 max={1}
                                 step={0.05}
-                                value={facsimileOpacity}
-                                onChange={(_, value) => setFacsimileOpacity(value as number)}
-                                aria-label='scan opacity'
+                                marks={[{ value: workingPosition }]}
+                                value={blendPosition}
+                                onChange={(_, value) => setBlendPosition(value as number)}
+                                aria-label='facsimile against transcription'
+                                sx={{ minWidth: '6rem' }}
                             />
+                            <Typography variant='caption' color='text.secondary' noWrap sx={{ flexShrink: 0 }}>
+                                Transcription
+                            </Typography>
                         </Stack>
                     )}
 
@@ -530,7 +538,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                                     copy={currentCopy}
                                     active={true}
                                     color="#444"
-                                    facsimileOpacity={facsimileOpacity}
+                                    blend={blendAt(blendPosition)}
                                     onClick={e => setSelection(prev => [...prev, e])}
                                     onChange={() => { }}
                                     onSelectionDone={dimension => setSelection([{
