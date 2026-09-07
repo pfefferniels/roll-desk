@@ -12,6 +12,7 @@ export const emptyMetadata: EditionMetadata = {
     license: '',
     base: '',
     creation: {
+        editors: [],
         publisher: { name: '', sameAs: [] },
         publicationDate: new Date(),
         collationTolerance: { ...defaultCollationTolerance }

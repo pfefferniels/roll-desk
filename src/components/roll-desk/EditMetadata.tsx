@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from 'react';
-import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack, IconButton, Typography } from '@mui/material';
+import { Add, DeleteOutline, Save as SaveIcon } from '@mui/icons-material';
 import { ImportButton } from './ImportButton';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
 import { EditionContext } from '../../providers/EditionContext';
-import { assignValue, CollationTolerance, Concept, systemOf, valueOf, welteT100 } from 'linked-rolls';
+import { assignValue, CollationTolerance, Concept, Editor, EditorialRole, editorialRoles, systemOf, valueOf, welteT100 } from 'linked-rolls';
 import { toleranceOf } from '../../helpers/collationTolerance';
 import { ToleranceFields } from './ToleranceFields';
 
@@ -18,6 +18,8 @@ interface EditMetadataProps {
 
 /** The reproducing systems the library can read. */
 const systems: Concept[] = [systemOf(welteT100)]
+
+const capitalized = (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
 
 const licenses = [
   { name: 'Creative Commons Attribution 4.0', url: 'https://creativecommons.org/licenses/by/4.0/' },
@@ -41,6 +43,16 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   const [publisherName, setPublisherName] = useState<string>('');
   const [publicationDate, setPublicationDate] = useState<Date>(new Date());
   const [tolerance, setTolerance] = useState<CollationTolerance>(toleranceOf(edition));
+  const [editors, setEditors] = useState<Editor[]>([]);
+
+  const addEditor = () =>
+    setEditors([...editors, { name: '', sameAs: [], role: 'editor' }])
+
+  const replaceEditor = (index: number, editor: Editor) =>
+    setEditors(editors.map((existing, at) => at === index ? editor : existing))
+
+  const removeEditor = (index: number) =>
+    setEditors(editors.filter((_, at) => at !== index))
 
   useEffect(() => {
     if (!edition) return
@@ -51,6 +63,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
     setPublisherName(edition.creation.publisher.name);
     setPublicationDate(edition.creation.publicationDate);
     setTolerance(toleranceOf(edition));
+    setEditors(edition.creation.editors ?? []);
     setCatalogueNumber(edition.roll.catalogueNumber);
     setSystem(edition.roll.system);
     setRecordingDate(valueOf(edition.roll.recordingEvent.date));
@@ -67,6 +80,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
       draft.creation.publisher.name = publisherName
       draft.creation.publicationDate = publicationDate
       draft.creation.collationTolerance = tolerance
+      draft.creation.editors = editors
       draft.roll.catalogueNumber = catalogueNumber
       draft.roll.system = system
       draft.roll.recordingEvent.date = assignValue(recordingDate)
@@ -164,6 +178,42 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
               onChange={(e) => setRecordingPlace(e.target.value)}
             />
           </Stack>
+        </Stack>
+
+        <Stack spacing={2} sx={{ marginTop: '1.5rem' }}>
+          <Typography variant="subtitle2">Editors</Typography>
+          {editors.map((editor, index) => (
+            <Stack key={index} spacing={1} direction="row" alignItems="center">
+              <TextField
+                label="Name"
+                sx={{ minWidth: 300 }}
+                value={editor.name}
+                onChange={(e) => replaceEditor(index, { ...editor, name: e.target.value })}
+              />
+              <TextField
+                label="Role"
+                select
+                sx={{ minWidth: 200 }}
+                value={editor.role}
+                onChange={(e) => replaceEditor(index, { ...editor, role: e.target.value as EditorialRole })}
+              >
+                {editorialRoles.map((role) => (
+                  <MenuItem key={role} value={role}>
+                    {capitalized(role)}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <IconButton
+                aria-label={`Remove ${editor.name || 'editor'}`}
+                onClick={() => removeEditor(index)}
+              >
+                <DeleteOutline />
+              </IconButton>
+            </Stack>
+          ))}
+          <Button startIcon={<Add />} onClick={addEditor} sx={{ alignSelf: 'flex-start' }}>
+            Add Editor
+          </Button>
         </Stack>
       </DialogContent>
       <DialogActions>

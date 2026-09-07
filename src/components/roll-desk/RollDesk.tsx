@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Emulation, HorizontalSpan, VerticalSpan, constraintProblems, valueOf, isEdit, isPerforation, isRollFeature, isSymbol } from 'linked-rolls'
+import { AnySymbol, Editor, Emulation, HorizontalSpan, VerticalSpan, constraintProblems, valueOf, isEdit, isPerforation, isRollFeature, isSymbol } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
@@ -54,6 +54,9 @@ const TabPanel = ({ children, tab, current }: TabPanelProps) => (
         {current === tab && <Box sx={{ p: 0.5 }}>{children}</Box>}
     </div>
 )
+
+const namedEditors = (editors: Editor[] = []) =>
+    editors.map(editor => `${editor.name} (${editor.role})`).join(', ')
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -239,6 +242,8 @@ export const Desk = ({ versionId, show }: DeskProps) => {
         )
     }
 
+    const editorLine = namedEditors(edition.creation.editors)
+
     const viewControl = (
         <Paper sx={{
             position: 'absolute',
@@ -382,6 +387,13 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                                 valueOf(edition.roll.recordingEvent.date)
                             )})
                         </Arguable>
+
+                        {editorLine && (
+                            <>
+                                <br />
+                                ed. {editorLine}
+                            </>
+                        )}
                     </div>
                     <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
                         <IconButton onClick={() => setEditMetadata(true)}>
