@@ -1,5 +1,5 @@
-import { Button, Stack } from "@mui/material"
-import { AnyFeature, applyShift, applyStretch, ConditionState, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollFeature, Shift } from "linked-rolls"
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material"
+import { AnyFeature, applyShift, applyStretch, ConditionState, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -86,18 +86,19 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const [reportRollCondition, setReportRollCondition] = useState(false)
     const [editProduction, setEditProduction] = useState(false)
     const [alignCopies, setAlignCopies] = useState(false)
+    const [confirmRemove, setConfirmRemove] = useState(false)
 
     if (!edition) return null
 
     const copy = edition.copies.find(c => c.id === copyId)
     if (!copy) return null
 
-    console.log('selection', selection)
+    const carriedAlone = symbolsCarriedOnlyBy(edition, copyId).length
 
     return (
         <>
             <Stack direction='row' spacing={1}>
-                <Ribbon title='Roll Metadata'>
+                <Ribbon title='Copy'>
                     <Button
                         onClick={() => setEditProduction(true)}
                         startIcon={<EditIcon />}
@@ -109,6 +110,12 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                         onClick={() => setReportRollCondition(true)}
                     >
                         Condition
+                    </Button>
+                    <Button
+                        startIcon={<Delete />}
+                        onClick={() => setConfirmRemove(true)}
+                    >
+                        Remove
                     </Button>
                 </Ribbon>
                 <Ribbon title='Alignment'>
@@ -240,6 +247,27 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     setEditProduction(false)
                 }}
             />
+
+            <Dialog open={confirmRemove} onClose={() => setConfirmRemove(false)}>
+                <DialogTitle>Remove Copy</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {carriedAlone > 0
+                            ? `Removing the copy held by ${copy.keeper.name} also removes the ${carriedAlone} symbol(s) only this copy carries from the versions.`
+                            : `No symbol of the versions depends on the copy held by ${copy.keeper.name} alone.`}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmRemove(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                        apply(removeCopy(copyId))
+                        setSelection([])
+                        setConfirmRemove(false)
+                    }}>
+                        Remove
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <AlignToDialog
                 copy={copy}
