@@ -1,5 +1,5 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
-import { defaultWelteT100Options, WelteT100Options } from "linked-rolls/welte-t100"
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
+import { defaultWelteT100Options, PedalPreset, pedalPresetOf, pedalPresets, WelteT100Options } from "linked-rolls/welte-t100"
 import { useState } from "react"
 
 interface EmulationSettingsDialogProps {
@@ -10,9 +10,17 @@ interface EmulationSettingsDialogProps {
 
 const pedalModes = ['continuous', 'switch'] as const
 
+const pedalPresetNames = Object.keys(pedalPresets) as PedalPreset[]
+
+const pedalPresetNotes: Record<PedalPreset, string> = {
+    damping: 'The dampers reach the strings within the shortest lift the rolls punch, so every lift damps.',
+    brushing: 'Their fall is slowed until quick runs of lifts brush the strings without damping.'
+}
+
 export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSettingsDialogProps) => {
     const [options, setOptions] = useState<WelteT100Options>(defaultWelteT100Options)
     const { spool, velocity } = options
+    const pedalPreset = pedalPresetOf(options.pedals)
 
     const numberField = (label: string, value: number, onChange: (value: number) => void, step = 1) => (
         <TextField
@@ -48,8 +56,22 @@ export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSett
                     {numberField('Mezzoforte', velocity.mezzoforte, mezzoforte => setOptions({ ...options, velocity: { ...velocity, mezzoforte } }))}
                     {numberField('Forte', velocity.forte, forte => setOptions({ ...options, velocity: { ...velocity, forte } }))}
                     <Divider />
+                    <Typography>Pedals</Typography>
                     <FormControl>
-                        <FormLabel>Pedals</FormLabel>
+                        <FormLabel>Reading of the mechanism</FormLabel>
+                        <Select
+                            value={pedalPreset ?? ''}
+                            size='small'
+                            onChange={e => setOptions({ ...options, pedals: pedalPresets[e.target.value as PedalPreset] })}
+                        >
+                            {pedalPresetNames.map(name => (
+                                <MenuItem key={name} value={name}>{name}</MenuItem>
+                            ))}
+                        </Select>
+                        {pedalPreset && <FormHelperText>{pedalPresetNotes[pedalPreset]}</FormHelperText>}
+                    </FormControl>
+                    <FormControl>
+                        <FormLabel>Output</FormLabel>
                         <Select
                             value={options.pedalMode}
                             size='small'
