@@ -3,9 +3,10 @@ import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { useSelection } from "../../providers/SelectionContext";
 import { spanOf, useRollDrag } from "../../hooks/useRollDrag";
 import { Cursor } from "./Cursor";
+import { RollRange } from "../../providers/SelectionContext";
 
-/** The stretch of roll playback is held to, in millimetres. */
-const RangeMarker = ({ span }: { span: [number, number] }) => {
+/** The stretch of roll playback is held to. */
+const RangeMarker = ({ span }: { span: RollRange }) => {
     const { translateX, height } = usePinchZoom();
 
     const [from, to] = span.map(translateX);

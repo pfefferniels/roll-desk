@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { connectVersions, defaultCollationTolerance, idOf } from 'linked-rolls'
+import { connectVersions, defaultCollationTolerance, idOf, mm } from 'linked-rolls'
 import { fixtureEdition, ids, viewOf } from './editionFixture'
 import { keepingTolerance, parseTolerance, toleranceOf } from './collationTolerance'
 
 describe('the tolerance an edition collates with', () => {
     it('is the one the edition names', () => {
         const edition = fixtureEdition()
-        edition.creation.collationTolerance = { toleranceStart: 2, toleranceEnd: 8 }
+        edition.creation.collationTolerance = { toleranceStart: mm(2), toleranceEnd: mm(8) }
         expect(toleranceOf(edition)).toEqual({ toleranceStart: 2, toleranceEnd: 8 })
     })
 
@@ -43,7 +43,7 @@ describe('reading a tolerance from what was typed', () => {
 describe('collating at a chosen tolerance', () => {
     it('notes the tolerance on the edition within the same step', () => {
         const edition = fixtureEdition()
-        const tolerance = { toleranceStart: 1, toleranceEnd: 3 }
+        const tolerance = { toleranceStart: mm(1), toleranceEnd: mm(3) }
         const connect = connectVersions(viewOf(edition), ids.b, ids.a, tolerance)
 
         const collated = produce(edition, keepingTolerance(tolerance, connect))

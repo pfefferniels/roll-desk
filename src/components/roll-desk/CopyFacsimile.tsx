@@ -3,6 +3,7 @@ import {
     GluedOn,
     Path,
     RollCopy,
+    Track,
     Writing,
 } from "linked-rolls";
 import { defaultWelteT100Options } from "linked-rolls/welte-t100";
@@ -121,7 +122,7 @@ export const CopyFacsimile = ({
     );
 };
 
-const KeyboardDivision = ({ division }: { division: number }) => {
+const KeyboardDivision = ({ division }: { division: Track }) => {
     const { trackToY, translateX, rollLength } = usePinchZoom();
 
     const y = trackToY(division);

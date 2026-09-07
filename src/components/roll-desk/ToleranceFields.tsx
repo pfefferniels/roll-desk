@@ -1,12 +1,12 @@
 import { TextField } from "@mui/material"
-import { CollationTolerance } from "linked-rolls"
+import { CollationTolerance, Millimeters } from "linked-rolls"
 import { useEffect, useState } from "react"
 import { parseTolerance } from "../../helpers/collationTolerance"
 
 interface ToleranceFieldProps {
     label: string
-    value: number
-    onChange: (millimetres: number) => void
+    value: Millimeters
+    onChange: (millimetres: Millimeters) => void
 }
 
 /** Keeps what was typed while it does not yet spell a tolerance. */

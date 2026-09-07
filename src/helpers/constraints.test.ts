@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { AnyPerforation, AnySymbol, EditionOp, EditionView, constraintProblems, isPerforation, pairPerforations, placePerforation } from 'linked-rolls'
+import { AnyPerforation, AnySymbol, EditionOp, EditionView, constraintProblems, isPerforation, mm, pairPerforations, placePerforation } from 'linked-rolls'
 import { fixtureEdition, ids, viewOf } from './editionFixture'
 import {
     ProblemKind, constraintsOf, describePerforation, describePlacement, displacedEvents,
@@ -112,7 +112,7 @@ describe('displaced events', () => {
                 return event ? [event] : []
             })
         const performed = events.map(event => event.id === ids.forzandoOff
-            ? { ...event, horizontal: { ...event.horizontal, from: 1000, to: 1002 } }
+            ? { ...event, horizontal: { ...event.horizontal, from: mm(1000), to: mm(1002) } }
             : event
         )
         return { view, performed }

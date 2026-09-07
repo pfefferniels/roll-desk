@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { EventDimension } from './RollDesk.tsx';
-import { calibrationOf, columnsOf, RollCopy, welteT100, WithId } from 'linked-rolls';
+import { calibrationOf, columnsOf, mm, RollCopy, track, welteT100, WithId } from 'linked-rolls';
 
 interface RollGridProps {
     width: number;
@@ -48,13 +48,13 @@ export const RollGrid = ({
         setRect({
             id: v4(),
             horizontal: {
-                from: Math.min(startPoint.x, offsetX) / zoom,
-                to: Math.max(startPoint.x, offsetX) / zoom,
+                from: mm(Math.min(startPoint.x, offsetX) / zoom),
+                to: mm(Math.max(startPoint.x, offsetX) / zoom),
                 unit: 'mm'
             },
             vertical: {
-                from: Math.min(from, to),
-                to: Math.max(from, to),
+                from: from < to ? from : to,
+                to: from < to ? to : from,
                 unit: 'track'
             }
         });
@@ -86,14 +86,14 @@ export const RollGrid = ({
     }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
     const lines = Array
-        .from({ length: welteT100.trackCount }, (_, i) => i + 1)
-        .map(track => (
+        .from({ length: welteT100.trackCount }, (_, i) => track(i + 1))
+        .map(position => (
             <line
-                key={`gridLine_${track}`}
+                key={`gridLine_${position}`}
                 x1={0}
                 x2={width}
-                y1={trackToY(track)}
-                y2={trackToY(track)}
+                y1={trackToY(position)}
+                y2={trackToY(position)}
                 stroke="black"
                 strokeWidth={0.1}
             />

@@ -29,7 +29,7 @@ import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
 import { Arguable } from "./Arguable"
-import { SelectionContext } from "../../providers/SelectionContext"
+import { RollRange, SelectionContext } from "../../providers/SelectionContext"
 import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
@@ -108,7 +108,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
 
     const [selection, setSelection] = useState<UserSelection[]>([])
-    const [range, setRange] = useState<[number, number]>()
+    const [range, setRange] = useState<RollRange>()
     const [isPlaying, setIsPlaying] = useState(false)
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()

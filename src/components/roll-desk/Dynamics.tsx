@@ -1,9 +1,10 @@
-import { DynamicsCurve, Emulation } from "linked-rolls"
+import { DynamicsCurve, Emulation, track } from "linked-rolls"
 import { WelteT100Options } from "linked-rolls/welte-t100"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 
-const bassSpace = 20
-const trebleSpace = 93
+/** The tracks the two dynamics curves are drawn from. */
+const bassSpace = track(20)
+const trebleSpace = track(93)
 
 /** Every so many samples of the curve, which has about twelve per millimetre. */
 const SAMPLE_STRIDE = 25

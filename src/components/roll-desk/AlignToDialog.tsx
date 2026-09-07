@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, RollCopy } from "linked-rolls";
+import { alignFeatures, Millimeters, RollCopy } from "linked-rolls";
 import { useContext, useEffect, useRef, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { valueOf } from "linked-rolls";
@@ -8,7 +8,7 @@ interface AlignToDialogProps {
     open: boolean
     onClose: () => void
     copy: RollCopy
-    onDone: (shift: number, stretch: number) => void
+    onDone: (shift: Millimeters, stretch: number) => void
 }
 
 export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProps) => {
@@ -16,7 +16,7 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     const [copyB, setCopyB] = useState<RollCopy>()
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    let shift: number | undefined, stretch: number | undefined
+    let shift: Millimeters | undefined, stretch: number | undefined
     if (copyB) {
         let align = alignFeatures(copy.features, copyB.features)
         shift = align.shift

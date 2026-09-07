@@ -1,16 +1,18 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react"
+import { Millimeters } from "linked-rolls"
 import { rollXAt } from "../helpers/pointer"
 import { usePinchZoom } from "./usePinchZoom"
+import type { RollRange } from "../providers/SelectionContext"
 
-/** A drag running along the roll, both ends in millimetres from its start. */
+/** A drag running along the roll, both ends measured from its start. */
 export interface RollDrag {
-    from: number
-    to: number
+    from: Millimeters
+    to: Millimeters
 }
 
 /** The stretch a drag covers, whichever way round it was drawn. */
-export const spanOf = ({ from, to }: RollDrag): [number, number] =>
-    [Math.min(from, to), Math.max(from, to)]
+export const spanOf = ({ from, to }: RollDrag): RollRange =>
+    from < to ? [from, to] : [to, from]
 
 /**
  * The drag currently running over `element`, and nothing between drags.

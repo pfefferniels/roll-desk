@@ -1,4 +1,4 @@
-import { HorizontalSpan, TrackArea, TrackerBar, TrackRole, VerticalSpan, welteT100 } from 'linked-rolls'
+import { HorizontalSpan, Track, track, TrackArea, TrackerBar, TrackRole, VerticalSpan, welteT100 } from 'linked-rolls'
 
 export interface LaneHeights {
     note: number
@@ -26,13 +26,13 @@ export interface RollGeometry {
      * here, so `trackToY(t)` and `trackToY(t) + laneHeight(t)` bracket
      * exactly the band that belongs to track t.
      */
-    trackToY: (track: number) => number
+    trackToY: (position: Track) => number
 
     /** Height of one lane, which differs between notes and expression. */
-    laneHeight: (track: number) => number
+    laneHeight: (position: Track) => number
 
     /** The track whose lane contains y, or 'gap' between the blocks. */
-    yToTrack: (y: number) => number | 'gap'
+    yToTrack: (y: number) => Track | 'gap'
 
     /** The band covered by a vertical span, whichever way round it runs. */
     bandOf: (span: Pick<VerticalSpan, 'from' | 'to'>) => { y: number, height: number }
@@ -40,7 +40,7 @@ export interface RollGeometry {
     /** The band covered by a whole block of the tracker bar. */
     areaBand: (area: TrackArea) => { y: number, height: number }
 
-    roleOf: (track: number) => TrackRole | undefined
+    roleOf: (position: Track) => TrackRole | undefined
 
     areas: readonly TrackArea[]
 }
@@ -85,29 +85,29 @@ export const rollGeometry = (
     const last = tops[tops.length - 1]
     const height = last.top + last.span
 
-    const blockOf = (track: number) =>
-        tops.find(({ area }) => track >= area.from && track <= area.to)
+    const blockOf = (position: Track) =>
+        tops.find(({ area }) => position >= area.from && position <= area.to)
 
     /**
      * A track the bar does not read is drawn at the top rather than
      * left out, so a miscalibrated copy shows itself instead of
      * disappearing. `unreadTracks` names the offending tracks.
      */
-    const trackToY = (track: number) => {
-        const block = blockOf(track)
+    const trackToY = (position: Track) => {
+        const block = blockOf(position)
         if (!block) return 0
-        return block.top + (block.area.to - track) * block.laneHeight
+        return block.top + (block.area.to - position) * block.laneHeight
     }
 
-    const laneHeight = (track: number) => {
-        const role = bar.roleOf(track)
+    const laneHeight = (position: Track) => {
+        const role = bar.roleOf(position)
         return role ? heightOfRole(role, lanes) : lanes.note
     }
 
-    const yToTrack = (y: number): number | 'gap' => {
+    const yToTrack = (y: number): Track | 'gap' => {
         const block = tops.find(({ top, span }) => y >= top && y < top + span)
         if (!block) return 'gap'
-        return block.area.to - Math.floor((y - block.top) / block.laneHeight)
+        return track(block.area.to - Math.floor((y - block.top) / block.laneHeight))
     }
 
     const areaBand = (area: TrackArea) => {
@@ -119,7 +119,7 @@ export const rollGeometry = (
     const bandOf = ({ from, to }: Pick<VerticalSpan, 'from' | 'to'>) => {
         const [lower, upper] = to === undefined || to === from
             ? [from, from]
-            : [Math.min(from, to), Math.max(from, to)]
+            : from < to ? [from, to] : [to, from]
 
         const y = trackToY(upper)
         return { y, height: trackToY(lower) + laneHeight(lower) - y }
@@ -132,7 +132,7 @@ export const rollGeometry = (
         yToTrack,
         bandOf,
         areaBand,
-        roleOf: (track: number) => bar.roleOf(track),
+        roleOf: (position: Track) => bar.roleOf(position),
         areas: bar.areas
     }
 }
