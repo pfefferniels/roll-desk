@@ -1,6 +1,6 @@
 import { useContext, useMemo, useRef } from "react"
 import { AnySymbol, ConstraintProblem, EditionView, Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
-import { welteT100System } from "linked-rolls/welte-t100"
+import { welteT100System, WelteT100Options } from "linked-rolls/welte-t100"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
 import { Perforation } from "./SymbolView"
@@ -58,10 +58,12 @@ interface VersionViewProps {
     version: Version
     /** The constraint problems of the whole edition. */
     problems: readonly ConstraintProblem[]
+    /** The emulation settings, the system's defaults when none are chosen. */
+    emulationOptions?: WelteT100Options
     onClick: (event: AnySymbol | Motivation | Edit) => void
 }
 
-export const VersionView = ({ version, problems, onClick }: VersionViewProps) => {
+export const VersionView = ({ version, problems, emulationOptions, onClick }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(s => isMotivation(s))
     const { playSingleNote } = usePiano()
     const { view, viewOnly } = useContext(EditionContext)
@@ -74,19 +76,19 @@ export const VersionView = ({ version, problems, onClick }: VersionViewProps) =>
     const emulation = useMemo(() => {
         if (!view) return undefined
 
-        const emulation = new Emulation(welteT100System)
+        const emulation = new Emulation(welteT100System, emulationOptions)
         emulation.emulateVersion(version, view)
         return emulation
-    }, [version, view])
+    }, [version, view, emulationOptions])
 
     const prevEmulation = useMemo(() => {
         const previous = view?.predecessorOf(version.id)
         if (!view || !previous) return undefined
 
-        const emulation = new Emulation(welteT100System)
+        const emulation = new Emulation(welteT100System, emulationOptions)
         emulation.emulateVersion(previous, view)
         return emulation
-    }, [version, view])
+    }, [version, view, emulationOptions])
 
     const snapshot = useMemo(
         () => view ? snapshotUpTo(view, version.id) : [],

@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
-import { defaultWelteT100Options, PedalPreset, pedalPresetOf, pedalPresets, WelteT100Options } from "linked-rolls/welte-t100"
+import { defaultWelteT100Options, InstrumentName, instrumentNameOf, instrumentNames, instruments, nuanceOf, PedalPreset, pedalPresetOf, pedalPresets, WelteT100Options } from "linked-rolls/welte-t100"
 import { useState } from "react"
 
 interface EmulationSettingsDialogProps {
@@ -9,6 +9,13 @@ interface EmulationSettingsDialogProps {
 }
 
 const pedalModes = ['continuous', 'switch'] as const
+
+const instrumentLabel = (name: InstrumentName) => {
+    const { performer, title } = instruments[name].provenance
+    return performer && title
+        ? `${name}: ${performer}, ${title}`
+        : `${name}: fitted across the six lined rolls`
+}
 
 const pedalPresetNames = Object.keys(pedalPresets) as PedalPreset[]
 
@@ -20,6 +27,7 @@ const pedalPresetNotes: Record<PedalPreset, string> = {
 export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSettingsDialogProps) => {
     const [options, setOptions] = useState<WelteT100Options>(defaultWelteT100Options)
     const { spool, velocity } = options
+    const instrument = instrumentNameOf(options.nuance)
     const pedalPreset = pedalPresetOf(options.pedals)
 
     const numberField = (label: string, value: number, onChange: (value: number) => void, step = 1) => (
@@ -48,6 +56,19 @@ export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSett
                         revolutionSeconds => setOptions({ ...options, spool: { ...spool, revolutionSeconds } }), 0.01)}
                     {numberField('Circumference effect (0 = constant speed, 1 = full)', spool.circumferenceEffect,
                         circumferenceEffect => setOptions({ ...options, spool: { ...spool, circumferenceEffect } }), 0.1)}
+                    <Divider />
+                    <FormControl>
+                        <FormLabel>Instrument the nuancing constants were fitted as</FormLabel>
+                        <Select
+                            value={instrument ?? ''}
+                            size='small'
+                            onChange={e => setOptions({ ...options, nuance: nuanceOf(instruments[e.target.value as InstrumentName]) })}
+                        >
+                            {instrumentNames.map(name => (
+                                <MenuItem key={name} value={name}>{instrumentLabel(name)}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                     <Divider />
                     <Typography>
                         Velocity at the open rail, at the Mezzoforte pin and at the closed rail

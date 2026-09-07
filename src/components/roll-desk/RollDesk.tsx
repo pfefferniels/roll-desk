@@ -506,6 +506,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                                     onClick={e => setSelection(prev => [...prev, e])}
                                     version={currentVersion}
                                     problems={problems}
+                                    emulationOptions={emulationOptions}
                                 />)
                             : currentCopy && (
                                 <CopyFacsimile
