@@ -1,9 +1,9 @@
 import { ReactNode, useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, Path, PlacementRelation } from "linked-rolls"
+import { AnyPerforation, AnySymbol, ConstraintProblem, Path, PlacementRelation, isPerforation } from "linked-rolls"
 import { EditionContext } from "../../providers/EditionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Box } from "../../helpers/rollGeometry"
-import { Perforation, isPerforation, pairsIn, placementsIn, troubledSymbols } from "../../helpers/constraints"
+import { pairsIn, placementsIn, troubledSymbols } from "../../helpers/constraints"
 import { getSymbolBBox } from "./EditView"
 import { Arguable } from "./Arguable"
 import { alignmentLook, pairLook, problemLook } from "./constraintLooks"
@@ -106,12 +106,12 @@ export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewPro
     const detailed = translation.zoom >= 0.7
 
     /** Where the perforation is drawn: its measurement, moved as far as the performance moves it. */
-    const boxed = (symbol: Perforation) => {
+    const boxed = (symbol: AnyPerforation) => {
         const box = getSymbolBBox(symbol, view, translation)
         return box && shifted(box, translation.translateX(shifts.get(symbol.id) ?? 0))
     }
 
-    const connector = (one: Perforation, other: Perforation, key: PlacementRelation | 'pairedWith'): ConnectorProps | undefined => {
+    const connector = (one: AnyPerforation, other: AnyPerforation, key: PlacementRelation | 'pairedWith'): ConnectorProps | undefined => {
         const from = boxed(one)
         const to = boxed(other)
         const path = view.getPath(one.id)

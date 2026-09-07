@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material"
-import { AnyFeature, applyShift, applyStretch, ConditionState, isRollFeature, PaperStretch, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy } from "linked-rolls"
+import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, PaperStretch, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -11,7 +11,6 @@ import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { assignObject, ObjectAssumption } from "linked-rolls"
 import { FeatureConditionDialog } from "./FeatureConditionDialog"
 
 export type FacsimileSelection = EventDimension | AnyFeature
@@ -34,42 +33,6 @@ const addFeatureCondition = (copyId: string, featureId: string, condition: Condi
         if (!feature) return
 
         feature.condition = condition
-    }
-}
-
-const shiftAndStretch = (copyId: string, shift: Shift, stretch: ObjectAssumption<PaperStretch>): EditionOp => {
-    return (draft) => {
-        const copy = draft.copies.find(c => c.id === copyId)
-        if (!copy) return
-
-        applyShift(shift, copy)
-        applyStretch(stretch, copy)
-    }
-}
-
-const removeAlignment = (copyId: string): EditionOp => {
-    return (draft) => {
-        const copy = draft.copies.find(c => c.id === copyId)
-        if (!copy) return
-
-        const shift = copy.measurements.shift
-        const stretchCondition = copy.conditions.find(c => c.conditionType === 'paper-stretch') as PaperStretch | undefined
-        const factor = stretchCondition?.factor ?? 1
-
-        for (const feature of copy.features) {
-            feature.horizontal.from = feature.horizontal.from / factor - (shift?.horizontal ?? 0)
-            if (feature.horizontal.to) {
-                feature.horizontal.to = feature.horizontal.to / factor - (shift?.horizontal ?? 0)
-            }
-            feature.vertical.from = feature.vertical.from - (shift?.vertical ?? 0)
-            if (feature.vertical.to) {
-                feature.vertical.to = feature.vertical.to - (shift?.vertical ?? 0)
-            }
-        }
-
-        copy.ops = copy.ops.filter(op => op !== 'shifted' && op !== 'stretched')
-        delete copy.measurements.shift
-        copy.conditions = copy.conditions.filter(c => c.conditionType !== 'paper-stretch')
     }
 }
 
@@ -122,7 +85,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     {copy.ops.includes('shifted') || copy.ops.includes('stretched') ? (
                         <Button
                             onClick={() => {
-                                apply(removeAlignment(copyId))
+                                apply(unalignCopy(copyId))
                             }}
                         >
                             Remove Alignment
@@ -281,9 +244,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                         description: 'calculated by alignment'
                     })
 
-                    apply(
-                        shiftAndStretch(copyId, shift, stretch)
-                    )
+                    apply(alignCopy(copyId, shift, stretch))
                     setAlignCopies(false)
                 }}
             />

@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Emulation, HorizontalSpan, VerticalSpan, Edition, constraintProblems, valueOf, isEdit, isRollFeature, isSymbol } from 'linked-rolls'
+import { AnySymbol, Emulation, HorizontalSpan, VerticalSpan, constraintProblems, valueOf, isEdit, isPerforation, isRollFeature, isSymbol } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
@@ -28,16 +28,12 @@ import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
 import { Arguable } from "./Arguable"
 import { SelectionContext } from "../../providers/SelectionContext"
-import { Draft } from 'immer'
 import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
 import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "./ConstraintsPanel"
-import { isPerforation } from "../../helpers/constraints"
-
-export type DocOp = (d: Draft<Edition>) => void;
 
 interface TabPanelProps {
     children?: React.ReactNode;

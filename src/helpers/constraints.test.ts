@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { AnySymbol, EditionOp, EditionView, constraintProblems } from 'linked-rolls'
+import { AnyPerforation, AnySymbol, EditionOp, EditionView, constraintProblems, isPerforation, pairPerforations, placePerforation } from 'linked-rolls'
 import { fixtureEdition, ids, viewOf } from './editionFixture'
-import { pair, place } from './constraintOps'
 import {
-    Perforation, ProblemKind, constraintsOf, describePerforation, describePlacement, displacedEvents,
-    isPerforation, pairStatementOf, pairsIn, partnerOf, perforationsIn, placementBetween, placementChain,
+    ProblemKind, constraintsOf, describePerforation, describePlacement, displacedEvents,
+    pairStatementOf, pairsIn, partnerOf, perforationsIn, placementBetween, placementChain,
     placementsIn, problemLabel, problemsByVersion, refusalToPair, refusalToPlace, shiftsIn
 } from './constraints'
 
@@ -18,7 +17,7 @@ const arranged = (arrange: Arrangement): EditionView => {
     return viewOf(arrange(view).reduce((state, op) => produce(state, op), edition))
 }
 
-const perforation = (view: EditionView, id: string): Perforation => {
+const perforation = (view: EditionView, id: string): AnyPerforation => {
     const symbol = view.get<AnySymbol>(id)
     if (!isPerforation(symbol)) throw new Error(`no perforation ${id}`)
     return symbol
@@ -26,7 +25,7 @@ const perforation = (view: EditionView, id: string): Perforation => {
 
 describe('placements of a version', () => {
     it('list a placement both of whose ends the version has, with its relation', () => {
-        const view = arranged(v => [place(v, ids.forzandoOff, ids.note, 'alignedWith')])
+        const view = arranged(v => [placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith')])
         const [placement, ...rest] = placementsIn(view.snapshot(ids.b))
         expect(rest).toEqual([])
         expect(placement.relation).toBe('alignedWith')
@@ -35,13 +34,13 @@ describe('placements of a version', () => {
     })
 
     it('list an order the same way', () => {
-        const view = arranged(v => [place(v, ids.forzandoOn, ids.note, 'before')])
+        const view = arranged(v => [placePerforation(v, ids.forzandoOn, ids.note, 'before')])
         expect(placementsIn(view.snapshot(ids.a)).map(p => [p.relation, p.follower.id]))
             .toEqual([['before', ids.forzandoOn]])
     })
 
     it('leave out a placement whose reference the version does not have', () => {
-        const view = arranged(v => [place(v, ids.forzandoOff, ids.forzandoOn, 'after')])
+        const view = arranged(v => [placePerforation(v, ids.forzandoOff, ids.forzandoOn, 'after')])
         expect(placementsIn(view.snapshot(ids.a))).toHaveLength(1)
         expect(placementsIn(view.snapshot(ids.b))).toEqual([])
     })
@@ -49,7 +48,7 @@ describe('placements of a version', () => {
 
 describe('pairs of a version', () => {
     it('are found from either side', () => {
-        const view = arranged(v => [pair(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
         const snapshot = view.snapshot(ids.a)
         const off = perforation(view, ids.forzandoOff)
         const on = perforation(view, ids.forzandoOn)
@@ -62,7 +61,7 @@ describe('pairs of a version', () => {
     })
 
     it('keep the statement but lose the partner where the version lacks it', () => {
-        const view = arranged(v => [pair(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
         const snapshot = view.snapshot(ids.b)
         const off = perforation(view, ids.forzandoOff)
 
@@ -75,8 +74,8 @@ describe('pairs of a version', () => {
 describe('what binds a perforation', () => {
     it('names the placement and the partner', () => {
         const view = arranged(v => [
-            place(v, ids.forzandoOff, ids.note, 'before'),
-            pair(v, ids.forzandoOn, ids.forzandoOff)
+            placePerforation(v, ids.forzandoOff, ids.note, 'before'),
+            pairPerforations(v, ids.forzandoOn, ids.forzandoOff)
         ])
         const bound = constraintsOf(perforation(view, ids.forzandoOff), view.snapshot(ids.a))
         expect(bound.placement?.relation).toBe('before')
@@ -86,8 +85,8 @@ describe('what binds a perforation', () => {
 
     it('follows a chain of placements to its end', () => {
         const view = arranged(v => [
-            place(v, ids.forzandoOn, ids.forzandoOff, 'before'),
-            place(v, ids.forzandoOff, ids.note, 'alignedWith')
+            placePerforation(v, ids.forzandoOn, ids.forzandoOff, 'before'),
+            placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith')
         ])
         expect(placementChain(ids.forzandoOn, view.snapshot(ids.a)))
             .toEqual([ids.forzandoOff, ids.note])
@@ -95,8 +94,8 @@ describe('what binds a perforation', () => {
 
     it('stops where a chain turns back on itself', () => {
         const view = arranged(v => [
-            place(v, ids.forzandoOn, ids.forzandoOff, 'alignedWith'),
-            place(v, ids.forzandoOff, ids.forzandoOn, 'after')
+            placePerforation(v, ids.forzandoOn, ids.forzandoOff, 'alignedWith'),
+            placePerforation(v, ids.forzandoOff, ids.forzandoOn, 'after')
         ])
         expect(placementChain(ids.forzandoOn, view.snapshot(ids.a)))
             .toEqual([ids.forzandoOff, ids.forzandoOn])
@@ -142,7 +141,7 @@ describe('descriptions', () => {
     })
 
     it('put a placement into words', () => {
-        const view = arranged(v => [place(v, ids.forzandoOn, ids.note, 'before')])
+        const view = arranged(v => [placePerforation(v, ids.forzandoOn, ids.note, 'before')])
         const [placement] = placementsIn(view.snapshot(ids.a))
         expect(describePlacement(placement, view)).toBe('ForzandoOn (treble) at 990 mm lies before Note 60 at 1000 mm')
     })
@@ -159,7 +158,7 @@ describe('descriptions', () => {
 
 describe('problems by version', () => {
     it('groups them under the versions they hold in, leaving out the sound ones', () => {
-        const view = arranged(v => [pair(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
         const groups = problemsByVersion(constraintProblems(view), view.edition.versions)
         expect(groups.map(group => group.version.siglum)).toEqual([ids.b])
         expect(groups[0].problems).toEqual([
@@ -170,7 +169,7 @@ describe('problems by version', () => {
 
 describe('refusals', () => {
     it('refuse to pair a perforation with itself or into a second pair', () => {
-        const view = arranged(v => [pair(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
         const snapshot = view.snapshot(ids.a)
         const at = (id: string) => perforation(view, id)
 
@@ -182,9 +181,9 @@ describe('refusals', () => {
 
     it('refuse a placement relative to itself, in a circle, of a note after an expression, or on both sides of a pair', () => {
         const view = arranged(v => [
-            place(v, ids.otherNote, ids.note, 'before'),
-            place(v, ids.forzandoOff, ids.note, 'alignedWith'),
-            pair(v, ids.forzandoOn, ids.forzandoOff)
+            placePerforation(v, ids.otherNote, ids.note, 'before'),
+            placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith'),
+            pairPerforations(v, ids.forzandoOn, ids.forzandoOff)
         ])
         const snapshot = view.snapshot(ids.a)
         const placing = (follower: string, reference: string) => refusalToPlace(

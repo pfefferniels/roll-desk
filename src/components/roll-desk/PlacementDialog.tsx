@@ -1,8 +1,8 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Radio, RadioGroup } from "@mui/material"
-import { PlacementRelation } from "linked-rolls"
+import { AnyPerforation, PlacementRelation } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditionContext } from "../../providers/EditionContext"
-import { Perforation, Placement, describePlacement } from "../../helpers/constraints"
+import { Placement, describePlacement } from "../../helpers/constraints"
 
 const titles: Record<PlacementRelation, string> = {
     alignedWith: 'Align',
@@ -18,7 +18,7 @@ const explanations: Record<PlacementRelation, string> = {
 
 interface PlacementDialogProps {
     /** The two perforations, in the order they were picked. */
-    candidates: [Perforation, Perforation]
+    candidates: [AnyPerforation, AnyPerforation]
     relation: PlacementRelation
     onClose: () => void
     onDone: (placement: Placement) => void

@@ -1,10 +1,10 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnySymbol, ConstraintProblem, Path, PlacementRelation } from "linked-rolls"
+import { AnyPerforation, AnySymbol, ConstraintProblem, Path, PlacementRelation, isPerforation } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSnapshot } from "../../hooks/useSnapshot"
 import {
-    Perforation, constraintsOf, describePerforation, describePlacement, isPerforation, pairsIn,
+    constraintsOf, describePerforation, describePlacement, pairsIn,
     placementsIn, problemLabel, problemsByVersion, relationLabel
 } from "../../helpers/constraints"
 import { Arguable } from "./Arguable"
@@ -96,8 +96,8 @@ export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPan
     if (!edition || !view) return null
 
     const version = edition.versions.find(v => v.id === versionId)
-    const describe = (symbol: Perforation) => describePerforation(symbol, view)
-    const pathTo = (symbol: Perforation, key: PlacementRelation | 'pairedWith'): Path | undefined => {
+    const describe = (symbol: AnyPerforation) => describePerforation(symbol, view)
+    const pathTo = (symbol: AnyPerforation, key: PlacementRelation | 'pairedWith'): Path | undefined => {
         const path = view.getPath(symbol.id)
         return path && [...path, key]
     }
@@ -148,7 +148,7 @@ export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPan
 }
 
 interface ConstraintSummaryProps {
-    symbol: Perforation
+    symbol: AnyPerforation
     versionId: string
 }
 

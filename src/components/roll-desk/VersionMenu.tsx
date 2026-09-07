@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, getAt, assignReference, idOf, assignObject, MeaningComprehension } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -9,94 +9,10 @@ import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
 import { ConstraintsRibbon } from "./ConstraintsRibbon"
-import { EditionContext, EditionOp } from "../../providers/EditionContext"
+import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 
 export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
-
-/*
-const mergeEdits = (versionId: string, edits: Edit[], editionView: EditionView): EditionOp => {
-    return (draft) => {
-        if (edits.length < 2) {
-            return
-        }
-
-        const version = draft.versions.find(v => v.id === versionId)
-        if (!version) return
-
-        const newEdit = editionView.planMerge(edits)
-        version.edits.push(newEdit)
-        for (const edit of edits) {
-            version.edits.splice(
-                version.edits.findIndex(e => e.id === edit.id), 1
-            )
-        }
-    }
-}
-
-const splitEdits = (versionId: string, selection: Edit[], editionView: EditionView): EditionOp => {
-    return (draft) => {
-        const version = draft.versions.find(v => v.id === versionId)
-        if (!version) return
-
-        version.edits.push(...editionView.planSplit(selection[0]))
-        version.edits.splice(
-            version.edits.findIndex(e => e.id === selection[0].id), 1
-        )
-    }
-}*/
-
-const deriveVersion = (versionId: string, selection: VersionSelection[]): EditionOp =>
-    (draft) => {
-        const version = draft.versions.find(v => v.id === versionId)
-        if (!version) return
-
-        const edits = selection.filter(isEdit)
-        for (const edit of edits) {
-            const index = version.edits.findIndex(e => e.id === edit.id)
-            if (index !== -1) {
-                version.edits.splice(index, 1)
-            }
-        }
-
-        draft.versions.push({
-            type: 'Version',
-            siglum: version.siglum + '_derived',
-            id: v4(),
-            basedOn: assignReference(version.id),
-            edits,
-            motivations: [],
-            versionType: 'unicum'
-        })
-    }
-
-const removeSymbols = (versionId: string, symbols: AnySymbol[]): EditionOp => {
-    return (draft) => {
-        const version = draft.versions.find(v => v.id === versionId)
-        if (!version) return
-
-        for (const symbol of symbols) {
-            for (const edit of version.edits) {
-                if (!edit.insert) continue
-                const index = edit.insert.findIndex(s => s.id === symbol.id)
-                if (index !== -1) {
-                    edit.insert.splice(index, 1)
-                }
-
-                // the edit is empty now, we can safely remove it
-                if (edit.insert.length === 0 && edit.delete?.length) {
-                    version.edits.splice(version.edits.indexOf(edit), 1)
-                }
-            }
-        }
-    }
-}
-
-const remove = (versionId: string): EditionOp => {
-    return (draft) => {
-        draft.versions = draft.versions.filter(v => v.id !== versionId)
-    }
-}
 
 export type VersionSelection = AnySymbol | Edit | Motivation
 
@@ -160,7 +76,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     Actor
                 </Button>
                 <Button
-                    onClick={() => apply(remove(versionId))}
+                    onClick={() => apply(removeVersion(view, versionId))}
                     size='small'
                     startIcon={<Delete />}
                 >
@@ -188,9 +104,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                                 size='small'
                                 startIcon={<Delete />}
                                 onClick={() => {
-                                    apply(
-                                        removeSymbols(versionId, selection)
-                                    )
+                                    apply(removeSymbols(versionId, selection.map(symbol => symbol.id)))
+                                    setSelection([])
                                 }}
                             >
                                 Remove
@@ -198,44 +113,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             <Button
                                 size='small'
                                 onClick={() => {
-                                    const symbols = selection.filter(isSymbol)
-
-                                    apply(draft => {
-                                        if (!view) return
-
-                                        const version = draft.versions.find(v => v.id === versionId)
-                                        if (!version) return
-
-                                        if (!version.basedOn) return
-                                        const snapshot = view.snapshot(idOf(version.basedOn))
-                                        if (!snapshot) return
-
-                                        for (const symbolA of symbols) {
-                                            for (const symbolB of snapshot) {
-                                                if (view.isCollatable(symbolA, symbolB)) {
-                                                    console.log('collatable found')
-                                                    const path = view.getPath(symbolB.id)
-                                                    if (!path) continue
-
-                                                    const symbol = getAt<AnySymbol>(path, draft)
-                                                    if (!symbol) continue
-
-                                                    symbol?.carriers.push(...symbolA.carriers)
-
-                                                    const originalPath = view.getPath(symbolA.id)
-                                                    if (!originalPath) continue
-
-                                                    const insert = getAt<AnySymbol[]>(originalPath.slice(0, -1), draft)
-                                                    if (!insert || !Array.isArray(insert)) continue
-
-                                                    const index = insert.findIndex(s => s.id === symbolA.id)
-                                                    if (index !== -1) {
-                                                        insert.splice(index, 1)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    })
+                                    apply(collateSymbols(view, versionId, selection.map(symbol => symbol.id)))
+                                    setSelection([])
                                 }}
                             >
                                 Recollate
@@ -301,9 +180,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 {selection.length > 0 && selection.every(isEdit) && (
                     <Button
                         onClick={() => {
-                            apply(deriveVersion(
-                                versionId, selection
-                            ))
+                            apply(deriveVersion(versionId, selection.map(edit => edit.id)))
                         }}
                         startIcon={<CallSplit />}
                         size='small'

@@ -1,7 +1,7 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { createVersion, readFromSpencerMIDI, readFromStanfordAton, RollCopy } from "linked-rolls";
+import { createVersion, readFromSpencerMIDI, readFromStanfordAton, removeCopy, RollCopy } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
 
@@ -139,9 +139,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 </Button>
                 <IconButton color='secondary' onClick={() => {
                     if (!copy) return
-                    apply(draft => {
-                        draft.copies.splice(draft.copies.indexOf(copy), 1)
-                    })
+                    apply(removeCopy(copy.id))
                 }}>
                     <Delete />
                 </IconButton>

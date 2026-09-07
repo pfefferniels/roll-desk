@@ -1,26 +1,21 @@
 import {
-    AnySymbol, ConstraintProblem, EditionView, Expression, HorizontalSpan,
-    NegotiatedEvent, Note, PlacementRelation, Version, idOf, pairsAmong, placementsOf
+    AnyPerforation, AnySymbol, ConstraintProblem, EditionView, HorizontalSpan,
+    NegotiatedEvent, PlacementRelation, Version, idOf, isPerforation, pairsAmong, placementsOf
 } from "linked-rolls"
 
-export type Perforation = Note | Expression
-
-export const isPerforation = (symbol: object | undefined): symbol is Perforation =>
-    symbol !== undefined && 'type' in symbol && (symbol.type === 'note' || symbol.type === 'expression')
-
-export const perforationsIn = (snapshot: readonly AnySymbol[]): Perforation[] =>
+export const perforationsIn = (snapshot: readonly AnySymbol[]): AnyPerforation[] =>
     snapshot.filter(isPerforation)
 
-type ById = ReadonlyMap<string, Perforation>
+type ById = ReadonlyMap<string, AnyPerforation>
 
-const indexed = (perforations: readonly Perforation[]): ById =>
+const indexed = (perforations: readonly AnyPerforation[]): ById =>
     new Map(perforations.map(perforation => [perforation.id, perforation]))
 
 /** A placement both of whose ends the version has. */
-export type Placement = { relation: PlacementRelation; follower: Perforation; reference: Perforation }
+export type Placement = { relation: PlacementRelation; follower: AnyPerforation; reference: AnyPerforation }
 
 /** The statement placing a perforation, where the version has its reference. */
-const placementOf = (follower: Perforation, known: ById): Placement | undefined => {
+const placementOf = (follower: AnyPerforation, known: ById): Placement | undefined => {
     const statement = placementsOf(follower)[0]
     const reference = statement && known.get(idOf(statement.reference))
     return statement && reference ? { relation: statement.relation, follower, reference } : undefined
@@ -36,10 +31,10 @@ export const placementsIn = (snapshot: readonly AnySymbol[]): Placement[] => {
 }
 
 /** Whether a perforation makes a placing statement, whether or not its reference is at hand. */
-export const isPlaced = (symbol: Perforation): boolean => placementsOf(symbol).length > 0
+export const isPlaced = (symbol: AnyPerforation): boolean => placementsOf(symbol).length > 0
 
 /** A pair as the format states it: `stating` carries the `pairedWith`. */
-export type Pair = { stating: Perforation; partner: Perforation }
+export type Pair = { stating: AnyPerforation; partner: AnyPerforation }
 
 export const pairsIn = (snapshot: readonly AnySymbol[]): Pair[] =>
     pairsAmong(perforationsIn(snapshot)).map(([stating, partner]) => ({ stating, partner }))
@@ -48,12 +43,12 @@ export const pairsIn = (snapshot: readonly AnySymbol[]): Pair[] =>
  * The perforation carrying the statement that binds `symbol` into a
  * pair, whether or not the version has the partner.
  */
-export const pairStatementOf = (symbol: Perforation, snapshot: readonly AnySymbol[]): Perforation | undefined =>
+export const pairStatementOf = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): AnyPerforation | undefined =>
     symbol.pairedWith
         ? symbol
         : perforationsIn(snapshot).find(other => other.pairedWith && idOf(other.pairedWith) === symbol.id)
 
-export const partnerOf = (symbol: Perforation, snapshot: readonly AnySymbol[]): Perforation | undefined => {
+export const partnerOf = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): AnyPerforation | undefined => {
     const stating = pairStatementOf(symbol, snapshot)
     if (!stating) return undefined
     if (stating.id !== symbol.id) return stating
@@ -61,9 +56,9 @@ export const partnerOf = (symbol: Perforation, snapshot: readonly AnySymbol[]): 
 }
 
 /** What binds a perforation within a version, both ends present. */
-export type Constraints = { placement?: Placement; pairedWith?: Perforation }
+export type Constraints = { placement?: Placement; pairedWith?: AnyPerforation }
 
-export const constraintsOf = (symbol: Perforation, snapshot: readonly AnySymbol[]): Constraints => ({
+export const constraintsOf = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): Constraints => ({
     placement: placementOf(symbol, indexed(perforationsIn(snapshot))),
     pairedWith: partnerOf(symbol, snapshot)
 })
@@ -84,7 +79,7 @@ export const placementChain = (id: string, snapshot: readonly AnySymbol[]): stri
     return onward(id, [])
 }
 
-export type Displacement = { symbol: Perforation; measured: HorizontalSpan; performed: HorizontalSpan }
+export type Displacement = { symbol: AnyPerforation; measured: HorizontalSpan; performed: HorizontalSpan }
 
 /** Where the performance puts a perforation elsewhere than it was measured. */
 export const displacedEvents = (
@@ -107,12 +102,12 @@ export const shiftsIn = (events: readonly NegotiatedEvent[], view: EditionView):
             .map(({ symbol, measured, performed }): [string, number] => [symbol.id, performed.from - measured.from])
     )
 
-export const perforationLabel = (symbol: Perforation): string =>
+export const perforationLabel = (symbol: AnyPerforation): string =>
     symbol.type === 'note'
         ? `Note ${symbol.pitch}`
         : `${symbol.expressionType} (${symbol.scope})`
 
-export const describePerforation = (symbol: Perforation, view: EditionView): string => {
+export const describePerforation = (symbol: AnyPerforation, view: EditionView): string => {
     const place = view.dimensionOf(symbol)?.horizontal.from
     return place === undefined
         ? perforationLabel(symbol)
@@ -164,7 +159,7 @@ export const troubledSymbols = (problems: readonly ConstraintProblem[]): Readonl
 export const problemCount = (count: number): string =>
     `${count} constraint problem${count === 1 ? '' : 's'}`
 
-const alreadyPaired = (symbol: Perforation, snapshot: readonly AnySymbol[]): string | undefined => {
+const alreadyPaired = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): string | undefined => {
     if (!pairStatementOf(symbol, snapshot)) return undefined
     const partner = partnerOf(symbol, snapshot)
     return partner
@@ -173,7 +168,7 @@ const alreadyPaired = (symbol: Perforation, snapshot: readonly AnySymbol[]): str
 }
 
 /** Why the two may not be paired, or nothing if they may. */
-export const refusalToPair = (one: Perforation, other: Perforation, snapshot: readonly AnySymbol[]): string | undefined =>
+export const refusalToPair = (one: AnyPerforation, other: AnyPerforation, snapshot: readonly AnySymbol[]): string | undefined =>
     one.id === other.id
         ? 'A perforation cannot be paired with itself'
         : alreadyPaired(one, snapshot) ?? alreadyPaired(other, snapshot)
@@ -183,7 +178,7 @@ export const refusalToPair = (one: Perforation, other: Perforation, snapshot: re
  * to the note. Between two of a kind nothing decides, and the editor
  * is asked.
  */
-export const placementBetween = (one: Perforation, other: Perforation, relation: PlacementRelation): Placement | undefined => {
+export const placementBetween = (one: AnyPerforation, other: AnyPerforation, relation: PlacementRelation): Placement | undefined => {
     if (one.type === 'expression' && other.type === 'note') return { relation, follower: one, reference: other }
     if (one.type === 'note' && other.type === 'expression') return { relation, follower: other, reference: one }
     return undefined
