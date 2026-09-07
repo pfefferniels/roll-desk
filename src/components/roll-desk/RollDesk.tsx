@@ -4,6 +4,7 @@ import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { AnySymbol, Emulation, HorizontalSpan, VerticalSpan, constraintProblems, valueOf, isEdit, isPerforation, isRollFeature, isSymbol } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
+import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
@@ -60,6 +61,9 @@ export type EventDimension = {
 }
 
 export type UserSelection = (VersionSelection | FacsimileSelection)
+
+/** How long a symbol stays marked once playback has reached it, in milliseconds. */
+const playbackMark = 600
 
 /**
  * Working on piano rolls is imagined like working on a 
@@ -183,18 +187,10 @@ export const Desk = ({ versionId, show }: DeskProps) => {
         emulation.emulateVersion(currentVersion, view, { range, skipToFirstNote: true })
 
         play(emulation.asMIDI(), (e) => {
-            if (e.type === 'meta' && e.subtype === 'text') {
-                const symbolId = e.text
+            if (e.type !== 'meta' || e.subtype !== 'text') return
 
-                const group = document.querySelector(`#${symbolId}`)
-                if (group) {
-                    group.dispatchEvent(new CustomEvent('playback-event', {
-                        detail: {}
-                    }))
-                }
-
-                spotlight(symbolId, 600)
-            }
+            announcePlayback(e.text, playbackMark)
+            spotlight(e.text, playbackMark)
         })
         setIsPlaying(true)
     }

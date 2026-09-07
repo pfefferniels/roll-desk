@@ -1,6 +1,7 @@
 import { Expression, Note } from "linked-rolls";
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
+import { usePlaybackMark } from "../../hooks/usePlaybackMark";
 import { EditionContext } from "../../providers/EditionContext";
 import { shadowLook } from "./constraintLooks";
 
@@ -15,17 +16,11 @@ interface PerforationProps {
 
 export const Perforation = ({ symbol, age, highlight, shift = 0, onClick }: PerforationProps) => {
     const { view, viewOnly } = useContext(EditionContext)
-    const [displayDetails, setDisplayDetails] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    const { marked, followPlayback } = usePlaybackMark();
     const { translateX, trackToY, laneHeight, height: canvasHeight, zoom } = usePinchZoom();
 
-    /** Playback announces the symbol it has reached on the group itself. */
-    const followPlayback = useCallback((node: SVGGElement | null) => {
-        if (!node) return
-
-        const show = () => setDisplayDetails(true)
-        node.addEventListener('playback-event', show)
-        return () => node.removeEventListener('playback-event', show)
-    }, [])
+    const displayDetails = hovered || marked
 
     const features = useMemo(() => view?.carriersOf(symbol) ?? [], [view, symbol]);
 
@@ -77,8 +72,8 @@ export const Perforation = ({ symbol, age, highlight, shift = 0, onClick }: Perf
             style={{
                 pointerEvents: (viewOnly && !detailed) ? 'none' : 'auto'
             }}
-            onMouseEnter={() => setDisplayDetails(true)}
-            onMouseLeave={() => setDisplayDetails(false)}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
         >
             {/* The body sits where the perforation plays; the measurement stays behind as a shadow. */}
             <g transform={`translate(${dx} 0)`}>
