@@ -1,91 +1,45 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useRef } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { useSelection } from "../../providers/SelectionContext";
-import { rollXAt } from "../../helpers/pointer";
+import { spanOf, useRollDrag } from "../../hooks/useRollDrag";
 import { Cursor } from "./Cursor";
+
+/** The stretch of roll playback is held to, in millimetres. */
+const RangeMarker = ({ span }: { span: [number, number] }) => {
+    const { translateX, height } = usePinchZoom();
+
+    const [from, to] = span.map(translateX);
+
+    return (
+        <g className="range">
+            <rect
+                x={from}
+                y={0}
+                width={to - from}
+                height={height}
+                stroke="orange"
+                fillOpacity={0.3}
+                fill='orange'
+            />
+            <line x1={from} y1={0} x2={from} y2={10} strokeWidth={1} stroke="black" />
+            <line x1={to} y1={0} x2={to} y2={10} strokeWidth={1} stroke="black" />
+        </g>
+    );
+};
 
 export const Ground = ({
     x, y, width, height,
 }: { x: number; y: number; width: number; height: number; }) => {
-    const { zoom, translateX, height: rollHeight } = usePinchZoom();
-    const { setRange } = useSelection();
-
-    const [left, setLeft] = useState<number | null>(null);
-    const [right, setRight] = useState<number | null>(null);
+    const { range, setRange } = useSelection();
 
     const svgRef = useRef<SVGRectElement>(null);
-    const draggingRef = useRef(false);
+    const drag = useRollDrag(svgRef, drag => setRange(spanOf(drag)));
 
-    const getLocalX = useCallback((e: MouseEvent | WheelEvent) => {
-        const svg = svgRef.current;
-        if (!svg) return null;
-        return rollXAt(svg, e.clientX, zoom) ?? null;
-    }, [zoom]);
-
-    const onMouseDown = useCallback((e: MouseEvent) => {
-        const local = getLocalX(e);
-        if (local == null) return;
-        draggingRef.current = true;
-        setLeft(local);
-        setRight(local);
-    }, [getLocalX]);
-
-    const onMouseMove = useCallback((e: MouseEvent) => {
-        if (!draggingRef.current) return;
-        const local = getLocalX(e);
-        if (local == null) return;
-        setRight(local);
-    }, [getLocalX]);
-
-    const onMouseUp = useCallback((e: MouseEvent) => {
-        if (!draggingRef.current) return;
-        draggingRef.current = false;
-
-        const upX = getLocalX(e);
-        if (left == null || upX == null) {
-            setLeft(null);
-            setRight(null);
-            return;
-        }
-
-        const a = Math.min(left, upX);
-        const b = Math.max(left, upX);
-
-        setRange([a, b]);
-    }, [getLocalX, left, setRange]);
-
-    useEffect(() => {
-        const svg = svgRef.current;
-        if (!svg) return;
-
-        svg.addEventListener('mousedown', onMouseDown);
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-
-        return () => {
-            svg.removeEventListener('mousedown', onMouseDown);
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-        };
-    }, [onMouseDown, onMouseMove, onMouseUp]);
+    const marked = drag ? spanOf(drag) : range;
 
     return (
         <>
-            {(left != null && right != null) && (
-                <g className="range">
-                    <rect
-                        x={translateX(left)}
-                        y={0}
-                        width={translateX(right) - translateX(left)}
-                        height={rollHeight}
-                        stroke="orange"
-                        fillOpacity={0.3}
-                        fill='orange'
-                    />
-                    <line x1={translateX(left)} y1={0} x2={translateX(left)} y2={10} strokeWidth={1} stroke="black" />
-                    <line x1={translateX(right)} y1={0} x2={translateX(right)} y2={10} strokeWidth={1} stroke="black" />
-                </g>
-            )}
+            {marked && <RangeMarker span={marked} />}
 
             <rect
                 ref={svgRef}
@@ -96,7 +50,7 @@ export const Ground = ({
                 fill="transparent"
             />
 
-            <Cursor svgRef={svgRef} />
+            {drag && <Cursor at={drag.to} />}
         </>
     );
 };

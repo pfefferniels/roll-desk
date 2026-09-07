@@ -11,6 +11,7 @@ import { boxOf } from "../../helpers/rollGeometry.ts";
 import { useContext, useLayoutEffect, useRef, useState } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "./Cursor.tsx";
+import { useRollDrag } from "../../hooks/useRollDrag.ts";
 import { EventDimension } from "./RollDesk.tsx";
 import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
@@ -38,6 +39,7 @@ export const CopyFacsimile = ({
     const { edition, apply } = useContext(EditionContext);
     const geometry = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
+    const drag = useRollDrag(svgRef);
 
     if (!edition) return null
 
@@ -70,7 +72,7 @@ export const CopyFacsimile = ({
 
                 <Facsimile copy={copy} opacity={facsimileOpacity} />
 
-                <Cursor svgRef={svgRef} />
+                {drag && <Cursor at={drag.to} />}
 
                 {active && (
                     <RollGrid

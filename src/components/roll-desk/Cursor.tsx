@@ -1,60 +1,36 @@
-import { RefObject, useCallback, useEffect, useState } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { rollXAt } from "../../helpers/pointer"
 
 interface CursorProps {
-    svgRef: RefObject<SVGGElement | null>
+    /** Where the pointer sits on the roll, in millimetres. */
+    at: number
 }
 
-export const Cursor = ({ svgRef }: CursorProps) => {
-    const { translateX, zoom } = usePinchZoom()
-    const [cursorX, setCursorX] = useState(0)
+/** The reading the pointer stands at, drawn for as long as a drag runs. */
+export const Cursor = ({ at }: CursorProps) => {
+    const { translateX, height } = usePinchZoom()
 
-    const cursorText = `${(cursorX / 10).toFixed(2)} cm`;
-    const translatedX = translateX(cursorX)
-
-    const onMouseMove = useCallback((event: MouseEvent) => {
-        const ground = svgRef.current
-        if (!ground) return
-
-        const x = rollXAt(ground, event.clientX, zoom)
-        if (x !== undefined) setCursorX(x)
-    }, [svgRef, zoom])
-
-    useEffect(() => {
-        const svg = svgRef.current
-        if (!svg) return
-
-        svg.addEventListener('mousemove', onMouseMove)
-
-        return () => {
-            svg.removeEventListener('mousemove', onMouseMove)
-        }
-    }, [onMouseMove, svgRef])
+    const x = translateX(at)
 
     return (
-        <>
+        <g className='cursor' pointerEvents='none'>
             <line
-                x1={translatedX}
+                x1={x}
                 y1={0}
-                x2={translatedX}
-                y2={4000}
+                x2={x}
+                y2={height}
                 strokeWidth={2}
                 stroke='black'
-                className='cursor'
-                pointerEvents='none'
             />
 
             <text
-                x={translatedX}
+                x={x}
                 y={10}
                 fontSize={12}
                 textAnchor='start'
                 fill='black'
-                className='cursor'
             >
-                {cursorText}
+                {`${(at / 10).toFixed(2)} cm`}
             </text>
-        </>
+        </g>
     )
 }
