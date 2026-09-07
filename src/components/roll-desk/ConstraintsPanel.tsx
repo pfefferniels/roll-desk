@@ -61,7 +61,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
                 <ListSubheader key={version.id} disableSticky sx={{ lineHeight: 2 }}>{version.siglum}</ListSubheader>,
                 ...problems.map(problem => (
                     <ListItemButton
-                        key={`${problem.symbol}-${problem.problem}`}
+                        key={`${problem.version}-${problem.symbol}-${problem.problem}`}
                         onClick={() => onShow(problem.version, [problem.symbol])}
                     >
                         <ListItemText
