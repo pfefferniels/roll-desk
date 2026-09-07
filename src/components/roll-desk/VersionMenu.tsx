@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, MergeEdits, SplitEdit, ConnectVersions, DetachVersion, getAt, assignReference, idOf, assignObject, MeaningComprehension } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, getAt, assignReference, idOf, assignObject, MeaningComprehension } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -118,14 +118,14 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     useHotkeys(['m', 's'], (_, handler) => {
         switch (handler.keys?.join('')) {
             case 'm':
-                if (!selection.every(isEdit)) return
-                apply(new MergeEdits(versionId, selection))
+                if (!view || !selection.every(isEdit)) return
+                apply(mergeEdits(view, versionId, selection))
                 setSelection([])
                 break;
             case 's':
                 if (!selection.every(isEdit)) return
                 selection.forEach(edit => {
-                    apply(new SplitEdit(versionId, edit))
+                    apply(splitEdit(versionId, edit))
                 })
                 setSelection([])
                 break;
@@ -137,7 +137,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
         setEditsToMotivate(about.map(e => e.id))
     }
 
-    if (!edition) return null
+    if (!edition || !view) return null
 
     const version = edition.versions.find(v => v.id === versionId)
     if (!version) return null
@@ -254,7 +254,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             {selection.length >= 2 && (
                                 <Button
                                     onClick={() => {
-                                        apply(new MergeEdits(versionId, selection))
+                                        apply(mergeEdits(view, versionId, selection))
                                         setSelection([])
                                     }}
                                     startIcon={<GroupAdd />}
@@ -266,7 +266,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             {selection.length === 1 && (
                                 <Button
                                     onClick={() => {
-                                        apply(new SplitEdit(versionId, selection[0]))
+                                        apply(splitEdit(versionId, selection[0]))
                                         setSelection([])
                                     }}
                                     size='small'
@@ -332,12 +332,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 open={attachTo}
                 onClose={() => setAttachTo(false)}
                 onDone={(previousVersionId) => {
-                    apply(
-                        new ConnectVersions(
-                            versionId,
-                            previousVersionId
-                        )
-                    )
+                    apply(connectVersions(view, versionId, previousVersionId))
                 }}
                 versions={edition.versions}
             />
@@ -370,7 +365,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 <DialogActions>
                     <Button onClick={() => setConfirmDetach(false)}>Cancel</Button>
                     <Button onClick={() => {
-                        apply(new DetachVersion(versionId))
+                        apply(detachVersion(view, versionId))
                         setConfirmDetach(false)
                     }}>
                         Detach

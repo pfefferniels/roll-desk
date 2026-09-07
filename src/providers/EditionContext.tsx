@@ -1,8 +1,8 @@
-import { enablePatches, produceWithPatches, applyPatches, Patch, Draft, enableMapSet } from "immer";
-import { assignValue, Edition, EditionMetadata, EditionView, isPlan, Plan, systemOf, welteT100 } from "linked-rolls";
+import { enablePatches, produceWithPatches, applyPatches, Patch, enableMapSet } from "immer";
+import { assignValue, Edition, EditionMetadata, EditionOp, EditionView, systemOf, welteT100 } from "linked-rolls";
 import { createContext, useEffect, useMemo, useState } from "react";
 
-export type EditionOp = (d: Draft<Edition>) => void;
+export type { EditionOp }
 
 type HistoryEntry = { patches: Patch[]; inverse: Patch[] };
 type History = { past: HistoryEntry[]; future: HistoryEntry[]; limit: number };
@@ -39,7 +39,7 @@ export const emptyMetadata: EditionMetadata = {
 export const EditionContext = createContext<{
     edition?: Edition;
     setEdition: (edition: Edition) => void;
-    apply: (op: EditionOp | Plan) => void
+    apply: (op: EditionOp) => void
     undo: () => void;
     redo: () => void;
     canUndo: boolean;
@@ -72,15 +72,7 @@ export function EditionProvider({ edition: existingEdition, children }: { editio
         enableMapSet();
     }, []);
 
-    const apply = (op: EditionOp | Plan) => {
-        if (isPlan(op)) {
-            if (!view) return;
-
-            op.setView(view);
-            op.build().forEach(apply)
-            return
-        }
-
+    const apply = (op: EditionOp) => {
         setEdition((prev) => {
             const [next, patches, inverse] = produceWithPatches(prev, op);
 

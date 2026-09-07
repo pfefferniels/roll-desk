@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material"
-import { AnyFeature, applyShift, applyStretch, ConditionState, isRollFeature, PaperStretch, RemoveFeature, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy } from "linked-rolls"
+import { AnyFeature, applyShift, applyStretch, ConditionState, isRollFeature, PaperStretch, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -167,12 +167,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
                             <Button
                                 onClick={() => {
-                                    apply(
-                                        new RemoveFeature(
-                                            copy.id,
-                                            selection.filter(isRollFeature).map(f => f.id)
-                                        )
-                                    )
+                                    apply(removeFeatures(copy.id, selection.filter(isRollFeature).map(f => f.id)))
                                     setSelection([])
                                 }}
                                 size='small'
