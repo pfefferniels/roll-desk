@@ -1,4 +1,5 @@
 import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { rulerBaseline } from "./Ruler"
 
 interface CursorProps {
     /** Where the pointer sits on the roll, in millimetres. */
@@ -15,7 +16,7 @@ export const Cursor = ({ at }: CursorProps) => {
         <g className='cursor' pointerEvents='none'>
             <line
                 x1={x}
-                y1={0}
+                y1={rulerBaseline}
                 x2={x}
                 y2={height}
                 strokeWidth={2}

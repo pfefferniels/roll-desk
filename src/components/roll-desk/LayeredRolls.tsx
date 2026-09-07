@@ -2,6 +2,7 @@ import { RefObject, useRef } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Glow } from "./Glow"
 import { PatchPattern } from "./PatchPattern"
+import { Ruler } from "./Ruler"
 import { SelectionFilter } from "./Selection"
 import { Spray } from "./Spray"
 
@@ -31,6 +32,8 @@ export const Canvas = ({
                 <g className='zoomStage' ref={stageRef}>
                     <g ref={svgRef}>
                         {children}
+
+                        <Ruler />
 
                         {svgRef.current && (
                             <SelectionFilter />
