@@ -1,5 +1,5 @@
 import { useContext, useMemo, useRef } from "react"
-import { AnySymbol, EditionView, Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, EditionView, Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { welteT100System } from "linked-rolls/welte-t100"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -12,6 +12,8 @@ import { usePiano } from "react-pianosound"
 import { useSelection } from "../../providers/SelectionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { isMotivation } from "./VersionMenu"
+import { ConstraintView } from "./ConstraintView"
+import { problemsOfVersion, shiftsIn } from "../../helpers/constraints"
 
 type AgedSymbol = AnySymbol & { age: number }
 
@@ -54,10 +56,12 @@ const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
 
 interface VersionViewProps {
     version: Version
+    /** The constraint problems of the whole edition. */
+    problems: readonly ConstraintProblem[]
     onClick: (event: AnySymbol | Motivation | Edit) => void
 }
 
-export const VersionView = ({ version, onClick }: VersionViewProps) => {
+export const VersionView = ({ version, problems, onClick }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(s => isMotivation(s))
     const { playSingleNote } = usePiano()
     const { view, viewOnly } = useContext(EditionContext)
@@ -87,6 +91,12 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
     const snapshot = useMemo(
         () => view ? snapshotUpTo(view, version.id) : [],
         [version, view]
+    )
+
+    // Where the performance moves a perforation, it is drawn there.
+    const shifts = useMemo(
+        () => (view && emulation) ? shiftsIn(emulation.negotiatedEvents, view) : new Map<string, number>(),
+        [emulation, view]
     )
 
     if (!view || !emulation) return null
@@ -154,6 +164,7 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                             key={`${symbol.id || i}`}
                             symbol={symbol}
                             age={symbol.age}
+                            shift={shifts.get(symbol.id)}
                             highlight={version ? false : (symbol.carriers?.length !== 0)}
                             onClick={() => {
                                 const performingEvents = emulation.findEventsPerforming(symbol.id)
@@ -169,6 +180,12 @@ export const VersionView = ({ version, onClick }: VersionViewProps) => {
                     )
                 })
             }
+
+            <ConstraintView
+                snapshot={snapshot}
+                shifts={shifts}
+                problems={problemsOfVersion(problems, version.id)}
+            />
         </g>
     )
 }

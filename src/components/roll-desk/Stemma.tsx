@@ -1,5 +1,6 @@
-import { idOf, Path, Version, VersionType } from 'linked-rolls'
+import { ConstraintProblem, idOf, Path, Version, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
+import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
@@ -11,10 +12,12 @@ import { SlicedBalloon } from './SlicedBalloon';
 
 interface Stemma {
     currentVersionId: string | undefined
+    /** The constraint problems of the whole edition, counted per node. */
+    problems?: readonly ConstraintProblem[]
     onClick: (versionId: string) => void
 }
 
-export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
+export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => {
     const { edition, view } = useContext(EditionContext)
     const [nodes, setNodes] = useState<Node[]>([])
     const [links, setLinks] = useState<Link[]>([])
@@ -31,12 +34,15 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
 
         view.withGenerations()
             .forEach(version => {
+                const troubles = problemsOfVersion(problems, version.id).length
                 nodes.push({
                     id: version.id,
                     label: version.siglum,
                     type: version.versionType,
                     generation: version.generation,
-                    overlayInfo: null
+                    overlayInfo: troubles > 0
+                        ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
+                        : null
                 })
             })
 
@@ -53,7 +59,7 @@ export const Stemma = ({ onClick, currentVersionId }: Stemma) => {
 
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
-    }, [edition?.versions, view])
+    }, [edition?.versions, view, problems])
 
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return

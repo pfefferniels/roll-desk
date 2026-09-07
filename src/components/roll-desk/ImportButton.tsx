@@ -1,8 +1,10 @@
 import React, { useCallback, useContext, useState } from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Edition, importJsonLd, validate } from "linked-rolls";
+import { EditionView, constraintProblems, importJsonLd, validate } from "linked-rolls";
 import { EditionContext } from '../../providers/EditionContext';
+import { useSnackbar } from '../../providers/SnackbarContext';
+import { problemCount } from '../../helpers/constraints';
 
 interface ImportButtonProps {
     outlined?: boolean
@@ -10,9 +12,19 @@ interface ImportButtonProps {
 
 export const ImportButton = ({ outlined }: ImportButtonProps) => {
     const { setEdition } = useContext(EditionContext)
+    const { setMessage } = useSnackbar()
 
     const [errors, setErrors] = useState<string[]>()
     const [pending, setPending] = useState<any>()
+
+    /** Takes the document as the edition and says whether its constraints hold. */
+    const adopt = useCallback((document: Parameters<typeof importJsonLd>[0]) => {
+        const edition = importJsonLd(document)
+        setEdition(edition)
+
+        const count = constraintProblems(new EditionView(edition)).length
+        if (count > 0) setMessage(`${problemCount(count)}, see the Constraints tab`)
+    }, [setEdition, setMessage])
 
     const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -29,7 +41,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
                     const jsonDoc = JSON.parse(fileContent);
                     const success = validate(jsonDoc);
                     if (success) {
-                        setEdition(importJsonLd(jsonDoc))
+                        adopt(jsonDoc)
                     }
                     else {
                         setErrors((validate.errors || []).map(e => e.instancePath + " " + e.message))
@@ -45,7 +57,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
         };
 
         reader.readAsText(file);
-    }, [setEdition]);
+    }, [adopt]);
 
     return (
         <>
@@ -91,7 +103,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
                             Cancel
                         </Button>
                         <Button onClick={() => {
-                            setEdition(importJsonLd(pending))
+                            adopt(pending)
                             setPending(undefined)
                         }} variant='outlined' color='error'>
                             Proceed Anyways

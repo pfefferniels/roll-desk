@@ -1,8 +1,8 @@
 'use client'
 
-import { AppBar, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
+import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { Emulation, HorizontalSpan, VerticalSpan, Edition, valueOf, isEdit, isRollFeature, isSymbol } from 'linked-rolls'
+import { AnySymbol, Emulation, HorizontalSpan, VerticalSpan, Edition, constraintProblems, valueOf, isEdit, isRollFeature, isSymbol } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
 import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
@@ -34,6 +34,8 @@ import { usePiano } from "react-pianosound"
 import { useHotkeys } from "react-hotkeys-hook"
 import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
+import { ConstraintsPanel, ConstraintSummary } from "./ConstraintsPanel"
+import { isPerforation } from "../../helpers/constraints"
 
 export type DocOp = (d: Draft<Edition>) => void;
 
@@ -97,6 +99,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
     usePinchGesture(stretch.viewportRef, { onPinch: stretch.scrubBy, onEnd: stretch.settle })
 
     const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
+    const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
 
     const [editMetadata, setEditMetadata] = useState(!viewOnly)
     const [editCopy, setEditCopy] = useState(false)
@@ -117,6 +120,11 @@ export const Desk = ({ versionId, show }: DeskProps) => {
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
     const currentCopy = edition?.copies.find(c => c.id === currentCopyId)
+
+    const [soleSelected] = selection.length === 1 ? selection : []
+    const selectedPerforation = soleSelected && 'id' in soleSelected
+        ? view?.get<AnySymbol>(soleSelected.id)
+        : undefined
 
     const shown = useRef<string | undefined>(undefined)
     const [pendingSpotlight, setPendingSpotlight] = useState<string>()
@@ -209,6 +217,14 @@ export const Desk = ({ versionId, show }: DeskProps) => {
             'application/zip'
         )
     }, [edition, view, emulationOptions])
+
+    /** Opens the version a constraint holds in and marks the symbols it binds. */
+    const showConstraint = (versionId: string, symbolIds: string[]) => {
+        setCurrentVersionId(versionId)
+        setCurrentCopyId(undefined)
+        setSelection(view?.getAll<AnySymbol>(symbolIds) ?? [])
+        setPendingSpotlight(symbolIds[0])
+    }
 
     useEffect(() => {
         if (!edition) return
@@ -339,6 +355,18 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                     <Tab value={0} label="Info" />
                     <Tab value={1} label="Stemma" />
                     <Tab value={2} label="Sources" />
+                    <Tab
+                        value={3}
+                        label={
+                            <Badge
+                                badgeContent={problems.length}
+                                color='error'
+                                sx={{ pr: problems.length > 0 ? 1.5 : 0 }}
+                            >
+                                Constraints
+                            </Badge>
+                        }
+                    />
                 </Tabs>
 
                 <TabPanel value={currentTab} index={0}>
@@ -365,6 +393,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                 <TabPanel value={currentTab} index={1}>
                     <Stemma
                         currentVersionId={currentVersionId}
+                        problems={problems}
                         onClick={(versionId) => {
                             setCurrentVersionId(versionId)
                             setCurrentCopyId(undefined)
@@ -406,6 +435,14 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                         </Button>
                     )}
                 </TabPanel>
+
+                <TabPanel value={currentTab} index={3}>
+                    <ConstraintsPanel
+                        versionId={currentVersionId}
+                        problems={problems}
+                        onShow={showConstraint}
+                    />
+                </TabPanel>
             </Paper>
 
             {!viewOnly && (
@@ -440,6 +477,12 @@ export const Desk = ({ versionId, show }: DeskProps) => {
 
                                     </>
                                 )}
+                                {isPerforation(selectedPerforation) && currentVersionId && (
+                                    <ConstraintSummary
+                                        symbol={selectedPerforation}
+                                        versionId={currentVersionId}
+                                    />
+                                )}
                             </div>
                             <div style={{ float: 'right' }}>
                                 <IconButton onClick={() => setSelection([])}>
@@ -466,6 +509,7 @@ export const Desk = ({ versionId, show }: DeskProps) => {
                                 <VersionView
                                     onClick={e => setSelection(prev => [...prev, e])}
                                     version={currentVersion}
+                                    problems={problems}
                                 />)
                             : currentCopy && (
                                 <CopyFacsimile

@@ -8,6 +8,7 @@ import { v4 } from "uuid"
 import { SelectVersion } from "./SelectVersion"
 import { useHotkeys } from "react-hotkeys-hook"
 import { EditType } from "./EditVersionType"
+import { ConstraintsRibbon } from "./ConstraintsRibbon"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 
@@ -278,6 +279,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     )}
                 </>
             )}
+            <ConstraintsRibbon versionId={versionId} />
             <Ribbon title='Derivation'>
                 {version.basedOn ? (
                     <Button

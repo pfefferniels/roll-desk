@@ -2,15 +2,18 @@ import { Expression, Note } from "linked-rolls";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { EditionContext } from "../../providers/EditionContext";
+import { shadowLook } from "./constraintLooks";
 
 interface PerforationProps {
     symbol: Note | Expression;
     age?: number;
     highlight: boolean;
+    /** How far the performance moves the perforation from where it was measured, in mm. */
+    shift?: number;
     onClick: () => void;
 }
 
-export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProps) => {
+export const Perforation = ({ symbol, age, highlight, shift = 0, onClick }: PerforationProps) => {
     const { view, viewOnly } = useContext(EditionContext)
     const [displayDetails, setDisplayDetails] = useState(false);
     const { translateX, trackToY, laneHeight, height: canvasHeight, zoom } = usePinchZoom();
@@ -49,19 +52,36 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
     const opacity = 1 / ((age || 0) + 1)
     const color = (age || 0) >= 1 ? 'gray' : 'black';
 
-    if (zoom < 0.7) {
-        return (
-            <g
-                ref={followPlayback}
-                data-id={symbol.id}
-                id={symbol.id}
-                className='collated-event'
-                style={{
-                    pointerEvents: viewOnly ? 'none' : 'auto'
-                }}
-                onMouseEnter={() => setDisplayDetails(true)}
-                onMouseLeave={() => setDisplayDetails(false)}
-            >
+    const detailed = zoom >= 0.7
+    const whiskers = zoom >= 0.3
+    const dx = translateX(shift)
+    const shadow = Math.abs(dx) >= 1
+
+    const whisker = (x: number) => (
+        <line
+            x1={x}
+            x2={x}
+            y1={displayDetails ? 0 : y - 10}
+            y2={displayDetails ? canvasHeight : y + 20}
+            stroke='black'
+            strokeWidth={0.2}
+            strokeOpacity={0.7} />
+    )
+
+    return (
+        <g
+            ref={followPlayback}
+            data-id={symbol.id}
+            id={symbol.id}
+            className='collated-event'
+            style={{
+                pointerEvents: (viewOnly && !detailed) ? 'none' : 'auto'
+            }}
+            onMouseEnter={() => setDisplayDetails(true)}
+            onMouseLeave={() => setDisplayDetails(false)}
+        >
+            {/* The body sits where the perforation plays; the measurement stays behind as a shadow. */}
+            <g transform={`translate(${dx} 0)`}>
                 <rect
                     x={innerBoundaries[0]}
                     width={innerBoundaries[1] - innerBoundaries[0]}
@@ -70,88 +90,51 @@ export const Perforation = ({ symbol, age, highlight, onClick }: PerforationProp
                     fill={highlight ? 'red' : color}
                     fillOpacity={opacity}
                     onClick={onClick} />
-                {zoom >= 0.3 && (
-                    <>
-                        <line
-                            x1={translateX(meanOnset)}
-                            x2={translateX(meanOnset)}
-                            y1={displayDetails ? 0 : y - 10}
-                            y2={displayDetails ? canvasHeight : y + 20}
-                            stroke='black'
-                            strokeWidth={0.2}
-                            strokeOpacity={0.7} />
-                        <line
-                            x1={translateX(meanOffset)}
-                            x2={translateX(meanOffset)}
-                            y1={displayDetails ? 0 : y - 10}
-                            y2={displayDetails ? canvasHeight : y + 20}
-                            stroke='black'
-                            strokeWidth={0.2}
-                            strokeOpacity={0.7} />
-                    </>
+                {whiskers && whisker(translateX(meanOnset))}
+                {whiskers && whisker(translateX(meanOffset))}
+                {detailed && (
+                    <polygon
+                        onClick={onClick}
+                        fill={color}
+                        fillOpacity={opacity}
+                        points={`
+                            ${onsetStretch[0]},${y + height / 2}
+                            ${innerBoundaries[0]},${y}
+                            ${innerBoundaries[1]},${y}
+                            ${offsetStretch[1]},${y + height / 2}
+                            ${innerBoundaries[1]},${y + height}
+                            ${innerBoundaries[0]},${y + height}
+                        `} />
+                )}
+                {detailed && displayDetails && (
+                    <text
+                        x={innerBoundaries[0]}
+                        y={y - 2}
+                        fontSize={12}
+                    >
+                        <tspan>
+                            {symbol.type === 'expression' && symbol.expressionType}
+                            {symbol.type === 'note' && `Note: ${symbol.pitch}`}
+                        </tspan>
+                    </text>
                 )}
             </g>
-
-        )
-    }
-
-    return (
-        <g
-            ref={followPlayback}
-            data-id={symbol.id}
-            id={symbol.id}
-            className='collated-event'
-            onMouseEnter={() => setDisplayDetails(true)}
-            onMouseLeave={() => setDisplayDetails(false)}
-        >
-            <rect
-                x={innerBoundaries[0]}
-                width={innerBoundaries[1] - innerBoundaries[0]}
-                y={y}
-                height={height}
-                fill={highlight ? 'red' : color}
-                fillOpacity={opacity}
-                onClick={onClick} />
-            <line
-                x1={translateX(meanOnset)}
-                x2={translateX(meanOnset)}
-                y1={displayDetails ? 0 : y - 10}
-                y2={displayDetails ? canvasHeight : y + 20}
-                stroke='black'
-                strokeWidth={0.2}
-                strokeOpacity={0.7} />
-            <line
-                x1={translateX(meanOffset)}
-                x2={translateX(meanOffset)}
-                y1={displayDetails ? 0 : y - 10}
-                y2={displayDetails ? canvasHeight : y + 20}
-                stroke='black'
-                strokeWidth={0.2}
-                strokeOpacity={0.7} />
-
-            <polygon
-                onClick={onClick}
-                fill={color}
-                fillOpacity={opacity}
-                points={`
-                        ${onsetStretch[0]},${y + height / 2}
-                        ${innerBoundaries[0]},${y}
-                        ${innerBoundaries[1]},${y}
-                        ${offsetStretch[1]},${y + height / 2}
-                        ${innerBoundaries[1]},${y + height}
-                        ${innerBoundaries[0]},${y + height}
-                    `} />
-            {displayDetails && (
-                <text
-                    x={innerBoundaries[0]}
-                    y={y - 2}
-                    fontSize={12}
-                >
-                    <tspan>
-                        {symbol.type === 'expression' && symbol.expressionType}
-                        {symbol.type === 'note' && `Note: ${symbol.pitch}`}
-                    </tspan>
-                </text>
+            {shadow && (
+                <g style={{ pointerEvents: 'none' }} opacity={opacity}>
+                    <line
+                        x1={innerBoundaries[0]}
+                        x2={innerBoundaries[0] + dx}
+                        y1={y + height / 2}
+                        y2={y + height / 2}
+                        stroke={shadowLook.stroke}
+                        strokeWidth={0.4} />
+                    <rect
+                        x={innerBoundaries[0]}
+                        width={innerBoundaries[1] - innerBoundaries[0]}
+                        y={y}
+                        height={height}
+                        {...shadowLook} />
+                </g>
             )}
         </g>
     );

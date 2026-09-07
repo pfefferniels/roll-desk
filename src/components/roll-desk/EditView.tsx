@@ -11,7 +11,7 @@ import { boxOf, Translation } from "../../helpers/rollGeometry";
 
 export type { Translation }
 
-const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
+export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
     const dim = editionView.dimensionOf(symbol)
     if (!dim) return undefined
 
