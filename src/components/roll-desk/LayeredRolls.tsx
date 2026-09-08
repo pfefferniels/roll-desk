@@ -1,4 +1,4 @@
-import { RefObject, useRef } from "react"
+import { RefObject } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Glow } from "./Glow"
 import { PatchPattern } from "./PatchPattern"
@@ -18,7 +18,6 @@ export const Canvas = ({
 }: CanvasProps
 ) => {
     const { translateX, rollLength } = usePinchZoom()
-    const svgRef = useRef<SVGGElement>(null)
 
     const margin = 100
 
@@ -30,15 +29,11 @@ export const Canvas = ({
                 <Spray />
 
                 <g className='zoomStage' ref={stageRef}>
-                    <g ref={svgRef}>
-                        {children}
+                    {children}
 
-                        <Ruler />
+                    <Ruler />
 
-                        {svgRef.current && (
-                            <SelectionFilter />
-                        )}
-                    </g>
+                    <SelectionFilter />
                 </g>
             </g>
         </svg>
