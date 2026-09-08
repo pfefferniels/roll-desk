@@ -70,7 +70,9 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
     setRecordingPlace(edition.roll.recordingEvent.place.name);
   }, [edition])
 
-  const handleCreate = () => {
+  const editingExisting = edition !== undefined
+
+  const handleSave = () => {
     const selectedLicense = licenses.find((l) => l.name === license);
 
     apply(draft => {
@@ -95,7 +97,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
-        Create Edition
+        {editingExisting ? 'Edit Metadata' : 'Create Edition'}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} direction='row' sx={{ marginTop: '1rem' }}>
@@ -226,9 +228,9 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
           variant="contained"
           color="primary"
           startIcon={<SaveIcon />}
-          onClick={handleCreate}
+          onClick={handleSave}
         >
-          Create
+          {editingExisting ? 'Save' : 'Create'}
         </Button>
         <ImportButton />
       </DialogActions>
