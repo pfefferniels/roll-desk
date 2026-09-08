@@ -25,9 +25,10 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
     const zoomLayerRef = useRef<SVGGElement>(null)
     const svgWidth = 300
     const svgHeight = 600
+    const versions = edition?.versions
 
     useEffect(() => {
-        if (!edition || !view) return
+        if (!versions || !view) return
 
         const nodes: Node[] = []
 
@@ -45,7 +46,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
                 })
             })
 
-        const links: Link[] = edition.versions
+        const links: Link[] = versions
             .filter(v => v.basedOn !== undefined)
             .map((version) => {
                 const basedOn = idOf(version.basedOn!)
@@ -58,7 +59,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
 
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
-    }, [edition?.versions, view, problems])
+    }, [versions, view, problems])
 
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return

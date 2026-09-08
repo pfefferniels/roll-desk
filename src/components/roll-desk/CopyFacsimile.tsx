@@ -238,6 +238,8 @@ function ScaledRotatedText({
     const availW = Math.max(0, boxWidth - pad * 2);
     const availH = Math.max(0, boxHeight - pad * 2);
 
+    const joinedChunks = chunks.join("\n");
+
     useLayoutEffect(() => {
         const el = textRef.current;
         if (!el) return;
@@ -255,7 +257,7 @@ function ScaledRotatedText({
         const clamped = Math.max(0.3, Math.min(6, s));
 
         setScale(clamped);
-    }, [chunks.join("\n"), availW, availH]);
+    }, [joinedChunks, availW, availH]);
 
     // Apply scale around the same rotation center.
     // Order matters: rotate around (cx,cy), then scale around (cx,cy).

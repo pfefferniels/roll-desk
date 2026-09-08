@@ -204,6 +204,9 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
             setCurrentSlice(undefined)
             setHovered(false)
         }
+        // `currentSlice` guards against overwriting the slice the pointer is on.
+        // Listing it would re-run this and clear the slice it has just shown.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [slices])
 
     return (
