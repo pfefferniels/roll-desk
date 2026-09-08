@@ -1,6 +1,7 @@
 import { DynamicsCurve, Emulation, track } from "linked-rolls"
 import { WelteT100Options } from "linked-rolls/welte-t100"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
+import { samplesOnRoll } from "../../helpers/samplesOnRoll"
 
 /** The tracks the two dynamics curves are drawn from. */
 const bassSpace = track(20)
@@ -15,17 +16,15 @@ type DynamicsProps = {
 }
 
 export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) => {
-    const { translateX, trackToY } = usePinchZoom()
+    const { translateX, trackToY, rollLength } = usePinchZoom()
 
     const curveNamed = (name: string) =>
         emulation.curves.find((curve): curve is DynamicsCurve => curve.kind === 'dynamics' && curve.name === name)
 
     const pathOf = (curve: DynamicsCurve | undefined, shift: number) => {
         if (!curve) return ""
-        return Array.from({ length: Math.ceil(curve.place.length / SAMPLE_STRIDE) }, (_, sample) => {
-            const i = sample * SAMPLE_STRIDE
-            return [translateX(curve.place[i]), 127 - curve.velocity[i] + shift]
-        })
+        return samplesOnRoll(curve.place, rollLength, SAMPLE_STRIDE)
+            .map(index => [translateX(curve.place[index]), 127 - curve.velocity[index] + shift])
             .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
             .join(" ")
     }
