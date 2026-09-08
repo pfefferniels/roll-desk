@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
+import { useVisibleSpan } from "../../hooks/useVisibleSpan"
 import { LabelledTick, ruler } from "../../helpers/scale"
 
 /** Where the scale's baseline runs, in the clear above the tracker bar. */
@@ -31,13 +32,18 @@ const Reading = ({ at, label }: LabelledTick) => {
     )
 }
 
-/** A scale along the roll, stepping as finely as the zoom allows. */
+/**
+ * A scale along the roll, stepping as finely as the zoom allows. Its ticks
+ * are cut to the stretch on screen, so that their number follows the
+ * viewport rather than the length of the roll.
+ */
 export const Ruler = () => {
     const { translateX, rollLength, zoom } = usePinchZoom()
+    const over = useVisibleSpan()
 
     const { labelled, plain } = useMemo(
-        () => ruler(rollLength, zoom),
-        [rollLength, zoom]
+        () => ruler({ length: rollLength, zoom, over }),
+        [rollLength, zoom, over]
     )
 
     return (

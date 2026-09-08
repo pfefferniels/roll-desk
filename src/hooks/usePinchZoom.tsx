@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, RefObject } from 'react';
 import { RollGeometry, rollGeometry } from '../helpers/rollGeometry';
 
 export interface PinchZoomContextProps extends RollGeometry {
@@ -13,9 +13,19 @@ export interface PinchZoomContextProps extends RollGeometry {
     }
     zoom: number
     setZoom: (zoom: number) => void
+
+    /**
+     * The element the roll is scrolled in, once it is in the document, and
+     * whether a zoom gesture is running. Together they say which part of
+     * the roll is on screen, see `useVisibleSpan`.
+     */
+    viewport: HTMLDivElement | null
+    gesturing: RefObject<boolean>
 }
 
 const emptyGeometry = rollGeometry({ note: 0, expression: 0 }, 0)
+
+const atRest: RefObject<boolean> = { current: false }
 
 const PinchZoomContext = createContext<PinchZoomContextProps>({
     ...emptyGeometry,
@@ -23,7 +33,9 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     translateX: (x: number) => x,
     rollLength: 0,
     zoom: 0,
-    setZoom: () => { }
+    setZoom: () => { },
+    viewport: null,
+    gesturing: atRest
 });
 
 interface PinchZoomProviderProps {
@@ -33,6 +45,8 @@ interface PinchZoomProviderProps {
     noteHeight: number
     expressionHeight: number
     setZoom: (zoom: number) => void
+    viewport?: HTMLDivElement | null
+    gesturing?: RefObject<boolean>
     children: ReactNode;
 }
 
@@ -43,7 +57,9 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     expressionHeight,
     children,
     spacing = 40,
-    setZoom
+    setZoom,
+    viewport = null,
+    gesturing = atRest
 }) => {
     const trackHeight = useMemo(
         () => ({ note: noteHeight, expression: expressionHeight }),
@@ -61,8 +77,10 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         translateX: (x: number) => zoom * x,
         rollLength,
         zoom,
-        setZoom
-    }), [geometry, trackHeight, rollLength, zoom, setZoom])
+        setZoom,
+        viewport,
+        gesturing
+    }), [geometry, trackHeight, rollLength, zoom, setZoom, viewport, gesturing])
 
     return (
         <PinchZoomContext.Provider value={value}>

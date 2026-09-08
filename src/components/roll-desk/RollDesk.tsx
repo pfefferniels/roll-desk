@@ -523,6 +523,8 @@ export const Desk = ({ show }: DeskProps) => {
                     zoom={stretch.committed}
                     rollLength={length}
                     setZoom={stretch.jump}
+                    viewport={stretch.viewport}
+                    gesturing={stretch.gesturing}
                     noteHeight={3}
                     expressionHeight={10}
                     spacing={60}

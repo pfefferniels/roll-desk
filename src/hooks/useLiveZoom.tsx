@@ -19,6 +19,12 @@ export interface LiveZoom {
      */
     committed: number
 
+    /**
+     * Whether a gesture is running. Held in a ref, so that what only needs
+     * to know at rest can ask without a render while one does.
+     */
+    gesturing: RefObject<boolean>
+
     /** The group carrying the drawing. A running gesture scales it horizontally. */
     stageRef: RefObject<SVGGElement | null>
 
@@ -168,5 +174,5 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     }, [])
 
-    return { committed, stageRef, viewportRef: setViewport, viewport, scrub, scrubBy, settle, jump }
+    return { committed, gesturing, stageRef, viewportRef: setViewport, viewport, scrub, scrubBy, settle, jump }
 }

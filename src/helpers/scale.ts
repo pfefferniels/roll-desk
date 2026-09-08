@@ -2,6 +2,12 @@ import { range } from 'd3-array'
 
 export type ScaleUnit = 'mm' | 'cm'
 
+/** A stretch of roll, both ends measured from its start in millimetres. */
+export interface Span {
+    from: number
+    to: number
+}
+
 /** A tick that carries a reading, such as "40 cm". */
 export interface LabelledTick {
     /** Distance from the roll's start, in millimetres. */
@@ -55,23 +61,53 @@ const readingOf = (at: number, unit: ScaleUnit) =>
 /** How close two readings may come, in SVG units. */
 const closest = 60
 
+/** What a ruler is asked for. */
+export interface RulerRequest {
+    /** How far the roll runs, in millimetres. */
+    length: number
+
+    /** SVG units per millimetre. */
+    zoom: number
+
+    /** The stretch to lay ticks over, the whole roll where it is left out. */
+    over?: Span
+
+    /** How close two readings may come, in SVG units. */
+    spacing?: number
+}
+
+/** As much of `over` as lies on the roll. */
+const onRoll = (length: number, over?: Span): Span => ({
+    from: Math.max(0, over?.from ?? 0),
+    to: Math.min(length, over?.to ?? length)
+})
+
 /**
  * A scale for a roll `length` millimetres long, drawn at `zoom` SVG units
  * per millimetre. The step grows as the roll shrinks, so that two readings
  * never come closer than `spacing`. It reads in centimetres, and in
- * millimetres once a step falls short of one.
+ * millimetres once a step falls short of one. Ticks are laid only over
+ * `over`, so that what is drawn is bounded by the stretch asked for rather
+ * than by the roll.
  */
-export const ruler = (length: number, zoom: number, spacing = closest): Ruler => {
+export const ruler = ({ length, zoom, over, spacing = closest }: RulerRequest): Ruler => {
     const step = stepAtLeast(spacing / zoom)
     const unit = unitOf(step.size)
 
-    const labelled = range(0, length, step.size)
+    const drawn = onRoll(length, over)
+
+    // From the step the stretch begins in, so that its plain ticks are drawn
+    // even where its reading lies behind the stretch.
+    const steps = range(Math.floor(drawn.from / step.size) * step.size, drawn.to, step.size)
+
+    const labelled = steps
+        .filter(at => at >= drawn.from)
         .map(at => ({ at, label: readingOf(at, unit) }))
 
     const part = step.size / step.parts
-    const plain = labelled
-        .flatMap(({ at }) => range(1, step.parts).map(nth => at + nth * part))
-        .filter(at => at < length)
+    const plain = steps
+        .flatMap(at => range(1, step.parts).map(nth => at + nth * part))
+        .filter(at => at >= drawn.from && at < drawn.to)
 
     return { unit, step: step.size, labelled, plain }
 }
