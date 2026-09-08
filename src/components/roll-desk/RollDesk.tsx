@@ -80,8 +80,6 @@ const playbackMark = 600
  */
 
 interface DeskProps {
-    versionId?: string
-
     /**
      * The id of an entity of the edition to open with: a version, a copy,
      * or a symbol, feature or edit, whose version or copy is shown and
@@ -90,7 +88,7 @@ interface DeskProps {
     show?: string
 }
 
-export const Desk = ({ versionId, show }: DeskProps) => {
+export const Desk = ({ show }: DeskProps) => {
     const { play, stop } = usePiano()
 
     const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
