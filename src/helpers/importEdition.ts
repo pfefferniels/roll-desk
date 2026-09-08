@@ -1,5 +1,4 @@
-import { validate } from "linked-rolls"
-import { migrate } from "linked-rolls/lib/migrate.js"
+import { migrate, validate } from "linked-rolls"
 
 /** A document in the current format, with what the schema still finds wrong with it. */
 export type CheckedDocument = {
