@@ -1,9 +1,17 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControlLabel, MenuItem, Radio, RadioGroup, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, assignObject, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading, systemIdOf } from "linked-rolls";
+import { alignFeatures, AlignmentResult, assignObject, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading, systemIdOf } from "linked-rolls";
 import { useContext, useEffect, useRef, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { valueOf } from "linked-rolls";
 import { PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, tempoStartOf } from "./ProductionFields";
+
+/**
+ * Whether there is an alignment to apply. Its numbers say nothing about that:
+ * a copy that lines up without a shift is shifted by zero, one that sits at the
+ * other's scale is scaled by one.
+ */
+export const canApply = (alignment?: AlignmentResult): alignment is AlignmentResult =>
+    alignment !== undefined
 
 interface AlignToDialogProps {
     open: boolean
@@ -150,11 +158,10 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
 
             <DialogActions>
                 <Button
-                    disabled={shift === undefined || scale === undefined}
+                    disabled={!canApply(alignment)}
                     onClick={() => {
-                        if (shift !== undefined && scale !== undefined) {
-                            onDone(shift, scale, readingOf(scale))
-                        }
+                        if (!canApply(alignment)) return
+                        onDone(alignment.shift, alignment.scale, readingOf(alignment.scale))
                     }}
                 >
                     Apply
