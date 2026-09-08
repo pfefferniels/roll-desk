@@ -66,8 +66,10 @@ export const fixtureEdition = (): Edition => {
     }
     const label: Text = { type: 'text', id: ids.label, text: 'WM 225', carriers: [] }
 
+    // Its own metadata, since immer freezes whatever a produced edition
+    // reaches, and the constant is shared by every fixture.
     return {
-        ...emptyMetadata,
+        ...structuredClone(emptyMetadata),
         copies: [copy],
         versions: [
             version(ids.a, [{

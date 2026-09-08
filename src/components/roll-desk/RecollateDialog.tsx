@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ToleranceFields } from "./ToleranceFields";
 
 interface RecollateDialogProps {
-    /** The tolerance the edition collates with, offered as the starting point. */
+    /** The tolerance the derivation was collated at, offered as the starting point. */
     tolerance: CollationTolerance
     onClose: () => void
     onDone: (tolerance: CollationTolerance) => void

@@ -11,7 +11,7 @@ import { EditType } from "./EditVersionType"
 import { ConstraintsRibbon } from "./ConstraintsRibbon"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { keepingTolerance, toleranceOf } from "../../helpers/collationTolerance"
+import { derivationToleranceOf } from "../../helpers/collationTolerance"
 import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../../helpers/goesToAnOverlay"
@@ -76,7 +76,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const version = edition.versions.find(v => v.id === versionId)
     if (!version) return null
 
-    const tolerance = toleranceOf(edition)
+    const tolerance = derivationToleranceOf(version, edition)
 
     return (
         <>
@@ -215,10 +215,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     tolerance={tolerance}
                     onClose={() => setAttachTo(false)}
                     onDone={(previousVersionId, chosenTolerance) => {
-                        apply(keepingTolerance(
-                            chosenTolerance,
-                            connectVersions(view, versionId, previousVersionId, chosenTolerance)
-                        ))
+                        apply(connectVersions(view, versionId, previousVersionId, chosenTolerance))
                         setAttachTo(false)
                     }}
                 />
@@ -229,10 +226,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     tolerance={tolerance}
                     onClose={() => setSymbolsToRecollate(undefined)}
                     onDone={(chosenTolerance) => {
-                        apply(keepingTolerance(
-                            chosenTolerance,
-                            collateSymbols(view, versionId, symbolsToRecollate, chosenTolerance)
-                        ))
+                        apply(collateSymbols(view, versionId, symbolsToRecollate, chosenTolerance))
                         setSymbolsToRecollate(undefined)
                         setSelection([])
                     }}

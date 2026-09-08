@@ -7,7 +7,7 @@ interface AttachToDialogProps {
     /** The version to be declared derivative of another. */
     currentVersionId: string
     versions: Version[]
-    /** The tolerance the edition collates with, offered as the starting point. */
+    /** The tolerance offered as the starting point, kept on the derivation once attached. */
     tolerance: CollationTolerance
     onClose: () => void
     onDone: (parentVersionId: string, tolerance: CollationTolerance) => void

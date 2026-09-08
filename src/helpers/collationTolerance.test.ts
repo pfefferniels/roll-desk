@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { connectVersions, defaultCollationTolerance, idOf, mm } from 'linked-rolls'
+import { connectVersions, defaultCollationTolerance, Edition, mm } from 'linked-rolls'
 import { fixtureEdition, ids, viewOf } from './editionFixture'
-import { keepingTolerance, parseTolerance, toleranceOf } from './collationTolerance'
+import { derivationToleranceOf, parseTolerance, toleranceOf } from './collationTolerance'
+
+const versionIn = (edition: Edition, versionId: string) =>
+    edition.versions.find(version => version.id === versionId)!
 
 describe('the tolerance an edition collates with', () => {
     it('is the one the edition names', () => {
@@ -40,16 +43,29 @@ describe('reading a tolerance from what was typed', () => {
     })
 })
 
-describe('collating at a chosen tolerance', () => {
-    it('notes the tolerance on the edition within the same step', () => {
+describe('the tolerance a version was collated at', () => {
+    it('is the one its derivation states', () => {
         const edition = fixtureEdition()
         const tolerance = { toleranceStart: mm(1), toleranceEnd: mm(3) }
-        const connect = connectVersions(viewOf(edition), ids.b, ids.a, tolerance)
 
-        const collated = produce(edition, keepingTolerance(tolerance, connect))
-        const version = collated.versions.find(candidate => candidate.id === ids.b)
+        const collated = produce(edition, connectVersions(viewOf(edition), ids.b, ids.a, tolerance))
 
-        expect(collated.creation.collationTolerance).toEqual(tolerance)
-        expect(version?.basedOn && idOf(version.basedOn)).toBe(ids.a)
+        expect(derivationToleranceOf(versionIn(collated, ids.b), collated)).toEqual(tolerance)
+    })
+
+    it('falls back to the edition where the derivation states none', () => {
+        const edition = fixtureEdition()
+        edition.creation.collationTolerance = { toleranceStart: mm(2), toleranceEnd: mm(8) }
+
+        expect(derivationToleranceOf(versionIn(edition, ids.b), edition))
+            .toEqual({ toleranceStart: 2, toleranceEnd: 8 })
+    })
+
+    it('falls back to the edition where the version derives from nothing', () => {
+        const edition = fixtureEdition()
+        edition.creation.collationTolerance = { toleranceStart: mm(2), toleranceEnd: mm(8) }
+
+        expect(derivationToleranceOf(versionIn(edition, ids.a), edition))
+            .toEqual({ toleranceStart: 2, toleranceEnd: 8 })
     })
 })
