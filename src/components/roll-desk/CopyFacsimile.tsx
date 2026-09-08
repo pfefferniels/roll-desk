@@ -18,7 +18,7 @@ import { Arguable } from "./Arguable.tsx";
 import { EditionContext } from "../../providers/EditionContext.tsx";
 import { ModificationView } from "./ModificationView.tsx";
 import { Facsimile } from "./Facsimile.tsx";
-import { FacsimileBlend } from "../../helpers/facsimileBlend.ts";
+import { FacsimileBlend, transcriptionTakesPointer } from "../../helpers/facsimileBlend.ts";
 
 interface CopyFacsimileProps {
     copy: RollCopy;
@@ -74,7 +74,11 @@ export const CopyFacsimile = ({
 
             {drag && <Cursor at={drag.to} />}
 
-            <g className="transcription" opacity={blend.transcription}>
+            <g
+                className="transcription"
+                opacity={blend.transcription}
+                pointerEvents={transcriptionTakesPointer(blend) ? 'auto' : 'none'}
+            >
                 {active && (
                     <RollGrid
                         selectionMode={active}

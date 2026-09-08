@@ -36,3 +36,11 @@ export const blendAt = (position: number): FacsimileBlend => {
         layout: Math.min(1, 2 * t)
     }
 }
+
+/**
+ * Whether the transcription is there to be pointed at. Where it has
+ * faded out the scan lies whole and uncut under it, so a click there
+ * would answer to a picture that shows nothing of what it selects.
+ */
+export const transcriptionTakesPointer = (blend: FacsimileBlend) =>
+    blend.transcription > 0

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blendAt, workingPosition } from './facsimileBlend'
+import { blendAt, transcriptionTakesPointer, workingPosition } from './facsimileBlend'
 
 const sweep = Array.from({ length: 101 }, (_, i) => i / 100).map(blendAt)
 
@@ -40,5 +40,15 @@ describe('blending the scan into its transcription', () => {
     it('holds at the ends beyond them', () => {
         expect(blendAt(-1)).toEqual(blendAt(0))
         expect(blendAt(2)).toEqual(blendAt(1))
+    })
+})
+
+describe('pointing at the transcription', () => {
+    it('gives it up where it has faded out', () => {
+        expect(transcriptionTakesPointer(blendAt(0))).toBe(false)
+    })
+
+    it('keeps it wherever the transcription shows at all, however faintly', () => {
+        expect(sweep.slice(1).filter(blend => !transcriptionTakesPointer(blend))).toEqual([])
     })
 })
