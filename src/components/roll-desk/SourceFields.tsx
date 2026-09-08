@@ -1,9 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import dayjs from "dayjs"
 import { assignValue, FeatureSource, SourceKind, sourceKinds, sourceLabels, valueOf } from "linked-rolls"
+import { DateField } from "./DateField"
 
 const notStated = ''
 
@@ -15,7 +12,7 @@ export interface SourceInput {
     kind: SourceKind | typeof notStated
     output: string
     device: string
-    date: Date | null
+    date: Date | undefined
     note: string
 }
 
@@ -23,7 +20,7 @@ export const noSource: SourceInput = {
     kind: notStated,
     output: '',
     device: '',
-    date: null,
+    date: undefined,
     note: ''
 }
 
@@ -33,7 +30,7 @@ export const sourceInputOf = (source: FeatureSource | undefined): SourceInput =>
             kind: source.kind,
             output: source.output ?? '',
             device: source.device?.name ?? '',
-            date: source.date ? valueOf(source.date) : null,
+            date: source.date ? valueOf(source.date) : undefined,
             note: source.note ?? ''
         }
         : noSource
@@ -99,20 +96,14 @@ export const SourceFields = ({ value, onChange }: SourceFieldsProps) => (
                     onChange={e => onChange({ ...value, device: e.target.value })}
                     fullWidth
                 />
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                        label='Date of the capture'
-                        value={value.date ? dayjs(value.date) : null}
-                        onChange={next => onChange({
-                            ...value,
-                            date: next && next.isValid() ? next.toDate() : null
-                        })}
-                        slotProps={{
-                            field: { clearable: true },
-                            textField: { size: 'small', fullWidth: true }
-                        }}
-                    />
-                </LocalizationProvider>
+                <DateField
+                    label='Date of the capture'
+                    value={value.date}
+                    onChange={date => onChange({ ...value, date })}
+                    mayBeEmpty
+                    size='small'
+                    fullWidth
+                />
                 <TextField
                     size='small'
                     label='Note'

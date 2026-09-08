@@ -1,12 +1,8 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { Named, ProductionEvent, systemOf, TrackerBar, trackerBarOf, welteT100 } from "linked-rolls";
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from "dayjs";
-import { assignValue } from "linked-rolls";
+import { assignValue, Named, ProductionEvent, systemOf, TrackerBar, trackerBarOf, valueOf, welteT100 } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
+import { DateField } from "./DateField";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
 
 interface ProductionEventDialog {
@@ -27,7 +23,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
     const [companyAuthority, setCompanyAuthority] = useState('');
     const [paper, setPaper] = useState('');
     const [paperAuthority, setPaperAuthority] = useState('');
-    const [date, setDate] = useState<Date>(new Date());
+    const [date, setDate] = useState<Date>();
     const [system, setSystem] = useState<TrackerBar>(editionBar)
     const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
 
@@ -38,6 +34,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         setCompanyAuthority(event.company?.sameAs[0] ?? '')
         setPaper(event.paper?.name ?? '')
         setPaperAuthority(event.paper?.sameAs[0] ?? '')
+        setDate(event.date ? valueOf(event.date) : undefined)
         setSystem(trackerBarOf(event.system) ?? editionBar)
         setSpeed(speedInputOf(event.speed))
     }, [event, editionBar])
@@ -47,7 +44,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         onDone({
             company: namedOrNone(company, companyAuthority),
             paper: namedOrNone(paper, paperAuthority),
-            date: assignValue(date),
+            date: date && assignValue(date),
             system: systemOf(system),
             // the belief held about an earlier statement of the speed stays with the new value
             speed: paperSpeed && { ...event?.speed, ...paperSpeed }
@@ -92,17 +89,12 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
                         onChange={e => setPaperAuthority(e.target.value)}
                         fullWidth
                     />
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            value={dayjs(date)}
-                            onChange={newValue => {
-                                if (newValue && newValue.isValid()) {
-                                    setDate(newValue.toDate());
-                                }
-                            }}
-                            label="Roll Date"
-                        />
-                    </LocalizationProvider>
+                    <DateField
+                        label="Roll Date"
+                        value={date}
+                        onChange={setDate}
+                        mayBeEmpty
+                    />
                     <SystemSelect value={system} onChange={setSystem} />
                     <PaperSpeedFields value={speed} onChange={setSpeed} />
                 </Stack>

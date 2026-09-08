@@ -2,13 +2,10 @@ import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack, IconButton, Typography } from '@mui/material';
 import { Add, DeleteOutline, Save as SaveIcon } from '@mui/icons-material';
 import { ImportButton } from './ImportButton';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import dayjs from 'dayjs';
 import { EditionContext } from '../../providers/EditionContext';
 import { assignValue, CollationTolerance, Concept, Editor, EditorialRole, editorialRoles, systemOf, valueOf, welteT100 } from 'linked-rolls';
 import { toleranceOf } from '../../helpers/collationTolerance';
+import { DateField } from './DateField';
 import { ToleranceFields } from './ToleranceFields';
 
 interface EditMetadataProps {
@@ -41,7 +38,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   const [recordingDate, setRecordingDate] = useState<Date>(new Date());
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
-  const [publicationDate, setPublicationDate] = useState<Date | undefined>(new Date());
+  const [publicationDate, setPublicationDate] = useState<Date>(new Date());
   const [tolerance, setTolerance] = useState<CollationTolerance>(toleranceOf(edition));
   const [editors, setEditors] = useState<Editor[]>([]);
 
@@ -80,9 +77,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
       draft.license = selectedLicense?.url || license
       draft.base = baseURI
       draft.creation.publisher.name = publisherName
-      if (publicationDate) {
-        draft.creation.publicationDate = publicationDate
-      }
+      draft.creation.publicationDate = publicationDate
       draft.creation.collationTolerance = tolerance
       draft.creation.editors = editors
       draft.roll.catalogueNumber = catalogueNumber
@@ -135,15 +130,11 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
               value={publisherName}
               onChange={(e) => setPublisherName(e.target.value)}
             />
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                value={publicationDate ? dayjs(publicationDate) : null}
-                onChange={newValue => {
-                  setPublicationDate(newValue?.isValid() ? newValue.toDate() : undefined)
-                }}
-                label="Publication Date"
-              />
-            </LocalizationProvider>
+            <DateField
+              label="Publication Date"
+              value={publicationDate}
+              onChange={setPublicationDate}
+            />
             <ToleranceFields value={tolerance} onChange={setTolerance} />
           </Stack>
           <Stack sx={{ minWidth: 200 }} spacing={2}>
@@ -166,17 +157,11 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
                 </MenuItem>
               ))}
             </TextField>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                value={dayjs(recordingDate)}
-                onChange={newValue => {
-                  if (newValue && newValue.isValid()) {
-                    setRecordingDate(newValue.toDate());
-                  }
-                }}
-                label="Roll Date"
-              />
-            </LocalizationProvider>
+            <DateField
+              label="Roll Date"
+              value={recordingDate}
+              onChange={setRecordingDate}
+            />
 
             <TextField
               label="Recording Place"
