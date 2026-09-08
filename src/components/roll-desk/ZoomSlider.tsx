@@ -1,12 +1,21 @@
 import { Box, Slider } from "@mui/material"
 import { useEffect, useState } from "react"
-import { ZoomRange } from "../../hooks/useLiveZoom"
+import { zoomMarks, zoomRange } from "../../helpers/zoom"
 
-export const zoomRange: ZoomRange = { min: 0.1, max: 2.5 }
+/**
+ * The track carries the logarithm of the zoom, so that a doubling takes
+ * the same distance wherever it is taken. Laid out linearly, the range up
+ * to 250 % would sit in the first fifth of the track.
+ */
+const positionOf = (zoom: number) => Math.log(zoom)
+const zoomAt = (position: number) => Math.exp(position)
 
 const percentLabel = (zoom: number) => `${Math.round(zoom * 100)}%`
 
-const marks = [0.1, 0.5, 1, 1.5, 2, 2.5].map(value => ({ value, label: percentLabel(value) }))
+const marks = zoomMarks.map(zoom => ({ value: positionOf(zoom), label: percentLabel(zoom) }))
+
+/** One step of the track, which moves the zoom by about a percent. */
+const step = 0.01
 
 interface ZoomSliderProps {
     /** The zoom the roll is laid out at. The thumb follows it when it moves elsewhere. */
@@ -38,13 +47,16 @@ export const ZoomSlider = ({ zoom, onScrub, onSettle }: ZoomSliderProps) => {
         }}>
             <Slider
                 sx={{ minWidth: '20rem' }}
-                min={zoomRange.min}
-                max={zoomRange.max}
-                step={0.05}
-                value={value}
+                min={positionOf(zoomRange.min)}
+                max={positionOf(zoomRange.max)}
+                step={step}
+                value={positionOf(value)}
+                scale={zoomAt}
+                getAriaValueText={percentLabel}
                 onChange={(_, newValue) => {
-                    setValue(newValue as number)
-                    onScrub(newValue as number)
+                    const scrubbed = zoomAt(newValue as number)
+                    setValue(scrubbed)
+                    onScrub(scrubbed)
                 }}
                 onChangeCommitted={onSettle}
                 marks={marks}
