@@ -111,12 +111,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                         <Ribbon title='Symbol'>
                             <Button
                                 size='small'
-                                startIcon={<EditIcon />}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                size='small'
                                 startIcon={<Delete />}
                                 onClick={() => {
                                     apply(removeSymbols(versionId, selection.map(symbol => symbol.id)))
