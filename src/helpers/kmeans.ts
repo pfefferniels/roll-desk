@@ -50,7 +50,7 @@ export function kMeans2D(
     y: points[i].y,
   }));
 
-  let assignments: number[] = new Array(points.length).fill(0);
+  const assignments: number[] = new Array(points.length).fill(0);
 
   // --- 2. main loop ---
   for (let iter = 0; iter < maxIters; iter++) {

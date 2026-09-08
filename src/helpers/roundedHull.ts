@@ -21,8 +21,8 @@ const vecSum = function (pv1: number[], pv2: number[]) {
 
 // Returns the unit normal to the line segment from p0 to p1.
 const unitNormal = function (p0: Point, p1: Point) {
-  var n = [p0[1] - p1[1], p1[0] - p0[0]]
-  var nLength = Math.sqrt(n[0] * n[0] + n[1] * n[1])
+  const n = [p0[1] - p1[1], p1[0] - p0[0]]
+  const nLength = Math.sqrt(n[0] * n[0] + n[1] * n[1])
   return [n[0] / nLength, n[1] / nLength]
 }
 
@@ -55,7 +55,7 @@ const roundedHull2 = function (polyPoints: Point[], hullPadding: number) {
 }
 
 // Returns the SVG path data string representing the polygon, expanded and rounded.
-var roundedHullN = function (polyPoints: Point[], hullPadding: number) {
+const roundedHullN = function (polyPoints: Point[], hullPadding: number) {
 
   // Handle special cases
   if (!polyPoints || polyPoints.length < 1) return ''
