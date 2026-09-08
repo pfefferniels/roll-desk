@@ -1,7 +1,8 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { assignObject, clearSource, createVersion, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, stateSource, TrackerBar, trackerBarOf, welteLicensee, welteT100 } from "linked-rolls";
+import { assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, TrackerBar, trackerBarOf, welteLicensee, welteT100 } from "linked-rolls";
+import { paperAt, WELTE_SPOOL } from "welte-t100-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect, tempoStartOf } from "./ProductionFields";
@@ -21,8 +22,19 @@ interface Suggestion {
     source: string
 }
 
-const isRollFile = (file: File) => file.name.endsWith('.bar') || file.name.endsWith('.txt')
+export const isRollFile = (file: File) =>
+    file.name.endsWith('.bar') || file.name.endsWith('.txt') || file.name.endsWith('.mid')
 const isAnnFile = (file: File) => file.name.endsWith('.ann')
+
+/**
+ * Where the paper had run after so many seconds on a roll reader,
+ * which is what a Phillips e-roll times its perforations by. The
+ * take-up spool accelerates the paper as it fills, after Gottschewski;
+ * a copy cut for another system winds on a spool whose constants
+ * nobody has measured, so its places come out to scale and aligning it
+ * against another copy says by how much.
+ */
+export const placeOnPaper = (elapsed: Seconds): Millimeters => mm(paperAt(WELTE_SPOOL, elapsed) * 10)
 
 /**
  * The speed the upload suggests: the tempo in the .ann beside a
@@ -154,8 +166,15 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             else if (rollFile.name.endsWith('.txt')) {
                 rollCopy = readFromStanfordAton(await rollFile.text(), { system, bar: editionBar });
             }
+            else if (rollFile.name.endsWith('.mid')) {
+                rollCopy = readFromPhillipsEroll(await rollFile.arrayBuffer(), {
+                    system,
+                    bar: editionBar,
+                    placeAt: placeOnPaper
+                });
+            }
             else {
-                throw new Error('Expected a Stanford analysis (.txt) or a Spencer e-roll (.bar).')
+                throw new Error('Expected a Stanford analysis (.txt), a Spencer e-roll (.bar) or a Phillips e-roll (.mid).')
             }
 
             const paperSpeed = paperSpeedOf(speed)
@@ -169,7 +188,9 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : []
             }
 
-            rollCopy.readFrom = featureSourceOf(source)
+            // A reader that knows how it read the roll says so itself;
+            // the dialog only overrides that where the editor stated one.
+            rollCopy.readFrom = featureSourceOf(source) ?? rollCopy.readFrom
 
             apply(createVersion(siglum, rollCopy))
             onDone?.(rollCopy.id)
@@ -251,19 +272,26 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
                     <Divider flexItem />
                     <Button variant="outlined" component="label" startIcon={<MusicNote />}>
-                        {files.length > 0 ? files.map(file => file.name).join(', ') : 'Upload Roll Analysis (.txt) or E-Roll (.bar with its .ann)'}
+                        {files.length > 0
+                            ? files.map(file => file.name).join(', ')
+                            : 'Upload Roll Analysis (.txt), Spencer E-Roll (.bar with its .ann) or Phillips E-Roll (.mid)'}
                         <input
                             type="file"
                             hidden
                             multiple
-                            accept=".txt,.bar,.ann"
+                            accept=".txt,.bar,.ann,.mid"
                             onChange={(e) => {
                                 const chosen = Array.from(e.target.files ?? [])
                                 setFiles(chosen)
                                 // Spencer's Welte e-rolls are Licensee rolls
                                 if (chosen.some(file => file.name.endsWith('.bar'))) setSystem(welteLicensee)
-                                // both readers take a hole list somebody else measured on a scan
-                                if (chosen.some(isRollFile) && !sourceTyped) {
+                                const roll = chosen.find(isRollFile)
+                                // A hole list somebody measured on a scan. A
+                                // Phillips e-roll says for itself that it was
+                                // played on his reader, and says who read it,
+                                // so leaving the field empty keeps the more
+                                // it knows.
+                                if (roll && !roll.name.endsWith('.mid') && !sourceTyped) {
                                     setSource(current => ({ ...current, kind: 'analysis' }))
                                 }
                             }}
