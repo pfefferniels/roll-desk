@@ -76,6 +76,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
 }
 
 interface ConstraintsPanelProps {
+    /** The version whose constraints are shown, absent while none is chosen. */
     versionId?: string
     /** The problems of the whole edition. */
     problems: readonly ConstraintProblem[]

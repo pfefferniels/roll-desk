@@ -1,4 +1,4 @@
-import { useContext, useMemo, useRef } from "react"
+import { useContext, useMemo } from "react"
 import { AnySymbol, ConstraintProblem, EditionView, Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
 import { welteT100System, WelteT100Options } from "linked-rolls/welte-t100"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
@@ -68,8 +68,6 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     const { playSingleNote } = usePiano()
     const { view, viewOnly } = useContext(EditionContext)
     const { translateX, rollLength } = usePinchZoom()
-
-    const svgRef = useRef<SVGGElement>(null)
 
     // None of what follows depends on the zoom, and emulating a version
     // costs a few hundred milliseconds, so it must not be redone per frame.
@@ -147,7 +145,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     )
 
     return (
-        <g className='versionView' ref={svgRef}>
+        <g className='versionView'>
             {dynamics}
 
             <Ground x={0} y={-50} width={translateX(rollLength)} height={200 + 50} />

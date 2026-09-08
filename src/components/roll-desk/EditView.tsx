@@ -1,15 +1,18 @@
-import { Edit } from "linked-rolls";
+import { Edit, EditType } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
-import { MouseEventHandler, useContext, useMemo, useState } from "react";
+import { MouseEventHandler, useContext } from "react";
 import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
-import { boxOf, Translation } from "../../helpers/rollGeometry";
+import { Box, boxOf, Translation } from "../../helpers/rollGeometry";
 
 export type { Translation }
+
+const insertionFill = '#aceebb'
+const deletionFill = '#fb7f78ff'
 
 export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
     const dim = editionView.dimensionOf(symbol)
@@ -18,15 +21,78 @@ export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, trans
     return boxOf(dim, translation)
 }
 
-export const getEditBBoxes = (edit: Edit, editionView: EditionView, translation: Translation) => {
-    const insertionBBoxes = edit.insert?.map(s => getSymbolBBox(s, editionView, translation)) || [];
-    const deletionBBoxes = (edit.delete ?? [])
-        .map(symbolId => editionView.get<AnySymbol>(symbolId))
-        .filter(s => !!s)
-        .map(s => getSymbolBBox(s, editionView, translation))
-        .filter(bbox => !!bbox);
+interface EditBoxes {
+    insertions: Box[]
+    deletions: Box[]
+}
 
-    return [...insertionBBoxes, ...deletionBBoxes]
+/** Where an edit is drawn, the boxes it inserts apart from the ones it deletes. */
+export const editBoxes = (edit: Edit, editionView: EditionView, translation: Translation): EditBoxes => ({
+    insertions: (edit.insert ?? [])
+        .map(symbol => getSymbolBBox(symbol, editionView, translation))
+        .filter(bbox => !!bbox),
+    deletions: (edit.delete ?? [])
+        .map(symbolId => editionView.get<AnySymbol>(symbolId))
+        .filter(symbol => !!symbol)
+        .map(symbol => getSymbolBBox(symbol, editionView, translation))
+        .filter(bbox => !!bbox)
+})
+
+export const getEditBBoxes = (edit: Edit, editionView: EditionView, translation: Translation) => {
+    const { insertions, deletions } = editBoxes(edit, editionView, translation)
+    return [...insertions, ...deletions]
+}
+
+/** The word written under an edit's insertions, where its type calls for one. */
+export const editTypeLabel = (editType: EditType | undefined): string | undefined => {
+    if (!editType) return undefined
+    if (editType === 'additional-accent') return '>'
+    if (editType === 'correct-error') return 'fix'
+    // a shift is already told by the arrow from the old place to the new one
+    if (editType === 'shift') return undefined
+    return editType.replaceAll('-', ' ')
+}
+
+/** An edit that inserts as well as deletes draws two hulls, so each needs its own id. */
+export const hullId = (edit: Edit, part: 'insert' | 'delete'): string =>
+    (edit.insert?.length && edit.delete?.length)
+        ? `${edit.id}-${part}`
+        : edit.id
+
+interface EditHullProps {
+    id: string
+    boxes: Box[]
+    fill: string
+    label?: string
+    onClick?: MouseEventHandler
+}
+
+/** The hull around one side of an edit, the inserted symbols or the deleted ones. */
+const EditHull = ({ id, boxes, fill, label, onClick }: EditHullProps) => {
+    const { points, hull } = getHull(boxes)
+    const bbox = getBoundingBox(points)
+
+    return (
+        <Hull
+            id={id}
+            hull={hull}
+            fillOpacity={0.8}
+            fill={fill}
+            onClick={e => onClick?.(e)}
+            label={label && (
+                <text
+                    x={bbox.x + 8}
+                    y={bbox.y + bbox.height + 8}
+                    fontSize={12}
+                    fill='black'
+                    style={{ pointerEvents: 'none' }}
+                    fontWeight='bold'
+                >
+                    {label}
+                </text>
+            )}
+        />
+    )
 }
 
 interface EditViewProps {
@@ -36,133 +102,62 @@ interface EditViewProps {
 
 export const EditView = ({ edit, onClick }: EditViewProps) => {
     const { view } = useContext(EditionContext)
-    const translation = usePinchZoom();
+    const translation = usePinchZoom()
 
     if (!view) return null
 
-    const hulls = []
+    const { insertions, deletions } = editBoxes(edit, view, translation)
+    const inserted = edit.insert?.length ?? 0
+    const deleted = edit.delete?.length ?? 0
 
-    const insertionBBoxes = (edit.insert ?? [])
-        .map(s => getSymbolBBox(s, view, translation))
-        .filter(bbox => !!bbox)
-    const deletionBBoxes = (edit.delete ?? [])
-        .map(symbolId => view.get<AnySymbol>(symbolId))
-        .filter(s => !!s)
-        .map(s => getSymbolBBox(s, view, translation))
-        .filter(bbox => !!bbox);
-    // console.timeEnd('edit view')
+    // one symbol put in the place of one other: the arrow alone says it
+    if (inserted === 1 && deleted === 1) {
+        const [from] = deletions
+        const [to] = insertions
+        if (!from || !to) return null
 
-    // draw overall hull only when there are both, insertions
-    // as well as deletions
-    if (edit.insert?.length && edit.delete?.length) {
-        if (edit.insert.length === 1 && edit.delete.length === 1) {
-            // do not draw any hull, only the arrow
-            const deletedSymbol = view.get<AnySymbol>(edit.delete[0])
-            if (!deletedSymbol) return null
-
-            const fromBox = getSymbolBBox(deletedSymbol, view, translation)
-            const toBox = getSymbolBBox(edit.insert[0], view, translation);
-            if (!fromBox || !toBox) return null
-
-            fromBox.width = 2
-            toBox.width = 2
-
-            return (
-                <Arrow
-                    from={fromBox}
-                    to={toBox}
-                    onClick={onClick}
-                    svgProps={{ id: edit.id }}
-                />
-            )
-        }
-
-        const deletionBBox = getBoundingBox(getHull(deletionBBoxes).points);
-        const insertionBBox = getBoundingBox(getHull(insertionBBoxes).points);
-
-        hulls.push(
+        return (
             <Arrow
-                key={`${edit.id}-arrow`}
-                from={deletionBBox}
-                to={insertionBBox}
+                from={{ ...from, width: 2 }}
+                to={{ ...to, width: 2 }}
                 onClick={onClick}
                 svgProps={{ id: edit.id }}
             />
         )
     }
 
-    // draw hull for insertions
-    if (edit.insert?.length) {
-        const { points, hull } = getHull(insertionBBoxes);
-        const bbox = getBoundingBox(points);
-        const id = edit.delete?.length
-            ? `${edit.id}-insert` :
-            edit.id
-        let typeStr: string | undefined = undefined
-        if (edit.editType) {
-            if (edit.editType === 'additional-accent') {
-                typeStr = '>'
-            }
-            else if (edit.editType === 'correct-error') {
-                typeStr = `fix`
-            }
-            else if (edit.editType === 'shift') {
-            }
-            else {
-                typeStr = `${edit.editType.replaceAll('-', ' ')}`
-            }
-        }
-
-        hulls.push(
-            <Hull
-                key={`${edit.id}-insert`}
-                id={id}
-                hull={hull}
-                fillOpacity={0.8}
-                fill='#aceebb'
-                onClick={(e) => {
-                    onClick && onClick(e)
-                }}
-                label={
-                    <text
-                        x={bbox.x + 8}
-                        y={bbox.y + bbox.height + 8}
-                        fontSize={12}
-                        fill='black'
-                        style={{ pointerEvents: 'none' }}
-                        fontWeight='bold'
-                    >
-                        {typeStr}
-                    </text>
-                }
-            />
-        )
-    }
-
-    // draw hull for deletions
-    if (edit.delete?.length) {
-        const { points, hull } = getHull(deletionBBoxes);
-        const bbox = getBoundingBox(points);
-        const id = edit.insert?.length
-            ? `${edit.id}-delete` :
-            edit.id
-
-
-        hulls.push(
-            <Hull
-                key={`${edit.id}-delete`}
-                id={id}
-                hull={hull}
-                fillOpacity={0.8}
-                fill='#fb7f78ff'
-                onClick={(e) => onClick && onClick(e)}
-            />
-        )
-    }
+    // an arrow between the two hulls only where there are both
+    const arrow = (inserted > 0 && deleted > 0) && (
+        <Arrow
+            from={getBoundingBox(getHull(deletions).points)}
+            to={getBoundingBox(getHull(insertions).points)}
+            onClick={onClick}
+            svgProps={{ id: edit.id }}
+        />
+    )
 
     return (
         <g>
-            {hulls}
+            {arrow}
+
+            {inserted > 0 && (
+                <EditHull
+                    id={hullId(edit, 'insert')}
+                    boxes={insertions}
+                    fill={insertionFill}
+                    label={editTypeLabel(edit.editType)}
+                    onClick={onClick}
+                />
+            )}
+
+            {deleted > 0 && (
+                <EditHull
+                    id={hullId(edit, 'delete')}
+                    boxes={deletions}
+                    fill={deletionFill}
+                    onClick={onClick}
+                />
+            )}
         </g>
     );
 }
