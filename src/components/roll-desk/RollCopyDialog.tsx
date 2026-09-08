@@ -1,10 +1,12 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { assignObject, createVersion, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, TrackerBar, trackerBarOf, welteLicensee, welteT100 } from "linked-rolls";
+import { assignObject, clearSource, createVersion, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, stateSource, TrackerBar, trackerBarOf, welteLicensee, welteT100 } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect, tempoStartOf } from "./ProductionFields";
+import { featureSourceOf, noSource, SourceFields, SourceInput, sourceInputOf } from "./SourceFields";
+import { ReservationList } from "./Reservations";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -72,6 +74,8 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
     const [speedTyped, setSpeedTyped] = useState(false)
     const [suggestion, setSuggestion] = useState<Suggestion>()
+    const [source, setSource] = useState<SourceInput>(noSource)
+    const [sourceTyped, setSourceTyped] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string>()
 
@@ -79,6 +83,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
         if (!copy) return
         setKeeper(copy.keeper.name)
         setKeeperAuthority(copy.keeper.sameAs[0] ?? '')
+        setSource(sourceInputOf(copy.readFrom))
     }, [copy])
 
     useEffect(() => {
@@ -91,6 +96,8 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             setSpeed(noSpeed)
             setSpeedTyped(false)
             setSuggestion(undefined)
+            setSource(sourceInputOf(copy?.readFrom))
+            setSourceTyped(false)
             setError(undefined)
             setLoading(false)
         }
@@ -110,6 +117,16 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     const handleUpload = async () => {
         if (!edition) return
+
+        // A copy already in the edition can have its source stated
+        // without reading its file in again.
+        if (copy && !rollFile) {
+            const stated = featureSourceOf(source)
+            apply(stated ? stateSource(copy.id, stated) : clearSource(copy.id))
+            onDone?.(copy.id)
+            onClose()
+            return
+        }
 
         if (!rollFile) {
             setError('Please select a roll file to upload.')
@@ -151,6 +168,8 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 name: keeper.trim(),
                 sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : []
             }
+
+            rollCopy.readFrom = featureSourceOf(source)
 
             apply(createVersion(siglum, rollCopy))
             onDone?.(rollCopy.id)
@@ -220,6 +239,17 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                     )}
 
                     <Divider flexItem />
+                    <Typography>Source of the Features</Typography>
+                    <SourceFields
+                        value={source}
+                        onChange={input => {
+                            setSource(input)
+                            setSourceTyped(true)
+                        }}
+                    />
+                    {copy && <ReservationList copy={{ ...copy, readFrom: featureSourceOf(source) }} />}
+
+                    <Divider flexItem />
                     <Button variant="outlined" component="label" startIcon={<MusicNote />}>
                         {files.length > 0 ? files.map(file => file.name).join(', ') : 'Upload Roll Analysis (.txt) or E-Roll (.bar with its .ann)'}
                         <input
@@ -232,6 +262,10 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                                 setFiles(chosen)
                                 // Spencer's Welte e-rolls are Licensee rolls
                                 if (chosen.some(file => file.name.endsWith('.bar'))) setSystem(welteLicensee)
+                                // both readers take a hole list somebody else measured on a scan
+                                if (chosen.some(isRollFile) && !sourceTyped) {
+                                    setSource(current => ({ ...current, kind: 'analysis' }))
+                                }
                             }}
                         />
                     </Button>

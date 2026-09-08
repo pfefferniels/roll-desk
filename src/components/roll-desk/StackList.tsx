@@ -4,6 +4,7 @@ import { PaperStretch } from "linked-rolls"
 import { useContext, useState } from "react"
 import { ColorDialog } from "./ColorDialog"
 import { Arguable } from "./Arguable"
+import { ReservationMark } from "./Reservations"
 import { EditionContext } from "../../providers/EditionContext"
 import { valueOf } from "linked-rolls"
 
@@ -88,6 +89,8 @@ export const LayerStack = ({ layerInfos, activeId, onChange, onClick }: LayerSta
                                         secondary={
                                             <>
                                                 {copy.keeper.name}
+                                                {' '}
+                                                <ReservationMark copy={copy} />
                                                 <br />
                                                 {copy.conditions.map((c, idx) => {
                                                     return (
