@@ -6,6 +6,8 @@ import { EditionContext } from '../../providers/EditionContext';
 import { useSnackbar } from '../../providers/SnackbarContext';
 import { problemCount } from '../../helpers/constraints';
 
+const jsonExtensions = new Set(['json', 'jsonld'])
+
 interface ImportButtonProps {
     outlined?: boolean
 }
@@ -37,7 +39,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
             const fileContent = e.target?.result as string;
 
             try {
-                if (fileExtension === 'json') {
+                if (fileExtension && jsonExtensions.has(fileExtension)) {
                     const jsonDoc = JSON.parse(fileContent);
                     const success = validate(jsonDoc);
                     if (success) {
@@ -48,7 +50,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
                         setPending(jsonDoc)
                     }
                 } else {
-                    console.log("Unsupported file format. Please select a JSON file.");
+                    console.log("Unsupported file format. Please select a JSON or JSON-LD file.");
                     return;
                 }
             } catch (error) {
@@ -62,7 +64,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
     return (
         <>
             <input
-                accept=".xml, .json"
+                accept=".json,.jsonld"
                 style={{ display: 'none' }}
                 id="import-file"
                 type="file"
