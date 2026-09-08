@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { rollGeometry } from './rollGeometry'
-import { track, welteT100 } from 'linked-rolls'
+import { atLeastVisible, evenGeometry, rollGeometry } from './rollGeometry'
+import { track, welteLicensee, welteT100 } from 'linked-rolls'
 
 const lanes = { note: 4, expression: 7 }
 const spacing = 40
@@ -76,5 +76,47 @@ describe('roll geometry', () => {
         const band = geometry.areaBand(notes)
         expect(band.y).toEqual(geometry.trackToY(track(90)))
         expect(band.height).toEqual(80 * lanes.note)
+    })
+})
+
+describe('the bar in even lanes', () => {
+    const even = evenGeometry(200)
+
+    it('divides the drawing among the tracks and no further', () => {
+        expect(even.height).toEqual(200)
+        expect(even.laneHeight(track(1))).toEqual(2)
+        expect(even.laneHeight(track(welteT100.trackCount))).toEqual(2)
+    })
+
+    /**
+     * The bug this guards against: a bar laid out as though its tracks were
+     * numbered from zero hangs the last of them a lane past the bottom edge.
+     */
+    it('keeps both ends of the bar inside the drawing', () => {
+        expect(even.trackToY(track(welteT100.trackCount))).toEqual(0)
+        expect(even.bandOf({ from: track(1) })).toEqual({ y: 198, height: 2 })
+    })
+
+    it('gives a run of tracks a lane for each of them', () => {
+        expect(even.bandOf({ from: track(11), to: track(13) })).toEqual({ y: 174, height: 6 })
+    })
+
+    it('divides the same drawing among the tracks of another bar', () => {
+        const licensee = evenGeometry(200, welteLicensee)
+        expect(licensee.height).toEqual(200)
+        expect(licensee.trackToY(track(welteLicensee.trackCount))).toEqual(0)
+        expect(licensee.laneHeight(track(1))).toBeCloseTo(200 / 98, 9)
+    })
+})
+
+describe('a box drawn too small to see', () => {
+    it('is widened to half a pixel each way', () => {
+        expect(atLeastVisible({ x: 3, y: 4, width: 0, height: 0.2 }))
+            .toEqual({ x: 3, y: 4, width: 0.5, height: 0.5 })
+    })
+
+    it('leaves a box that is already there alone', () => {
+        const box = { x: 3, y: 4, width: 8, height: 2 }
+        expect(atLeastVisible(box)).toEqual(box)
     })
 })

@@ -1,8 +1,8 @@
-import { useContext, useEffect, useRef, useState } from 'react'
-import { RollCopy } from 'linked-rolls'
+import { useEffect, useRef, useState } from 'react'
+import { RollCopy, TrackerBar } from 'linked-rolls'
 import { valueOf } from 'linked-rolls'
 import { Arguable } from './Arguable'
-import { EditionContext } from '../../providers/EditionContext'
+import { atLeastVisible, boxOf, evenGeometry, Translation } from '../../helpers/rollGeometry'
 
 interface SourcePreviewProps {
     copy: RollCopy
@@ -10,9 +10,11 @@ interface SourcePreviewProps {
     active: boolean
     onClick: () => void
     globalBounds: { minX: number, maxX: number }
+    /** The bar the tracks are read against, which fixes how the height is divided. */
+    bar: TrackerBar
 }
 
-export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds }: SourcePreviewProps) => {
+export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, bar }: SourcePreviewProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [hovered, setHovered] = useState(false)
@@ -30,8 +32,8 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds }
         if (!ctx) return
 
         ctx.scale(dpr, dpr)
-        drawPreview(ctx, rect.width, rect.height, copy, globalBounds, active)
-    }, [copy, globalBounds, active])
+        drawPreview(ctx, rect.width, rect.height, copy, globalBounds, active, bar)
+    }, [copy, globalBounds, active, bar])
 
     useEffect(() => {
         const container = containerRef.current
@@ -50,12 +52,12 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds }
             if (!ctx) return
 
             ctx.scale(dpr, dpr)
-            drawPreview(ctx, rect.width, rect.height, copy, globalBounds, active)
+            drawPreview(ctx, rect.width, rect.height, copy, globalBounds, active, bar)
         })
 
         observer.observe(container)
         return () => observer.disconnect()
-    }, [copy, globalBounds, active])
+    }, [copy, globalBounds, active, bar])
 
     const date = copy.production?.date
         ? (
@@ -111,7 +113,8 @@ function drawPreview(
     h: number,
     copy: RollCopy,
     globalBounds: { minX: number, maxX: number },
-    active: boolean
+    active: boolean,
+    bar: TrackerBar
 ) {
     ctx.clearRect(0, 0, w, h)
 
@@ -152,18 +155,12 @@ function drawPreview(
     ctx.lineWidth = active ? 1.5 : 1
     ctx.strokeRect(sx(cMinX), pad, sx(cMaxX) - sx(cMinX), drawH)
 
+    const translation: Translation = { translateX: sx, bandOf: evenGeometry(drawH, bar).bandOf }
+
     // Features as tiny rects
     ctx.fillStyle = '#777'
-    for (const f of copy.features) {
-        const x = sx(f.horizontal.from)
-        const fw = Math.max(sx(f.horizontal.to) - sx(f.horizontal.from), 0.5)
-        const y = pad + (f.vertical.from / 99) * drawH
-        let fh: number
-        if (f.vertical.to !== undefined) {
-            fh = ((f.vertical.to - f.vertical.from) / 99) * drawH
-        } else {
-            fh = (1 / 99) * drawH
-        }
-        ctx.fillRect(x, y, fw, Math.max(Math.abs(fh), 0.5))
-    }
+    copy.features.forEach(f => {
+        const { x, y, width, height } = atLeastVisible(boxOf(f, translation))
+        ctx.fillRect(x, pad + y, width, height)
+    })
 }

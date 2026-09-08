@@ -58,6 +58,13 @@ export const boxOf = (
     ...bandOf(vertical)
 })
 
+/** A box drawn no thinner than half a pixel, so that the smallest feature still shows. */
+export const atLeastVisible = (box: Box): Box => ({
+    ...box,
+    width: Math.max(box.width, 0.5),
+    height: Math.max(box.height, 0.5)
+})
+
 const heightOfRole = (role: TrackRole, lanes: LaneHeights) =>
     role === 'note' ? lanes.note : lanes.expression
 
@@ -135,4 +142,14 @@ export const rollGeometry = (
         roleOf: (position: Track) => bar.roleOf(position),
         areas: bar.areas
     }
+}
+
+/**
+ * The whole bar in lanes of one height, filling the given drawing. This is
+ * what a preview wants: too small to keep the blocks apart, and the same way
+ * up as the desk.
+ */
+export const evenGeometry = (height: number, bar: TrackerBar = welteT100): RollGeometry => {
+    const lane = height / bar.trackCount
+    return rollGeometry({ note: lane, expression: lane }, 0, bar)
 }

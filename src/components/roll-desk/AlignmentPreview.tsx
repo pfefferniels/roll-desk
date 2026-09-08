@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
-import { AnyFeature, Millimeters, RollCopy, TrackerBar } from "linked-rolls"
+import { AnyFeature, Millimeters, mm, RollCopy, TrackerBar } from "linked-rolls"
+import { atLeastVisible, boxOf, evenGeometry, Translation } from "../../helpers/rollGeometry"
 
 /** A stretch of the shared horizontal axis the preview is drawn on. */
 export interface Span {
@@ -102,25 +103,7 @@ export const drawAlignmentPreview = (
 
     const sx = (x: number) => pad + ((x - totalMin) / totalRange) * drawW
 
-    /**
-     * How much of the height a number of tracks takes up. The bar is laid out
-     * as though its tracks were numbered from zero, so the last of them reaches
-     * a lane past the bottom edge.
-     */
-    const heightOfTracks = (tracks: number) => (tracks / (bar.trackCount - 1)) * drawH
-
-    /** At least half a pixel each way, so that a short or single-track feature stays visible. */
-    const rectOf = (f: AnyFeature, place: Placement) => {
-        const from = sx(place(f.horizontal.from))
-        const to = sx(place(f.horizontal.to))
-        const tracks = f.vertical.to !== undefined ? f.vertical.to - f.vertical.from : 1
-        return {
-            x: from,
-            y: pad + heightOfTracks(f.vertical.from),
-            width: Math.max(to - from, 0.5),
-            height: Math.max(Math.abs(heightOfTracks(tracks)), 0.5)
-        }
-    }
+    const { bandOf } = evenGeometry(drawH, bar)
 
     const drawLayer = ({ features, place, fill, outline, span }: MeasuredLayer) => {
         ctx.setLineDash(outline.dash)
@@ -128,10 +111,12 @@ export const drawAlignmentPreview = (
         ctx.lineWidth = outline.width
         if (span) ctx.strokeRect(sx(span.from), pad, sx(span.to) - sx(span.from), drawH)
 
+        const translation: Translation = { translateX: x => sx(place(mm(x))), bandOf }
+
         ctx.fillStyle = fill
         features.forEach(f => {
-            const { x, y, width, height } = rectOf(f, place)
-            ctx.fillRect(x, y, width, height)
+            const { x, y, width, height } = atLeastVisible(boxOf(f, translation))
+            ctx.fillRect(x, pad + y, width, height)
         })
     }
 
