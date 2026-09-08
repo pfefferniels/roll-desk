@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
     // `public/js` is build output from @ryohey/wavelet, copied in and not ours to lint.
-    { ignores: ['build', 'public/js'] },
+    // `build` and `video` are gitignored, the latter holding the video pipeline's scripts.
+    { ignores: ['build', 'public/js', 'video'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     react.configs.flat.recommended,
