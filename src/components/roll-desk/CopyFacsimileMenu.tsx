@@ -1,17 +1,18 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material"
-import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
+import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
 import { selectionAsIIIFLink } from "./RollGrid"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
-import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, SelectAll } from "@mui/icons-material"
+import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, GroupAdd, SelectAll } from "@mui/icons-material"
 import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 import { FeatureConditionDialog } from "./FeatureConditionDialog"
+import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
 
 export type FacsimileSelection = EventDimension | AnyFeature
 
@@ -57,6 +58,8 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     if (!copy) return null
 
     const carriedAlone = symbolsCarriedOnlyBy(edition, copyId).length
+    const features = selection.filter(isRollFeature)
+    const obstacle = mergeObstacle(features)
 
     return (
         <>
@@ -130,7 +133,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
                             <Button
                                 onClick={() => {
-                                    apply(removeFeatures(copy.id, selection.filter(isRollFeature).map(f => f.id)))
+                                    apply(removeFeatures(copy.id, features.map(f => f.id)))
                                     setSelection([])
                                 }}
                                 size='small'
@@ -138,6 +141,21 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                             >
                                 Remove
                             </Button>
+                            <Tooltip title={obstacle ? mergeObstacleNote(obstacle) : ''}>
+                                <span>
+                                    <Button
+                                        onClick={() => {
+                                            apply(mergeFeatures(copy.id, features.map(f => f.id)))
+                                            setSelection([])
+                                        }}
+                                        disabled={obstacle !== undefined}
+                                        size='small'
+                                        startIcon={<GroupAdd />}
+                                    >
+                                        Merge
+                                    </Button>
+                                </span>
+                            </Tooltip>
                             <Button
                                 onClick={() => setReportFeatureCondition(true)}
                                 size='small'
