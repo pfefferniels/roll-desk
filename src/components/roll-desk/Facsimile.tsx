@@ -1,8 +1,9 @@
-import { calibrationOf, columnsOf, RollCopy, TrackArea } from "linked-rolls"
+import { columnsOf, RollCopy, TrackArea } from "linked-rolls"
 import { useEffect, useRef, useState } from "react"
 import useIsVisible from "../../hooks/useIsVisible"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { FacsimileBlend } from "../../helpers/facsimileBlend"
+import { drawableCalibrationOf } from "../../helpers/scanCalibration"
 import {
     betweenBoxes,
     betweenPlacements,
@@ -87,7 +88,7 @@ interface FacsimileProps {
 export const Facsimile = ({ copy, blend }: FacsimileProps) => {
     const geometry = usePinchZoom()
     const service = useImageService(copy.scan, blend.facsimile > 0)
-    const calibration = calibrationOf(copy)
+    const calibration = drawableCalibrationOf(copy)
 
     if (!service || !calibration || blend.facsimile === 0) return null
 

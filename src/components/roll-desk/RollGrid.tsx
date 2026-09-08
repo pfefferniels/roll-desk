@@ -2,10 +2,11 @@ import { useRef, useState } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { EventDimension } from './RollDesk.tsx';
-import { calibrationOf, columnsOf, Millimeters, RollCopy, Track, track, welteT100, WithId } from 'linked-rolls';
+import { columnsOf, mm, Millimeters, RollCopy, Track, track, welteT100, WithId } from 'linked-rolls';
 import { rollPointAt } from '../../helpers/pointer.ts';
 import { boxOf } from '../../helpers/rollGeometry.ts';
 import { Drag, useDrag } from '../../hooks/useDrag.ts';
+import { drawableCalibrationOf } from '../../helpers/scanCalibration';
 
 interface RollGridProps {
     width: number;
@@ -118,7 +119,7 @@ const mmToPixels = (mm: number, dpi: number): number => {
  */
 export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) => {
     const dpi = 300.25
-    const calibration = calibrationOf(copy)
+    const calibration = drawableCalibrationOf(copy)
     if (!calibration) return undefined
 
     const scale = copy.measurements.scale ?? 1

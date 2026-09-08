@@ -6,6 +6,7 @@ import { EditionContext } from '../../providers/EditionContext';
 import { useSnackbar } from '../../providers/SnackbarContext';
 import { problemCount } from '../../helpers/constraints';
 import { checkedDocument } from '../../helpers/importEdition';
+import { refusalToDrawScans } from '../../helpers/scanCalibration';
 
 const jsonExtensions = new Set(['json', 'jsonld'])
 
@@ -20,13 +21,21 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
     const [errors, setErrors] = useState<string[]>()
     const [pending, setPending] = useState<any>()
 
-    /** Takes the document as the edition and says whether its constraints hold. */
+    /**
+     * Takes the document as the edition and says what it could not take
+     * at face value: scans it cannot place, and constraints that fail.
+     */
     const adopt = useCallback((document: Parameters<typeof importJsonLd>[0]) => {
         const edition = importJsonLd(document)
         setEdition(edition)
 
         const count = constraintProblems(new EditionView(edition)).length
-        if (count > 0) setMessage(`${problemCount(count)}, see the Constraints tab`)
+        const notices = [
+            refusalToDrawScans(edition.copies),
+            count > 0 ? `${problemCount(count)}, see the Constraints tab` : undefined
+        ].flatMap(notice => notice ? [notice] : [])
+
+        if (notices.length > 0) setMessage(notices.join(' '))
     }, [setEdition, setMessage])
 
     const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
