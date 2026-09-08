@@ -41,7 +41,7 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   const [recordingDate, setRecordingDate] = useState<Date>(new Date());
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
-  const [publicationDate, setPublicationDate] = useState<Date>(new Date());
+  const [publicationDate, setPublicationDate] = useState<Date | undefined>(new Date());
   const [tolerance, setTolerance] = useState<CollationTolerance>(toleranceOf(edition));
   const [editors, setEditors] = useState<Editor[]>([]);
 
@@ -78,7 +78,9 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
       draft.license = selectedLicense?.url || license
       draft.base = baseURI
       draft.creation.publisher.name = publisherName
-      draft.creation.publicationDate = publicationDate
+      if (publicationDate) {
+        draft.creation.publicationDate = publicationDate
+      }
       draft.creation.collationTolerance = tolerance
       draft.creation.editors = editors
       draft.roll.catalogueNumber = catalogueNumber
@@ -131,12 +133,15 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
               value={publisherName}
               onChange={(e) => setPublisherName(e.target.value)}
             />
-            <TextField
-              label="Publication Date"
-              fullWidth
-              value={publicationDate}
-              onChange={e => setPublicationDate(new Date(e.target.value))}
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                value={publicationDate ? dayjs(publicationDate) : null}
+                onChange={newValue => {
+                  setPublicationDate(newValue?.isValid() ? newValue.toDate() : undefined)
+                }}
+                label="Publication Date"
+              />
+            </LocalizationProvider>
             <ToleranceFields value={tolerance} onChange={setTolerance} />
           </Stack>
           <Stack sx={{ minWidth: 200 }} spacing={2}>
