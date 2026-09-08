@@ -1,14 +1,12 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from "react"
+import { RefObject } from "react"
 import { Millimeters } from "linked-rolls"
-import { rollXAt } from "../helpers/pointer"
+import { rollPointAt } from "../helpers/pointer"
 import { usePinchZoom } from "./usePinchZoom"
+import { Drag, useDrag } from "./useDrag"
 import type { RollRange } from "../providers/SelectionContext"
 
 /** A drag running along the roll, both ends measured from its start. */
-export interface RollDrag {
-    from: Millimeters
-    to: Millimeters
-}
+export type RollDrag = Drag<Millimeters>
 
 /** How far the pointer may travel and still read as a click, in screen pixels. */
 const clickSlop = 4
@@ -35,51 +33,9 @@ export const useRollDrag = (
     onDone?: (drag: RollDrag) => void
 ): RollDrag | undefined => {
     const { zoom } = usePinchZoom()
-    const [drag, setDrag] = useState<RollDrag>()
 
-    const done = useRef(onDone)
-    useEffect(() => { done.current = onDone })
-
-    const rollX = useCallback((event: MouseEvent) => {
+    return useDrag(element, event => {
         const target = element.current
-        return target ? rollXAt(target, event.clientX, zoom) : undefined
-    }, [element, zoom])
-
-    useEffect(() => {
-        const target = element.current
-        if (!target) return
-
-        const listeners = new AbortController()
-        const { signal } = listeners
-
-        const begin = (event: MouseEvent) => {
-            const from = rollX(event)
-            if (from === undefined) return
-
-            const follow = (event: MouseEvent) => {
-                const to = rollX(event)
-                if (to !== undefined) setDrag({ from, to })
-            }
-
-            const release = (event: MouseEvent) => {
-                window.removeEventListener('mousemove', follow)
-                window.removeEventListener('mouseup', release)
-                setDrag(undefined)
-                done.current?.({ from, to: rollX(event) ?? from })
-            }
-
-            setDrag({ from, to: from })
-            window.addEventListener('mousemove', follow, { signal })
-            window.addEventListener('mouseup', release, { signal })
-        }
-
-        target.addEventListener('mousedown', begin, { signal })
-
-        return () => {
-            listeners.abort()
-            setDrag(undefined)
-        }
-    }, [element, rollX])
-
-    return drag
+        return target ? rollPointAt(target, event, zoom)?.x : undefined
+    }, onDone)
 }

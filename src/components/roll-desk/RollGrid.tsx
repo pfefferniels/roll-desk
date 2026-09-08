@@ -1,8 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { EventDimension } from './RollDesk.tsx';
-import { calibrationOf, columnsOf, mm, RollCopy, track, welteT100, WithId } from 'linked-rolls';
+import { calibrationOf, columnsOf, Millimeters, RollCopy, Track, track, welteT100, WithId } from 'linked-rolls';
+import { rollPointAt } from '../../helpers/pointer.ts';
+import { boxOf } from '../../helpers/rollGeometry.ts';
+import { Drag, useDrag } from '../../hooks/useDrag.ts';
 
 interface RollGridProps {
     width: number;
@@ -10,82 +13,57 @@ interface RollGridProps {
     selectionMode: boolean
 }
 
+/** A corner of a rubber band: along the roll in millimetres, across it in tracks. */
+interface Corner {
+    x: Millimeters
+    track: Track
+}
+
+/** What a rubber band encloses, or nothing while it still sits on its corner. */
+export const selectionOf = ({ from, to }: Drag<Corner>): EventDimension | undefined => {
+    if (from.x === to.x && from.track === to.track) return undefined
+
+    const [left, right] = from.x < to.x ? [from.x, to.x] : [to.x, from.x]
+    const [lower, upper] = from.track < to.track ? [from.track, to.track] : [to.track, from.track]
+
+    return {
+        horizontal: { from: left, to: right, unit: 'mm' },
+        vertical: { from: lower, to: upper, unit: 'track' }
+    }
+}
+
 export const RollGrid = ({
     width,
     selectionMode,
     onSelectionDone,
 }: RollGridProps) => {
-    const { zoom, yToTrack, bandOf, trackToY, height } = usePinchZoom();
+    const geometry = usePinchZoom();
+    const { zoom, yToTrack, trackToY, height } = geometry;
 
-    const [rect, setRect] = useState<EventDimension & WithId>();
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+    const gridRef = useRef<SVGGElement>(null);
+    const [selection, setSelection] = useState<EventDimension & WithId>();
 
-    const handleMouseDown = useCallback((e: MouseEvent) => {
-        if (!selectionMode) return
+    /** Where a pointer sits on the grid, and nothing where no lane does. */
+    const cornerAt = (event: MouseEvent): Corner | undefined => {
+        const grid = gridRef.current;
+        if (!grid || !selectionMode) return undefined;
 
-        const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
-        const offsetX = e.clientX - rect.left
-        const offsetY = e.clientY - rect.top;
+        const point = rollPointAt(grid, event, zoom);
+        if (!point) return undefined;
 
-        setRect(undefined);
-        setStartPoint({ x: offsetX, y: offsetY });
-        setIsDrawing(true);
-    }, [selectionMode]);
+        const position = yToTrack(point.y);
+        return position === 'gap' ? undefined : { x: point.x, track: position };
+    };
 
-    const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (!isDrawing || !startPoint) return;
+    const drag = useDrag(gridRef, cornerAt, finished => {
+        const drawn = selectionOf(finished);
+        const selected = drawn && { ...drawn, id: v4() };
 
-        const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
-        const offsetX = e.clientX - rect.left
-        const offsetY = e.clientY - rect.top
+        setSelection(selected);
+        onSelectionDone(selected);
+    });
 
-        const from = yToTrack(startPoint.y);
-        const to = yToTrack(offsetY);
-
-        // Ignore if the selection was made in the gap
-        if (from === 'gap' || to === 'gap') return;
-
-        setRect({
-            id: v4(),
-            horizontal: {
-                from: mm(Math.min(startPoint.x, offsetX) / zoom),
-                to: mm(Math.max(startPoint.x, offsetX) / zoom),
-                unit: 'mm'
-            },
-            vertical: {
-                from: from < to ? from : to,
-                to: from < to ? to : from,
-                unit: 'track'
-            }
-        });
-    }, [isDrawing, startPoint, zoom, yToTrack]);
-
-    const handleMouseUp = useCallback(() => {
-        if (!isDrawing) return;
-
-        setIsDrawing(false);
-        setStartPoint(null);
-
-        // A click that drew nothing selects nothing.
-        onSelectionDone(rect);
-    }, [isDrawing, onSelectionDone, rect]);
-
-    useEffect(() => {
-        const svgElement = document.getElementById('rollGrid');
-
-        if (svgElement) {
-            svgElement.addEventListener('mousedown', handleMouseDown);
-            svgElement.addEventListener('mousemove', handleMouseMove);
-            svgElement.addEventListener('mouseup', handleMouseUp);
-
-            return () => {
-                svgElement.removeEventListener('mousedown', handleMouseDown);
-                svgElement.removeEventListener('mousemove', handleMouseMove);
-                svgElement.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [handleMouseDown, handleMouseMove, handleMouseUp]);
+    const band = drag ? selectionOf(drag) : selection;
 
     const lines = Array
         .from({ length: welteT100.trackCount }, (_, i) => track(i + 1))
@@ -102,7 +80,7 @@ export const RollGrid = ({
         ));
 
     return (
-        <g id="rollGrid">
+        <g className="roll-grid" ref={gridRef}>
             <rect
                 fill="white"
                 fillOpacity={0.1}
@@ -112,11 +90,9 @@ export const RollGrid = ({
                 width={width}
             />
             {lines}
-            {rect && (
+            {band && (
                 <rect
-                    x={rect.horizontal.from * zoom}
-                    width={(rect.horizontal.to - rect.horizontal.from) * zoom}
-                    {...bandOf(rect.vertical)}
+                    {...boxOf(band, geometry)}
                     fill="rgba(0, 0, 255, 0.3)"
                     stroke="blue"
                     strokeWidth={0.5}
