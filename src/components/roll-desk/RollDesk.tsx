@@ -6,7 +6,7 @@ import { AnySymbol, Editor, Emulation, HorizontalSpan, VerticalSpan, constraintP
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
-import { Add, Clear, Create, Download, Pause, PlayArrow, Redo, Save, Settings, Undo } from "@mui/icons-material"
+import { Add, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { SourceStack } from "./SourceStack"
@@ -92,7 +92,7 @@ interface DeskProps {
 }
 
 export const Desk = ({ show }: DeskProps) => {
-    const { play, stop } = usePiano()
+    const { play } = usePiano()
 
     const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
@@ -110,11 +110,13 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [range, setRange] = useState<RollRange>()
-    const { isPlaying, started, stopped } = usePlayback()
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
     const [blendPosition, setBlendPosition] = useState(workingPosition)
+
+    // The desk shows a version or a copy, never both.
+    const { isPlaying, started, stop } = usePlayback(currentVersionId ?? currentCopyId)
 
     const [emulationOptions, setEmulationOptions] = useState<WelteT100Options>()
 
@@ -184,7 +186,6 @@ export const Desk = ({ show }: DeskProps) => {
 
         if (isPlaying) {
             stop()
-            stopped()
             return
         }
 
@@ -270,8 +271,9 @@ export const Desk = ({ show }: DeskProps) => {
                 </IconButton>
                 <IconButton
                     disabled={!currentVersion}
+                    aria-label={isPlaying ? 'Stop' : 'Play'}
                     onClick={playVersion}>
-                    {isPlaying ? <Pause /> : <PlayArrow />}
+                    {isPlaying ? <Stop /> : <PlayArrow />}
                 </IconButton>
             </Stack>
         </Paper>
@@ -334,8 +336,9 @@ export const Desk = ({ show }: DeskProps) => {
                         </IconButton>
                         <IconButton
                             disabled={!currentVersion}
+                            aria-label={isPlaying ? 'Stop' : 'Play'}
                             onClick={playVersion}>
-                            {isPlaying ? <Pause /> : <PlayArrow />}
+                            {isPlaying ? <Stop /> : <PlayArrow />}
                         </IconButton>
                     </Ribbon>
                 </RibbonGroup>
