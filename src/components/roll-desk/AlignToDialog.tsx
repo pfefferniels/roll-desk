@@ -36,9 +36,11 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     const [cause, setCause] = useState<Cause>(cutForAnotherSystem ? 'speed' : 'paper')
     const [speed, setSpeed] = useState<SpeedInput>(speedInputOf(copy.production?.speed))
 
+    const bar = trackerBarOf(edition?.roll.system) ?? welteT100
+
     const alignment = useMemo(
-        () => copyB && alignFeatures(copy.features, copyB.features),
-        [copy, copyB]
+        () => copyB && alignFeatures(copy.features, copyB.features, bar),
+        [copy, copyB, bar]
     )
 
     const verticalStretch = copy.measurements.dimensions && copyB?.measurements.dimensions
@@ -54,7 +56,6 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     if (!edition) return null
 
     const otherCopies = edition.copies.filter(c => c.id !== copy.id)
-    const bar = trackerBarOf(edition.roll.system) ?? welteT100
 
     const readingOf = (factor: number): ScaleReading | undefined => {
         if (cause === 'paper') {
