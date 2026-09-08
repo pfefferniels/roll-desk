@@ -1,14 +1,6 @@
 import { Box, Slider } from "@mui/material"
 import { useEffect, useState } from "react"
-import { zoomMarks, zoomRange } from "../../helpers/zoom"
-
-/**
- * The track carries the logarithm of the zoom, so that a doubling takes
- * the same distance wherever it is taken. Laid out linearly, the range up
- * to 250 % would sit in the first fifth of the track.
- */
-const positionOf = (zoom: number) => Math.log(zoom)
-const zoomAt = (position: number) => Math.exp(position)
+import { positionOf, zoomAt, zoomMarks, zoomRange } from "../../helpers/zoom"
 
 const percentLabel = (zoom: number) => `${Math.round(zoom * 100)}%`
 

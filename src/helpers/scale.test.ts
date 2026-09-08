@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ruler, ScaleUnit } from './scale'
-import { zoomMarks, zoomRange } from './zoom'
+import { positionOf, zoomAt, zoomMarks, zoomRange } from './zoom'
 
 const spacing = 60
 const length = 5000
@@ -56,6 +56,15 @@ describe('the scale along the roll', () => {
     it('reaches millimetres at the far end of the desk, and no sooner', () => {
         expect(ruler({ length, zoom: zoomRange.max, spacing }).unit).toEqual('mm')
         expect(ruler({ length, zoom: zoomRange.max * 0.99, spacing }).unit).toEqual('cm')
+    })
+
+    it('reads in millimetres at the top of the zoom slider', () => {
+        const top = positionOf(zoomRange.max)
+
+        // A whole number of marks, so the step grid of the slider's range input reaches it.
+        expect(Number.isInteger(top)).toBe(true)
+        expect(zoomAt(top)).toEqual(zoomRange.max)
+        expect(ruler({ length, zoom: zoomAt(top), spacing }).unit).toEqual('mm')
     })
 
     it('goes no finer than the millimetre the roll is measured to', () => {
