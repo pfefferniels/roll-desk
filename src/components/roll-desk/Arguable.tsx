@@ -1,10 +1,11 @@
 import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
 import { Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
 import { AnyFeature, isEdit, isSymbol, Path } from "linked-rolls";
-import { ReactNode, useContext, useEffect, useState } from "react";
+import { ReactNode, useContext, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { EditChoice, EditString } from "./EditString";
 import { useAssumption } from "../../hooks/useAssumption";
+import { useDraft } from "../../hooks/useDraft";
 import { EditionContext } from "../../providers/EditionContext";
 import { Argumentation, BeliefAdoption, MeaningComprehension, certainties } from "linked-rolls";
 
@@ -23,7 +24,7 @@ interface ArguableProps {
 export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
     const { view, viewOnly } = useContext(EditionContext)
 
-    const [anchorEl, setAnchorEl] = useState<Element | null>(anchor || null)
+    const [anchorEl, setAnchorEl] = useDraft<Element | null>(anchor || null)
     const [editValue, setEditValue] = useState(false)
     const [addCitation, setAddCitation] = useState(false)
     const [addPlain, setAddPlain] = useState(false)
@@ -36,8 +37,6 @@ export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
         setCertainty
     } = useAssumption(path)
     const { selection } = useSelection()
-
-    useEffect(() => setAnchorEl(anchor || null), [anchor])
 
     if (!about) {
         throw new Error("Assumption not found at path: " + path.join('.'))

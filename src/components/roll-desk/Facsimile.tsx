@@ -32,10 +32,7 @@ const FacsimileTile = ({ tile, placement }: { tile: Tile, placement: TilePlaceme
     const ref = useRef<SVGRectElement>(null)
     const visible = useIsVisible(ref)
     const [wanted, setWanted] = useState(false)
-
-    useEffect(() => {
-        if (visible) setWanted(true)
-    }, [visible])
+    if (visible && !wanted) setWanted(true)
 
     return (
         <>

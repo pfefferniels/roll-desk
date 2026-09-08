@@ -1,7 +1,7 @@
 import { TextField } from "@mui/material"
 import { CollationTolerance, Millimeters } from "linked-rolls"
-import { useEffect, useState } from "react"
 import { parseTolerance } from "../../helpers/collationTolerance"
+import { useDraft } from "../../hooks/useDraft"
 
 interface ToleranceFieldProps {
     label: string
@@ -11,9 +11,7 @@ interface ToleranceFieldProps {
 
 /** Keeps what was typed while it does not yet spell a tolerance. */
 const ToleranceField = ({ label, value, onChange }: ToleranceFieldProps) => {
-    const [typed, setTyped] = useState(String(value))
-
-    useEffect(() => setTyped(String(value)), [value])
+    const [typed, setTyped] = useDraft(String(value))
 
     return (
         <TextField

@@ -1,6 +1,6 @@
 import { CheckRounded } from "@mui/icons-material";
 import { Box, Dialog, DialogContent, IconButton, MenuItem, Select, Stack, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useDraft } from "../../hooks/useDraft";
 
 interface EditStringProps {
     open: boolean;
@@ -10,11 +10,7 @@ interface EditStringProps {
 }
 
 export const EditString = ({ open, value: value_, onDone, onClose }: EditStringProps) => {
-    const [value, setValue] = useState(value_);
-
-    useEffect(() => {
-        setValue(value_);
-    }, [value_]);
+    const [value, setValue] = useDraft(value_);
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -49,11 +45,7 @@ interface EditChoiceProps<T extends string> {
 }
 
 export const EditChoice = <T extends string>({ open, value: value_, items, onDone, onClose }: EditChoiceProps<T>) => {
-    const [value, setValue] = useState<T>(value_);
-
-    useEffect(() => {
-        setValue(value_);
-    }, [value_]);
+    const [value, setValue] = useDraft<T>(value_);
 
     return (
         <Dialog open={open} onClose={onClose}>

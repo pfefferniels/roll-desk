@@ -1,6 +1,6 @@
 import { Box, Slider } from "@mui/material"
-import { useEffect, useState } from "react"
 import { positionOf, zoomAt, zoomMarks, zoomRange } from "../../helpers/zoom"
+import { useDraft } from "../../hooks/useDraft"
 
 const percentLabel = (zoom: number) => `${Math.round(zoom * 100)}%`
 
@@ -21,9 +21,7 @@ interface ZoomSliderProps {
  * alone and leaves the roll to `useLiveZoom`.
  */
 export const ZoomSlider = ({ zoom, onScrub, onSettle }: ZoomSliderProps) => {
-    const [value, setValue] = useState(zoom)
-
-    useEffect(() => setValue(zoom), [zoom])
+    const [value, setValue] = useDraft(zoom)
 
     return (
         <Box sx={{
