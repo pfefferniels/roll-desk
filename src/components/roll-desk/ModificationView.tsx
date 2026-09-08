@@ -110,7 +110,6 @@ const ModificationGroup = ({ features, metadata, ...svgProps }: ModificationGrou
                 width={300}
                 height={100}
                 fontSize={12}
-                fill="white"
                 paintOrder="stroke"
             >
                 <div style={{ color: "black", backgroundColor: "rgba(255, 255, 255, 0.82)", borderRadius: "4px", padding: "4px", width: 'fit-content', height: 'fit-content', boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }}>

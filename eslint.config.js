@@ -26,10 +26,6 @@ export default tseslint.config(
         // error means something new; each belongs at 'error' once its findings are gone.
         rules: {
             '@typescript-eslint/no-explicit-any': 'warn',
-            '@typescript-eslint/no-unused-expressions': 'warn',
-            'react/jsx-key': 'warn',
-            'react/no-unescaped-entities': 'warn',
-            'react/no-unknown-property': 'warn',
             'react-hooks/immutability': 'warn',
             'react-hooks/refs': 'warn',
             'react-hooks/set-state-in-effect': 'warn',

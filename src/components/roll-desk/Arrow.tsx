@@ -54,9 +54,7 @@ export const Arrow = ({ from, to, arrowHeadSize: headSize, onClick, svgProps, ..
     return (
         <g
             className='arrow'
-            onClick={(e) => {
-                onClick && onClick(e)
-            }}
+            onClick={(e) => onClick?.(e)}
         >
             <path
                 stroke="black"

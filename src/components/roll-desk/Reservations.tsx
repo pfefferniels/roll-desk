@@ -34,7 +34,7 @@ export const ReservationList = ({ copy }: { copy: RollCopy }) => {
     if (!found.length) {
         return (
             <Alert severity='success' variant='outlined'>
-                Nothing is left open about where this copy's features come from.
+                Nothing is left open about where this copy&apos;s features come from.
             </Alert>
         )
     }

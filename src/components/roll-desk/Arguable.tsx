@@ -131,7 +131,7 @@ export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
                                                             const key = `comprehends-${subject}`
 
                                                             if (!target) {
-                                                                return <span>{subject}</span>
+                                                                return <span key={key}>{subject}</span>
                                                             }
 
                                                             if (!isSymbol(target)) {
