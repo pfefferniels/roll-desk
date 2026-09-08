@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 
 export interface PinchHandlers {
     /** The pinch stands at `factor` times where it began, centred on viewport x `focus`. */
@@ -47,7 +47,7 @@ const middleOf = (touches: TouchList) => (touches[0].clientX + touches[1].client
  */
 export const usePinchGesture = (element: HTMLElement | null, handlers: PinchHandlers) => {
     const latest = useRef(handlers)
-    latest.current = handlers
+    useLayoutEffect(() => { latest.current = handlers })
 
     useEffect(() => {
         if (!element) return

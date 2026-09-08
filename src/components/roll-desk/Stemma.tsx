@@ -275,7 +275,7 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     <Portal>
                         <Popover
                             open={hover}
-                            anchorEl={elRef.current}
+                            anchorEl={() => elRef.current!}
                             onClose={() => setHover(false)}
                             anchorOrigin={{
                                 vertical: 'bottom',

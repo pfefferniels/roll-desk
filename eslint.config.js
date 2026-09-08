@@ -26,7 +26,6 @@ export default tseslint.config(
         // error means something new; each belongs at 'error' once its findings are gone.
         rules: {
             'react-hooks/immutability': 'warn',
-            'react-hooks/refs': 'warn',
             'react-hooks/set-state-in-effect': 'warn',
         },
     },

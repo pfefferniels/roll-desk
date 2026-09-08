@@ -98,8 +98,11 @@ export const Desk = ({ show }: DeskProps) => {
     const { edition, setEdition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
     const initialStretch = viewOnly ? 0.2 : 1
-    const stretch = useLiveZoom(initialStretch, zoomRange)
-    usePinchGesture(stretch.viewport, { onPinch: stretch.scrubBy, onEnd: stretch.settle })
+    const {
+        committed: stretchZoom, gesturing, stageRef,
+        viewportRef, viewport, scrub, scrubBy, settle, jump
+    } = useLiveZoom(initialStretch, zoomRange)
+    usePinchGesture(viewport, { onPinch: scrubBy, onEnd: settle })
 
     const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
     const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
@@ -527,18 +530,18 @@ export const Desk = ({ show }: DeskProps) => {
                 </Paper>
             )}
 
-            <Box overflow='scroll' ref={stretch.viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
+            <Box overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
                 <PinchZoomProvider
-                    zoom={stretch.committed}
+                    zoom={stretchZoom}
                     rollLength={length}
-                    setZoom={stretch.jump}
-                    viewport={stretch.viewport}
-                    gesturing={stretch.gesturing}
+                    setZoom={jump}
+                    viewport={viewport}
+                    gesturing={gesturing}
                     noteHeight={3}
                     expressionHeight={10}
                     spacing={60}
                 >
-                    <Canvas stageRef={stretch.stageRef}>
+                    <Canvas stageRef={stageRef}>
                         {currentVersion
                             ? (
                                 <VersionView
@@ -564,9 +567,9 @@ export const Desk = ({ show }: DeskProps) => {
             </Box>
 
             <ZoomSlider
-                zoom={stretch.committed}
-                onScrub={stretch.scrub}
-                onSettle={stretch.settle}
+                zoom={stretchZoom}
+                onScrub={scrub}
+                onSettle={settle}
             />
 
             <EmulationSettingsDialog
