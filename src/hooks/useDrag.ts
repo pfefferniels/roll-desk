@@ -6,6 +6,9 @@ export interface Drag<T> {
     to: T
 }
 
+/** The button a drag is drawn with, as `MouseEvent.button` numbers it. */
+const primaryButton = 0
+
 /** Holds the newest value for listeners that outlive the render they were bound in. */
 const useLatest = <T>(value: T) => {
     const latest = useRef(value)
@@ -15,10 +18,12 @@ const useLatest = <T>(value: T) => {
 
 /**
  * The drag currently running over `element`, and nothing between drags.
- * `measure` says where a pointer sits in whatever the drag is drawn in and
- * declines a position the drag cannot use, which leaves the drag standing
- * where it last was. The pointer is followed on the window, so a gesture
- * that wanders off the element still ends where the button is released.
+ * Only the primary button draws one, so a right-click keeps its context
+ * menu. `measure` says where a pointer sits in whatever the drag is drawn
+ * in and declines a position the drag cannot use, which leaves the drag
+ * standing where it last was. The pointer is followed on the window, so a
+ * gesture that wanders off the element still ends where the button is
+ * released.
  */
 export const useDrag = <T>(
     element: RefObject<SVGGraphicsElement | null>,
@@ -38,6 +43,8 @@ export const useDrag = <T>(
         let gesture: AbortController | undefined
 
         const begin = (event: MouseEvent) => {
+            if (event.button !== primaryButton) return
+
             const from = measuring.current(event)
             if (from === undefined) return
 
