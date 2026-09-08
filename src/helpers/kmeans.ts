@@ -54,8 +54,6 @@ export function kMeans2D(
 
   // --- 2. main loop ---
   for (let iter = 0; iter < maxIters; iter++) {
-    let changed = false;
-
     // --- assignment step: assign each point to closest centroid ---
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
@@ -70,15 +68,8 @@ export function kMeans2D(
         }
       }
 
-      if (assignments[i] !== bestIdx) {
-        assignments[i] = bestIdx;
-        changed = true;
-      }
+      assignments[i] = bestIdx;
     }
-
-    // optional early exit: if no assignment changed, we might be done
-    // (we still check centroid movement below to be safe)
-    // if (!changed) break;
 
     // --- update step: recompute centroids as mean of cluster points ---
     const sums: Point[] = Array.from({ length: k }, () => ({ x: 0, y: 0 }));

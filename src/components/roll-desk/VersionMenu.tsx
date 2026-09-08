@@ -1,4 +1,4 @@
-import { Delete, Edit as EditIcon, Person, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
 import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf } from "linked-rolls"
 import { useContext, useState } from "react"
@@ -40,7 +40,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isMotivation(item))
     const { edition, apply, view } = useContext(EditionContext)
 
-    const [assignActor, setAssignActor] = useState(false)
     const [editSiglum, setEditSiglum] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
@@ -88,13 +87,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     startIcon={<TypeSpecimen />}
                 >
                     Type
-                </Button>
-                <Button
-                    onClick={() => setAssignActor(true)}
-                    size='small'
-                    startIcon={<Person />}
-                >
-                    Actor
                 </Button>
                 <Button
                     onClick={() => apply(removeVersion(view, versionId))}

@@ -8,7 +8,7 @@ import { useAssumption } from "../../hooks/useAssumption";
 import { EditionContext } from "../../providers/EditionContext";
 import { Argumentation, BeliefAdoption, MeaningComprehension, certainties } from "linked-rolls";
 
-interface ArguableProps<Name, Type> {
+interface ArguableProps {
     anchor?: Element
     path: Path
     children: ReactNode
@@ -20,7 +20,7 @@ interface ArguableProps<Name, Type> {
     }
 }
 
-export function Arguable<Name, Type>({ asSVG, anchor, path, children }: ArguableProps<Name, Type>) {
+export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
     const { view, viewOnly } = useContext(EditionContext)
 
     const [anchorEl, setAnchorEl] = useState<Element | null>(anchor || null)

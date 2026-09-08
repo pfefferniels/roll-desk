@@ -1,4 +1,3 @@
-import concaveman from "concaveman";
 import { Point } from "./kmeans";
 
 export function chaikin(points: Point[], iterations = 2) {

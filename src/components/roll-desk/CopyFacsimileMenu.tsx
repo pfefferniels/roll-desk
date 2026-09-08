@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
-import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, RollConditionAssignment, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"

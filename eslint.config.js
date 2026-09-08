@@ -27,7 +27,6 @@ export default tseslint.config(
         rules: {
             '@typescript-eslint/no-explicit-any': 'warn',
             '@typescript-eslint/no-unused-expressions': 'warn',
-            '@typescript-eslint/no-unused-vars': 'warn',
             'react/jsx-key': 'warn',
             'react/no-unescaped-entities': 'warn',
             'react/no-unknown-property': 'warn',

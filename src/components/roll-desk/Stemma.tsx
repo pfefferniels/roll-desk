@@ -4,7 +4,6 @@ import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
-import { Arguable } from './Arguable';
 import { EditionContext } from '../../providers/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../../providers/SelectionContext';

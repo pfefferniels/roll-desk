@@ -1,4 +1,4 @@
-import { Divider, Paper, Stack } from "@mui/material"
+import { Divider, Stack } from "@mui/material"
 import { Children, isValidElement } from "react"
 
 interface RibbonGroupProps {
