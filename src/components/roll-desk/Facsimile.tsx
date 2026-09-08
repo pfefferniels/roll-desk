@@ -21,7 +21,7 @@ import { fetchImageService, ImageService, scaleFactorFor, Tile, tilesOf } from "
 const rowToXOf = (copy: RollCopy, translateX: (mm: number) => number) => {
     const shift = copy.measurements.shift?.horizontal ?? 0
     const scale = copy.measurements.scale ?? 1
-    return (row: number) => translateX((onPaper(px(row)) + shift) * scale)
+    return (row: number) => translateX((onPaper(px(row), copy) + shift) * scale)
 }
 
 /**

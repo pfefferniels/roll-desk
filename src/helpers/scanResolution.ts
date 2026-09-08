@@ -1,17 +1,27 @@
-import { inMillimeters, Millimeters, Pixels, px } from "linked-rolls"
+import {
+    inMillimeters,
+    inPixels,
+    Millimeters,
+    Pixels,
+    pixelsPerInch,
+    Resolution,
+    RollCopy
+} from "linked-rolls"
 
 /**
- * The resolution the scans were read at. A reader turns a scan into
- * millimetres as it reads it and keeps no record of what it divided by,
- * so everything that goes back to the scan's own pixels has to assume
- * the same resolution again.
+ * The resolution the Stanford scans were read at. A copy that states
+ * none of its own is read against this, on the assumption that it was
+ * scanned the same way.
  */
-const scanDpi = 300.25
+const assumedResolution = pixelsPerInch(300.25)
 
-const millimetersPerInch = 25.4
+const resolutionOf = (copy: RollCopy): Resolution =>
+    copy.measurements.scanResolution?.value ?? assumedResolution
 
-/** Where a place in a scan falls on the paper. */
-export const onPaper = (place: Pixels): Millimeters => inMillimeters(place, scanDpi)
+/** Where a place in a copy's scan falls on the paper. */
+export const onPaper = (place: Pixels, copy: RollCopy): Millimeters =>
+    inMillimeters(place, resolutionOf(copy))
 
-/** Where a place on the paper falls in the scan it was read from. */
-export const inScan = (place: Millimeters): Pixels => px(place / millimetersPerInch * scanDpi)
+/** Where a place on the paper falls in the scan the copy was read from. */
+export const inScan = (place: Millimeters, copy: RollCopy): Pixels =>
+    inPixels(place, resolutionOf(copy))

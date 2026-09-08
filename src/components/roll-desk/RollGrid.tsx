@@ -128,7 +128,7 @@ export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) =
     const scale = copy.measurements.scale ?? 1
     const asScanned = (place: Millimeters) => {
         const unshifted = place - (copy.measurements.shift?.horizontal || 0)
-        return inScan(mm(unshifted / scale))
+        return inScan(mm(unshifted / scale), copy)
     }
 
     const x1 = asScanned(selection.horizontal.from)
