@@ -538,7 +538,6 @@ export const Desk = ({ show }: DeskProps) => {
                                     color="#444"
                                     blend={blendAt(blendPosition)}
                                     onClick={e => setSelection(prev => [...prev, e])}
-                                    onChange={() => { }}
                                     onSelectionDone={dimension => setSelection(dimension ? [dimension] : [])}
                                 />
                             )

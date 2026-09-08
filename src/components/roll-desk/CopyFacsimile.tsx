@@ -24,7 +24,6 @@ interface CopyFacsimileProps {
     copy: RollCopy;
     active: boolean;
     onClick: (e: AnyFeature) => void;
-    onChange: (copy: RollCopy) => void;
     color: string;
     onSelectionDone: (dimension?: EventDimension) => void;
     blend: FacsimileBlend;
@@ -38,7 +37,7 @@ export const CopyFacsimile = ({
     onSelectionDone,
     blend,
 }: CopyFacsimileProps) => {
-    const { edition, apply } = useContext(EditionContext);
+    const { edition } = useContext(EditionContext);
     const geometry = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
     const drag = useRollDrag(svgRef);
@@ -92,17 +91,6 @@ export const CopyFacsimile = ({
                             conditionPath={['copies', edition.copies.indexOf(copy), 'features', featureIndex, 'condition']}
                             onClick={() => onClick(feature)}
                             color={color}
-                            onChange={() => {
-                                apply(draft => {
-                                    const editionCopy = draft.copies.find(c => c.id === copy.id)
-                                    if (!editionCopy) return
-
-                                    const index = editionCopy.features.findIndex(f => f.id === feature.id)
-                                    if (index === -1) return
-
-                                    editionCopy.features[index] = feature
-                                })
-                            }}
                         />
                     )
                 })}
@@ -144,7 +132,6 @@ interface FeatureProps<FeatureType extends AnyFeature = AnyFeature> {
     feature: FeatureType;
     conditionPath?: Path
     onClick: React.MouseEventHandler;
-    onChange?: (feature: FeatureType) => void;
     color: string;
 }
 
