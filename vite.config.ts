@@ -26,11 +26,13 @@ const spaFallback = (): Plugin => ({
 /**
  * One chunk of the vendor half of the bundle, and the packages it holds.
  * A name matches that package; a name ending in `*` matches every package
- * whose name starts with the rest of it.
+ * whose name starts with the rest of it. `modules` names single files that
+ * belong here whichever package they come from, and is read first.
  */
 type VendorChunk = {
     readonly name: string;
     readonly packages: readonly string[];
+    readonly modules?: readonly string[];
 };
 
 /**
@@ -73,10 +75,12 @@ const vendorChunks: readonly VendorChunk[] = [
         packages: ['linked-rolls', 'welte-t100-emulator'],
     },
     {
-        // Reached only through linked-rolls, which compiles its JSON-LD schema
-        // at import time.
+        // The JSON-LD schema check, which only importing a document asks for.
+        // Its two linked-rolls modules are named here so that the whole check
+        // stays out of `rolls` and off the first load.
         name: 'schema',
         packages: ['ajv', 'fast-uri', 'fast-deep-equal', 'json-schema-traverse'],
+        modules: ['linked-rolls/lib/validate.js', 'linked-rolls/lib/schema.json'],
     },
     {
         name: 'd3',
@@ -96,8 +100,14 @@ const holds = ({ packages }: VendorChunk, pkg: string) =>
     packages.some(pattern =>
         pattern.endsWith('*') ? pkg.startsWith(pattern.slice(0, -1)) : pkg === pattern);
 
+const holdsModule = ({ modules }: VendorChunk, moduleId: string) =>
+    modules?.some(named => moduleId.endsWith(named)) ?? false;
+
 /** The chunk a module belongs in, or `null` to leave it where Vite puts it. */
 const chunkOf = (moduleId: string) => {
+    const named = vendorChunks.find(chunk => holdsModule(chunk, moduleId));
+    if (named) return named.name;
+
     const pkg = packageOf(moduleId);
     if (!pkg) return null;
     return vendorChunks.find(chunk => holds(chunk, pkg))?.name ?? 'vendor';

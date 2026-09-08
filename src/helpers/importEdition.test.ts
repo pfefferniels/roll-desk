@@ -17,28 +17,29 @@ const inOldFormat = () => {
 }
 
 describe('checking a document before importing it', () => {
-    it('finds nothing wrong with a document in the current format', () => {
-        expect(checkedDocument(current()).errors).toEqual([])
+    it('finds nothing wrong with a document in the current format', async () => {
+        expect((await checkedDocument(current())).errors).toEqual([])
     })
 
-    it('finds nothing wrong with a document in an older format', () => {
+    it('finds nothing wrong with a document in an older format', async () => {
         expect(validate(inOldFormat())).toBe(false)
-        expect(checkedDocument(inOldFormat()).errors).toEqual([])
+        expect((await checkedDocument(inOldFormat())).errors).toEqual([])
     })
 
-    it('hands on the document the import would read', () => {
-        expect(checkedDocument(inOldFormat()).document).toEqual(checkedDocument(current()).document)
+    it('hands on the document the import would read', async () => {
+        expect((await checkedDocument(inOldFormat())).document)
+            .toEqual((await checkedDocument(current())).document)
     })
 
-    it('reports what the schema turns down, and keeps the document to proceed with', () => {
+    it('reports what the schema turns down, and keeps the document to proceed with', async () => {
         const broken = { ...current(), versions: 'none' }
 
-        expect(checkedDocument(broken).errors.length).toBeGreaterThan(0)
-        expect(checkedDocument(broken).document).toMatchObject({ versions: 'none' })
+        expect((await checkedDocument(broken)).errors.length).toBeGreaterThan(0)
+        expect((await checkedDocument(broken)).document).toMatchObject({ versions: 'none' })
     })
 
-    it('turns down what is no document at all without trying to migrate it', () => {
-        expect(checkedDocument(null).errors.length).toBeGreaterThan(0)
+    it('turns down what is no document at all without trying to migrate it', async () => {
+        expect((await checkedDocument(null)).errors.length).toBeGreaterThan(0)
     })
 })
 
@@ -55,25 +56,25 @@ describe('choosing a file to open', () => {
 })
 
 describe('reading a file', () => {
-    it('hands on the checked document the text states', () => {
-        expect(refusalIn(readDocument(JSON.stringify(current())))).toBeUndefined()
+    it('hands on the checked document the text states', async () => {
+        expect(refusalIn(await readDocument(JSON.stringify(current())))).toBeUndefined()
     })
 
-    it('says that a file holds no JSON', () => {
-        expect(refusalIn(readDocument('<!doctype html>'))).toMatch(/JSON/)
+    it('says that a file holds no JSON', async () => {
+        expect(refusalIn(await readDocument('<!doctype html>'))).toMatch(/JSON/)
     })
 
-    it('says that the migration could not follow the document', () => {
+    it('says that the migration could not follow the document', async () => {
         const depth = 50000
         const nestedDeeperThanTheMigrationRecurses = '{"copies":'.repeat(depth) + '[]' + '}'.repeat(depth)
 
-        expect(refusalIn(readDocument(nestedDeeperThanTheMigrationRecurses))).toMatch(/current format/)
+        expect(refusalIn(await readDocument(nestedDeeperThanTheMigrationRecurses))).toMatch(/current format/)
     })
 })
 
 describe('importing a document', () => {
-    it('reads an edition from a document the schema accepts', () => {
-        expect(refusalIn(importedEdition(checkedDocument(current()).document))).toBeUndefined()
+    it('reads an edition from a document the schema accepts', async () => {
+        expect(refusalIn(importedEdition((await checkedDocument(current())).document))).toBeUndefined()
     })
 
     it('says that the document states no edition, as proceeding past the schema may find', () => {

@@ -54,8 +54,8 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
 
         const reader = new FileReader();
 
-        reader.onload = (e) => {
-            const reading = readDocument(e.target?.result as string);
+        reader.onload = async (e) => {
+            const reading = await readDocument(e.target?.result as string);
             if ('refusal' in reading) {
                 setMessage(reading.refusal)
                 return

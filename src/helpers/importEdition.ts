@@ -1,4 +1,4 @@
-import { Edition, importJsonLd, migrate, validate } from "linked-rolls"
+import { Edition, importJsonLd, migrate } from "linked-rolls"
 
 /** A document in the current format, with what the schema still finds wrong with it. */
 export type CheckedDocument = {
@@ -16,6 +16,18 @@ const reasonOf = (error: unknown): string =>
 const attempted = <T>(call: () => T, refusedAs: (reason: string) => string): Reading<T> => {
     try {
         return { value: call() }
+    } catch (error) {
+        return { refusal: refusedAs(reasonOf(error)) }
+    }
+}
+
+/** As `attempted`, for a call that resolves rather than returns. */
+const resolved = async <T>(
+    call: () => Promise<T>,
+    refusedAs: (reason: string) => string
+): Promise<Reading<T>> => {
+    try {
+        return { value: await call() }
     } catch (error) {
         return { refusal: refusedAs(reasonOf(error)) }
     }
@@ -40,9 +52,15 @@ const migrated = (json: unknown): unknown =>
  * A document read as `importJsonLd` will read it: migrated first, then
  * held against the schema. Judging the file as it stands would report an
  * older format as broken, although the import brings it up to date.
+ *
+ * The schema is fetched here rather than imported, since ajv and the schema
+ * come to 47 kB gzipped that a visitor who only reads an edition never needs.
+ * By its own module, because the library's index is in the first load already
+ * and a dynamic import of it would leave nothing to split off.
  */
-export const checkedDocument = (json: unknown): CheckedDocument => {
+export const checkedDocument = async (json: unknown): Promise<CheckedDocument> => {
     const document = migrated(json)
+    const { validate } = await import('linked-rolls/lib/validate.js')
     return {
         document,
         errors: validate(document)
@@ -55,11 +73,11 @@ const parsed = (text: string): Reading<unknown> =>
     attempted(() => JSON.parse(text), reason => `This file could not be read as JSON: ${reason}`)
 
 /** The checked document a file's text holds, or why the desk takes none from it. */
-export const readDocument = (text: string): Reading<CheckedDocument> => {
+export const readDocument = async (text: string): Promise<Reading<CheckedDocument>> => {
     const json = parsed(text)
     return 'refusal' in json
         ? json
-        : attempted(
+        : resolved(
             () => checkedDocument(json.value),
             reason => `This file could not be brought up to the current format: ${reason}`
         )
