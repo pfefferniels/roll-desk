@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Person, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -12,8 +12,20 @@ import { ConstraintsRibbon } from "./ConstraintsRibbon"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 import { keepingTolerance, toleranceOf } from "../../helpers/collationTolerance"
+import { MotivateDialog } from "./MotivateDialog"
 
 export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
+
+/** The motivation all of the given edits already reference, if they agree on one. */
+const sharedMotivation = (version: Version, editIds: string[]) => {
+    const referenced = new Set(
+        version.edits
+            .filter(edit => editIds.includes(edit.id))
+            .map(edit => edit.motivation)
+    )
+    if (referenced.size !== 1) return undefined
+    return version.motivations.find(m => m.id === [...referenced][0])
+}
 
 export type VersionSelection = AnySymbol | Edit | Motivation
 
@@ -259,23 +271,24 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 </DialogActions>
             </Dialog>
 
-            <EditString
+            <MotivateDialog
                 open={!!editsToMotivate}
                 onClose={() => setEditsToMotivate(undefined)}
-                value=''
-                onDone={(motivationDescription) => {
+                motivations={version.motivations}
+                value={sharedMotivation(version, editsToMotivate ?? [])}
+                onDone={(chosen) => {
                     if (!editsToMotivate) return
 
-                    const motivation: Motivation = {
-                        type: 'motivation',
-                        id: v4(),
-                        note: motivationDescription,
-                    }
+                    const motivation: Motivation = typeof chosen === 'string'
+                        ? { type: 'motivation', id: v4(), note: chosen }
+                        : chosen
 
                     apply((d) => {
                         const version = d.versions.find(v => v.id === versionId)
                         if (!version) return
-                        version.motivations.push(motivation)
+                        if (!version.motivations.some(m => m.id === motivation.id)) {
+                            version.motivations.push(motivation)
+                        }
 
                         version.edits
                             .filter(edit => editsToMotivate.includes(edit.id))
