@@ -10,9 +10,20 @@ export interface RollDrag {
     to: Millimeters
 }
 
+/** How far the pointer may travel and still read as a click, in screen pixels. */
+const clickSlop = 4
+
 /** The stretch a drag covers, whichever way round it was drawn. */
-export const spanOf = ({ from, to }: RollDrag): RollRange =>
+const spanOf = ({ from, to }: RollDrag): RollRange =>
     from < to ? [from, to] : [to, from]
+
+/**
+ * The stretch a gesture marks, and nothing where it stayed a click.
+ * The slop is measured on screen, so what counts as holding still
+ * does not change with the zoom.
+ */
+export const spanDragged = (drag: RollDrag, zoom: number): RollRange | undefined =>
+    Math.abs(drag.to - drag.from) * zoom < clickSlop ? undefined : spanOf(drag)
 
 /**
  * The drag currently running over `element`, and nothing between drags.

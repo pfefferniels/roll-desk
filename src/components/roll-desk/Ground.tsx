@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { useSelection } from "../../providers/SelectionContext";
-import { spanOf, useRollDrag } from "../../hooks/useRollDrag";
+import { spanDragged, useRollDrag } from "../../hooks/useRollDrag";
 import { Cursor } from "./Cursor";
 import { RollRange } from "../../providers/SelectionContext";
 
@@ -32,11 +32,14 @@ export const Ground = ({
     x, y, width, height,
 }: { x: number; y: number; width: number; height: number; }) => {
     const { range, setRange } = useSelection();
+    const { zoom } = usePinchZoom();
 
     const svgRef = useRef<SVGRectElement>(null);
-    const drag = useRollDrag(svgRef, drag => setRange(spanOf(drag)));
 
-    const marked = drag ? spanOf(drag) : range;
+    // Playback covers the whole roll where no range is set, so a click clears it.
+    const drag = useRollDrag(svgRef, drag => setRange(spanDragged(drag, zoom)));
+
+    const marked = drag ? spanDragged(drag, zoom) : range;
 
     return (
         <>
