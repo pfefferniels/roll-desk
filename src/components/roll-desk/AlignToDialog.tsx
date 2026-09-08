@@ -22,7 +22,8 @@ interface AlignToDialogProps {
 
 type Cause = ScaleReading['cause']
 
-const asPercent = (factor: number) => `${(factor * 100).toFixed(2)} %`
+/** Two decimals of the percentage, so four of the factor it was read from. */
+export const asPercent = (factor: number) => `${(factor * 100).toFixed(2)} %`
 
 export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProps) => {
     const { edition } = useContext(EditionContext)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { alignFeatures, Hole, mm, track } from 'linked-rolls'
-import { canApply } from './AlignToDialog'
+import { asPercent, canApply } from './AlignToDialog'
 
 /** Notes on twelve neighbouring tracks of the Welte T-100, one every 40 mm. */
 const ascendingNotes = (factor: number): Hole[] =>
@@ -29,5 +29,16 @@ describe('an alignment that needs only a stretch', () => {
 describe('copies that share no run of notes', () => {
     it('leave nothing to apply', () => {
         expect(canApply(alignFeatures(ascendingNotes(1), []))).toBe(false)
+    })
+})
+
+describe('a factor read as a percentage', () => {
+    it('keeps no more digits than were meant', () => {
+        expect(asPercent(1.0023)).toBe('100.23 %')
+        expect(asPercent(0.99765)).toBe('99.77 %')
+    })
+
+    it('reads a copy at the other one\'s scale as a plain hundred', () => {
+        expect(asPercent(1)).toBe('100.00 %')
     })
 })
