@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
-import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, RollConditionAssignment, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { AnyFeature, addGeneralCondition, alignCopy, assignObject, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, Shift, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -9,35 +9,12 @@ import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, GroupAdd, SelectAll } from "@mui/icons-material"
 import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
-import { EditionContext, EditionOp } from "../../providers/EditionContext"
+import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { FeatureConditionDialog, FeatureConditionType } from "./FeatureConditionDialog"
+import { FeatureConditionDialog } from "./FeatureConditionDialog"
 import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
 
 export type FacsimileSelection = EventDimension | AnyFeature
-
-const addGeneralCondition = (copyId: string, condition: RollConditionAssignment): EditionOp => {
-    return (draft) => {
-        const copy = draft.copies.find(c => c.id === copyId)
-        if (!copy) return
-
-        copy.conditions.push(condition)
-    }
-}
-
-const addFeatureCondition = (copyId: string, featureId: string, condition: ConditionState<FeatureConditionType>): EditionOp => {
-    return (draft) => {
-        const copy = draft.copies.find(c => c.id === copyId)
-        if (!copy) return
-
-        const feature = copy.features.find(f => f.id === featureId)
-        if (!feature) return
-
-        // The dialog only offers the conditions this kind of feature allows. The
-        // union of feature kinds cannot state that correlation.
-        feature.condition = condition as typeof feature.condition
-    }
-}
 
 interface MenuProps {
     copyId: string
@@ -187,7 +164,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     feature={selection[0]}
                     onClose={() => setReportFeatureCondition(false)}
                     onDone={(condition) => {
-                        apply(addFeatureCondition(
+                        apply(stateFeatureCondition(
                             copyId,
                             (selection[0] as AnyFeature).id,
                             condition
