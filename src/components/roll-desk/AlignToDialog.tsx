@@ -27,12 +27,9 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     const [cause, setCause] = useState<Cause>(cutForAnotherSystem ? 'speed' : 'paper')
     const [speed, setSpeed] = useState<SpeedInput>(speedInputOf(copy.production?.speed))
 
-    let shift: Millimeters | undefined, scale: number | undefined
-    if (copyB) {
-        const alignment = alignFeatures(copy.features, copyB.features)
-        shift = alignment.shift
-        scale = alignment.scale
-    }
+    const alignment = copyB && alignFeatures(copy.features, copyB.features)
+    const shift: Millimeters | undefined = alignment?.shift
+    const scale: number | undefined = alignment?.scale
 
     let verticalStretch: number | undefined = undefined
     if (copy.measurements.dimensions && copyB?.measurements.dimensions) {
@@ -105,14 +102,23 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
                         </MenuItem>
                     </Select>
 
-                    {copyB && shift !== undefined && scale !== undefined && (
+                    {copyB && !alignment && (
+                        <Typography color='error'>
+                            The copies share no run of notes to align on.
+                        </Typography>
+                    )}
+
+                    {alignment && (
                         <>
                             <canvas
                                 ref={canvasRef}
                                 style={{ width: '100%', height: 120, display: 'block', marginTop: 8 }}
                             />
                             <div>
-                                Shift: {shift.toFixed(4)} mm, Scale: {asPercent(scale)}
+                                Shift: {alignment.shift.toFixed(4)} mm, Scale: {asPercent(alignment.scale)}
+                            </div>
+                            <div style={{ color: 'gray' }}>
+                                Rests on {alignment.matched} notes, {alignment.residual.toFixed(2)} mm apart on average
                             </div>
                             {verticalStretch && (
                                 <div style={{ color: 'gray' }}>
