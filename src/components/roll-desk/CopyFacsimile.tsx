@@ -26,7 +26,7 @@ interface CopyFacsimileProps {
     onClick: (e: AnyFeature) => void;
     onChange: (copy: RollCopy) => void;
     color: string;
-    onSelectionDone: (dimension: EventDimension) => void;
+    onSelectionDone: (dimension?: EventDimension) => void;
     blend: FacsimileBlend;
 }
 

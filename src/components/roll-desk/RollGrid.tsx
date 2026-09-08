@@ -6,7 +6,7 @@ import { calibrationOf, columnsOf, mm, RollCopy, track, welteT100, WithId } from
 
 interface RollGridProps {
     width: number;
-    onSelectionDone: (dimension: EventDimension & WithId) => void;
+    onSelectionDone: (dimension?: EventDimension & WithId) => void;
     selectionMode: boolean
 }
 
@@ -28,6 +28,7 @@ export const RollGrid = ({
         const offsetX = e.clientX - rect.left
         const offsetY = e.clientY - rect.top;
 
+        setRect(undefined);
         setStartPoint({ x: offsetX, y: offsetY });
         setIsDrawing(true);
     }, [selectionMode]);
@@ -61,13 +62,14 @@ export const RollGrid = ({
     }, [isDrawing, startPoint, zoom, yToTrack]);
 
     const handleMouseUp = useCallback(() => {
+        if (!isDrawing) return;
+
         setIsDrawing(false);
         setStartPoint(null);
 
-        if (rect) {
-            onSelectionDone(rect);
-        }
-    }, [onSelectionDone, rect]);
+        // A click that drew nothing selects nothing.
+        onSelectionDone(rect);
+    }, [isDrawing, onSelectionDone, rect]);
 
     useEffect(() => {
         const svgElement = document.getElementById('rollGrid');
