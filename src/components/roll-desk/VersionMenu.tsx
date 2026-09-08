@@ -16,7 +16,8 @@ import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { aDialogIsOpen } from "../../helpers/aDialogIsOpen"
 
-export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
+export const isMotivation = (obj: unknown): obj is Motivation =>
+    typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {

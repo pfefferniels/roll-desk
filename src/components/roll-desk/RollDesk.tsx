@@ -488,7 +488,7 @@ export const Desk = ({ show }: DeskProps) => {
                                         <span style={{ color: 'gray', fontSize: '8pt' }}>
                                             {selection.map(e => {
                                                 if ('id' in e) {
-                                                    return (e.id as any).slice(0, 15)
+                                                    return e.id.slice(0, 15)
                                                 }
                                                 else {
                                                     return '[unnamed]'
