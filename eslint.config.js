@@ -22,10 +22,10 @@ export default tseslint.config(
         rules: { ...reactHooks.configs.recommended.rules },
     },
     {
-        // Rules the tree does not satisfy yet (see #101). Warnings for now, so that an
-        // error means something new; each belongs at 'error' once its findings are gone.
+        // The last rule the tree does not satisfy yet (see #101, #124). The findings
+        // left are dialogs that reload a whole form from what they edit; the rule
+        // belongs at 'error' once they mount with it instead.
         rules: {
-            'react-hooks/immutability': 'warn',
             'react-hooks/set-state-in-effect': 'warn',
         },
     },

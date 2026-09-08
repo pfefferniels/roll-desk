@@ -172,21 +172,6 @@ export const Desk = ({ show }: DeskProps) => {
         return spotlightWhenDrawn(pendingSpotlight, () => setPendingSpotlight(undefined))
     }, [pendingSpotlight, currentVersionId, currentCopyId])
 
-    useHotkeys(['space'], (_, handler) => {
-        switch (handler.keys?.join('')) {
-            case 'space': {
-                playVersion()
-                break
-            }
-        }
-    }, {
-        ignoreEventWhen: event => goesToAnOverlay(event) || activatesItsTarget(event)
-    })
-
-    // Dialogs, menus and popovers swallow Escape themselves, so this only
-    // reaches the desk when nothing is open over it.
-    useHotkeys('escape', () => setSelection([]))
-
     const playVersion = () => {
         if (!currentVersion || !view) return
 
@@ -206,6 +191,21 @@ export const Desk = ({ show }: DeskProps) => {
         })
         started(schedule)
     }
+
+    useHotkeys(['space'], (_, handler) => {
+        switch (handler.keys?.join('')) {
+            case 'space': {
+                playVersion()
+                break
+            }
+        }
+    }, {
+        ignoreEventWhen: event => goesToAnOverlay(event) || activatesItsTarget(event)
+    })
+
+    // Dialogs, menus and popovers swallow Escape themselves, so this only
+    // reaches the desk when nothing is open over it.
+    useHotkeys('escape', () => setSelection([]))
 
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion || !view) return

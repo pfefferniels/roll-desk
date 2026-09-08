@@ -67,7 +67,16 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
     const [committed, setCommitted] = useState(initial)
 
     const stageRef = useRef<SVGGElement>(null)
+
+    // Held twice over: as a ref for the gesture, which scrolls it without a
+    // render, and as state for whatever only reaches it once it is there.
+    const viewportRef = useRef<HTMLDivElement | null>(null)
     const [viewport, setViewport] = useState<HTMLDivElement | null>(null)
+
+    const attachViewport = useCallback<RefCallback<HTMLDivElement>>(element => {
+        viewportRef.current = element
+        setViewport(element)
+    }, [])
 
     const committedRef = useRef(initial)
     const live = useRef(initial)
@@ -84,16 +93,18 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
     const baseWidth = useRef<number>(undefined)
 
     const holdAnchor = useCallback(() => {
+        const viewport = viewportRef.current
         if (!viewport || !anchor.current) return
 
         const { roll, offset } = anchor.current
         viewport.scrollLeft = roll * live.current - offset
-    }, [viewport])
+    }, [])
 
     const begin = useCallback((focus?: number) => {
         gesturing.current = true
         origin.current = live.current
 
+        const viewport = viewportRef.current
         if (viewport) {
             const offset = focus ?? viewport.clientWidth / 2
             anchor.current = { roll: (viewport.scrollLeft + offset) / live.current, offset }
@@ -103,7 +114,7 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         }
 
         baseWidth.current = stageRef.current?.ownerSVGElement?.width.baseVal.value
-    }, [viewport])
+    }, [])
 
     const paint = useCallback(() => {
         frame.current = undefined
@@ -174,5 +185,5 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     }, [])
 
-    return { committed, gesturing, stageRef, viewportRef: setViewport, viewport, scrub, scrubBy, settle, jump }
+    return { committed, gesturing, stageRef, viewportRef: attachViewport, viewport, scrub, scrubBy, settle, jump }
 }
