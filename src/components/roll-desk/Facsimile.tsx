@@ -1,9 +1,10 @@
-import { columnsOf, RollCopy, TrackArea } from "linked-rolls"
+import { columnsOf, px, RollCopy, TrackArea } from "linked-rolls"
 import { useEffect, useRef, useState } from "react"
 import useIsVisible from "../../hooks/useIsVisible"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { FacsimileBlend } from "../../helpers/facsimileBlend"
 import { drawableCalibrationOf } from "../../helpers/scanCalibration"
+import { onPaper } from "../../helpers/scanResolution"
 import {
     betweenBoxes,
     betweenPlacements,
@@ -16,15 +17,11 @@ import {
 } from "../../helpers/scanPlacement"
 import { fetchImageService, ImageService, scaleFactorFor, Tile, tilesOf } from "./IIIF"
 
-const dpi = 300.25
-
-const pixelsToMM = (pixels: number) => pixels / dpi * 25.4
-
 /** Screen x of a scan row, through whatever alignment the copy was given. */
 const rowToXOf = (copy: RollCopy, translateX: (mm: number) => number) => {
     const shift = copy.measurements.shift?.horizontal ?? 0
     const scale = copy.measurements.scale ?? 1
-    return (row: number) => translateX((pixelsToMM(row) + shift) * scale)
+    return (row: number) => translateX((onPaper(px(row)) + shift) * scale)
 }
 
 /**

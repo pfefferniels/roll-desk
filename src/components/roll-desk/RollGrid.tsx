@@ -7,6 +7,7 @@ import { rollPointAt } from '../../helpers/pointer.ts';
 import { boxOf } from '../../helpers/rollGeometry.ts';
 import { Drag, useDrag } from '../../hooks/useDrag.ts';
 import { drawableCalibrationOf } from '../../helpers/scanCalibration';
+import { inScan } from '../../helpers/scanResolution.ts';
 
 interface RollGridProps {
     width: number;
@@ -103,11 +104,6 @@ export const RollGrid = ({
     );
 };
 
-const mmToPixels = (mm: number, dpi: number): number => {
-    const inchesPerMM = 1 / 25.4;
-    return mm * dpi * inchesPerMM;
-}
-
 /**
  * Crops the scan back to a selection. The horizontal edges have to be
  * taken back through whatever was done to align this copy with the
@@ -118,14 +114,13 @@ const mmToPixels = (mm: number, dpi: number): number => {
  * is the vertical extent of the selection.
  */
 export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) => {
-    const dpi = 300.25
     const calibration = drawableCalibrationOf(copy)
     if (!calibration) return undefined
 
     const scale = copy.measurements.scale ?? 1
-    const asScanned = (mm: number) => {
-        const unshifted = mm - (copy.measurements.shift?.horizontal || 0)
-        return mmToPixels(unshifted / scale, dpi)
+    const asScanned = (place: Millimeters) => {
+        const unshifted = place - (copy.measurements.shift?.horizontal || 0)
+        return inScan(mm(unshifted / scale))
     }
 
     const x1 = asScanned(selection.horizontal.from)
