@@ -13,6 +13,7 @@ import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 import { keepingTolerance, toleranceOf } from "../../helpers/collationTolerance"
 import { MotivateDialog } from "./MotivateDialog"
+import { RecollateDialog } from "./RecollateDialog"
 
 export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
 
@@ -42,6 +43,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
     const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
+    const [symbolsToRecollate, setSymbolsToRecollate] = useState<string[]>()
     const [confirmDetach, setConfirmDetach] = useState(false)
 
     useHotkeys(['m', 's'], (_, handler) => {
@@ -121,10 +123,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             </Button>
                             <Button
                                 size='small'
-                                onClick={() => {
-                                    apply(collateSymbols(view, versionId, selection.map(symbol => symbol.id), tolerance))
-                                    setSelection([])
-                                }}
+                                onClick={() => setSymbolsToRecollate(selection.map(symbol => symbol.id))}
                             >
                                 Recollate
                             </Button>
@@ -225,6 +224,21 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             connectVersions(view, versionId, previousVersionId, chosenTolerance)
                         ))
                         setAttachTo(false)
+                    }}
+                />
+            )}
+
+            {symbolsToRecollate && (
+                <RecollateDialog
+                    tolerance={tolerance}
+                    onClose={() => setSymbolsToRecollate(undefined)}
+                    onDone={(chosenTolerance) => {
+                        apply(keepingTolerance(
+                            chosenTolerance,
+                            collateSymbols(view, versionId, symbolsToRecollate, chosenTolerance)
+                        ))
+                        setSymbolsToRecollate(undefined)
+                        setSelection([])
                     }}
                 />
             )}
