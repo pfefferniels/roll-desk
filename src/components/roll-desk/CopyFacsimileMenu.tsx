@@ -11,7 +11,7 @@ import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
 import { EditionContext, EditionOp } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
-import { FeatureConditionDialog } from "./FeatureConditionDialog"
+import { FeatureConditionDialog, FeatureConditionType } from "./FeatureConditionDialog"
 import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
 
 export type FacsimileSelection = EventDimension | AnyFeature
@@ -25,7 +25,7 @@ const addGeneralCondition = (copyId: string, condition: RollConditionAssignment)
     }
 }
 
-const addFeatureCondition = (copyId: string, featureId: string, condition: ConditionState<any>): EditionOp => {
+const addFeatureCondition = (copyId: string, featureId: string, condition: ConditionState<FeatureConditionType>): EditionOp => {
     return (draft) => {
         const copy = draft.copies.find(c => c.id === copyId)
         if (!copy) return
@@ -33,7 +33,9 @@ const addFeatureCondition = (copyId: string, featureId: string, condition: Condi
         const feature = copy.features.find(f => f.id === featureId)
         if (!feature) return
 
-        feature.condition = condition
+        // The dialog only offers the conditions this kind of feature allows. The
+        // union of feature kinds cannot state that correlation.
+        feature.condition = condition as typeof feature.condition
     }
 }
 

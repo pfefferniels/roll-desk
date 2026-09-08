@@ -2,12 +2,12 @@ import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, M
 import { WritingMethod } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
-import { EventDimension } from "./RollDesk"
+import { EventDimension, UserSelection } from "./RollDesk"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 
-const isEventDimension = (selection: any): selection is EventDimension => {
-    return selection && selection.horizontal && selection.vertical
+const isEventDimension = (selection: UserSelection): selection is EventDimension => {
+    return 'horizontal' in selection && 'vertical' in selection
 }
 
 const Preview = ({ iiifUrl }: { iiifUrl: string }) => {

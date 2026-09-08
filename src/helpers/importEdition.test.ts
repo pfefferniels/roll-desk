@@ -11,8 +11,8 @@ const refusalIn = <T>(reading: Reading<T>): string | undefined =>
 /** The document as the 0.1 format wrote it: the keeper a string, the version typed by its typology. */
 const inOldFormat = () => {
     const document = current()
-    document.copies = document.copies.map(({ keeper, ...copy }: any) => ({ ...copy, location: keeper.name }))
-    document.versions = document.versions.map(({ versionType, ...version }: any) => ({ ...version, '@type': versionType }))
+    document.copies = document.copies.map(({ keeper, ...copy }: { keeper: { name: string } }) => ({ ...copy, location: keeper.name }))
+    document.versions = document.versions.map(({ versionType, ...version }: { versionType: string }) => ({ ...version, '@type': versionType }))
     return document
 }
 

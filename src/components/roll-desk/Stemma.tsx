@@ -187,7 +187,7 @@ export const calculatePositions = async (
     nodes.forEach(node => {
         const y = 50 + node.generation * rowGap;
         node.y = y;
-        (node as any).fy = y;               // <- fixed y, D3 won't move it
+        node.fy = y;               // <- fixed y, D3 won't move it
     });
 
     const simulation = d3
@@ -195,8 +195,8 @@ export const calculatePositions = async (
         .force(
             "link",
             d3
-                .forceLink(links.filter(l => l.source !== 'unknown' && l.target !== 'unknown'))
-                .id((d: any) => d.id)
+                .forceLink<Node, Link>(links.filter(l => l.source !== 'unknown' && l.target !== 'unknown'))
+                .id(d => d.id)
                 .strength(0.6)
         )
         .force("charge", d3.forceManyBody().strength(-200))

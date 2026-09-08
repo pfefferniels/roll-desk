@@ -25,7 +25,6 @@ export default tseslint.config(
         // Rules the tree does not satisfy yet (see #101). Warnings for now, so that an
         // error means something new; each belongs at 'error' once its findings are gone.
         rules: {
-            '@typescript-eslint/no-explicit-any': 'warn',
             'react-hooks/immutability': 'warn',
             'react-hooks/refs': 'warn',
             'react-hooks/set-state-in-effect': 'warn',

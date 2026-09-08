@@ -38,6 +38,9 @@ const REFERENCE_COPY_ID = 'd229954b-086c-44d6-a589-aaa324d31d88'
 const SCAN = '/facsimiles/WR0225_02'
 const WITNESSED_VERSION = 'A1'
 
+// The script edits the stored JSON-LD document directly, which has no type of its
+// own: the library types describe the in-memory edition, not the file on disk.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = Record<string, any>
 
 interface Span { from: number, to: number }
@@ -362,6 +365,7 @@ versions.forEach(version => {
     version.edits = version.edits.filter((edit: Json) => !emptied.includes(edit))
 })
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- walks the same untyped document as `Json`
 const asJsonLd = (value: any): any => {
     if (value instanceof Date) {
         return value.toISOString().slice(0, 10)

@@ -2,11 +2,14 @@ import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, T
 import { useEffect, useState } from "react";
 import { AnyFeature, conditions, ConditionState } from "linked-rolls";
 
+/** Every condition any kind of feature allows, since the kind is only known at runtime. */
+export type FeatureConditionType = typeof conditions[keyof typeof conditions][number]
+
 interface FeatureConditionDialogProps {
     open: boolean
     feature: AnyFeature
     onClose: () => void
-    onDone: (condition: ConditionState<any>) => void
+    onDone: (condition: ConditionState<FeatureConditionType>) => void
 }
 
 export function FeatureConditionDialog({ open, feature, onClose, onDone }: FeatureConditionDialogProps) {
