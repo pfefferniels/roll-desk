@@ -32,6 +32,7 @@ import { Arguable } from "./Arguable"
 import { RollRange, SelectionContext } from "../../providers/SelectionContext"
 import { EditionContext } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
+import { usePlayback } from "../../hooks/usePlayback"
 import { useHotkeys } from "react-hotkeys-hook"
 import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
@@ -107,7 +108,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [range, setRange] = useState<RollRange>()
-    const [isPlaying, setIsPlaying] = useState(false)
+    const { isPlaying, started, stopped } = usePlayback()
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
@@ -181,20 +182,20 @@ export const Desk = ({ show }: DeskProps) => {
 
         if (isPlaying) {
             stop()
-            setIsPlaying(false)
+            stopped()
             return
         }
 
         const emulation = new Emulation(welteT100System, emulationOptions)
         emulation.emulateVersion(currentVersion, view, { range, skipToFirstNote: true })
 
-        play(emulation.asMIDI(), (e) => {
+        const schedule = play(emulation.asMIDI(), (e) => {
             if (e.type !== 'meta' || e.subtype !== 'text') return
 
             announcePlayback(e.text, playbackMark)
             spotlight(e.text, playbackMark)
         })
-        setIsPlaying(true)
+        started(schedule)
     }
 
     const downloadMIDI = useCallback(async () => {
