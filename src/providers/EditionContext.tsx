@@ -31,6 +31,13 @@ export const emptyMetadata: EditionMetadata = {
     }
 };
 
+/** An edition with nothing on it yet, waiting to be named. */
+export const emptyEdition = (): Edition => ({
+    versions: [],
+    copies: [],
+    ...emptyMetadata
+});
+
 export const EditionContext = createContext<{
     edition?: Edition;
     setEdition: (edition: Edition) => void;

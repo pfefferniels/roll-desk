@@ -1,15 +1,17 @@
 import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack, IconButton, Typography } from '@mui/material';
 import { Add, DeleteOutline, Save as SaveIcon } from '@mui/icons-material';
-import { ImportButton } from './ImportButton';
 import { EditionContext } from '../../providers/EditionContext';
 import { assignValue, CollationTolerance, Concept, Editor, EditorialRole, editorialRoles, systemOf, valueOf, welteT100 } from 'linked-rolls';
 import { toleranceOf } from '../../helpers/collationTolerance';
 import { DateField } from './DateField';
 import { ToleranceFields } from './ToleranceFields';
 
+/** The two jobs the dialog does: naming a new edition, or revising the metadata of one. */
+export type MetadataJob = 'create' | 'edit'
+
 interface EditMetadataProps {
-  open: boolean
+  job: MetadataJob
   onClose: () => void
 }
 
@@ -27,7 +29,7 @@ const licenses = [
   { name: 'Creative Commons Attribution-NonCommercial-NoDerivatives 4.0', url: 'https://creativecommons.org/licenses/by-nc-nd/4.0/' },
 ];
 
-const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
+const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const { apply, edition } = useContext(EditionContext)
 
   const [title, setTitle] = useState<string>('');
@@ -67,8 +69,6 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
     setRecordingPlace(edition.roll.recordingEvent.place.name);
   }, [edition])
 
-  const editingExisting = edition !== undefined
-
   const handleSave = () => {
     const selectedLicense = licenses.find((l) => l.name === license);
 
@@ -90,9 +90,9 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog open={true} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
-        {editingExisting ? 'Edit Metadata' : 'Create Edition'}
+        {job === 'create' ? 'Create Edition' : 'Edit Metadata'}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} direction='row' sx={{ marginTop: '1rem' }}>
@@ -215,9 +215,8 @@ const EditMetadata = ({ open, onClose }: EditMetadataProps) => {
           startIcon={<SaveIcon />}
           onClick={handleSave}
         >
-          {editingExisting ? 'Save' : 'Create'}
+          {job === 'create' ? 'Create' : 'Save'}
         </Button>
-        <ImportButton />
       </DialogActions>
     </Dialog>
   );

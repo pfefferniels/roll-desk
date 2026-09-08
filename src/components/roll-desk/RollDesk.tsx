@@ -16,7 +16,7 @@ import { versionAsMidi, versionsAsMidiArchive } from "../../helpers/versionMidi"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
-import EditMetadata from "./EditMetadata"
+import EditMetadata, { MetadataJob } from "./EditMetadata"
 import { VersionMenu, VersionSelection } from "./VersionMenu"
 import { CopyFacsimileMenu, FacsimileSelection } from "./CopyFacsimileMenu"
 import { PinchZoomProvider } from "../../hooks/usePinchZoom"
@@ -31,7 +31,7 @@ import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
 import { Arguable } from "./Arguable"
 import { RollRange, SelectionContext } from "../../providers/SelectionContext"
-import { EditionContext } from "../../providers/EditionContext"
+import { EditionContext, emptyEdition } from "../../providers/EditionContext"
 import { usePiano } from "react-pianosound"
 import { usePlayback } from "../../hooks/usePlayback"
 import { useHotkeys } from "react-hotkeys-hook"
@@ -94,7 +94,7 @@ interface DeskProps {
 export const Desk = ({ show }: DeskProps) => {
     const { play } = usePiano()
 
-    const { edition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
+    const { edition, setEdition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
     const initialStretch = viewOnly ? 0.2 : 1
     const stretch = useLiveZoom(initialStretch, zoomRange)
@@ -103,7 +103,7 @@ export const Desk = ({ show }: DeskProps) => {
     const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
     const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
 
-    const [editMetadata, setEditMetadata] = useState(!viewOnly)
+    const [metadataJob, setMetadataJob] = useState<MetadataJob>()
     const [editCopy, setEditCopy] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
@@ -239,9 +239,15 @@ export const Desk = ({ show }: DeskProps) => {
         }
     }, [currentCopyId, edition])
 
+    /** Puts an unnamed edition on the desk and asks for the name it goes by. */
+    const createEdition = () => {
+        setEdition(emptyEdition())
+        setMetadataJob('create')
+    }
+
     if (!edition) {
         return (
-            <Welcome />
+            <Welcome onCreate={createEdition} />
         )
     }
 
@@ -401,7 +407,7 @@ export const Desk = ({ show }: DeskProps) => {
                         )}
                     </div>
                     <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
-                        <IconButton onClick={() => setEditMetadata(true)}>
+                        <IconButton onClick={() => setMetadataJob('edit')}>
                             <Create />
                         </IconButton>
                     </div>
@@ -578,10 +584,12 @@ export const Desk = ({ show }: DeskProps) => {
                 versionCount={edition.versions.length}
             />
 
-            <EditMetadata
-                onClose={() => setEditMetadata(false)}
-                open={editMetadata}
-            />
+            {metadataJob && (
+                <EditMetadata
+                    job={metadataJob}
+                    onClose={() => setMetadataJob(undefined)}
+                />
+            )}
 
             <RollCopyDialog
                 open={editCopy}
