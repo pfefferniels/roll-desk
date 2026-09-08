@@ -36,6 +36,7 @@ import { usePiano } from "react-pianosound"
 import { usePlayback } from "../../hooks/usePlayback"
 import { useHotkeys } from "react-hotkeys-hook"
 import { goesToAnOverlay } from "../../helpers/goesToAnOverlay"
+import { activatesItsTarget } from "../../helpers/activatesItsTarget"
 import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "./ConstraintsPanel"
@@ -175,7 +176,9 @@ export const Desk = ({ show }: DeskProps) => {
                 break
             }
         }
-    }, { ignoreEventWhen: goesToAnOverlay })
+    }, {
+        ignoreEventWhen: event => goesToAnOverlay(event) || activatesItsTarget(event)
+    })
 
     // Dialogs, menus and popovers swallow Escape themselves, so this only
     // reaches the desk when nothing is open over it.

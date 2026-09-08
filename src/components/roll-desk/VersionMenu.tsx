@@ -48,6 +48,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const [symbolsToRecollate, setSymbolsToRecollate] = useState<string[]>()
     const [confirmDetach, setConfirmDetach] = useState(false)
 
+    // No focused control claims a letter for itself, so unlike the desk's
+    // Space these need no guard beyond the one for overlays.
     useHotkeys(['m', 's'], (_, handler) => {
         switch (handler.keys?.join('')) {
             case 'm':
