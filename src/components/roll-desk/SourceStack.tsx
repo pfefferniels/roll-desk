@@ -1,5 +1,4 @@
 import { useContext } from 'react'
-import { PaperStretch } from 'linked-rolls'
 import { EditionContext } from '../../providers/EditionContext'
 import { SourcePreview } from './SourcePreview'
 
@@ -18,8 +17,7 @@ export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
 
     for (const copy of edition.copies) {
         const shift = copy.measurements.shift?.horizontal || 0
-        const stretchCondition = copy.conditions.find(c => c.conditionType === 'paper-stretch')
-        const stretch = stretchCondition ? (stretchCondition as PaperStretch).factor : 1
+        const stretch = copy.measurements.scale ?? 1
 
         for (const feature of copy.features) {
             // Collated positions

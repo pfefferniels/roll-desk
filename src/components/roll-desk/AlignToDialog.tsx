@@ -1,26 +1,37 @@
-import { Button, Dialog, DialogActions, DialogContent, MenuItem, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, Millimeters, RollCopy } from "linked-rolls";
+import { Button, Dialog, DialogActions, DialogContent, FormControlLabel, MenuItem, Radio, RadioGroup, Select, Stack, Typography } from "@mui/material";
+import { alignFeatures, assignObject, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading, systemIdOf } from "linked-rolls";
 import { useContext, useEffect, useRef, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { valueOf } from "linked-rolls";
+import { PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, tempoStartOf } from "./ProductionFields";
 
 interface AlignToDialogProps {
     open: boolean
     onClose: () => void
     copy: RollCopy
-    onDone: (shift: Millimeters, stretch: number) => void
+    onDone: (shift: Millimeters, scale: number, reading?: ScaleReading) => void
 }
+
+type Cause = ScaleReading['cause']
+
+const asPercent = (factor: number) => `${(factor * 100).toFixed(2)} %`
 
 export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProps) => {
     const { edition } = useContext(EditionContext)
     const [copyB, setCopyB] = useState<RollCopy>()
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    let shift: Millimeters | undefined, stretch: number | undefined
+    // A copy cut for another system than the roll is shorter or longer by the ratio of the speeds.
+    const copySystem = systemIdOf(copy.production?.system)
+    const cutForAnotherSystem = copySystem !== undefined && copySystem !== systemIdOf(edition?.roll.system)
+    const [cause, setCause] = useState<Cause>(cutForAnotherSystem ? 'speed' : 'paper')
+    const [speed, setSpeed] = useState<SpeedInput>(speedInputOf(copy.production?.speed))
+
+    let shift: Millimeters | undefined, scale: number | undefined
     if (copyB) {
-        let align = alignFeatures(copy.features, copyB.features)
-        shift = align.shift
-        stretch = align.stretch
+        const alignment = alignFeatures(copy.features, copyB.features)
+        shift = alignment.shift
+        scale = alignment.scale
     }
 
     let verticalStretch: number | undefined = undefined
@@ -28,9 +39,15 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
         verticalStretch = copyB.measurements.dimensions.height / copy.measurements.dimensions.height
     }
 
+    const paperSpeed = paperSpeedOf(speed)
+    const rollSpeed = edition?.tempoAdjustment
+    const expectedFromSpeeds = paperSpeed && rollSpeed
+        ? inMetersPerMinute(tempoStartOf(rollSpeed)) / inMetersPerMinute(paperSpeed)
+        : undefined
+
     useEffect(() => {
         const canvas = canvasRef.current
-        if (!canvas || !copyB || shift === undefined || stretch === undefined) return
+        if (!canvas || !copyB || shift === undefined || scale === undefined) return
 
         const dpr = window.devicePixelRatio || 1
         const rect = canvas.getBoundingClientRect()
@@ -41,12 +58,27 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
         if (!ctx) return
 
         ctx.scale(dpr, dpr)
-        drawAlignmentPreview(ctx, rect.width, rect.height, copy, copyB, shift, stretch)
-    }, [copy, copyB, shift, stretch])
+        drawAlignmentPreview(ctx, rect.width, rect.height, copy, copyB, shift, scale)
+    }, [copy, copyB, shift, scale])
 
     if (!edition) return null
 
     const otherCopies = edition.copies.filter(c => c.id !== copy.id)
+
+    const readingOf = (factor: number): ScaleReading | undefined => {
+        if (cause === 'paper') {
+            return {
+                cause,
+                condition: assignObject<PaperStretch>({
+                    type: 'ConditionState',
+                    conditionType: 'paper-stretch',
+                    factor,
+                    description: 'calculated by alignment'
+                })
+            }
+        }
+        return paperSpeed ? { cause, speed: assignObject(paperSpeed) } : undefined
+    }
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -73,20 +105,38 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
                         </MenuItem>
                     </Select>
 
-                    {copyB && shift !== undefined && stretch !== undefined && (
+                    {copyB && shift !== undefined && scale !== undefined && (
                         <>
                             <canvas
                                 ref={canvasRef}
                                 style={{ width: '100%', height: 120, display: 'block', marginTop: 8 }}
                             />
                             <div>
-                                Shift: {shift.toFixed(4)} mm, Stretch: {+(stretch.toFixed(4)) * 100} %
+                                Shift: {shift.toFixed(4)} mm, Scale: {asPercent(scale)}
                             </div>
                             {verticalStretch && (
                                 <div style={{ color: 'gray' }}>
-                                    Vertical Stretch: {+verticalStretch.toFixed(4) * 100} %
+                                    Vertical Stretch: {asPercent(verticalStretch)}
                                 </div>
                             )}
+                        </>
+                    )}
+
+                    <Typography>The scale is put down to</Typography>
+                    <RadioGroup value={cause} onChange={e => setCause(e.target.value as Cause)}>
+                        <FormControlLabel value='paper' control={<Radio size='small' />} label='the paper having stretched or shrunk' />
+                        <FormControlLabel value='speed' control={<Radio size='small' />} label='the copy being cut for another paper speed' />
+                    </RadioGroup>
+                    {cause === 'speed' && (
+                        <>
+                            <PaperSpeedFields value={speed} onChange={setSpeed} />
+                            <Typography variant='caption' color='text.secondary'>
+                                {expectedFromSpeeds !== undefined
+                                    ? `Expected from the speeds: ${asPercent(expectedFromSpeeds)}.`
+                                    : paperSpeed
+                                        ? 'The edition states no tempo to compare the speed with.'
+                                        : 'Without a speed the scale is recorded and left unexplained.'}
+                            </Typography>
                         </>
                     )}
                 </Stack>
@@ -94,10 +144,10 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
 
             <DialogActions>
                 <Button
-                    disabled={!shift && !stretch}
+                    disabled={shift === undefined || scale === undefined}
                     onClick={() => {
-                        if (shift && stretch) {
-                            onDone(shift, stretch)
+                        if (shift !== undefined && scale !== undefined) {
+                            onDone(shift, scale, readingOf(scale))
                         }
                     }}
                 >
@@ -115,7 +165,7 @@ function drawAlignmentPreview(
     copyA: RollCopy,
     copyB: RollCopy,
     shift: number,
-    stretch: number
+    scale: number
 ) {
     ctx.clearRect(0, 0, w, h)
 
@@ -132,11 +182,11 @@ function drawAlignmentPreview(
         aMaxX = Math.max(aMaxX, f.horizontal.to)
     }
 
-    // Copy A aligned extents: (x + shift) * stretch
+    // Copy A aligned extents: (x + shift) * scale
     let aaMinX = Infinity, aaMaxX = -Infinity
     for (const f of copyA.features) {
-        const from = (f.horizontal.from + shift) * stretch
-        const to = (f.horizontal.to + shift) * stretch
+        const from = (f.horizontal.from + shift) * scale
+        const to = (f.horizontal.to + shift) * scale
         aaMinX = Math.min(aaMinX, from)
         aaMaxX = Math.max(aaMaxX, to)
     }
@@ -187,8 +237,8 @@ function drawAlignmentPreview(
     // Copy A aligned features (blue)
     ctx.fillStyle = 'rgba(25, 118, 210, 0.6)'
     for (const f of copyA.features) {
-        const from = (f.horizontal.from + shift) * stretch
-        const to = (f.horizontal.to + shift) * stretch
+        const from = (f.horizontal.from + shift) * scale
+        const to = (f.horizontal.to + shift) * scale
         const x = sx(from)
         const fw = Math.max(sx(to) - sx(from), 0.5)
         const y = pad + (f.vertical.from / 99) * drawH

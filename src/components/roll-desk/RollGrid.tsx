@@ -143,10 +143,10 @@ export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) =
     const calibration = calibrationOf(copy)
     if (!calibration) return undefined
 
-    const stretch = copy.conditions.find(condition => condition.conditionType === 'paper-stretch')
+    const scale = copy.measurements.scale ?? 1
     const asScanned = (mm: number) => {
         const unshifted = mm - (copy.measurements.shift?.horizontal || 0)
-        return mmToPixels(stretch ? unshifted / stretch.factor : unshifted, dpi)
+        return mmToPixels(unshifted / scale, dpi)
     }
 
     const x1 = asScanned(selection.horizontal.from)

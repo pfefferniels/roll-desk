@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react'
-import { PaperStretch, RollCopy } from 'linked-rolls'
+import { RollCopy } from 'linked-rolls'
 import { valueOf } from 'linked-rolls'
 import { Arguable } from './Arguable'
 import { EditionContext } from '../../providers/EditionContext'
@@ -122,8 +122,7 @@ function drawPreview(
     const drawW = w - pad * 2
 
     const shift = copy.measurements.shift?.horizontal || 0
-    const stretchCondition = copy.conditions.find(c => c.conditionType === 'paper-stretch')
-    const stretch = stretchCondition ? (stretchCondition as PaperStretch).factor : 1
+    const stretch = copy.measurements.scale ?? 1
 
     // Feature extents in collated space
     let cMinX = Infinity, cMaxX = -Infinity

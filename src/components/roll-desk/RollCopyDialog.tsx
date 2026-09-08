@@ -1,9 +1,10 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { createVersion, readFromSpencerMIDI, readFromStanfordAton, removeCopy, RollCopy } from "linked-rolls";
+import { assignObject, createVersion, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, TrackerBar, trackerBarOf, welteLicensee, welteT100 } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
+import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect, tempoStartOf } from "./ProductionFields";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -12,12 +13,65 @@ interface RollCopyDialogProps {
     onDone?: (copyId: string) => void
 }
 
+/** A speed the upload suggests, and where it comes from. */
+interface Suggestion {
+    speed: PaperSpeed
+    source: string
+}
+
+const isRollFile = (file: File) => file.name.endsWith('.bar') || file.name.endsWith('.txt')
+const isAnnFile = (file: File) => file.name.endsWith('.ann')
+
+/**
+ * The speed the upload suggests: the tempo in the .ann beside a
+ * Spencer file, or, for a copy of the roll's own system, the tempo the
+ * edition states or the speed documented for the system. A copy cut
+ * for another system carries a tempo of its own, which nothing but its
+ * label can tell.
+ */
+const suggestedSpeed = async (
+    files: File[],
+    system: TrackerBar,
+    editionBar: TrackerBar,
+    tempo?: RollTempo
+): Promise<Suggestion | undefined> => {
+    const ann = files.find(isAnnFile)
+    if (ann) {
+        const speed = paperSpeedOfSpencerAnn(readSpencerAnn(await ann.text()))
+        if (speed) return { speed, source: `the roll tempo in ${ann.name}` }
+    }
+    if (system.id !== editionBar.id) return undefined
+    if (tempo) return { speed: tempoStartOf(tempo), source: 'the tempo the edition states for the roll' }
+    if (system.paperSpeed) return { speed: system.paperSpeed, source: `the speed documented for the ${system.name}` }
+    return undefined
+}
+
+/** A speed taken over from a suggestion, with the suggestion's source as the reason for believing it. */
+const adopted = (suggestion: Suggestion): ObjectAssumption<PaperSpeed> => ({
+    ...suggestion.speed,
+    '@annotation': {
+        id: v4(),
+        belief: {
+            type: 'belief',
+            id: v4(),
+            certainty: 'likely',
+            reasons: [{ type: 'beliefAdoption', note: suggestion.source }]
+        }
+    }
+})
+
 export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogProps) => {
     const { edition, apply } = useContext(EditionContext)
-    const [file, setFile] = useState<File | null>(null);
+    const editionBar = trackerBarOf(edition?.roll.system) ?? welteT100
+    const tempo = edition?.tempoAdjustment
+    const [files, setFiles] = useState<File[]>([]);
     const [keeper, setKeeper] = useState('')
     const [keeperAuthority, setKeeperAuthority] = useState('')
     const [siglum, setSiglum] = useState('')
+    const [system, setSystem] = useState<TrackerBar>(editionBar)
+    const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
+    const [speedTyped, setSpeedTyped] = useState(false)
+    const [suggestion, setSuggestion] = useState<Suggestion>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string>()
 
@@ -29,20 +83,36 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     useEffect(() => {
         if (!open) {
-            setFile(null)
+            setFiles([])
             setKeeper(copy?.keeper.name ?? '')
             setKeeperAuthority(copy?.keeper.sameAs[0] ?? '')
             setSiglum('')
+            setSystem(editionBar)
+            setSpeed(noSpeed)
+            setSpeedTyped(false)
+            setSuggestion(undefined)
             setError(undefined)
             setLoading(false)
         }
-    }, [open, copy])
+    }, [open, copy, editionBar])
+
+    useEffect(() => {
+        let stale = false
+        suggestedSpeed(files, system, editionBar, tempo).then(found => {
+            if (stale) return
+            setSuggestion(found)
+            if (!speedTyped) setSpeed(found ? speedInputOf(found.speed) : noSpeed)
+        })
+        return () => { stale = true }
+    }, [files, system, editionBar, tempo, speedTyped])
+
+    const rollFile = files.find(isRollFile)
 
     const handleUpload = async () => {
         if (!edition) return
 
-        if (!file) {
-            setError('Please select a file to upload.')
+        if (!rollFile) {
+            setError('Please select a roll file to upload.')
             return
         }
 
@@ -61,11 +131,20 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 features: [],
             }
 
-            if (file.name.endsWith('midi') || file.name.endsWith('mid')) {
-                rollCopy = readFromSpencerMIDI(await file.arrayBuffer());
+            if (rollFile.name.endsWith('.bar')) {
+                rollCopy = readFromSpencerBar(await rollFile.arrayBuffer(), { system, bar: editionBar });
             }
-            else if (file.name.endsWith('txt')) {
-                rollCopy = readFromStanfordAton(await file.text());
+            else if (rollFile.name.endsWith('.txt')) {
+                rollCopy = readFromStanfordAton(await rollFile.text(), { system, bar: editionBar });
+            }
+            else {
+                throw new Error('Expected a Stanford analysis (.txt) or a Spencer e-roll (.bar).')
+            }
+
+            const paperSpeed = paperSpeedOf(speed)
+            if (paperSpeed) {
+                const stated = !speedTyped && suggestion ? adopted(suggestion) : assignObject(paperSpeed)
+                rollCopy.production = { ...rollCopy.production, speed: stated }
             }
 
             rollCopy.keeper = {
@@ -82,6 +161,14 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             setLoading(false)
         }
     };
+
+    const speedHint = speedTyped
+        ? undefined
+        : suggestion
+            ? `Prefilled from ${suggestion.source}.`
+            : system.id !== editionBar.id
+                ? 'A copy cut for another system carries a tempo of its own; state it if the label or the file gives one.'
+                : undefined
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -115,14 +202,37 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                         label='Siglum'
                     />
 
+                    {!copy && (
+                        <>
+                            <Typography>Production</Typography>
+                            <SystemSelect value={system} onChange={setSystem} />
+                            <PaperSpeedFields
+                                value={speed}
+                                onChange={input => {
+                                    setSpeed(input)
+                                    setSpeedTyped(true)
+                                }}
+                            />
+                            <Typography variant='caption' color='text.secondary'>
+                                {speedHint ?? 'The system the copy was cut for decides how its holes are read. A copy cut for another speed than the roll comes out longer or shorter by the ratio of the speeds, which the alignment then shows.'}
+                            </Typography>
+                        </>
+                    )}
+
                     <Divider flexItem />
                     <Button variant="outlined" component="label" startIcon={<MusicNote />}>
-                        {file ? file.name : 'Upload Roll Analysis'}
+                        {files.length > 0 ? files.map(file => file.name).join(', ') : 'Upload Roll Analysis (.txt) or E-Roll (.bar with its .ann)'}
                         <input
                             type="file"
                             hidden
-                            accept=".txt,.mid,.midi"
-                            onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                            multiple
+                            accept=".txt,.bar,.ann"
+                            onChange={(e) => {
+                                const chosen = Array.from(e.target.files ?? [])
+                                setFiles(chosen)
+                                // Spencer's Welte e-rolls are Licensee rolls
+                                if (chosen.some(file => file.name.endsWith('.bar'))) setSystem(welteLicensee)
+                            }}
                         />
                     </Button>
                 </Stack>

@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material"
-import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, PaperStretch, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { AnyFeature, alignCopy, assignObject, ConditionState, isRollFeature, removeFeatures, RollConditionAssignment, RollFeature, Shift, removeCopy, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -231,20 +231,13 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 copy={copy}
                 open={alignCopies}
                 onClose={() => setAlignCopies(false)}
-                onDone={(shiftValue, stretchValue) => {
+                onDone={(shiftValue, scale, reading) => {
                     const shift: Shift = {
                         horizontal: shiftValue,
                         vertical: track(0)
                     }
 
-                    const stretch = assignObject<PaperStretch>({
-                        type: 'ConditionState',
-                        conditionType: 'paper-stretch',
-                        factor: stretchValue,
-                        description: 'calculated by alignment'
-                    })
-
-                    apply(alignCopy(copyId, shift, stretch))
+                    apply(alignCopy(copyId, shift, scale, reading))
                     setAlignCopies(false)
                 }}
             />

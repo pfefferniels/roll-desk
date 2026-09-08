@@ -1,4 +1,4 @@
-import { calibrationOf, columnsOf, PaperStretch, RollCopy, TrackArea } from "linked-rolls"
+import { calibrationOf, columnsOf, RollCopy, TrackArea } from "linked-rolls"
 import { useEffect, useRef, useState } from "react"
 import useIsVisible from "../../hooks/useIsVisible"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
@@ -19,14 +19,11 @@ const dpi = 300.25
 
 const pixelsToMM = (pixels: number) => pixels / dpi * 25.4
 
-const stretchOf = (copy: RollCopy) =>
-    copy.conditions.find((c): c is PaperStretch => c.conditionType === 'paper-stretch')?.factor ?? 1
-
 /** Screen x of a scan row, through whatever alignment the copy was given. */
 const rowToXOf = (copy: RollCopy, translateX: (mm: number) => number) => {
     const shift = copy.measurements.shift?.horizontal ?? 0
-    const stretch = stretchOf(copy)
-    return (row: number) => translateX((pixelsToMM(row) + shift) * stretch)
+    const scale = copy.measurements.scale ?? 1
+    return (row: number) => translateX((pixelsToMM(row) + shift) * scale)
 }
 
 /**
