@@ -1,14 +1,12 @@
 import React, { useCallback, useContext, useState } from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { EditionView, constraintProblems, importJsonLd } from "linked-rolls";
+import { EditionView, constraintProblems } from "linked-rolls";
 import { EditionContext } from '../../providers/EditionContext';
 import { useSnackbar } from '../../providers/SnackbarContext';
 import { problemCount } from '../../helpers/constraints';
-import { checkedDocument } from '../../helpers/importEdition';
+import { CheckedDocument, importedEdition, readDocument, refusalToOpen } from '../../helpers/importEdition';
 import { refusalToDrawScans } from '../../helpers/scanCalibration';
-
-const jsonExtensions = new Set(['json', 'jsonld'])
 
 interface ImportButtonProps {
     outlined?: boolean
@@ -19,14 +17,20 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
     const { setMessage } = useSnackbar()
 
     const [errors, setErrors] = useState<string[]>()
-    const [pending, setPending] = useState<any>()
+    const [pending, setPending] = useState<CheckedDocument['document']>()
 
     /**
      * Takes the document as the edition and says what it could not take
      * at face value: scans it cannot place, and constraints that fail.
      */
-    const adopt = useCallback((document: Parameters<typeof importJsonLd>[0]) => {
-        const edition = importJsonLd(document)
+    const adopt = useCallback((document: CheckedDocument['document']) => {
+        const imported = importedEdition(document)
+        if ('refusal' in imported) {
+            setMessage(imported.refusal)
+            return
+        }
+
+        const edition = imported.value
         setEdition(edition)
 
         const count = constraintProblems(new EditionView(edition)).length
@@ -42,33 +46,40 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
+        const refusal = refusalToOpen(file.name)
+        if (refusal) {
+            setMessage(refusal)
+            return
+        }
+
         const reader = new FileReader();
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
-        reader.onload = async (e) => {
-            const fileContent = e.target?.result as string;
+        reader.onload = (e) => {
+            const reading = readDocument(e.target?.result as string);
+            if ('refusal' in reading) {
+                setMessage(reading.refusal)
+                return
+            }
 
-            try {
-                if (fileExtension && jsonExtensions.has(fileExtension)) {
-                    const { document, errors } = checkedDocument(JSON.parse(fileContent));
-                    if (errors.length === 0) {
-                        adopt(document)
-                    }
-                    else {
-                        setErrors(errors)
-                        setPending(document)
-                    }
-                } else {
-                    console.log("Unsupported file format. Please select a JSON or JSON-LD file.");
-                    return;
-                }
-            } catch (error) {
-                console.error("Error importing file:", error);
+            const { document, errors } = reading.value
+            if (errors.length === 0) {
+                adopt(document)
+            }
+            else {
+                setErrors(errors)
+                setPending(document)
             }
         };
 
         reader.readAsText(file);
-    }, [adopt]);
+    }, [adopt, setMessage]);
+
+    /** Takes the document although the schema turns it down. The outcome is said in the snackbar. */
+    const proceedAnyways = () => {
+        adopt(pending)
+        setPending(undefined)
+        setErrors(undefined)
+    }
 
     return (
         <>
@@ -113,10 +124,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
                         <Button onClick={() => setErrors(undefined)} variant='outlined'>
                             Cancel
                         </Button>
-                        <Button onClick={() => {
-                            adopt(pending)
-                            setPending(undefined)
-                        }} variant='outlined' color='error'>
+                        <Button onClick={proceedAnyways} variant='outlined' color='error'>
                             Proceed Anyways
                         </Button>
                     </DialogActions>
