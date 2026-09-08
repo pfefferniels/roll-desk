@@ -81,15 +81,13 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
         const insertionBBox = getBoundingBox(getHull(insertionBBoxes).points);
 
         hulls.push(
-            <>
-                <Arrow
-                    from={deletionBBox}
-                    to={insertionBBox}
-                    onClick={onClick}
-                    svgProps={{ id: edit.id }}
-                />
-            </>
-
+            <Arrow
+                key={`${edit.id}-arrow`}
+                from={deletionBBox}
+                to={insertionBBox}
+                onClick={onClick}
+                svgProps={{ id: edit.id }}
+            />
         )
     }
 
@@ -164,7 +162,7 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
 
     return (
         <g>
-            {...hulls}
+            {hulls}
         </g>
     );
 }
