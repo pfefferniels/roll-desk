@@ -51,17 +51,15 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
 }
 
 export const DynamicsGrid = ({ velocity }: Pick<WelteT100Options, 'velocity'>) => {
-    const { translateX, trackToY } = usePinchZoom()
+    const { translateX, trackToY, rollLength } = usePinchZoom()
 
     const bassShift = trackToY(bassSpace)
     const trebleShift = trackToY(trebleSpace)
 
-    const width = translateX(100000)
-
     const lineAt = (y: number, dashed = false) => (
         <line
             x1={0}
-            x2={width}
+            x2={translateX(rollLength)}
             y1={y}
             y2={y}
             stroke="darkblue"
