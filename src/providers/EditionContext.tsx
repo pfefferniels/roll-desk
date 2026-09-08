@@ -1,11 +1,8 @@
-import { enablePatches, produceWithPatches, applyPatches, Patch, enableMapSet } from "immer";
 import { assignValue, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView, systemOf, welteT100 } from "linked-rolls";
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useMemo, useReducer } from "react";
+import { editionReducer, editionState } from "./editionReducer";
 
 export type { EditionOp }
-
-type HistoryEntry = { patches: Patch[]; inverse: Patch[] };
-type History = { past: HistoryEntry[]; future: HistoryEntry[]; limit: number };
 
 export const emptyMetadata: EditionMetadata = {
     title: '',
@@ -56,86 +53,19 @@ export const EditionContext = createContext<{
 });
 
 export function EditionProvider({ edition: existingEdition, children }: { edition?: Edition, children: React.ReactNode }) {
-    const [edition, setEdition] = useState<Edition | undefined>(existingEdition);
-    const [history, setHistory] = useState<History>({
-        past: [],
-        future: [],
-        limit: 300,
-    });
+    const [{ edition, past, future }, dispatch] = useReducer(editionReducer, existingEdition, editionState);
 
     const view = useMemo(() => edition && new EditionView(edition), [edition]);
-
-    useEffect(() => {
-        enablePatches();
-        enableMapSet();
-    }, []);
-
-    const apply = (op: EditionOp) => {
-        setEdition((prev) => {
-            const [next, patches, inverse] = produceWithPatches(prev, op);
-
-            setHistory((h) => {
-                const nextPast = [...h.past, { patches, inverse }];
-                // respect limit (drop oldest if needed)
-                const clipped =
-                    nextPast.length > h.limit
-                        ? nextPast.slice(nextPast.length - h.limit)
-                        : nextPast;
-                return { past: clipped, future: [], limit: h.limit };
-            });
-            return next;
-        });
-    };
-
-    const undo = () => {
-        setEdition((current) => {
-            if (!current) return
-
-            if (history.past.length === 0) return current;
-            const entry = history.past[history.past.length - 1];
-            const undone = applyPatches(current, entry.inverse);
-            setHistory((h) => ({
-                past: h.past.slice(0, -1),
-                future: [...h.future, entry],
-                limit: h.limit,
-            }));
-            return undone;
-        });
-    };
-
-    const redo = () => {
-        setEdition((current) => {
-            if (!current) return
-
-            if (history.future.length === 0) return current;
-            const entry = history.future[history.future.length - 1];
-            const redone = applyPatches(current, entry.patches);
-            setHistory((h) => ({
-                past: [...h.past, entry],
-                future: h.future.slice(0, -1),
-                limit: h.limit,
-            }));
-            return redone;
-        });
-    };
-
-    const { canUndo, canRedo } = useMemo(
-        () => ({
-            canUndo: history.past.length > 0,
-            canRedo: history.future.length > 0,
-        }),
-        [history.past.length, history.future.length]
-    );
 
     return (
         <EditionContext.Provider value={{
             edition,
-            setEdition,
-            apply,
-            undo,
-            redo,
-            canUndo,
-            canRedo,
+            setEdition: (edition) => dispatch({ type: 'set', edition }),
+            apply: (op) => dispatch({ type: 'apply', op }),
+            undo: () => dispatch({ type: 'undo' }),
+            redo: () => dispatch({ type: 'redo' }),
+            canUndo: past.length > 0,
+            canRedo: future.length > 0,
             view,
             viewOnly: !!existingEdition
         }}>
