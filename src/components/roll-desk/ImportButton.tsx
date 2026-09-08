@@ -1,10 +1,11 @@
 import React, { useCallback, useContext, useState } from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { EditionView, constraintProblems, importJsonLd, validate } from "linked-rolls";
+import { EditionView, constraintProblems, importJsonLd } from "linked-rolls";
 import { EditionContext } from '../../providers/EditionContext';
 import { useSnackbar } from '../../providers/SnackbarContext';
 import { problemCount } from '../../helpers/constraints';
+import { checkedDocument } from '../../helpers/importEdition';
 
 const jsonExtensions = new Set(['json', 'jsonld'])
 
@@ -40,14 +41,13 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
 
             try {
                 if (fileExtension && jsonExtensions.has(fileExtension)) {
-                    const jsonDoc = JSON.parse(fileContent);
-                    const success = validate(jsonDoc);
-                    if (success) {
-                        adopt(jsonDoc)
+                    const { document, errors } = checkedDocument(JSON.parse(fileContent));
+                    if (errors.length === 0) {
+                        adopt(document)
                     }
                     else {
-                        setErrors((validate.errors || []).map(e => e.instancePath + " " + e.message))
-                        setPending(jsonDoc)
+                        setErrors(errors)
+                        setPending(document)
                     }
                 } else {
                     console.log("Unsupported file format. Please select a JSON or JSON-LD file.");
