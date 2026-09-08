@@ -4,14 +4,9 @@ import { ZoomRange } from "../../hooks/useLiveZoom"
 
 export const zoomRange: ZoomRange = { min: 0.1, max: 2.5 }
 
-const marks = [
-    { value: 0.1, label: '1%' },
-    { value: 0.5, label: '50%' },
-    { value: 1, label: '100%' },
-    { value: 1.5, label: '150%' },
-    { value: 2, label: '200%' },
-    { value: 2.5, label: '250%' },
-]
+const percentLabel = (zoom: number) => `${Math.round(zoom * 100)}%`
+
+const marks = [0.1, 0.5, 1, 1.5, 2, 2.5].map(value => ({ value, label: percentLabel(value) }))
 
 interface ZoomSliderProps {
     /** The zoom the roll is laid out at. The thumb follows it when it moves elsewhere. */
