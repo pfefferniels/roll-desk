@@ -233,7 +233,7 @@ export const Desk = ({ show }: DeskProps) => {
         if (currentCopyId && !edition.copies.find(c => c.id === currentCopyId)) {
             setCurrentCopyId(undefined)
         }
-    }, [edition?.copies])
+    }, [currentCopyId, edition])
 
     if (!edition) {
         return (
