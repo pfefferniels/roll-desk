@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
-import { EventDimension } from './RollDesk.tsx';
-import { columnsOf, mm, Millimeters, RollCopy, Track, track, welteT100, WithId } from 'linked-rolls';
+import { EventDimension, UserSelection } from './RollDesk.tsx';
+import { columnsOf, isRollFeature, mm, Millimeters, RollCopy, Track, track, welteT100, WithId } from 'linked-rolls';
 import { rollPointAt } from '../../helpers/pointer.ts';
 import { boxOf } from '../../helpers/rollGeometry.ts';
 import { Drag, useDrag } from '../../hooks/useDrag.ts';
 import { drawableCalibrationOf } from '../../helpers/scanCalibration';
 import { inScan } from '../../helpers/scanResolution.ts';
+import { useSelection } from '../../providers/SelectionContext.tsx';
 
 interface RollGridProps {
     width: number;
@@ -34,6 +35,13 @@ export const selectionOf = ({ from, to }: Drag<Corner>): EventDimension | undefi
     }
 }
 
+/**
+ * Whether a selected item is a rubber band. A band is a bare span, where
+ * a feature carries its span along with everything else it is.
+ */
+export const isBand = (item: UserSelection): item is EventDimension =>
+    !isRollFeature(item) && 'horizontal' in item && 'vertical' in item
+
 export const RollGrid = ({
     width,
     selectionMode,
@@ -43,7 +51,7 @@ export const RollGrid = ({
     const { zoom, yToTrack, trackToY, height } = geometry;
 
     const gridRef = useRef<SVGGElement>(null);
-    const [selection, setSelection] = useState<EventDimension & WithId>();
+    const { selection } = useSelection(isBand);
 
     /** Where a pointer sits on the grid, and nothing where no lane does. */
     const cornerAt = (event: MouseEvent): Corner | undefined => {
@@ -59,13 +67,13 @@ export const RollGrid = ({
 
     const drag = useDrag(gridRef, cornerAt, finished => {
         const drawn = selectionOf(finished);
-        const selected = drawn && { ...drawn, id: v4() };
-
-        setSelection(selected);
-        onSelectionDone(selected);
+        onSelectionDone(drawn && { ...drawn, id: v4() });
     });
 
-    const band = drag ? selectionOf(drag) : selection;
+    // Between drags the band is whatever the selection holds, so clearing
+    // the selection takes it off the grid.
+    const [selected] = selection;
+    const band = drag ? selectionOf(drag) : selected;
 
     const lines = Array
         .from({ length: welteT100.trackCount }, (_, i) => track(i + 1))
