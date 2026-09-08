@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControlLabel, MenuItem, Radio, RadioGroup, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, AlignmentResult, assignObject, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading, systemIdOf } from "linked-rolls";
+import { alignFeatures, AlignmentResult, AnyFeature, assignObject, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading, systemIdOf } from "linked-rolls";
 import { useContext, useEffect, useRef, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { valueOf } from "linked-rolls";
@@ -172,6 +172,45 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     )
 }
 
+/** A stretch of the shared horizontal axis the preview is drawn on. */
+export interface Span {
+    from: number
+    to: number
+}
+
+/** Where a millimetre of a copy falls on the shared axis. */
+export type Placement = (x: Millimeters) => number
+
+/**
+ * The least span covering all of the given ones. Undefined when none of them
+ * is there to be covered, which is how a copy without features reaches nowhere.
+ */
+export const spanning = (spans: readonly (Span | undefined)[]): Span | undefined =>
+    spans.reduce<Span | undefined>((total, span) => {
+        if (!span) return total
+        if (!total) return span
+        return { from: Math.min(total.from, span.from), to: Math.max(total.to, span.to) }
+    }, undefined)
+
+/** Where a set of features reaches, once each is placed on the shared axis. */
+export const spanOf = (features: AnyFeature[], place: Placement): Span | undefined =>
+    spanning(features.map(f => ({ from: place(f.horizontal.from), to: place(f.horizontal.to) })))
+
+/** One copy, drawn at one placement, in one pair of colours. */
+interface Layer {
+    features: AnyFeature[]
+    place: Placement
+    fill: string
+    outline: {
+        stroke: string
+        width: number
+        dash: number[]
+    }
+}
+
+/** A layer once it is known how far it reaches, which a layer without features does not. */
+type MeasuredLayer = Layer & { span?: Span }
+
 function drawAlignmentPreview(
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -189,94 +228,67 @@ function drawAlignmentPreview(
     const drawH = h - pad * 2
     const drawW = w - pad * 2
 
-    // Copy A original extents
-    let aMinX = Infinity, aMaxX = -Infinity
-    for (const f of copyA.features) {
-        aMinX = Math.min(aMinX, f.horizontal.from)
-        aMaxX = Math.max(aMaxX, f.horizontal.to)
-    }
+    const asRead: Placement = x => x
+    const aligned: Placement = x => (x + shift) * scale
 
-    // Copy A aligned extents: (x + shift) * scale
-    let aaMinX = Infinity, aaMaxX = -Infinity
-    for (const f of copyA.features) {
-        const from = (f.horizontal.from + shift) * scale
-        const to = (f.horizontal.to + shift) * scale
-        aaMinX = Math.min(aaMinX, from)
-        aaMaxX = Math.max(aaMaxX, to)
-    }
+    const layers: Layer[] = [
+        {
+            features: copyA.features,
+            place: asRead,
+            fill: 'rgba(180, 180, 180, 0.4)',
+            outline: { stroke: '#bbb', width: 1, dash: [4, 3] }
+        },
+        {
+            features: copyA.features,
+            place: aligned,
+            fill: 'rgba(25, 118, 210, 0.6)',
+            outline: { stroke: '#1976d2', width: 1.5, dash: [] }
+        },
+        {
+            features: copyB.features,
+            place: asRead,
+            fill: 'rgba(100, 100, 100, 0.5)',
+            outline: { stroke: '#888', width: 1, dash: [] }
+        }
+    ]
 
-    // Copy B extents
-    let bMinX = Infinity, bMaxX = -Infinity
-    for (const f of copyB.features) {
-        bMinX = Math.min(bMinX, f.horizontal.from)
-        bMaxX = Math.max(bMaxX, f.horizontal.to)
-    }
+    const measured: MeasuredLayer[] = layers.map(layer => ({ ...layer, span: spanOf(layer.features, layer.place) }))
+    const total = spanning(measured.map(layer => layer.span))
+    if (!total || total.to - total.from <= 0) return
 
-    // Global bounds = union of all three + padding
-    const globalMin = Math.min(aMinX, aaMinX, bMinX)
-    const globalMax = Math.max(aMaxX, aaMaxX, bMaxX)
-    const range = globalMax - globalMin
-    if (range <= 0) return
-
-    const margin = range * 0.05
-    const totalMin = globalMin - margin
-    const totalRange = (globalMax + margin) - totalMin
+    const margin = (total.to - total.from) * 0.05
+    const totalMin = total.from - margin
+    const totalRange = (total.to + margin) - totalMin
 
     const sx = (x: number) => pad + ((x - totalMin) / totalRange) * drawW
 
-    // Copy A original → dotted outline
-    ctx.setLineDash([4, 3])
-    ctx.strokeStyle = '#bbb'
-    ctx.lineWidth = 1
-    ctx.strokeRect(sx(aMinX), pad, sx(aMaxX) - sx(aMinX), drawH)
-
-    // Copy A original features (light gray)
-    ctx.fillStyle = 'rgba(180, 180, 180, 0.4)'
-    for (const f of copyA.features) {
-        const x = sx(f.horizontal.from)
-        const fw = Math.max(sx(f.horizontal.to) - sx(f.horizontal.from), 0.5)
-        const y = pad + (f.vertical.from / 99) * drawH
-        const fh = f.vertical.to !== undefined
+    /** At least half a pixel each way, so that a short or single-track feature stays visible. */
+    const rectOf = (f: AnyFeature, place: Placement) => {
+        const from = sx(place(f.horizontal.from))
+        const to = sx(place(f.horizontal.to))
+        const height = f.vertical.to !== undefined
             ? ((f.vertical.to - f.vertical.from) / 99) * drawH
             : (1 / 99) * drawH
-        ctx.fillRect(x, y, fw, Math.max(Math.abs(fh), 0.5))
+        return {
+            x: from,
+            y: pad + (f.vertical.from / 99) * drawH,
+            width: Math.max(to - from, 0.5),
+            height: Math.max(Math.abs(height), 0.5)
+        }
     }
 
-    // Copy A aligned → solid colored outline
-    ctx.setLineDash([])
-    ctx.strokeStyle = '#1976d2'
-    ctx.lineWidth = 1.5
-    ctx.strokeRect(sx(aaMinX), pad, sx(aaMaxX) - sx(aaMinX), drawH)
+    const drawLayer = ({ features, place, fill, outline, span }: MeasuredLayer) => {
+        ctx.setLineDash(outline.dash)
+        ctx.strokeStyle = outline.stroke
+        ctx.lineWidth = outline.width
+        if (span) ctx.strokeRect(sx(span.from), pad, sx(span.to) - sx(span.from), drawH)
 
-    // Copy A aligned features (blue)
-    ctx.fillStyle = 'rgba(25, 118, 210, 0.6)'
-    for (const f of copyA.features) {
-        const from = (f.horizontal.from + shift) * scale
-        const to = (f.horizontal.to + shift) * scale
-        const x = sx(from)
-        const fw = Math.max(sx(to) - sx(from), 0.5)
-        const y = pad + (f.vertical.from / 99) * drawH
-        const fh = f.vertical.to !== undefined
-            ? ((f.vertical.to - f.vertical.from) / 99) * drawH
-            : (1 / 99) * drawH
-        ctx.fillRect(x, y, fw, Math.max(Math.abs(fh), 0.5))
+        ctx.fillStyle = fill
+        features.forEach(f => {
+            const { x, y, width, height } = rectOf(f, place)
+            ctx.fillRect(x, y, width, height)
+        })
     }
 
-    // Copy B → solid gray outline
-    ctx.setLineDash([])
-    ctx.strokeStyle = '#888'
-    ctx.lineWidth = 1
-    ctx.strokeRect(sx(bMinX), pad, sx(bMaxX) - sx(bMinX), drawH)
-
-    // Copy B features (gray)
-    ctx.fillStyle = 'rgba(100, 100, 100, 0.5)'
-    for (const f of copyB.features) {
-        const x = sx(f.horizontal.from)
-        const fw = Math.max(sx(f.horizontal.to) - sx(f.horizontal.from), 0.5)
-        const y = pad + (f.vertical.from / 99) * drawH
-        const fh = f.vertical.to !== undefined
-            ? ((f.vertical.to - f.vertical.from) / 99) * drawH
-            : (1 / 99) * drawH
-        ctx.fillRect(x, y, fw, Math.max(Math.abs(fh), 0.5))
-    }
+    measured.forEach(drawLayer)
 }
