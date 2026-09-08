@@ -14,6 +14,7 @@ import { useSelection } from "../../providers/SelectionContext"
 import { keepingTolerance, toleranceOf } from "../../helpers/collationTolerance"
 import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
+import { aDialogIsOpen } from "../../helpers/aDialogIsOpen"
 
 export const isMotivation = (obj: any): obj is Motivation => obj?.type === 'motivation'
 
@@ -61,7 +62,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 setSelection([])
                 break;
         }
-    })
+    }, { ignoreEventWhen: aDialogIsOpen })
 
     const addMotivation = (about: Edit[]) => {
         if (about.length === 0) return
