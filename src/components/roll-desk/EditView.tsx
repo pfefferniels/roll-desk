@@ -1,4 +1,4 @@
-import { Edit, EditType, isPerforation } from "linked-rolls";
+import { Edit, EditType, isPerforation, positionOfSameFunction, Track, TrackerBar } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext } from "react";
@@ -15,14 +15,28 @@ const insertionFill = '#aceebb'
 const deletionFill = '#fb7f78ff'
 
 /**
- * A symbol's box: where its carriers put it along the roll, and the
- * lane the bar reads it on. The track is the bar's answer rather than
- * the carriers', since copies of two systems number their tracks
- * differently and a symbol may be carried by both.
+ * The lane a symbol is drawn in: the one the bar reads it on, and where
+ * it has no word for it, the one it gives the same function.
+ *
+ * The track is the bar's answer rather than the carriers', since copies
+ * of two systems number their tracks differently and a symbol may be
+ * carried by both. The fallback is for what a version does away with: a
+ * green version deletes the red `SlowCrescendoOn` it inherits, and the
+ * green bar has no position for that, so the edit would have nowhere to
+ * be drawn and would vanish instead of being shown.
  */
+const laneOf = (symbol: AnySymbol, bar: TrackerBar): Track | undefined => {
+    if (!isPerforation(symbol)) return undefined
+
+    const read = bar.positionOf(symbol)
+    if (read !== undefined) return read
+
+    return symbol.type === 'expression' ? positionOfSameFunction(bar, symbol) : undefined
+}
+
 export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
     const horizontal = editionView.placeOf(symbol)
-    const position = isPerforation(symbol) ? translation.bar.positionOf(symbol) : undefined
+    const position = laneOf(symbol, translation.bar)
     if (!horizontal || position === undefined) return undefined
 
     return boxOf({ horizontal, vertical: { from: position } }, translation)
@@ -114,8 +128,10 @@ export const EditView = ({ edit, onClick }: EditViewProps) => {
     if (!view) return null
 
     const { insertions, deletions } = editBoxes(edit, view, translation)
-    const inserted = edit.insert?.length ?? 0
-    const deleted = edit.delete?.length ?? 0
+    // What is drawn, not what the edit names: a symbol the bar can place
+    // nowhere has no box, and an arrow to or from nothing draws nothing.
+    const inserted = insertions.length
+    const deleted = deletions.length
 
     // one symbol put in the place of one other: the arrow alone says it
     if (inserted === 1 && deleted === 1) {
