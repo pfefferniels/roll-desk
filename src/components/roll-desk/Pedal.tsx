@@ -1,11 +1,11 @@
 import { Emulation, PedalCurve } from "linked-rolls"
-import { WelteT100Options } from "linked-rolls/welte-t100"
+import { SharedOptions } from "../../helpers/reproducingSystems"
 import { useMemo } from "react"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { episodes, sparseVertices, Vertex } from "../../helpers/pedalEnvelope"
 
 type PedalsProps = {
-    forEmulation: Emulation<WelteT100Options>
+    forEmulation: Emulation<SharedOptions>
 }
 
 const damperLook: React.SVGProps<SVGPathElement> = {

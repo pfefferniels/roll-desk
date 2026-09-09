@@ -1,14 +1,20 @@
-import { EditionView, Emulation, Version } from "linked-rolls"
-import { welteT100System, WelteT100Options } from "linked-rolls/welte-t100"
+import { EditionView, Version } from "linked-rolls"
 import { write } from "midifile-ts"
 import { zipSync } from "fflate"
+import { emulationOf, EmulationOptions } from "./reproducingSystems"
 
+/**
+ * The version performed on the machine it was coded for, as MIDI, or
+ * nothing where the desk has no machine for its system.
+ */
 export const versionAsMidi = (
     version: Version,
     view: EditionView,
-    options?: WelteT100Options
-): Uint8Array => {
-    const emulation = new Emulation(welteT100System, options)
+    options?: EmulationOptions
+): Uint8Array | undefined => {
+    const emulation = emulationOf(version.system, options)
+    if (!emulation) return undefined
+
     emulation.emulateVersion(version, view)
 
     const { tracks, header } = emulation.asMIDI()
@@ -24,14 +30,15 @@ const fileNameOf = (version: Version, among: Version[]) => {
         : `${base}.mid`
 }
 
+/** Every version the desk can perform, each on its own machine. */
 export const versionsAsMidiArchive = (
     versions: Version[],
     view: EditionView,
-    options?: WelteT100Options
+    options?: EmulationOptions
 ): Uint8Array =>
     zipSync(Object.fromEntries(
-        versions.map(version => [
-            fileNameOf(version, versions),
-            versionAsMidi(version, view, options)
-        ])
+        versions.flatMap(version => {
+            const midi = versionAsMidi(version, view, options)
+            return midi ? [[fileNameOf(version, versions), midi] as const] : []
+        })
     ))

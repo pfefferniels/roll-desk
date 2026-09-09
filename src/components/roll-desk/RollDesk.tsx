@@ -2,10 +2,10 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, Emulation, HorizontalSpan, VerticalSpan, barOf, constraintProblems, trackerBarOf, valueOf, isEdit, isPerforation, isRollFeature, isSymbol, welteT100 } from 'linked-rolls'
+import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, constraintProblems, trackerBarOf, valueOf, isEdit, isPerforation, isRollFeature, isSymbol, welteT100 } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
-import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
+import { emulationOf, EmulationOptions } from '../../helpers/reproducingSystems'
 import { Add, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
@@ -122,7 +122,7 @@ export const Desk = ({ show }: DeskProps) => {
     // The desk shows a version or a copy, never both.
     const { isPlaying, started, stop } = usePlayback(currentVersionId ?? currentCopyId)
 
-    const [emulationOptions, setEmulationOptions] = useState<WelteT100Options>()
+    const [emulationOptions, setEmulationOptions] = useState<EmulationOptions>()
 
     const [currentTab, setCurrentTab] = useState<DeskTab>('info')
 
@@ -185,7 +185,9 @@ export const Desk = ({ show }: DeskProps) => {
             return
         }
 
-        const emulation = new Emulation(welteT100System, emulationOptions)
+        const emulation = emulationOf(currentVersion.system, emulationOptions)
+        if (!emulation) return
+
         emulation.emulateVersion(currentVersion, view, { range, skipToFirstNote: true })
 
         const schedule = play(emulation.asMIDI(), (e) => {
@@ -215,11 +217,10 @@ export const Desk = ({ show }: DeskProps) => {
     const downloadMIDI = useCallback(async () => {
         if (!currentVersion || !view) return
 
-        downloadFile(
-            `${currentVersion.siglum}.mid`,
-            versionAsMidi(currentVersion, view, emulationOptions),
-            'audio/midi'
-        )
+        const midi = versionAsMidi(currentVersion, view, emulationOptions)
+        if (!midi) return
+
+        downloadFile(`${currentVersion.siglum}.mid`, midi, 'audio/midi')
     }, [currentVersion, view, emulationOptions])
 
     const downloadAllMIDI = useCallback(async () => {
@@ -580,6 +581,7 @@ export const Desk = ({ show }: DeskProps) => {
 
             <EmulationSettingsDialog
                 open={emulationSettingsDialogOpen}
+                system={currentVersion?.system}
                 onClose={() => {
                     setEmulationSettingsDialogOpen(false)
                 }}

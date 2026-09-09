@@ -1,6 +1,6 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, EditionView, Emulation, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
-import { welteT100System, WelteT100Options } from "linked-rolls/welte-t100"
+import { AnySymbol, ConstraintProblem, EditionView, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
+import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
 import { Perforation } from "./SymbolView"
@@ -58,8 +58,8 @@ interface VersionViewProps {
     version: Version
     /** The constraint problems of the whole edition. */
     problems: readonly ConstraintProblem[]
-    /** The emulation settings, the system's defaults when none are chosen. */
-    emulationOptions?: WelteT100Options
+    /** The emulation settings by system, each system's defaults when none are chosen. */
+    emulationOptions?: EmulationOptions
     onClick: (event: AnySymbol | Motivation | Edit) => void
 }
 
@@ -74,17 +74,19 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     const emulation = useMemo(() => {
         if (!view) return undefined
 
-        const emulation = new Emulation(welteT100System, emulationOptions)
-        emulation.emulateVersion(version, view)
+        const emulation = emulationOf(version.system, emulationOptions)
+        emulation?.emulateVersion(version, view)
         return emulation
     }, [version, view, emulationOptions])
 
+    // The predecessor is drawn beside the version for comparison, and is
+    // performed on its own machine, which a transfer makes another one.
     const prevEmulation = useMemo(() => {
         const previous = view?.predecessorOf(version.id)
         if (!view || !previous) return undefined
 
-        const emulation = new Emulation(welteT100System, emulationOptions)
-        emulation.emulateVersion(previous, view)
+        const emulation = emulationOf(previous.system, emulationOptions)
+        emulation?.emulateVersion(previous, view)
         return emulation
     }, [version, view, emulationOptions])
 

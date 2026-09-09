@@ -1,6 +1,6 @@
 import { DynamicsCurve, Emulation, TrackRole } from "linked-rolls"
 import { RollGeometry } from "../../helpers/rollGeometry"
-import { WelteT100Options } from "linked-rolls/welte-t100"
+import { SharedOptions } from "../../helpers/reproducingSystems"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { samplesOnRoll } from "../../helpers/samplesOnRoll"
 
@@ -23,7 +23,7 @@ const anchorsIn = (geometry: Pick<RollGeometry, 'areas' | 'areaBand'>) => {
 const SAMPLE_STRIDE = 25
 
 type DynamicsProps = {
-    forEmulation: Emulation<WelteT100Options>
+    forEmulation: Emulation<SharedOptions>
     pathProps: React.SVGProps<SVGPathElement>
 }
 
@@ -62,7 +62,7 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
     )
 }
 
-export const DynamicsGrid = ({ velocity }: Pick<WelteT100Options, 'velocity'>) => {
+export const DynamicsGrid = ({ velocity }: SharedOptions) => {
     const { translateX, rollLength, areas, areaBand } = usePinchZoom()
 
     const { bass: bassShift, treble: trebleShift } = anchorsIn({ areas, areaBand })

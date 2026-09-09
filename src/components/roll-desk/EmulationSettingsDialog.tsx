@@ -1,11 +1,15 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
 import { defaultWelteT100Options, InstrumentName, instrumentNameOf, instrumentNames, instruments, nuanceOf, PedalPreset, pedalPresetOf, pedalPresets, WelteT100Options } from "linked-rolls/welte-t100"
 import { useState } from "react"
+import { Concept, trackerBarOf, welteT100 } from "linked-rolls"
+import { EmulationOptions } from "../../helpers/reproducingSystems"
 
 interface EmulationSettingsDialogProps {
     open: boolean
+    /** The system the open version is coded for, whose settings these are. */
+    system?: Concept
     onClose: () => void
-    onDone: (options: WelteT100Options) => void
+    onDone: (options: EmulationOptions) => void
 }
 
 const pedalModes = ['continuous', 'switch'] as const
@@ -24,8 +28,27 @@ const pedalPresetNotes: Record<PedalPreset, string> = {
     brushing: 'Their fall is slowed until quick runs of lifts brush the strings without damping.'
 }
 
-export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSettingsDialogProps) => {
+export const EmulationSettingsDialog = ({ open, system, onClose, onDone }: EmulationSettingsDialogProps) => {
     const [options, setOptions] = useState<WelteT100Options>(defaultWelteT100Options)
+    const bar = trackerBarOf(system)
+
+    // The settings differ in shape from one system to the next, and only
+    // the T-100's are written here so far.
+    if (bar && bar.id !== welteT100.id) {
+        return (
+            <Dialog open={open} onClose={onClose}>
+                <DialogTitle>Emulation Settings</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        The desk has no settings for the {bar.name} yet.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>Close</Button>
+                </DialogActions>
+            </Dialog>
+        )
+    }
     const { spool, velocity } = options
     const instrument = instrumentNameOf(options.nuance)
     const pedalPreset = pedalPresetOf(options.pedals)
@@ -47,7 +70,7 @@ export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSett
     return (
         <Dialog open={open} onClose={onClose}>
             <DialogTitle>
-                Emulation Settings
+                Emulation Settings, {welteT100.name}
             </DialogTitle>
             <DialogContent>
                 <Stack direction='column' spacing={2} sx={{ mt: 1 }}>
@@ -109,7 +132,7 @@ export const EmulationSettingsDialog = ({ open, onClose, onDone }: EmulationSett
                 <Button
                     variant='contained'
                     onClick={() => {
-                        onDone(options)
+                        onDone({ [welteT100.id]: options })
                         onClose()
                     }}
                 >
