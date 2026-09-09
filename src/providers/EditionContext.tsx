@@ -1,4 +1,4 @@
-import { assignValue, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView, systemOf, welteT100 } from "linked-rolls";
+import { assignValue, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView } from "linked-rolls";
 import { createContext, useMemo, useReducer } from "react";
 import { editionReducer, editionState } from "./editionReducer";
 
@@ -16,7 +16,6 @@ export const emptyMetadata: EditionMetadata = {
     },
     roll: {
         catalogueNumber: '',
-        system: systemOf(welteT100),
         recordingEvent: {
             recorded: {
                 pianist: {

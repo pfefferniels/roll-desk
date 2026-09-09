@@ -155,7 +155,7 @@ function drawPreview(
     ctx.lineWidth = active ? 1.5 : 1
     ctx.strokeRect(sx(cMinX), pad, sx(cMaxX) - sx(cMinX), drawH)
 
-    const translation: Translation = { translateX: sx, bandOf: evenGeometry(drawH, bar).bandOf }
+    const translation: Translation = { translateX: sx, bandOf: evenGeometry(drawH, bar).bandOf, bar }
 
     // Features as tiny rects
     ctx.fillStyle = '#777'

@@ -111,7 +111,7 @@ export const drawAlignmentPreview = (
         ctx.lineWidth = outline.width
         if (span) ctx.strokeRect(sx(span.from), pad, sx(span.to) - sx(span.from), drawH)
 
-        const translation: Translation = { translateX: x => sx(place(mm(x))), bandOf }
+        const translation: Translation = { translateX: x => sx(place(mm(x))), bandOf, bar }
 
         ctx.fillStyle = fill
         features.forEach(f => {

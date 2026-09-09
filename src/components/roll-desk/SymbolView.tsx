@@ -18,7 +18,7 @@ export const Perforation = ({ symbol, age, highlight, shift = 0, onClick }: Perf
     const { view, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
     const { marked, followPlayback } = usePlaybackMark();
-    const { translateX, trackToY, laneHeight, height: canvasHeight, zoom } = usePinchZoom();
+    const { translateX, trackToY, laneHeight, height: canvasHeight, zoom, bar } = usePinchZoom();
 
     const displayDetails = hovered || marked
 
@@ -29,20 +29,23 @@ export const Perforation = ({ symbol, age, highlight, shift = 0, onClick }: Perf
         offsets: features.map(e => e.horizontal.to).sort()
     }), [features]);
 
-    const dimensions = view?.dimensionOf(symbol)
+    const place = view?.placeOf(symbol)
+    const position = bar.positionOf(symbol)
 
-    if (!view || !dimensions) return null;
+    if (!view || !place || position === undefined) return null;
     if (onsets.length === 0 || offsets.length === 0) return null;
 
     const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(translateX);
     const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(translateX);
     const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(translateX);
 
-    const meanOnset = dimensions.horizontal.from
-    const meanOffset = dimensions.horizontal.to
+    const meanOnset = place.from
+    const meanOffset = place.to
 
-    const y = trackToY(features[0].vertical.from);
-    const height = laneHeight(features[0].vertical.from);
+    // The lane is the bar's answer, not the carriers': copies of two
+    // systems number their tracks differently and both may carry this.
+    const y = trackToY(position);
+    const height = laneHeight(position);
 
     const opacity = 1 / ((age || 0) + 1)
     const color = (age || 0) >= 1 ? 'gray' : 'black';

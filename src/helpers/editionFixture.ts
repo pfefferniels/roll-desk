@@ -1,4 +1,4 @@
-import { Edition, EditionView, Expression, Hole, Note, RollCopy, Text, Version, assignReference, mm, track } from "linked-rolls"
+import { Edition, EditionView, Expression, Hole, Note, RollCopy, Text, Version, assignReference, mm, systemOf, track, welteT100 } from "linked-rolls"
 import { emptyMetadata } from "../providers/EditionContext"
 
 const hole = (id: string, from: number, to: number, position: number): Hole => ({
@@ -27,6 +27,7 @@ const version = (id: string, edits: Version['edits'], basedOn?: string): Version
     type: 'Version',
     id,
     siglum: id,
+    system: systemOf(welteT100),
     versionType: 'edition',
     edits,
     motivations: [],
@@ -60,8 +61,8 @@ export const fixtureEdition = (): Edition => {
         features: [
             hole('hole-note', 1000, 1010, 47),
             hole('hole-other-note', 1020, 1030, 49),
-            hole('hole-off', 1004, 1006, 95),
-            hole('hole-on', 990, 992, 96)
+            hole('hole-off', 1004, 1006, 96),
+            hole('hole-on', 990, 992, 95)
         ]
     }
     const label: Text = { type: 'text', id: ids.label, text: 'WM 225', carriers: [] }

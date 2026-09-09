@@ -1,7 +1,6 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { assignValue, Named, ProductionEvent, systemOf, TrackerBar, trackerBarOf, valueOf, welteT100 } from "linked-rolls";
-import { EditionContext } from "../../providers/EditionContext";
 import { DateField } from "./DateField";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
 
@@ -17,8 +16,8 @@ const namedOrNone = (name: string, authority: string): Named | undefined =>
     name.trim() ? { name: name.trim(), sameAs: authority.trim() ? [authority.trim()] : [] } : undefined
 
 export const ProductionEventDialog = ({ open, event, onClose, onDone }: ProductionEventDialog) => {
-    const { edition } = useContext(EditionContext)
-    const editionBar = trackerBarOf(edition?.roll.system) ?? welteT100
+    // A copy that names no system is read by the T-100, as barOf has it.
+    const editionBar = welteT100
     const [company, setCompany] = useState('');
     const [companyAuthority, setCompanyAuthority] = useState('');
     const [paper, setPaper] = useState('');

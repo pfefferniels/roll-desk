@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { trackerBarOf, welteT100 } from 'linked-rolls'
+import { barOf } from 'linked-rolls'
 import { EditionContext } from '../../providers/EditionContext'
 import { SourcePreview } from './SourcePreview'
 
@@ -46,7 +46,6 @@ export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
         maxX: globalMaxX + rangePad
     }
 
-    const bar = trackerBarOf(edition.roll.system) ?? welteT100
 
     return (
         <div>
@@ -58,7 +57,7 @@ export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
                     active={copy.id === activeId}
                     onClick={() => onClick(copy.id)}
                     globalBounds={bounds}
-                    bar={bar}
+                    bar={barOf(copy)}
                 />
             ))}
         </div>

@@ -1,11 +1,23 @@
-import { DynamicsCurve, Emulation, track } from "linked-rolls"
+import { DynamicsCurve, Emulation, TrackRole } from "linked-rolls"
+import { RollGeometry } from "../../helpers/rollGeometry"
 import { WelteT100Options } from "linked-rolls/welte-t100"
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx"
 import { samplesOnRoll } from "../../helpers/samplesOnRoll"
 
-/** The tracks the two dynamics curves are drawn from. */
-const bassSpace = track(20)
-const trebleSpace = track(93)
+/**
+ * Where each curve is drawn from: the top of the block of valves it
+ * belongs to, so a curve sits with the commands that shape it and the
+ * two do not overlap. Taken off the bar rather than named as tracks,
+ * the blocks being different sizes on every scale.
+ */
+const anchorsIn = (geometry: Pick<RollGeometry, 'areas' | 'areaBand'>) => {
+    const topOf = (role: TrackRole) => {
+        const area = geometry.areas.find(band => band.role === role)
+        return area ? geometry.areaBand(area).y : 0
+    }
+
+    return { bass: topOf('bass-expression'), treble: topOf('treble-expression') }
+}
 
 /** Every so many samples of the curve, which has about twelve per millimetre. */
 const SAMPLE_STRIDE = 25
@@ -16,7 +28,8 @@ type DynamicsProps = {
 }
 
 export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) => {
-    const { translateX, trackToY, rollLength } = usePinchZoom()
+    const { translateX, rollLength, areas, areaBand } = usePinchZoom()
+    const anchor = anchorsIn({ areas, areaBand })
 
     const curveNamed = (name: string) =>
         emulation.curves.find((curve): curve is DynamicsCurve => curve.kind === 'dynamics' && curve.name === name)
@@ -33,14 +46,14 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
         <>
             <g className="trebleVelocities">
                 <path
-                    d={pathOf(curveNamed('treble'), trackToY(trebleSpace))}
+                    d={pathOf(curveNamed('treble'), anchor.treble)}
                     fill="none"
                     {...pathProps}
                 />
             </g>
             <g className="bassVelocities">
                 <path
-                    d={pathOf(curveNamed('bass'), trackToY(bassSpace))}
+                    d={pathOf(curveNamed('bass'), anchor.bass)}
                     fill="none"
                     {...pathProps}
                 />
@@ -50,10 +63,9 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
 }
 
 export const DynamicsGrid = ({ velocity }: Pick<WelteT100Options, 'velocity'>) => {
-    const { translateX, trackToY, rollLength } = usePinchZoom()
+    const { translateX, rollLength, areas, areaBand } = usePinchZoom()
 
-    const bassShift = trackToY(bassSpace)
-    const trebleShift = trackToY(trebleSpace)
+    const { bass: bassShift, treble: trebleShift } = anchorsIn({ areas, areaBand })
 
     const lineAt = (y: number, dashed = false) => (
         <line

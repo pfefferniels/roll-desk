@@ -1,4 +1,4 @@
-import { Edit, EditType } from "linked-rolls";
+import { Edit, EditType, isPerforation } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext } from "react";
@@ -14,11 +14,18 @@ export type { Translation }
 const insertionFill = '#aceebb'
 const deletionFill = '#fb7f78ff'
 
+/**
+ * A symbol's box: where its carriers put it along the roll, and the
+ * lane the bar reads it on. The track is the bar's answer rather than
+ * the carriers', since copies of two systems number their tracks
+ * differently and a symbol may be carried by both.
+ */
 export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
-    const dim = editionView.dimensionOf(symbol)
-    if (!dim) return undefined
+    const horizontal = editionView.placeOf(symbol)
+    const position = isPerforation(symbol) ? translation.bar.positionOf(symbol) : undefined
+    if (!horizontal || position === undefined) return undefined
 
-    return boxOf(dim, translation)
+    return boxOf({ horizontal, vertical: { from: position } }, translation)
 }
 
 interface EditBoxes {

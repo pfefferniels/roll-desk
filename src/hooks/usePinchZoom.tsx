@@ -1,4 +1,5 @@
 import React, { createContext, useContext, ReactNode, useMemo, RefObject } from 'react';
+import { TrackerBar, welteT100 } from 'linked-rolls';
 import { RollGeometry, rollGeometry } from '../helpers/rollGeometry';
 
 export interface PinchZoomContextProps extends RollGeometry {
@@ -23,7 +24,7 @@ export interface PinchZoomContextProps extends RollGeometry {
     gesturing: RefObject<boolean>
 }
 
-const emptyGeometry = rollGeometry({ note: 0, expression: 0 }, 0)
+const emptyGeometry = rollGeometry({ note: 0, expression: 0 }, 0, welteT100)
 
 const atRest: RefObject<boolean> = { current: false }
 
@@ -39,6 +40,12 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
 });
 
 interface PinchZoomProviderProps {
+    /**
+     * The bar the roll on the desk is read by: the current version's
+     * system, or the current copy's. Everything drawn follows it, so a
+     * green version is laid out in 98 lanes and a red one in 100.
+     */
+    bar: TrackerBar
     spacing?: number
     zoom: number
     rollLength: number
@@ -51,6 +58,7 @@ interface PinchZoomProviderProps {
 }
 
 export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
+    bar,
     zoom,
     rollLength,
     noteHeight,
@@ -67,8 +75,8 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     )
 
     const geometry = useMemo(
-        () => rollGeometry(trackHeight, spacing),
-        [trackHeight, spacing]
+        () => rollGeometry(trackHeight, spacing, bar),
+        [trackHeight, spacing, bar]
     )
 
     const value = useMemo(() => ({

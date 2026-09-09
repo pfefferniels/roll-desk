@@ -4,7 +4,7 @@ import { track, welteLicensee, welteT100 } from 'linked-rolls'
 
 const lanes = { note: 4, expression: 7 }
 const spacing = 40
-const geometry = rollGeometry(lanes, spacing)
+const geometry = rollGeometry(lanes, spacing, welteT100)
 
 const allTracks = Array.from({ length: welteT100.trackCount }, (_, i) => track(i + 1))
 
@@ -80,7 +80,7 @@ describe('roll geometry', () => {
 })
 
 describe('the bar in even lanes', () => {
-    const even = evenGeometry(200)
+    const even = evenGeometry(200, welteT100)
 
     it('divides the drawing among the tracks and no further', () => {
         expect(even.height).toEqual(200)

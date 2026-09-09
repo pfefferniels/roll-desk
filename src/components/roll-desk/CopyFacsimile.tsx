@@ -3,10 +3,8 @@ import {
     GluedOn,
     Path,
     RollCopy,
-    Track,
     Writing,
 } from "linked-rolls";
-import { defaultWelteT100Options } from "linked-rolls/welte-t100";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
 import { boxOf } from "../../helpers/rollGeometry.ts";
 import { useContext, useLayoutEffect, useRef, useState } from "react";
@@ -108,14 +106,24 @@ export const CopyFacsimile = ({
                     )
                 })}
 
-                <KeyboardDivision division={defaultWelteT100Options.division} />
+                <KeyboardDivision />
             </g>
         </g>
     );
 };
 
-const KeyboardDivision = ({ division }: { division: Track }) => {
-    const { trackToY, translateX, rollLength } = usePinchZoom();
+/**
+ * Welte divides the keyboard between f♯ and g (Betriebsanleitung p. 7),
+ * so the first treble note is MIDI 67. Both emulators put their default
+ * division there: track 54 on the T-100 and 52 on the T-98.
+ */
+const LOWEST_TREBLE_PITCH = 67
+
+const KeyboardDivision = () => {
+    const { trackToY, translateX, rollLength, bar } = usePinchZoom();
+
+    const division = bar.positionOf({ type: 'note', pitch: LOWEST_TREBLE_PITCH })
+    if (division === undefined) return null
 
     const y = trackToY(division);
 

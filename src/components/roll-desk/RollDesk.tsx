@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, Emulation, HorizontalSpan, VerticalSpan, constraintProblems, valueOf, isEdit, isPerforation, isRollFeature, isSymbol } from 'linked-rolls'
+import { AnySymbol, Editor, Emulation, HorizontalSpan, VerticalSpan, barOf, constraintProblems, trackerBarOf, valueOf, isEdit, isPerforation, isRollFeature, isSymbol, welteT100 } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { welteT100System, WelteT100Options } from 'linked-rolls/welte-t100'
@@ -133,6 +133,11 @@ export const Desk = ({ show }: DeskProps) => {
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
     const currentCopy = edition?.copies.find(c => c.id === currentCopyId)
+
+    // The desk draws whatever is open by the bar it was read with.
+    const deskBar = (currentVersion
+        ? trackerBarOf(currentVersion.system)
+        : currentCopy && barOf(currentCopy)) ?? welteT100
 
     const [soleSelected] = selection.length === 1 ? selection : []
     const selectedPerforation = soleSelected && 'id' in soleSelected
@@ -532,6 +537,7 @@ export const Desk = ({ show }: DeskProps) => {
 
             <Box overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
                 <PinchZoomProvider
+                    bar={deskBar}
                     zoom={stretchZoom}
                     rollLength={length}
                     setZoom={jump}

@@ -1,7 +1,7 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, TrackerBar, trackerBarOf, welteLicensee, welteT100 } from "linked-rolls";
+import { assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-t100-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
@@ -76,7 +76,8 @@ const adopted = (suggestion: Suggestion): ObjectAssumption<PaperSpeed> => ({
 
 export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogProps) => {
     const { edition, apply } = useContext(EditionContext)
-    const editionBar = trackerBarOf(edition?.roll.system) ?? welteT100
+    // A copy is read by the bar it was cut for; naming none, it is read by the T-100.
+    const editionBar = welteT100
     const tempo = edition?.tempoAdjustment
     const [files, setFiles] = useState<File[]>([]);
     const [keeper, setKeeper] = useState('')
@@ -161,15 +162,14 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             }
 
             if (rollFile.name.endsWith('.bar')) {
-                rollCopy = readFromSpencerBar(await rollFile.arrayBuffer(), { system, bar: editionBar });
+                rollCopy = readFromSpencerBar(await rollFile.arrayBuffer(), { system });
             }
             else if (rollFile.name.endsWith('.txt')) {
-                rollCopy = readFromStanfordAton(await rollFile.text(), { system, bar: editionBar });
+                rollCopy = readFromStanfordAton(await rollFile.text(), { system });
             }
             else if (rollFile.name.endsWith('.mid')) {
                 rollCopy = readFromPhillipsEroll(await rollFile.arrayBuffer(), {
                     system,
-                    bar: editionBar,
                     placeAt: placeOnPaper
                 });
             }

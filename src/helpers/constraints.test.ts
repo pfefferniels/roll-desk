@@ -7,6 +7,7 @@ import {
     pairStatementOf, pairsIn, partnerOf, perforationsIn, placementBetween, placementChain,
     placementsIn, problemLabel, problemsByVersion, refusalToPair, refusalToPlace, shiftsIn
 } from './constraints'
+import { welteT100 } from 'linked-rolls'
 
 type Arrangement = (view: EditionView) => EditionOp[]
 
@@ -108,7 +109,7 @@ describe('displaced events', () => {
         const view = viewOf(fixtureEdition())
         const events = perforationsIn(view.snapshot(ids.a))
             .flatMap(symbol => {
-                const event = view.simplifySymbol(symbol)
+                const event = view.simplifySymbol(symbol, welteT100)
                 return event ? [event] : []
             })
         const performed = events.map(event => event.id === ids.forzandoOff

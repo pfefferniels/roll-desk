@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { EventDimension, UserSelection } from './RollDesk.tsx';
-import { columnsOf, isRollFeature, mm, Millimeters, RollCopy, Track, track, welteT100, WithId } from 'linked-rolls';
+import { columnsOf, isRollFeature, mm, Millimeters, RollCopy, Track, track, WithId } from 'linked-rolls';
 import { rollPointAt } from '../../helpers/pointer.ts';
 import { boxOf } from '../../helpers/rollGeometry.ts';
 import { Drag, useDrag } from '../../hooks/useDrag.ts';
@@ -76,7 +76,7 @@ export const RollGrid = ({
     const band = drag ? selectionOf(drag) : selected;
 
     const lines = Array
-        .from({ length: welteT100.trackCount }, (_, i) => track(i + 1))
+        .from({ length: geometry.bar.trackCount }, (_, i) => track(i + 1))
         .map(position => (
             <line
                 key={`gridLine_${position}`}

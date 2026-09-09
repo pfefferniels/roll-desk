@@ -1,4 +1,4 @@
-import { HorizontalSpan, Track, track, TrackArea, TrackerBar, TrackRole, VerticalSpan, welteT100 } from 'linked-rolls'
+import { HorizontalSpan, Track, track, TrackArea, TrackerBar, TrackRole, VerticalSpan } from 'linked-rolls'
 
 export interface LaneHeights {
     note: number
@@ -43,10 +43,13 @@ export interface RollGeometry {
     roleOf: (position: Track) => TrackRole | undefined
 
     areas: readonly TrackArea[]
+
+    /** The bar the drawing is laid out on, which decides what every lane means. */
+    bar: TrackerBar
 }
 
 export type Translation =
-    Pick<RollGeometry, 'bandOf'> & { translateX: (x: number) => number }
+    Pick<RollGeometry, 'bandOf' | 'bar'> & { translateX: (x: number) => number }
 
 /** Where a feature or symbol is drawn, given its measured extent. */
 export const boxOf = (
@@ -76,7 +79,7 @@ const heightOfRole = (role: TrackRole, lanes: LaneHeights) =>
 export const rollGeometry = (
     lanes: LaneHeights,
     spacing: number,
-    bar: TrackerBar = welteT100
+    bar: TrackerBar
 ): RollGeometry => {
     const blocks = [...bar.areas].reverse()
 
@@ -140,7 +143,8 @@ export const rollGeometry = (
         bandOf,
         areaBand,
         roleOf: (position: Track) => bar.roleOf(position),
-        areas: bar.areas
+        areas: bar.areas,
+        bar
     }
 }
 
@@ -149,7 +153,7 @@ export const rollGeometry = (
  * what a preview wants: too small to keep the blocks apart, and the same way
  * up as the desk.
  */
-export const evenGeometry = (height: number, bar: TrackerBar = welteT100): RollGeometry => {
+export const evenGeometry = (height: number, bar: TrackerBar): RollGeometry => {
     const lane = height / bar.trackCount
     return rollGeometry({ note: lane, expression: lane }, 0, bar)
 }

@@ -90,7 +90,7 @@ export const displacedEvents = (
     events.flatMap(event => {
         const symbol = view.get<AnySymbol>(event.id)
         if (!isPerforation(symbol)) return []
-        const measured = view.dimensionOf(symbol)?.horizontal
+        const measured = view.placeOf(symbol)
         if (!measured || Math.abs(event.horizontal.from - measured.from) <= epsilon) return []
         return [{ symbol, measured, performed: event.horizontal }]
     })
@@ -108,7 +108,7 @@ export const perforationLabel = (symbol: AnyPerforation): string =>
         : `${symbol.expressionType} (${symbol.scope})`
 
 export const describePerforation = (symbol: AnyPerforation, view: EditionView): string => {
-    const place = view.dimensionOf(symbol)?.horizontal.from
+    const place = view.placeOf(symbol)?.from
     return place === undefined
         ? perforationLabel(symbol)
         : `${perforationLabel(symbol)} at ${place.toFixed(0)} mm`
@@ -133,6 +133,9 @@ const problemLabels: Record<ProblemKind, string> = {
     'placed-several-ways': 'Placed in several ways at once',
     'partner-missing': 'Paired with a perforation this version does not have',
     'paired-with-itself': 'Paired with itself',
+    'type-not-on-the-bar': 'A command this version\u2019s system has no word for',
+    'carrier-on-another-track': 'Carried by a hole on a track that says something else',
+    'copies-disagree-on-the-paper': 'Its copies disagree about the paper the roll ran on',
     'in-several-pairs': 'In more than one pair',
     'pair-placed-on-both-sides': 'Both members of the pair are placed'
 }

@@ -15,6 +15,9 @@ import { isMotivation } from "./VersionMenu"
 import { ConstraintView } from "./ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../../helpers/constraints"
 
+/** How far the paper reaches past the outermost lane, in SVG units. */
+const groundMargin = 50
+
 type AgedSymbol = AnySymbol & { age: number }
 
 /** Every symbol in force at a version, each told how many versions back it was inserted. */
@@ -48,10 +51,7 @@ const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
         age += 1
     })
 
-    return snapshot.sort((a, b) => {
-        return (view.dimensionOf(a)?.horizontal.from || 0)
-            - (view.dimensionOf(b)?.horizontal.from || 0)
-    })
+    return snapshot.sort((a, b) => (view.onsetOf(a) || 0) - (view.onsetOf(b) || 0))
 }
 
 interface VersionViewProps {
@@ -67,7 +67,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     const { selection, setSelection } = useSelection(s => isMotivation(s))
     const { playSingleNote } = usePiano()
     const { view, viewOnly } = useContext(EditionContext)
-    const { translateX, rollLength } = usePinchZoom()
+    const { translateX, rollLength, height: geometryHeight } = usePinchZoom()
 
     // None of what follows depends on the zoom, and emulating a version
     // costs a few hundred milliseconds, so it must not be redone per frame.
@@ -148,7 +148,13 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
         <g className='versionView'>
             {dynamics}
 
-            <Ground x={0} y={-50} width={translateX(rollLength)} height={200 + 50} />
+            {/* The paper the version is laid out on, a little clear of the bar at either edge. */}
+            <Ground
+                x={0}
+                y={-groundMargin}
+                width={translateX(rollLength)}
+                height={geometryHeight + groundMargin * 2}
+            />
 
             {!viewOnly && edits}
             {motivations}

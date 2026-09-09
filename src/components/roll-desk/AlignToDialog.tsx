@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControlLabel, MenuItem, Radio, RadioGroup, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, AlignmentResult, assignObject, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading, systemIdOf, trackerBarOf, welteT100 } from "linked-rolls";
+import { alignFeatures, AlignmentResult, assignObject, barOf, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { valueOf } from "linked-rolls";
@@ -30,17 +30,20 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     const { edition } = useContext(EditionContext)
     const [copyB, setCopyB] = useState<RollCopy>()
 
-    // A copy cut for another system than the roll is shorter or longer by the ratio of the speeds.
-    const copySystem = systemIdOf(copy.production?.system)
-    const cutForAnotherSystem = copySystem !== undefined && copySystem !== systemIdOf(edition?.roll.system)
+    // A copy cut for another system than the one it is aligned to is
+    // shorter or longer by the ratio of the two paper speeds.
+    const bar = barOf(copy)
+    const barB = copyB && barOf(copyB)
+    const cutForAnotherSystem = barB !== undefined && bar.id !== barB.id
     const [cause, setCause] = useState<Cause>(cutForAnotherSystem ? 'speed' : 'paper')
     const [speed, setSpeed] = useState<SpeedInput>(speedInputOf(copy.production?.speed))
 
-    const bar = trackerBarOf(edition?.roll.system) ?? welteT100
-
+    // Each copy is read through its own bar, which is what lets a green
+    // copy be aligned against a red one: the bars put the notes on
+    // different tracks and agree on the pitch each track sounds.
     const alignment = useMemo(
-        () => copyB && alignFeatures(copy.features, copyB.features, bar),
-        [copy, copyB, bar]
+        () => copyB && barB && alignFeatures(copy.features, copyB.features, bar, barB),
+        [copy, copyB, bar, barB]
     )
 
     const verticalStretch = copy.measurements.dimensions && copyB?.measurements.dimensions

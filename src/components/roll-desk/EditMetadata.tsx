@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack, IconButton, Typography } from '@mui/material';
 import { Add, DeleteOutline, Save as SaveIcon } from '@mui/icons-material';
 import { EditionContext } from '../../providers/EditionContext';
-import { assignValue, CollationTolerance, Concept, Editor, EditorialRole, editorialRoles, systemOf, valueOf, welteT100 } from 'linked-rolls';
+import { assignValue, CollationTolerance, Editor, EditorialRole, editorialRoles, valueOf } from 'linked-rolls';
 import { toleranceOf } from '../../helpers/collationTolerance';
 import { DateField } from './DateField';
 import { ToleranceFields } from './ToleranceFields';
@@ -14,9 +14,6 @@ interface EditMetadataProps {
   job: MetadataJob
   onClose: () => void
 }
-
-/** The reproducing systems the library can read. */
-const systems: Concept[] = [systemOf(welteT100)]
 
 const capitalized = (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
 
@@ -36,7 +33,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const [license, setLicense] = useState<string>('');
   const [baseURI, setBaseURI] = useState<string>('');
   const [catalogueNumber, setCatalogueNumber] = useState<string>('');
-  const [system, setSystem] = useState<Concept>(systems[0]);
   const [recordingDate, setRecordingDate] = useState<Date>(new Date());
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
@@ -64,7 +60,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
     setTolerance(toleranceOf(edition));
     setEditors(edition.creation.editors ?? []);
     setCatalogueNumber(edition.roll.catalogueNumber);
-    setSystem(edition.roll.system);
     setRecordingDate(valueOf(edition.roll.recordingEvent.date));
     setRecordingPlace(edition.roll.recordingEvent.place.name);
   }, [edition])
@@ -81,7 +76,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
       draft.creation.collationTolerance = tolerance
       draft.creation.editors = editors
       draft.roll.catalogueNumber = catalogueNumber
-      draft.roll.system = system
       draft.roll.recordingEvent.date = assignValue(recordingDate)
       draft.roll.recordingEvent.place.name = recordingPlace
     })
@@ -144,19 +138,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
               value={catalogueNumber}
               onChange={(e) => setCatalogueNumber(e.target.value)}
             />
-            <TextField
-              label="Reproducing System"
-              fullWidth
-              select
-              value={system.id ?? ''}
-              onChange={(e) => setSystem(systems.find(s => s.id === e.target.value) ?? system)}
-            >
-              {systems.map((s) => (
-                <MenuItem key={s.id} value={s.id}>
-                  {s.name}
-                </MenuItem>
-              ))}
-            </TextField>
             <DateField
               label="Roll Date"
               value={recordingDate}
