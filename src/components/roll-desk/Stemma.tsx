@@ -1,4 +1,4 @@
-import { ConstraintProblem, idOf, Path, Version, VersionType } from 'linked-rolls'
+import { ConstraintProblem, idOf, Path, systemIdOf, trackerBarOf, Version, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useRef, useState } from "react"
@@ -39,6 +39,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
                     id: version.id,
                     label: version.siglum,
                     type: version.versionType,
+                    system: trackerBarOf(version.system)?.name,
                     generation: version.generation,
                     overlayInfo: troubles > 0
                         ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
@@ -51,9 +52,13 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
             .map((version) => {
                 const basedOn = idOf(version.basedOn!)
 
+                const parent = versions.find(other => other.id === basedOn)
+
                 return {
                     source: nodes.find(n => n.id === version.id) || 'unknown',
                     target: nodes.find(n => n.id === basedOn) || 'unknown',
+                    transfer: parent !== undefined
+                        && systemIdOf(parent.system) !== systemIdOf(version.system)
                 }
             })
 
@@ -166,12 +171,21 @@ export interface Node extends d3.SimulationNodeDatum {
     generation: number
     radius?: number;
     type: VersionType;
+    /** The reproducing system the version is coded for, named short. */
+    system?: string
     overlayInfo?: ReactNode
 }
 
 export interface Link extends d3.SimulationLinkDatum<Node> {
     index?: number;
     motivationPath?: Path
+    /**
+     * Whether the derivation crosses from one reproducing system to
+     * another. That is a transfer rather than a revision: the whole
+     * expression vocabulary is re-spelled, and the edits carry out a
+     * rule stated on the version's creation.
+     */
+    transfer?: boolean
 }
 
 export const calculatePositions = async (
@@ -271,6 +285,18 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     )}
                 </text>
 
+                {node.system && (
+                    <text
+                        x={node.x || 10}
+                        y={(node.y || 10) + (node.radius || (node.type === 'edition' ? 32 : 26)) + 12}
+                        textAnchor="middle"
+                        fontSize={10}
+                        fill="#555"
+                    >
+                        {node.system}
+                    </text>
+                )}
+
                 {node.overlayInfo && (
                     <Portal>
                         <Popover
@@ -331,8 +357,21 @@ export const LinkContainer = ({
                 const motivations = view?.get<Version>(source.id)?.motivations || []
 
                 return (
-                    <SlicedBalloon
-                        key={`link_${i}`}
+                    <g key={`link_${i}`}>
+                        {link.transfer && (
+                            <line
+                                x1={source.x}
+                                y1={source.y}
+                                x2={target.x}
+                                y2={target.y}
+                                stroke="#b45309"
+                                strokeWidth={2}
+                                strokeDasharray="6 4"
+                            >
+                                <title>Transferred to another reproducing system</title>
+                            </line>
+                        )}
+                        <SlicedBalloon
                         slices={
                             motivations.map(m => {
                                 return {
@@ -356,7 +395,8 @@ export const LinkContainer = ({
                                 setSelection([])
                             }
                         }}
-                    />
+                        />
+                    </g>
                 )
             })}
         </>

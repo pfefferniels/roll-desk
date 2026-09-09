@@ -15,6 +15,7 @@ import { derivationToleranceOf } from "../../helpers/collationTolerance"
 import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../../helpers/goesToAnOverlay"
+import { VersionCreationDialog } from "./VersionCreationDialog"
 
 export const isMotivation = (obj: unknown): obj is Motivation =>
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
@@ -41,6 +42,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const { edition, apply, view } = useContext(EditionContext)
 
     const [editSiglum, setEditSiglum] = useState(false)
+    const [editCreation, setEditCreation] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
     const [versionType, setVersionType] = useState(false)
     const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
@@ -101,6 +103,13 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     size='small'
                 >
                     Siglum
+                </Button>
+                <Button
+                    onClick={() => setEditCreation(true)}
+                    startIcon={<EditIcon />}
+                    size='small'
+                >
+                    Made by
                 </Button>
             </Ribbon>
             {selection.length > 0 && (
@@ -193,6 +202,18 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     </Button>
                 )}
             </Ribbon>
+
+            <VersionCreationDialog
+                open={editCreation}
+                value={version.creation}
+                onClose={() => setEditCreation(false)}
+                onDone={creation => apply(draft => {
+                    const edited = draft.versions.find(v => v.id === versionId)
+                    if (!edited) return
+                    if (creation) edited.creation = creation
+                    else delete edited.creation
+                })}
+            />
 
             <EditString
                 open={editSiglum}
