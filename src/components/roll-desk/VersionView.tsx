@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, EditionView, PerformedNoteOnEvent, PerformedNoteOffEvent, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, EditionView, PerformedNoteOnEvent, PerformedNoteOffEvent, trackerBarOf, Version, Edit, Motivation } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -101,7 +101,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
         [emulation, view]
     )
 
-    if (!view || !emulation) return null
+    if (!view) return null
 
     const edits = version.edits
         .map(e => <EditView
@@ -122,7 +122,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
         )
 
     // draw dynamics of prev version and dynamics of current version (for comparison)
-    const dynamics = (
+    const dynamics = emulation && (
         <g className='dynamics'>
             <DynamicsGrid velocity={emulation.options.velocity} />
 
@@ -150,6 +150,13 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
         <g className='versionView'>
             {dynamics}
 
+            {!emulation && (
+                <text x={0} y={-groundMargin - 8} fontSize={11} fill='#b45309'>
+                    No emulator for {trackerBarOf(version.system)?.name ?? 'this system'},
+                    so the version is drawn but not performed.
+                </text>
+            )}
+
             {/* The paper the version is laid out on, a little clear of the bar at either edge. */}
             <Ground
                 x={0}
@@ -161,7 +168,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
             {!viewOnly && edits}
             {motivations}
 
-            <Pedals forEmulation={emulation} />
+            {emulation && <Pedals forEmulation={emulation} />}
 
             {snapshot
                 .map((symbol, i) => {
@@ -175,7 +182,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
                             shift={shifts.get(symbol.id)}
                             highlight={version ? false : (symbol.carriers?.length !== 0)}
                             onClick={() => {
-                                const performingEvents = emulation.findEventsPerforming(symbol.id)
+                                const performingEvents = emulation?.findEventsPerforming(symbol.id) ?? []
                                 const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
                                 const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
                                 if (noteOn && noteOff) {
