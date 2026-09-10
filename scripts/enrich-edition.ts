@@ -700,6 +700,61 @@ const dropCalibrationSweep = (): string[] => {
     return [`D2: ${sweep.size} Einfügungen hinter dem Rückspulbefehl entfernt (Eichtreppe des Scanners)`]
 }
 
+/**
+ * What the transfer to the green system still leaves standing.
+ *
+ * A green machine has no word for a red on-off command, so every one of
+ * them left in the version's text is a place where the transfer is
+ * unfinished. Ten reach it here because the repairs above put readings
+ * back into B and C that the transfer had never seen, and the version
+ * inherits them. Each is struck, and where a green hold of the answering
+ * function already covers its place, that is what took it over.
+ */
+const finishTheGreenTransfer = (): string[] => {
+    const green = versionBy('D2')
+    const readable = new Set(Object.values(GREEN))
+
+    /** The green function that answers a red command, where one does. */
+    const answering: Record<string, string> = {
+        SlowCrescendo: 'Crescendo', SustainPedal: 'SustainPedal', SoftPedal: 'SoftPedal',
+        Mezzoforte: 'Mezzoforte', Forzando: 'SforzandoForte'
+    }
+    const answerTo = (type: string): string | undefined =>
+        answering[type.replace(/(On|Off)$/, '')]
+
+    const snapshot = snapshotOf('D2').filter(symbol => symbol['@type'] === 'expression')
+    const holds = snapshot.filter(symbol => readable.has(symbol.expressionType))
+    const unreadable = snapshot.filter(symbol => !readable.has(symbol.expressionType))
+
+    const heldOver = (symbol: Json): boolean => {
+        const span = spanOf(symbol)
+        const wanted = answerTo(symbol.expressionType)
+        if (!span || !wanted) return false
+        return holds.some(hold => {
+            const there = spanOf(hold)
+            return hold.expressionType === wanted && hold.scope === symbol.scope && there !== undefined
+                && there.from - COLLATION_TOLERANCE <= span.from
+                && span.from <= there.to + COLLATION_TOLERANCE
+        })
+    }
+
+    const answered = unreadable.filter(heldOver)
+    const unanswered = unreadable.filter(symbol => !heldOver(symbol))
+
+    const strike = (symbols: Json[], motivation: string) => {
+        if (symbols.length === 0) return
+        editsOf(green).push({
+            '@type': 'edit', '@id': randomUUID(), motivation,
+            delete: symbols.map(symbol => symbol['@id'])
+        })
+    }
+    strike(answered, 'latch-to-hold')
+    strike(unanswered, 'expression-recoded')
+
+    return [`D2: ${unreadable.length} rote Befehle getilgt, die der T-98 nicht lesen kann`
+        + ` (${answered.length} von einer grünen Haltung beantwortet, ${unanswered.length} ohne)`]
+}
+
 // ------------------------------------------------------------- explanations
 
 const motivationsOfLicensee: Json[] = [
@@ -797,7 +852,9 @@ const explain = (
     const { symbols } = symbolIndex()
     const version = versionBy(siglum)
     version.motivations.push(...motivations)
-    editsOf(version).forEach((edit: Json) => { edit.motivation = motivationOf(edit, symbols) })
+    editsOf(version)
+        .filter((edit: Json) => !edit.motivation)
+        .forEach((edit: Json) => { edit.motivation = motivationOf(edit, symbols) })
 
     const counted = editsOf(version).reduce<Map<string, number>>((tally, edit) => {
         tally.set(edit.motivation, (tally.get(edit.motivation) ?? 0) + 1)
@@ -822,6 +879,7 @@ const report = [
     ...splitOffStanfordUnicum(),
     ...nameTheWiduchLayer(),
     ...dropDanglingDeletions(),
+    ...finishTheGreenTransfer(),
     ...explain('D1', motivationsOfLicensee, licenseeMotivationOf),
     ...explain('D2', motivationsOfGreen, greenMotivationOf)
 ]
