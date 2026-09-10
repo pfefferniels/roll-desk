@@ -1,10 +1,10 @@
 import { MouseEventHandler, SVGProps, useState } from "react";
-import { arrowLine, headPoints, Point } from "../../helpers/arrow";
+import { arrowLine, Boxed, headPoints } from "../../helpers/arrow";
 
 type ArrowProps = {
     /** Where the arrow comes from, and the place it points at. */
-    from: Point
-    to: Point
+    from: Boxed
+    to: Boxed
     onClick?: MouseEventHandler
     svgProps?: SVGProps<SVGPathElement>
 }

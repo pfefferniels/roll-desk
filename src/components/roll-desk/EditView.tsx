@@ -8,7 +8,7 @@ import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometry";
-import { centreOf } from "../../helpers/arrow";
+
 
 export type { Translation }
 
@@ -177,8 +177,8 @@ export const EditView = ({ edit, deletedOn, onClick }: EditViewProps) => {
     if (inserted > 0 && deleted > 0) {
         return (
             <Arrow
-                from={centreOf(getBoundingBox(getHull(deletions).points))}
-                to={centreOf(getBoundingBox(getHull(insertions).points))}
+                from={getBoundingBox(getHull(deletions).points)}
+                to={getBoundingBox(getHull(insertions).points)}
                 onClick={onClick}
                 svgProps={{ id: edit.id }}
             />

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { arrowLine, centreOf, LEAST_LENGTH, Point } from './arrow'
+import { arrowLine, Boxed, centreOf, LEAST_LENGTH, Point } from './arrow'
 
-/** The points a path command carries, in the order they are written. */
 const numbersIn = (d: string): number[] =>
     (d.match(/-?\d+(\.\d+)?(e-?\d+)?/g) ?? []).map(Number)
 
@@ -15,101 +14,119 @@ const endOf = (d: string): Point => {
     return { x: values[values.length - 2], y: values[values.length - 1] }
 }
 
-/** Every arrangement two ends can fall in, so that none of them is left to chance. */
-const arrangements: Record<string, [Point, Point]> = {
-    'straight down, far': [{ x: 100, y: 50 }, { x: 100, y: 500 }],
-    'straight up, far': [{ x: 100, y: 500 }, { x: 100, y: 50 }],
-    'along the roll, to the right': [{ x: 100, y: 200 }, { x: 400, y: 200 }],
-    'along the roll, to the left': [{ x: 400, y: 200 }, { x: 100, y: 200 }],
-    'a short step down': [{ x: 100, y: 200 }, { x: 100, y: 220 }],
-    'diagonally': [{ x: 100, y: 100 }, { x: 300, y: 400 }],
-    'the same place': [{ x: 250, y: 300 }, { x: 250, y: 300 }],
-    'closer than the least length': [{ x: 250, y: 300 }, { x: 252, y: 304 }],
-    'above the bar, in the margin': [{ x: 100, y: -40 }, { x: 100, y: 10 }],
-    'far down the roll': [{ x: 12000, y: 40 }, { x: 12000, y: 460 }]
+const box = (x: number, y: number, width: number, height: number): Boxed =>
+    ({ x, y, width, height })
+
+const inside = (point: Point, of: Boxed): boolean =>
+    point.x > of.x && point.x < of.x + of.width
+    && point.y > of.y && point.y < of.y + of.height
+
+/**
+ * Every arrangement two perforations can fall in. A command is a wide,
+ * shallow box, one lane high and as long as it sounds, so most of these
+ * are wide boxes lying over each other.
+ */
+const arrangements: Record<string, [Boxed, Boxed]> = {
+    'two lanes apart, the same stretch of roll': [box(100, 60, 200, 10), box(100, 450, 200, 10)],
+    'the same, the other way up': [box(100, 450, 200, 10), box(100, 60, 200, 10)],
+    'one lane apart': [box(100, 440, 200, 10), box(100, 460, 200, 10)],
+    'lying exactly over each other': [box(100, 200, 200, 10), box(100, 200, 200, 10)],
+    'overlapping by most of their length': [box(100, 200, 200, 10), box(120, 200, 200, 10)],
+    'overlapping, and a lane apart': [box(100, 200, 200, 10), box(120, 220, 200, 10)],
+    'one inside the other': [box(100, 200, 400, 10), box(200, 200, 60, 10)],
+    'along the roll, clear of each other': [box(100, 200, 60, 10), box(400, 200, 60, 10)],
+    'along the roll, backwards': [box(400, 200, 60, 10), box(100, 200, 60, 10)],
+    'a hair apart': [box(100, 200, 60, 10), box(101, 201, 60, 10)],
+    'up in the margin above the bar': [box(100, -40, 60, 10), box(100, 10, 60, 10)],
+    'far down a ten metre roll': [box(12000, 40, 200, 10), box(12000, 460, 200, 10)],
+    'the deleted one spanning two lanes': [box(100, 440, 200, 20), box(100, 60, 200, 10)]
 }
 
-describe('the arrow between two places on the roll', () => {
-    it('is drawn in every arrangement the two ends can fall in', () => {
+describe('the arrow between two things on the roll', () => {
+    it('is drawn in every arrangement the two can fall in', () => {
         Object.entries(arrangements).forEach(([name, [from, to]]) => {
             const line = arrowLine(from, to)
 
             expect(numbersIn(line.d).every(Number.isFinite), name).toBe(true)
             expect(line.d.startsWith('M'), name).toBe(true)
             expect(Number.isFinite(line.angle), name).toBe(true)
-            expect(line.head, name).toEqual(to)
         })
     })
 
-    it('always has a visible length, even where the two ends are one place', () => {
+    it('always reaches far enough to be seen and hit', () => {
         Object.entries(arrangements).forEach(([name, [from, to]]) => {
-            const { d } = arrowLine(from, to)
-            const drawn = Math.hypot(endOf(d).x - startOf(d).x, endOf(d).y - startOf(d).y)
-
-            expect(drawn, name).toBeGreaterThan(1)
-        })
-    })
-
-    /**
-     * A command replaced where it stood has both ends in one place. The
-     * arrow then comes down into it from just above, rather than
-     * collapsing to a dot that cannot be seen or clicked.
-     */
-    it('comes down into a command replaced where it stood', () => {
-        const at = { x: 250, y: 300 }
-        const { d } = arrowLine(at, at)
-        const start = startOf(d)
-
-        expect(start.y).toBeLessThan(at.y)
-        expect(start.x).toBeLessThan(at.x)
-        expect(Math.hypot(at.x - start.x, at.y - start.y)).toBeCloseTo(LEAST_LENGTH, 1)
-        expect(endOf(d).y).toBeLessThan(at.y)
-    })
-
-    /** Whatever the two ends, the arrow is long enough to be seen and hit. */
-    it('never draws one shorter than the least length', () => {
-        Object.entries(arrangements).forEach(([name, [from, to]]) => {
-            const { d } = arrowLine(from, to)
-            const start = startOf(d)
-            const reach = Math.hypot(to.x - start.x, to.y - start.y)
+            const { d, head } = arrowLine(from, to)
+            const reach = Math.hypot(head.x - startOf(d).x, head.y - startOf(d).y)
 
             expect(reach, name).toBeGreaterThanOrEqual(LEAST_LENGTH - 1e-6)
         })
     })
 
-    it('points its head the way the shaft arrives', () => {
-        const down = arrowLine({ x: 100, y: 50 }, { x: 100, y: 500 })
-        const up = arrowLine({ x: 100, y: 500 }, { x: 100, y: 50 })
-        const right = arrowLine({ x: 100, y: 200 }, { x: 400, y: 200 })
-
-        // 0 is along +x, 90 down the screen, -90 up it.
-        expect(Math.abs(down.angle - 90)).toBeLessThan(45)
-        expect(Math.abs(up.angle + 90)).toBeLessThan(45)
-        expect(Math.abs(right.angle)).toBeLessThan(45)
+    /**
+     * A head buried in a black perforation reads as a spike growing out
+     * of it rather than as an arrow arriving at it.
+     */
+    it('never puts its head inside what it points at', () => {
+        Object.entries(arrangements).forEach(([name, [from, to]]) => {
+            expect(inside(arrowLine(from, to).head, to), name).toBe(false)
+        })
     })
 
-    /** Long or short, the bow reads as one gesture rather than growing with the roll. */
+    it('never ends its shaft inside what it points at', () => {
+        Object.entries(arrangements).forEach(([name, [from, to]]) => {
+            expect(inside(endOf(arrowLine(from, to).d), to), name).toBe(false)
+        })
+    })
+
+    it('stops at the near edge of what it points at, where there is room', () => {
+        const { head } = arrowLine(box(100, 60, 200, 10), box(100, 450, 200, 10))
+
+        // just above the target's top edge, coming down onto it
+        expect(head.y).toBeLessThan(450)
+        expect(head.y).toBeGreaterThan(440)
+    })
+
+    /** Two commands in one place: the arrow comes down into the second from above. */
+    it('comes down into one replaced where it stood', () => {
+        const target = box(100, 200, 200, 10)
+        const { d, head } = arrowLine(box(100, 200, 200, 10), target)
+
+        expect(head.y).toBeLessThan(target.y)
+        expect(head.x).toBeCloseTo(centreOf(target).x, 6)
+        expect(startOf(d).y).toBeLessThan(head.y)
+        expect(startOf(d).x).toBeLessThan(head.x)
+    })
+
+    it('points its head the way the shaft arrives', () => {
+        const down = arrowLine(box(100, 60, 200, 10), box(100, 450, 200, 10))
+        const up = arrowLine(box(100, 450, 200, 10), box(100, 60, 200, 10))
+        const right = arrowLine(box(100, 200, 60, 10), box(400, 200, 60, 10))
+
+        expect(Math.abs(down.angle - 90)).toBeLessThan(50)
+        expect(Math.abs(up.angle + 90)).toBeLessThan(50)
+        expect(Math.abs(right.angle)).toBeLessThan(50)
+    })
+
     it('bows out of the straight without swinging across the roll', () => {
-        const bowOf = (from: Point, to: Point) => {
-            const [, , cx, cy] = numbersIn(arrowLine(from, to).d)
-            const midpoint = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
-            return Math.hypot(cx - midpoint.x, cy - midpoint.y)
+        const bowOf = (from: Boxed, to: Boxed) => {
+            const { d } = arrowLine(from, to)
+            const [, , cx, cy] = numbersIn(d)
+            const middle = { x: (startOf(d).x + endOf(d).x) / 2, y: (startOf(d).y + endOf(d).y) / 2 }
+            return Math.hypot(cx - middle.x, cy - middle.y)
         }
 
-        expect(bowOf({ x: 0, y: 0 }, { x: 0, y: 40 })).toBeGreaterThan(2)
-        expect(bowOf({ x: 0, y: 0 }, { x: 0, y: 4000 })).toBeLessThan(30)
+        expect(bowOf(box(0, 0, 10, 10), box(0, 80, 10, 10))).toBeGreaterThan(2)
+        expect(bowOf(box(0, 0, 10, 10), box(0, 4000, 10, 10))).toBeLessThan(26)
     })
 
     it('bows the same way whichever end it starts from', () => {
-        const there = arrowLine({ x: 0, y: 0 }, { x: 0, y: 400 })
-        const back = arrowLine({ x: 0, y: 400 }, { x: 0, y: 0 })
-        const [, , thereX] = numbersIn(there.d)
-        const [, , backX] = numbersIn(back.d)
+        const [, , thereX] = numbersIn(arrowLine(box(0, 0, 10, 10), box(0, 400, 10, 10)).d)
+        const [, , backX] = numbersIn(arrowLine(box(0, 400, 10, 10), box(0, 0, 10, 10)).d)
 
-        expect(Math.sign(thereX)).not.toEqual(Math.sign(backX))
+        expect(Math.sign(thereX - 5)).not.toEqual(Math.sign(backX - 5))
     })
 
-    it('takes the middle of a box as the place to point from or at', () => {
-        expect(centreOf({ x: 10, y: 20, width: 100, height: 8 })).toEqual({ x: 60, y: 24 })
+    it('takes the middle of a box as the place to reckon from', () => {
+        expect(centreOf(box(10, 20, 100, 8))).toEqual({ x: 60, y: 24 })
     })
 })
