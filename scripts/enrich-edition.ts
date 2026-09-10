@@ -526,17 +526,19 @@ const liftAncestralRelease = (): string[] => {
 
     const a1 = versionBy('A1')
     a1.motivations.push({
-        '@type': 'motivation', '@id': 'pedal-release-dropped',
-        note:
-            'Das Loslassen des Dämpferpedals bei 5370,8 mm fehlt allein auf dem Exemplar Widuch. Es steht auf '
-            + 'Stanford-1, Stanford-2 und der Licensee-Kopie, und die grüne Kopie hält das Pedal genau bis dorthin. '
-            + 'Bliebe es eine Zutat der Fassung B, so machte diese Zutat eine in A bereits stehende Redundanz '
-            + 'sinnvoll, was Bearbeitungen nicht tun.'
+        '@type': 'motivation', '@id': 'pedal-held-through',
+        note: 'Das Dämpferpedal bleibt über die Phrase hinweg getreten'
     })
     editsOf(a1).push({
         '@type': 'edit', '@id': randomUUID(),
-        motivation: 'pedal-release-dropped',
-        delete: [target['@id']]
+        motivation: 'pedal-held-through',
+        delete: [target['@id']],
+        '@annotation': believing('likely', [argued(
+            'Das Loslassen bei 5370,8 mm fehlt allein auf dem Exemplar Widuch. Es steht auf Stanford-1, '
+            + 'Stanford-2 und der Licensee-Kopie, und die grüne Kopie hält das Pedal genau bis dorthin. Bliebe '
+            + 'es eine Zutat der Fassung B, so machte diese Zutat eine in A bereits stehende Redundanz sinnvoll, '
+            + 'was Bearbeitungen nicht tun. Also steht es in A und dieses Exemplar hat es verloren.'
+        )])
     })
     return ['Fassung A: die Pedalauslösung bei 5370,8 mm aus B nach A gehoben, in A1 getilgt']
 }
@@ -572,20 +574,26 @@ const splitOffStanfordUnicum = (): string[] => {
             collationTolerance: { toleranceStart: COLLATION_TOLERANCE, toleranceEnd: COLLATION_TOLERANCE }
         },
         motivations: [{
-            '@type': 'motivation', '@id': 'stanford-1-own-layer',
-            note:
-                'Diese Lesarten trägt allein Stanford-1. Hingen sie an der Fassung B, so nähme die Fassung C fünf '
-                + 'wirksame Differenzierungen zurück, darunter ein vollständiges Crescendo-Paar. Da bestehende '
-                + 'Differenzierungen nicht mutwillig zurückgenommen werden, sind sie die eigene Schicht dieses '
-                + 'Exemplars. Eine von ihnen, das Crescendo an bei 7364,7 mm, wäre in B redundant und hätte auch '
-                + 'als Bereinigung durch C erklärt werden können.'
+            '@type': 'motivation', '@id': 'bass-crescendo-added',
+            note: 'Zusätzliches Crescendo im Bass'
         }],
         edits: own.map(symbol => ({
             '@type': 'edit', '@id': randomUUID(),
-            motivation: 'stanford-1-own-layer',
+            motivation: 'bass-crescendo-added',
             insert: [symbol]
         }))
     })
+
+    // Why these readings sit here and not in B is an assumption about the
+    // derivation, not a reason for the edits, so it belongs on the derivation.
+    const b1 = versionBy('B1')
+    b1.basedOn['@annotation'] = believing('likely', [argued(
+        'Diese Lesarten trägt allein Stanford-1. Hingen sie an der Fassung B, so nähme die Fassung C wirksame '
+        + 'Differenzierungen zurück, darunter ein vollständiges Crescendo-Paar. Da bestehende Differenzierungen '
+        + 'nicht mutwillig zurückgenommen werden, sind sie die eigene Schicht dieses Exemplars. Eine von ihnen, '
+        + 'das Crescendo an bei 7364,7 mm, wäre in B redundant und hätte auch als Bereinigung durch C erklärt '
+        + 'werden können.'
+    )])
     void c
     return [`Fassung B1 angelegt: ${own.length} Lesarten allein auf Stanford-1, Schwester von C unter B`]
 }
@@ -599,18 +607,22 @@ const splitOffStanfordUnicum = (): string[] => {
 const nameTheWiduchLayer = (): string[] => {
     const a1 = versionBy('A1')
     a1.versionType = 'unicum'
-    a1.motivations.push({
-        '@type': 'motivation', '@id': 'widuch-own-layer',
-        note:
-            'Diese Lesarten trägt allein das Exemplar Widuch. Stünden sie in der Fassung A, so ließe die Fassung B '
-            + 'zweiundfünfzig wirksame Differenzierungen fallen. Da bestehende Differenzierungen nicht mutwillig '
-            + 'zurückgenommen werden, sind sie die eigene Schicht dieses Exemplars, und die Fassung A behält, was '
-            + 'zwei Äste bezeugen.'
-    })
-    const named = editsOf(a1).filter((edit: Json) => !edit.motivation)
-    named.forEach((edit: Json) => { edit.motivation = 'widuch-own-layer' })
+
+    // Fifty-two readings with fifty-two local reasons: one motivation over all
+    // of them would say nothing about any. Why they sit here rather than in the
+    // archetype is a statement about the derivation, and goes there.
+    a1.basedOn['@annotation'] = believing('likely', [argued(
+        'Zweiundfünfzig dieser Lesarten trägt allein das Exemplar Widuch. Stünden sie in der Fassung A, so ließe '
+        + 'die Fassung B ebenso viele wirksame Differenzierungen fallen. Da bestehende Differenzierungen nicht '
+        + 'mutwillig zurückgenommen werden, sind sie die eigene Schicht dieses Exemplars, und die Fassung A '
+        + 'behält, was zwei Äste bezeugen: 657 Lesarten aller vier Kopien und elf, die über die Astgrenze hinweg '
+        + 'bezeugt sind.'
+    )])
+
+    const bare = editsOf(a1).filter((edit: Json) => !edit.motivation).length
     return [
-        `A1: ${named.length} Bearbeitungen als eigene Schicht des Exemplars begründet, versionType auf unicum gesetzt`
+        `A1: versionType auf unicum gesetzt, die Begründung der Ableitung an ihr vermerkt`
+        + ` (${bare} Bearbeitungen warten noch auf eine eigene Motivation)`
     ]
 }
 
@@ -671,17 +683,19 @@ const relocateSharedDeletions = (): string[] => {
     const c = versionBy('C')
     c.motivations.push({
         '@type': 'motivation', '@id': 'treble-crescendo-thinned',
-        note:
-            'Die Crescendo-Befehle im Diskant bei 1691–1775, 2582, 2608 und 7444–8037 mm fehlen in Stanford-2, dem '
-            + 'Zeugen dieser Fassung, und ebenso in der Licensee- und in der grünen Umstanzung. Getragen werden sie '
-            + 'allein von Stanford-1 und vom Exemplar Widuch. Vier von ihnen werden erst durch Bearbeitungen der '
-            + 'Fassung B redundant, zwei sind es schon in A.'
+        note: 'Ausgedünntes Crescendo im Diskant'
     })
     editsOf(c).push({
         '@type': 'edit', '@id': randomUUID(),
         editType: 'remove-redundancy',
         motivation: 'treble-crescendo-thinned',
-        delete: [...misplaced]
+        delete: [...misplaced],
+        '@annotation': believing('likely', [argued(
+            'Diese Befehle bei 1691–1775, 2582, 2608 und 7444–8037 mm fehlen in Stanford-2, dem Zeugen dieser '
+            + 'Fassung, und ebenso in der Licensee- und in der grünen Umstanzung. Getragen werden sie allein von '
+            + 'Stanford-1 und vom Exemplar Widuch. Vier von ihnen werden erst durch Bearbeitungen der Fassung B '
+            + 'wirkungslos, zwei sind es schon in A.'
+        )])
     })
     return [`C: ${misplaced.size} Tilgungen aus D1 und D2 übernommen, die kein Zeuge unterhalb von C trägt`]
 }
@@ -759,59 +773,39 @@ const finishTheGreenTransfer = (): string[] => {
 
 const motivationsOfLicensee: Json[] = [
     {
-        '@type': 'motivation', '@id': 'licensee-dynamics-recoded',
-        note:
-            'Die Dynamik ist für die Licensee-Ausgabe an dieser Stelle neu gesetzt. Der rote Text kennt das '
-            + 'Mezzoforte im Bass bei 1145 mm nicht.'
+        '@type': 'motivation', '@id': 'bass-mezzoforte-set',
+        note: 'Mezzoforte-Haken im Bass, der die Nuancierung auf den unteren Bereich festlegt'
     },
     {
         '@type': 'motivation', '@id': 'note-repeated',
-        note:
-            'Vor das c′ bei 5242 mm tritt eine kurze zusätzliche Stanzung, so dass der Ton zweimal angeschlagen '
-            + 'wird, wo der rote Text eine durchgehende Perforation hat.'
+        note: 'Wiederholter Anschlag des c′ statt eines durchgehaltenen Tons'
     },
     {
         '@type': 'motivation', '@id': 'note-retimed',
-        note:
-            'Einsatz oder Länge weichen um mehr als acht Millimeter ab und damit über die Toleranz hinaus, mit der '
-            + 'die Edition kollationiert ist.'
+        note: 'Das zweite c vorgezogen, das erste dafür verkürzt'
     },
     {
-        '@type': 'motivation', '@id': 'soft-pedal-release-missing',
-        note:
-            'Das Loslassen des Pianozugs bei 6338 mm fehlt. In der Fassung C ist es eine wirkungslose zweite '
-            + 'Ab-Stanzung, seine Tilgung also eine Bereinigung, wie sie jeder Bearbeiter unabhängig vornehmen '
-            + 'kann. Als Bindefehler taugt sie deshalb nicht.'
+        '@type': 'motivation', '@id': 'soft-pedal-held',
+        note: 'Der Pianozug bleibt getreten, die lösende Stanzung fehlt'
     }
 ]
 
 const motivationsOfGreen: Json[] = [
     {
         '@type': 'motivation', '@id': 'latch-to-hold',
-        note:
-            'Der T-98 hält eine Funktion so lange an, wie ihre Perforation dauert. Das rote Paar aus Ein- und '
-            + 'Ausschaltbefehl wird deshalb zu einer einzigen gehaltenen Perforation, mitunter auf der anderen Seite '
-            + 'der Bahn. Gemessen an den grünen Perforationen endet die grüne Haltung dort, wo die rote '
-            + 'Ab-Stanzung beginnt. Der Befund gehört zur Codierung des Systems und ist keine Entscheidung.'
+        note: 'Haltende Perforation an Stelle von Ein- und Ausschaltbefehl, wie es die Bahn des T-98 verlangt'
     },
     {
         '@type': 'motivation', '@id': 't98-only-command',
-        note:
-            'Der T-98 hat einen eigenen Sforzando-piano-Befehl. Der T-100 erreicht die Tiefe durch das Loslassen von '
-            + 'Crescendo oder Mezzoforte und hat von vornherein keine Entsprechung dazu.'
+        note: 'Absenkung durch den eigenen Sforzando-piano-Befehl des T-98'
     },
     {
         '@type': 'motivation', '@id': 'expression-recoded',
-        note:
-            'Die Expression steht hier anders als im roten Text. Was davon die Codierung des T-98 erzwingt und was '
-            + 'der Korrektor des zweiten Masters gewählt hat, trennt erst eine Kollation auf der Ebene des '
-            + 'Intervalls; auf der Ebene des einzelnen Symbols sind die beiden Systeme nicht vergleichbar.'
+        note: 'Dynamik für die grüne Bahn neu gelegt'
     },
     {
         '@type': 'motivation', '@id': 'note-text-differs',
-        note:
-            'Der Notentext weicht ab: ein f′′ bei 1948 mm, das kein rotes Exemplar trägt, und ein g bei 6470 mm, '
-            + 'das gegenüber dem roten Text verschoben steht.'
+        note: 'Abweichender Notentext: ein zusätzliches f′′, ein verschobenes g'
     }
 ]
 
@@ -825,7 +819,7 @@ const symbolsOf = (edit: Json, symbols: Map<string, Json>): Json[] => [
 
 const licenseeMotivationOf = (edit: Json, symbols: Map<string, Json>): string => {
     const kinds = symbolsOf(edit, symbols).map(kindOf)
-    if (kinds.includes('SoftPedalOff')) return 'soft-pedal-release-missing'
+    if (kinds.includes('SoftPedalOff')) return 'soft-pedal-held'
     if (kinds.every(kind => kind === 'note')) {
         const short = (edit.insert ?? []).some((symbol: Json) => {
             const span = spanOf(symbol)
@@ -833,7 +827,7 @@ const licenseeMotivationOf = (edit: Json, symbols: Map<string, Json>): string =>
         })
         return short ? 'note-repeated' : 'note-retimed'
     }
-    return 'licensee-dynamics-recoded'
+    return 'bass-mezzoforte-set'
 }
 
 const greenMotivationOf = (edit: Json, symbols: Map<string, Json>): string => {
