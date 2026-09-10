@@ -1,13 +1,13 @@
 import { Edit, EditType, isPerforation, positionOfSameFunction, Track, TrackerBar } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
-import { MouseEventHandler, useContext } from "react";
+import { MouseEventHandler, useContext, useMemo } from "react";
 import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
-import { Box, boxOf, Translation } from "../../helpers/rollGeometry";
+import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometry";
 
 export type { Translation }
 
@@ -47,20 +47,39 @@ interface EditBoxes {
     deletions: Box[]
 }
 
-/** Where an edit is drawn, the boxes it inserts apart from the ones it deletes. */
-export const editBoxes = (edit: Edit, editionView: EditionView, translation: Translation): EditBoxes => ({
+/**
+ * Where an edit is drawn, the boxes it inserts apart from the ones it
+ * deletes.
+ *
+ * What a version does away with is drawn where it stood, which for a
+ * version coded for another system means the bar its parent was coded
+ * for: a green version's deletions are red commands, and the arrow
+ * saying what became of them ought to start from the lane the red scale
+ * put them in.
+ */
+export const editBoxes = (
+    edit: Edit,
+    editionView: EditionView,
+    translation: Translation,
+    deletedIn: Translation = translation
+): EditBoxes => ({
     insertions: (edit.insert ?? [])
         .map(symbol => getSymbolBBox(symbol, editionView, translation))
         .filter(bbox => !!bbox),
     deletions: (edit.delete ?? [])
         .map(symbolId => editionView.get<AnySymbol>(symbolId))
         .filter(symbol => !!symbol)
-        .map(symbol => getSymbolBBox(symbol, editionView, translation))
+        .map(symbol => getSymbolBBox(symbol, editionView, deletedIn))
         .filter(bbox => !!bbox)
 })
 
-export const getEditBBoxes = (edit: Edit, editionView: EditionView, translation: Translation) => {
-    const { insertions, deletions } = editBoxes(edit, editionView, translation)
+export const getEditBBoxes = (
+    edit: Edit,
+    editionView: EditionView,
+    translation: Translation,
+    deletedIn: Translation = translation
+) => {
+    const { insertions, deletions } = editBoxes(edit, editionView, translation, deletedIn)
     return [...insertions, ...deletions]
 }
 
@@ -118,50 +137,55 @@ const EditHull = ({ id, boxes, fill, label, onClick }: EditHullProps) => {
 
 interface EditViewProps {
     edit: Edit;
+    /**
+     * The bar the version this is based on was coded for, where that is
+     * another system's. What the edit deletes is drawn by it.
+     */
+    deletedOn?: TrackerBar;
     onClick?: MouseEventHandler;
 }
 
-export const EditView = ({ edit, onClick }: EditViewProps) => {
+export const EditView = ({ edit, deletedOn, onClick }: EditViewProps) => {
     const { view } = useContext(EditionContext)
     const translation = usePinchZoom()
+    const { trackHeight, spacing, bar } = translation
+
+    // Laying the other bar out the same way puts a deleted command where
+    // its own scale had it, which is what the arrow should start from.
+    const deletedIn = useMemo(
+        () => deletedOn && deletedOn.id !== bar.id
+            ? { ...translation, ...rollGeometry(trackHeight, spacing, deletedOn) }
+            : translation,
+        [deletedOn, bar, translation, trackHeight, spacing]
+    )
 
     if (!view) return null
 
-    const { insertions, deletions } = editBoxes(edit, view, translation)
-    // What is drawn, not what the edit names: a symbol the bar can place
-    // nowhere has no box, and an arrow to or from nothing draws nothing.
+    const { insertions, deletions } = editBoxes(edit, view, translation, deletedIn)
+    // What is drawn, not what the edit names: a symbol no bar can place
+    // has no box, and an arrow to or from nothing draws nothing.
     const inserted = insertions.length
     const deleted = deletions.length
 
-    // one symbol put in the place of one other: the arrow alone says it
-    if (inserted === 1 && deleted === 1) {
-        const [from] = deletions
-        const [to] = insertions
-        if (!from || !to) return null
-
+    /**
+     * An edit that both inserts and deletes puts one thing in the place
+     * of another, and the arrow from the old to the new says that on its
+     * own. Hulls and a word as well would say it three times over, which
+     * on a transfer between systems is every expression on the roll.
+     */
+    if (inserted > 0 && deleted > 0) {
         return (
             <Arrow
-                from={{ ...from, width: 2 }}
-                to={{ ...to, width: 2 }}
+                from={getBoundingBox(getHull(deletions).points)}
+                to={getBoundingBox(getHull(insertions).points)}
                 onClick={onClick}
                 svgProps={{ id: edit.id }}
             />
         )
     }
 
-    // an arrow between the two hulls only where there are both
-    const arrow = (inserted > 0 && deleted > 0) && (
-        <Arrow
-            from={getBoundingBox(getHull(deletions).points)}
-            to={getBoundingBox(getHull(insertions).points)}
-            onClick={onClick}
-            svgProps={{ id: edit.id }}
-        />
-    )
-
     return (
         <g>
-            {arrow}
 
             {inserted > 0 && (
                 <EditHull

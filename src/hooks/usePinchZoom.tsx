@@ -12,6 +12,9 @@ export interface PinchZoomContextProps extends RollGeometry {
         note: number
         expression: number
     }
+
+    /** The gap left between the blocks of the bar, so a second bar can be laid out the same way. */
+    spacing: number
     zoom: number
     setZoom: (zoom: number) => void
 
@@ -31,6 +34,7 @@ const atRest: RefObject<boolean> = { current: false }
 const PinchZoomContext = createContext<PinchZoomContextProps>({
     ...emptyGeometry,
     trackHeight: { note: 0, expression: 0 },
+    spacing: 0,
     translateX: (x: number) => x,
     rollLength: 0,
     zoom: 0,
@@ -82,13 +86,14 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     const value = useMemo(() => ({
         ...geometry,
         trackHeight,
+        spacing,
         translateX: (x: number) => zoom * x,
         rollLength,
         zoom,
         setZoom,
         viewport,
         gesturing
-    }), [geometry, trackHeight, rollLength, zoom, setZoom, viewport, gesturing])
+    }), [geometry, trackHeight, spacing, rollLength, zoom, setZoom, viewport, gesturing])
 
     return (
         <PinchZoomContext.Provider value={value}>

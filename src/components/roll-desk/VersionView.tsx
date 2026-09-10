@@ -103,10 +103,15 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
 
     if (!view) return null
 
+    // What this version does away with was coded for its parent's system,
+    // so that is the bar those perforations are drawn by.
+    const deletedOn = trackerBarOf(view.predecessorOf(version.id)?.system)
+
     const edits = version.edits
         .map(e => <EditView
             key={`editView_${e.id}`}
             edit={e}
+            deletedOn={deletedOn}
             onClick={() => onClick(e)}
         />)
 
