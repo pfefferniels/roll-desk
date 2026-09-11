@@ -242,23 +242,29 @@ const enrichChase = (): string[] => {
     copy.measurements.scanResolution = { value: 400, unit: 'px/in' }
     copy.production.speed['@annotation'] = believing('likely', [argued(
         'Die Datei W225E.ann nennt roll_tempo 83. Der Leser rechnet zehn Einheiten auf den Fuß je Minute. '
-        + 'Es ist die Geschwindigkeit, auf die Chase seine Lesung gestellt hat, kein Wert von der Rolle.'
+        + 'Das Feld ist als das auf der Rolle aufgedruckte Tempo definiert, und Licensee-Rollen tragen ein '
+        + 'solches, während die roten T-100-Rollen keines tragen. Chases eigene Dateien von 2004 und 2006 '
+        + 'nennen für dieselbe Rolle jedoch 80, Trachtmans Lesung eines anderen Licensee-Exemplars 75, so '
+        + 'dass höchstens eine dieser Angaben vom Etikett stammen kann.'
     )])
     delete copy.readFrom.device
     copy.readFrom.actor = person('Chase, Spencer')
     copy.readFrom.output = 'W225E.bar mit W225E.ann, am 26. Dezember 2024 von Spencer Chase geschickt'
     copy.readFrom.note =
         'Das Lauflängenbild der Abtastleiste, 400 Zeilen auf den Zoll entlang der Rolle, gelesen auf der '
-        + 'Licensee-Leiste, deren Nummerierung die Datei behält. Das Gerät ist nicht überliefert; Chase hat '
-        + 'Scanner-Chassis für andere gebaut, so dass sich die Maschine aus der Datei nicht erschließen lässt. '
-        + 'Die mitgeschickten W225emR.mid und W225emP.mid sind Emulationen und wurden nicht gelesen. Da die '
-        + 'Rolle pneumatisch gelesen wurde, ist die Länge einer Notenstanzung eine Ventilöffnungszeit und kein '
-        + 'Lochmaß; Abweichungen am Ende einer Note taugen auf diesem Exemplar nicht als Befund.'
+        + 'Licensee-Leiste, deren Nummerierung die Datei behält. Abgetastet wurde optisch und gröber, mit '
+        + '180 Zeilen auf den Zoll (/scanner_LPI: 180) und 204 dpi quer zur Rolle; das 400er-Raster ist also '
+        + 'eine Interpolation, und Stanzorte liegen nur auf etwa 0,08 mm genau. Das Gerät selbst ist nicht '
+        + 'überliefert, seine Bauart aber aus der Datei ablesbar: ein Chase-Transport mit Capstan-Antrieb und '
+        + 'ohne Positionsgeber, aus der Generation vor dem Mk3. Die mitgeschickten W225emR.mid und W225emP.mid '
+        + 'sind Emulationen und wurden nicht gelesen. Lochlänge und Stanzschritt hat Chase von Hand gesetzt und '
+        + 'die Rekonstruktion des Stanzrasters abgeschaltet; Abweichungen am Ende einer Note taugen auf diesem '
+        + 'Exemplar nicht als Befund.'
 
     return [
-        'Chase: scanResolution 400 px/in ergänzt (die Zeilen des .bar-Bildes)',
+        'Chase: scanResolution 400 px/in ergänzt (die Zeilen des .bar-Bildes, interpoliert aus 180 lpi)',
         'Chase: Papiergeschwindigkeit mit ihrer Herkunft belegt (roll_tempo 83 aus der .ann)',
-        'Chase: readFrom nennt den Lesenden, die Dateien und den Vorbehalt gegen Notenenden'
+        'Chase: readFrom nennt den Lesenden, die Dateien, die Abtastung und den Vorbehalt gegen Notenenden'
     ]
 }
 
