@@ -2,7 +2,7 @@ import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
 import { assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
-import { paperAt, WELTE_SPOOL } from "welte-t100-emulator";
+import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect, tempoStartOf } from "./ProductionFields";
