@@ -1,5 +1,7 @@
 import { Concept, Emulation, ReproducingSystem, systemIdOf } from 'linked-rolls'
 import { VelocityMap, welteT100System } from 'linked-rolls/welte-t100'
+import { welteT98System } from 'linked-rolls/welte-t98'
+import { welteLicenseeSystem } from 'linked-rolls/welte-licensee'
 
 /**
  * What the desk needs of any system's settings. The velocity map is
@@ -17,7 +19,11 @@ export type SharedOptions = { velocity: VelocityMap }
  * the application's rather than the library's. A version names its
  * system and this says which machine plays it.
  */
-const systems: ReproducingSystem<SharedOptions>[] = [welteT100System]
+const systems: ReproducingSystem<SharedOptions>[] = [
+    welteT100System,
+    welteT98System,
+    welteLicenseeSystem
+]
 
 /** The system a version is coded for, or nothing where the desk has no machine for it. */
 export const systemFor = (system: Concept | undefined): ReproducingSystem<SharedOptions> | undefined => {
@@ -39,8 +45,15 @@ export const optionsFor = (
 
 /**
  * A version performed on the machine it was coded for, or nothing where
- * the desk has none. A Licensee version is the case today: its bar is
- * known and no emulator has been fitted to that instrument.
+ * the desk has none, which is any system the library ships no emulator
+ * for.
+ *
+ * That two of the three can be performed at all does not mean all three
+ * are equally well founded. The T-100's constants are fitted to drawn
+ * nuance lines; the T-98's fitted arms are still empty and it runs on
+ * unfitted starting values; the Licensee's are the T-100's, carried
+ * over to an instrument nobody has measured. Each system's settings say
+ * which of those it is, and the dialog shows it rather than hiding it.
  */
 export const emulationOf = (
     versionSystem: Concept | undefined,
