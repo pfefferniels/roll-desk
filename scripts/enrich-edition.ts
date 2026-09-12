@@ -4,7 +4,7 @@
  * collation where it demonstrably went wrong, states the two transfers
  * as acts, and gives every edit of the two transfers a motivation.
  *
- *     node scripts/enrich-edition.ts <edition.jsonld> [--write]
+ *     npx vite-node scripts/enrich-edition.ts <edition.jsonld> [--write]
  *
  * Each phase is a claim about the text and is reported before it is
  * written. Without --write the script only reports.
@@ -22,8 +22,16 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import Ajv from 'ajv'
 
-// The schema of the checked-out library rather than the one in node_modules:
-// the installed copy is older than the multi-system format this edition is in.
+// The checked-out library rather than the one in node_modules: the installed
+// copy is older than the multi-system format this edition is in. Its sources
+// import without extensions, which plain node cannot resolve, so this script
+// is run through vite-node.
+import { keyOf, TrackerBar } from '../../linked-rolls/src/TrackerBar'
+import { welteT100 } from '../../linked-rolls/src/systems/welteT100/bar'
+import { welteLicensee } from '../../linked-rolls/src/systems/welteLicensee/bar'
+import { welteT98 } from '../../linked-rolls/src/systems/welteT98/bar'
+import { track } from '../../linked-rolls/src/Quantity'
+
 const SCHEMA = new URL('../../linked-rolls/src/schema.json', import.meta.url)
 const TARGET = new URL('../../welte225.org/edition.jsonld', import.meta.url)
 
@@ -73,32 +81,12 @@ const SHORT: Record<string, string> = {
     [DYER]: 'G'
 }
 
-const BAR_OF: Record<string, 't100' | 'lic' | 'green'> =
-    { S1: 't100', S2: 't100', W: 't100', L: 'lic', G: 'green' }
+// The bar each copy is read by. What its positions mean is the library's to
+// say, not this script's: a second copy of the scale here would drift from it.
+const BAR_OF: Record<string, TrackerBar> =
+    { S1: welteT100, S2: welteT100, W: welteT100, L: welteLicensee, G: welteT98 }
 
-const T100: Record<number, string> = {
-    1: 'MezzoforteOff', 2: 'MezzoforteOn', 3: 'SlowCrescendoOff', 4: 'SlowCrescendoOn',
-    5: 'ForzandoOff', 6: 'ForzandoOn', 7: 'SoftPedalOff', 8: 'SoftPedalOn',
-    9: 'MotorOff', 10: 'MotorOn', 91: 'Rewind', 92: 'ElectricCutOff',
-    93: 'SustainPedalOn', 94: 'SustainPedalOff', 95: 'ForzandoOn', 96: 'ForzandoOff',
-    97: 'SlowCrescendoOn', 98: 'SlowCrescendoOff', 99: 'MezzoforteOn', 100: 'MezzoforteOff'
-}
-const LICENSEE: Record<number, string> = {
-    1: 'MezzoforteOff', 2: 'MezzoforteOn', 3: 'SlowCrescendoOff', 4: 'SlowCrescendoOn',
-    5: 'ForzandoOff', 6: 'ForzandoOn', 7: 'SoftPedalOff', 8: 'SoftPedalOn',
-    89: 'Rewind', 90: 'ElectricCutOff', 91: 'SustainPedalOn', 92: 'SustainPedalOff',
-    93: 'ForzandoOn', 94: 'ForzandoOff', 95: 'SlowCrescendoOn', 96: 'SlowCrescendoOff',
-    97: 'MezzoforteOn', 98: 'MezzoforteOff'
-}
-const GREEN: Record<number, string> = {
-    1: 'SforzandoPiano', 2: 'Mezzoforte', 3: 'SustainPedal', 4: 'Crescendo', 5: 'SforzandoForte',
-    94: 'SforzandoForte', 95: 'Crescendo', 96: 'SoftPedal', 97: 'Mezzoforte', 98: 'SforzandoPiano'
-}
-const NOTE_BLOCK = { t100: [11, 90, 24], lic: [9, 88, 24], green: [6, 93, 21] } as const
-const BASS_UP_TO = { t100: 10, lic: 8, green: 5 } as const
-const VALVES = { t100: T100, lic: LICENSEE, green: GREEN } as const
-
-interface Feature { copy: string, from: number, to: number, track: number }
+interface Feature { copy: string, from: number, to: number, across: { from: number, to?: number } }
 
 const featureIndex = new Map<string, Feature>(
     document.copies.flatMap((copy: Json) => {
@@ -107,24 +95,26 @@ const featureIndex = new Map<string, Feature>(
             copy: name,
             from: feature.horizontal.from,
             to: feature.horizontal.to,
-            track: feature.vertical.from
+            across: feature.vertical
         }] as const)
     })
 )
 
-/** What the tracker bar of the feature's copy reads at that track, as a key. */
-const readingOfFeature = (feature: Feature): string | undefined => {
-    const bar = BAR_OF[feature.copy]
-    const [low, high, lowest] = NOTE_BLOCK[bar]
-    if (feature.track >= low && feature.track <= high) return `note:${lowest + feature.track - low}`
-    const valve = VALVES[bar][feature.track]
-    if (!valve) return undefined
-    return `${valve}:${feature.track <= BASS_UP_TO[bar] ? 'bass' : 'treble'}`
-}
+/**
+ * What the tracker bar of the feature's copy reads off it, as keys. A
+ * perforation wider than one position uncovers more than one bar hole and
+ * carries every command it reaches, so this is a list rather than one value.
+ */
+const readingsOfFeature = (feature: Feature): string[] =>
+    BAR_OF[feature.copy]
+        .meaningsOf({ from: track(feature.across.from), to: feature.across.to === undefined ? undefined : track(feature.across.to) })
+        .map(keyOf)
 
 /** What the symbol says, as the same key. */
 const readingOfSymbol = (symbol: Json): string =>
-    symbol['@type'] === 'note' ? `note:${symbol.pitch}` : `${symbol.expressionType}:${symbol.scope}`
+    keyOf(symbol['@type'] === 'note'
+        ? { type: 'note', pitch: symbol.pitch }
+        : { type: 'expression', expressionType: symbol.expressionType, scope: symbol.scope })
 
 // ------------------------------------------------------- walking the tree
 
@@ -322,7 +312,7 @@ const untangleSharedCarriers = (): string[] => {
         const kept = (symbol.carriers ?? []).filter((carrier: Json) => {
             const feature = featureIndex.get(carrier['@id'])
             if (!feature) return true
-            if (readingOfFeature(feature) === wanted) return true
+            if (readingsOfFeature(feature).includes(wanted)) return true
             homeless.push({ id: carrier['@id'], feature })
             return false
         })
@@ -333,9 +323,9 @@ const untangleSharedCarriers = (): string[] => {
         (symbol.carriers ?? []).some((carrier: Json) => carrier['@id'] === id)
 
     const adopted = homeless.filter(({ id, feature }) => {
-        const wanted = readingOfFeature(feature)
+        const wanted = readingsOfFeature(feature)
         const host = [...symbols.values()].find(symbol => {
-            if (readingOfSymbol(symbol) !== wanted) return false
+            if (!wanted.includes(readingOfSymbol(symbol))) return false
             const span = spanOf(symbol)
             return span !== undefined
                 && Math.abs(span.from - feature.from) <= COLLATION_TOLERANCE
@@ -416,11 +406,11 @@ const adoptOrphanPunches = (): string[] => {
         .filter(([id]) => !carried.has(id))
         .filter(inTheMusic)
         .forEach(([id, feature]) => {
-            const wanted = readingOfFeature(feature)
-            if (!wanted) return
+            const wanted = readingsOfFeature(feature)
+            if (!wanted.length) return
             const host = [...symbols.values()].find(symbol => {
                 const span = spanOf(symbol)
-                return readingOfSymbol(symbol) === wanted && span !== undefined
+                return wanted.includes(readingOfSymbol(symbol)) && span !== undefined
                     && Math.abs(span.from - feature.from) <= COLLATION_TOLERANCE
                     && Math.abs(span.to - feature.to) <= COLLATION_TOLERANCE
                     && !witnessesOf(symbol).includes(feature.copy)
@@ -742,7 +732,7 @@ const dropCalibrationSweep = (): string[] => {
  */
 const finishTheGreenTransfer = (): string[] => {
     const green = versionBy('D2')
-    const readable = new Set(Object.values(GREEN))
+    const readable = new Set(welteT98.expressionTypes)
 
     /** The green function that answers a red command, where one does. */
     const answering: Record<string, string> = {
