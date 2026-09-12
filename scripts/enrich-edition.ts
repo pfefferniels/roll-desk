@@ -41,8 +41,8 @@ if (!sourcePath) {
 }
 const write = flag === '--write'
 
-const CHASE = 'copy/6e1ce072-7490-44b6-b8e8-eb1bbffc3cad'
-const DYER = 'copy/9ae56c3e-b058-4972-9895-96946c6b93f8'
+const CHASE = '6e1ce072-7490-44b6-b8e8-eb1bbffc3cad'
+const DYER = '9ae56c3e-b058-4972-9895-96946c6b93f8'
 
 /** Where the green copy's rewind begins on the edition's axis. Everything beyond it is the scanner's. */
 const REWIND = 10324.6
@@ -68,9 +68,9 @@ const document: Json = JSON.parse(readFileSync(sourcePath, 'utf-8'))
 // --------------------------------------------------------- reading the roll
 
 const SHORT: Record<string, string> = {
-    'copy/d229954b-086c-44d6-a589-aaa324d31d88': 'S1',
-    'copy/88460599-2e0d-4759-851c-903a5a521997': 'S2',
-    'copy/a7ff95b7-f43a-4341-ba86-80fa4e84499c': 'W',
+    'd229954b-086c-44d6-a589-aaa324d31d88': 'S1',
+    '88460599-2e0d-4759-851c-903a5a521997': 'S2',
+    'a7ff95b7-f43a-4341-ba86-80fa4e84499c': 'W',
     [CHASE]: 'L',
     [DYER]: 'G'
 }
