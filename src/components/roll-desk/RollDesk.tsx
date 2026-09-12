@@ -2,8 +2,12 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isEdit, isPerforation, isRollFeature, isSymbol, welteT100 } from 'linked-rolls'
+import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isPerforation, welteT100 } from 'linked-rolls'
+import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
+import { deskPath, entityOfPath, linkTarget, referenceOf } from "../../helpers/addresses"
+import { useSnackbar } from "../../providers/SnackbarContext"
+import { CopyReference } from "./CopyReference"
 import { svg, svgPerMm } from "../../helpers/units"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../../helpers/reproducingSystems'
@@ -95,6 +99,9 @@ interface DeskProps {
 
 export const Desk = ({ show }: DeskProps) => {
     const { play } = usePiano()
+    const { setMessage } = useSnackbar()
+    const navigate = useNavigate()
+    const { pathname } = useLocation()
 
     const { edition, setEdition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
@@ -145,33 +152,54 @@ export const Desk = ({ show }: DeskProps) => {
         ? view?.get<AnySymbol>(soleSelected.id)
         : undefined
 
+    /** The entity the desk has taken its address from, so that neither side of the address repeats the other's work. */
     const shown = useRef<string | undefined>(undefined)
     const [pendingSpotlight, setPendingSpotlight] = useState<string>()
 
-    // A link to an entity opens the version or copy it belongs to and marks it.
+    // A link to an entity opens what it lies on and marks it.
     useEffect(() => {
-        if (!show || !view || !edition || shown.current === show) return
-        const path = view.getPath(show)
-        if (!path) return
+        if (!view || shown.current === show) return
         shown.current = show
+        if (!show) return
 
-        const [collection, index] = path
-        if (collection === 'versions') {
-            setCurrentVersionId(edition.versions[index as number]?.id)
+        const target = linkTarget(view, show)
+        if (!target) {
+            setMessage(`The edition of WM 225 holds nothing under the identifier ${show}.`)
+            return
+        }
+
+        if (target.on === 'version') {
+            setCurrentVersionId(target.versionId)
             setCurrentCopyId(undefined)
         }
-        else if (collection === 'copies') {
-            setCurrentCopyId(edition.copies[index as number]?.id)
+        else if (target.on === 'copy') {
+            setCurrentCopyId(target.copyId)
             setCurrentVersionId(undefined)
         }
-        else return
-
-        const entity = view.get<object>(show)
-        if (entity && path.length > 2 && (isSymbol(entity) || isRollFeature(entity) || isEdit(entity))) {
-            setSelection([entity])
-            setPendingSpotlight(show)
+        else {
+            // Nothing that lies on the roll: a statement of the edition
+            // about itself, which the info tab is where to read.
+            setCurrentTab('info')
         }
-    }, [show, view, edition])
+
+        const mark = 'mark' in target ? target.mark : undefined
+        if (mark) {
+            setSelection([mark])
+            setPendingSpotlight(mark.id)
+        }
+    }, [show, view, setMessage])
+
+    const shownPath = deskPath({ versionId: currentVersionId, copyId: currentCopyId, selection })
+
+    // The published desk keeps its address on what is shown, so that a
+    // reader can pass on or cite whatever they are looking at. The editor
+    // works on an edition that is not published and has no addresses.
+    useEffect(() => {
+        if (!viewOnly || shown.current !== show || !shownPath || shownPath === pathname) return
+
+        shown.current = entityOfPath(shownPath)
+        void navigate(shownPath, { replace: true })
+    }, [viewOnly, show, shownPath, pathname, navigate])
 
     useEffect(() => {
         if (!pendingSpotlight) return
@@ -266,6 +294,11 @@ export const Desk = ({ show }: DeskProps) => {
 
     const editorLine = namedEditors(edition.creation.editors)
 
+    // Only an edition with a base has IRIs; one being written has none yet.
+    const reference = (shownPath && edition.base)
+        ? referenceOf(shownPath, edition.base)
+        : undefined
+
     const viewControl = (
         <Paper sx={{
             position: 'absolute',
@@ -276,6 +309,7 @@ export const Desk = ({ show }: DeskProps) => {
             padding: 1
         }}>
             <Stack direction='row' spacing={1}>
+                <CopyReference reference={reference} />
                 <IconButton
                     size='small'
                     onClick={() => setEmulationSettingsDialogOpen(true)}
@@ -528,6 +562,7 @@ export const Desk = ({ show }: DeskProps) => {
                                 )}
                             </div>
                             <div style={{ float: 'right' }}>
+                                <CopyReference reference={reference} />
                                 <IconButton onClick={() => setSelection([])}>
                                     <Clear />
                                 </IconButton>

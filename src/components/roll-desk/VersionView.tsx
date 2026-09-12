@@ -11,7 +11,7 @@ import { EditView } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../../providers/SelectionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { isMotivation } from "./VersionMenu"
+import { isMotivation } from "../../helpers/motivation"
 import { ConstraintView } from "./ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../../helpers/constraints"
 

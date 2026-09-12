@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { Snackbar } from '@mui/material';
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 import { SnackbarContext } from './providers/SnackbarContext';
 import { Desk } from './components/roll-desk/RollDesk';
@@ -9,14 +9,16 @@ import { PianoContextProvider } from 'react-pianosound';
 import { EditionProvider } from './providers/EditionContext';
 import { Edition } from 'linked-rolls';
 import { checkedDocument, importedEdition } from './helpers/importEdition';
+import { entityOfPath } from './helpers/addresses';
 
 /**
- * The desk opened on one entity of the edition, so that the path of an
- * entity's IRI, `/symbol_…` or `/copy/…`, shows that entity.
+ * The published edition, opened on whatever entity the address names:
+ * the path of an entity's IRI, its id, shows that entity, and the bare
+ * `/` the roll.
  */
-const DeskShowing = () => {
-  const { entityId } = useParams()
-  return <Desk show={entityId} />
+const PublishedDesk = () => {
+  const { pathname } = useLocation()
+  return <Desk show={entityOfPath(pathname)} />
 }
 
 const App = () => {
@@ -76,20 +78,6 @@ const App = () => {
         <PianoContextProvider>
           <BrowserRouter>
             <Routes>
-              {/* default route: load existing edition */}
-              <Route
-                path="/"
-                element={
-                  isLoadingEdition ? (
-                    <div>Loading…</div>
-                  ) : (
-                    <EditionProvider edition={existingEdition}>
-                      <Desk />
-                    </EditionProvider>
-                  )
-                }
-              />
-
               <Route
                 path="/editor"
                 element={
@@ -99,22 +87,24 @@ const App = () => {
                 }
               />
 
-              {/* an entity of the existing edition, by the path of its IRI */}
-              {['/copy/:entityId', '/:entityId'].map(path => (
-                <Route
-                  key={path}
-                  path={path}
-                  element={
-                    isLoadingEdition ? (
-                      <div>Loading…</div>
-                    ) : (
-                      <EditionProvider edition={existingEdition}>
-                        <DeskShowing />
-                      </EditionProvider>
-                    )
-                  }
-                />
-              ))}
+              {/*
+                One route for the published edition and every entity of it,
+                so that going from the roll to an entity, or from one entity
+                to the next, leaves the desk standing instead of building it
+                anew.
+              */}
+              <Route
+                path="*"
+                element={
+                  isLoadingEdition ? (
+                    <div>Loading…</div>
+                  ) : (
+                    <EditionProvider edition={existingEdition}>
+                      <PublishedDesk />
+                    </EditionProvider>
+                  )
+                }
+              />
             </Routes>
           </BrowserRouter>
         </PianoContextProvider>

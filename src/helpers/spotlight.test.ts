@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { spotlight } from './spotlight'
 
-/** Just enough of a drawn symbol: the attributes a spotlight paints over. */
+/** Just enough of a drawn shape: the attributes a spotlight paints over. */
 const drawing = (attributes: Record<string, string>) => {
     const worn = new Map(Object.entries(attributes))
     return {
@@ -14,12 +14,20 @@ const drawing = (attributes: Record<string, string>) => {
     }
 }
 
-const showAs = (id: string, drawn: ReturnType<typeof drawing>) =>
-    vi.stubGlobal('document', { getElementById: (asked: string) => asked === id ? drawn : null })
+type Drawn = ReturnType<typeof drawing>
+
+/** A document in which the given ids are drawn, an id possibly by several shapes. */
+const showing = (drawn: Record<string, Drawn[]>) =>
+    vi.stubGlobal('document', {
+        querySelectorAll: (selector: string) =>
+            Object.entries(drawn)
+                .filter(([id]) => selector.includes(`"${id}"`))
+                .flatMap(([, shapes]) => shapes)
+    })
 
 const symbol = { fill: 'white', stroke: 'black', 'stroke-width': '0.4' }
 
-describe('spotlighting a symbol', () => {
+describe('spotlighting an entity', () => {
     beforeEach(() => vi.useFakeTimers())
 
     afterEach(() => {
@@ -28,14 +36,14 @@ describe('spotlighting a symbol', () => {
     })
 
     it('reports nothing drawn for the id', () => {
-        showAs('note', drawing(symbol))
+        showing({ note: [drawing(symbol)] })
 
         expect(spotlight('elsewhere', 100)).toBe(false)
     })
 
-    it('marks the symbol and puts back what it wore', () => {
+    it('marks the shape and puts back what it wore', () => {
         const drawn = drawing(symbol)
-        showAs('note', drawn)
+        showing({ note: [drawn] })
 
         expect(spotlight('note', 100)).toBe(true)
         expect(drawn.worn.get('fill')).toEqual('orange')
@@ -44,9 +52,20 @@ describe('spotlighting a symbol', () => {
         expect(Object.fromEntries(drawn.worn)).toEqual(symbol)
     })
 
+    it('marks every shape the entity is drawn by', () => {
+        const hulls = [drawing({ fill: 'gray' }), drawing({ fill: 'gray' })]
+        showing({ 'chord-shading': hulls })
+
+        expect(spotlight('chord-shading', 100)).toBe(true)
+        expect(hulls.map(hull => hull.worn.get('fill'))).toEqual(['orange', 'orange'])
+
+        vi.advanceTimersByTime(100)
+        expect(hulls.map(hull => hull.worn.get('fill'))).toEqual(['gray', 'gray'])
+    })
+
     it('keeps the first reading when a second spotlight overlaps it', () => {
         const drawn = drawing(symbol)
-        showAs('note', drawn)
+        showing({ note: [drawn] })
 
         spotlight('note', 100)
         vi.advanceTimersByTime(50)
@@ -59,9 +78,9 @@ describe('spotlighting a symbol', () => {
         expect(Object.fromEntries(drawn.worn)).toEqual(symbol)
     })
 
-    it('leaves off the attributes the symbol did not carry', () => {
+    it('leaves off the attributes the shape did not carry', () => {
         const drawn = drawing({ fill: 'white' })
-        showAs('note', drawn)
+        showing({ note: [drawn] })
 
         spotlight('note', 100)
         vi.advanceTimersByTime(100)

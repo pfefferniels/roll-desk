@@ -50,18 +50,35 @@ const flash = (shape: Element, milliseconds: number) => {
     })
 }
 
+const shapes = 'rect, path, polygon, line, text, image, circle, ellipse'
+
+/** The shape a spotlight paints: what carries the id, or the first shape where that is a group. */
+const shapeOf = (carrier: Element) => carrier.querySelector(shapes) ?? carrier
+
+/** An id beginning with a digit is no CSS identifier, so it is asked for as an attribute value. */
+const quoted = (id: string) => `"${id.replace(/["\\]/g, '\\$&')}"`
+
 /**
- * Scrolls the shape drawn for an entity into view and flashes it, the
- * way playback marks the symbol being played. False when nothing is
- * drawn for the id yet.
+ * Every shape drawn for an entity. One entity may be drawn in more than
+ * one place: an edit within its motivation as well as on the roll, and a
+ * motivation as a hull around each group of edits it holds together.
+ */
+const shapesOf = (id: string) => [...new Set(
+    [...document.querySelectorAll(`[id=${quoted(id)}], [data-id=${quoted(id)}]`)].map(shapeOf)
+)]
+
+/**
+ * Scrolls what is drawn for an entity into view and flashes it, the way
+ * playback marks the symbol being played. False when nothing is drawn
+ * for the id yet.
  */
 export const spotlight = (id: string, milliseconds: number): boolean => {
-    const group = document.getElementById(id)
-    if (!group) return false
-    const shape = group.querySelector('rect') ?? group
+    const drawn = shapesOf(id)
+    const [first] = drawn
+    if (!first) return false
 
-    shape.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-    flash(shape, milliseconds)
+    first.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    drawn.forEach(shape => flash(shape, milliseconds))
 
     return true
 }

@@ -27,11 +27,12 @@ interface EditCluster {
  * If there are 0 or 1 points, returns a shallow copy of the input.
  */
 interface MotivationComprehensionProps extends SVGProps<SVGGElement> {
+    motivationId: string;
     edits: Edit[];
     expanded: boolean;
 }
 
-const MotivationComprehension = ({ edits, expanded, ...svgProps }: MotivationComprehensionProps) => {
+const MotivationComprehension = ({ motivationId, edits, expanded, ...svgProps }: MotivationComprehensionProps) => {
     const { view } = useContext(EditionContext);
     const translation = usePinchZoom();
 
@@ -71,7 +72,10 @@ const MotivationComprehension = ({ edits, expanded, ...svgProps }: MotivationCom
                 ))}
             </g>
 
+            {/* The hull, not the group, carries the id: a motivation holding
+                edits far apart on the roll is drawn as one hull per group. */}
             <path
+                data-id={motivationId}
                 d={path}
                 fill={color}
                 fillOpacity={hullFillOpacity}
@@ -160,6 +164,7 @@ export const MotivationView = ({
             {groups.map((comp, i) => (
                 <MotivationComprehension
                     key={`${motivation.id}-${i}`}
+                    motivationId={motivation.id}
                     edits={comp}
                     expanded={expanded}
                     {...svgProps}

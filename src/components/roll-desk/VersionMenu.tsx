@@ -16,9 +16,7 @@ import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../../helpers/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
-
-export const isMotivation = (obj: unknown): obj is Motivation =>
-    typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
+import { isMotivation } from "../../helpers/motivation"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {
