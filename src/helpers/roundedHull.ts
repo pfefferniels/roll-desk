@@ -11,33 +11,36 @@ type Pair = [number, number]
 
 // Vector operations, taken from
 // http://bl.ocks.org/hollasch/f70f1fe7700f092b5a505e3efd1d9232
-const vecScale = function (scale: number, v: number[]) {
+const vecScale = function (scale: number, v: Pair): Pair {
   // Returns the vector 'v' scaled by 'scale'.
   return [scale * v[0], scale * v[1]]
 }
 
 // Returns the sum of two vectors, or a combination of a point and a
 // vector.
-const vecSum = function (pv1: number[], pv2: number[]) {
+const vecSum = function (pv1: Pair, pv2: Pair): Pair {
   return [pv1[0] + pv2[0], pv1[1] + pv2[1]]
 }
 
 // Returns the unit normal to the line segment from p0 to p1.
-const unitNormal = function (p0: Pair, p1: Pair) {
-  const n = [p0[1] - p1[1], p1[0] - p0[0]]
+const unitNormal = function (p0: Pair, p1: Pair): Pair {
+  const n: Pair = [p0[1] - p1[1], p1[0] - p0[0]]
   const nLength = Math.sqrt(n[0] * n[0] + n[1] * n[1])
   return [n[0] / nLength, n[1] / nLength]
 }
 
+/** A pair as a path takes it, which is what its own toString gave. */
+const at = (p: Pair) => `${p[0]},${p[1]}`
+
 // Returns the path for a rounded hull around a single point (a circle).
 const roundedHull1 = function (polyPoints: Pair[], hullPadding: number) {
-  const p1 = [polyPoints[0][0], polyPoints[0][1] - hullPadding]
-  const p2 = [polyPoints[0][0], polyPoints[0][1] + hullPadding]
+  const p1: Pair = [polyPoints[0][0], polyPoints[0][1] - hullPadding]
+  const p2: Pair = [polyPoints[0][0], polyPoints[0][1] + hullPadding]
 
-  return `M ${p1} A `
-    + [hullPadding, hullPadding, '0,0,0', p2].join(',')
+  return `M ${at(p1)} A `
+    + [hullPadding, hullPadding, '0,0,0', at(p2)].join(',')
     + ' A '
-    + [hullPadding, hullPadding, '0,0,0', p1].join(',')
+    + [hullPadding, hullPadding, '0,0,0', at(p1)].join(',')
 }
 
 // Returns the path for a rounded hull around two points (a "capsule" shape).
@@ -51,10 +54,10 @@ const roundedHull2 = function (polyPoints: Pair[], hullPadding: number) {
   const p2 = vecSum(polyPoints[1], invOffsetVector)
   const p3 = vecSum(polyPoints[0], invOffsetVector)
 
-  return `M ${p0} L ${p1} A `
-    + [hullPadding, hullPadding, '0,0,0', p2].join(',')
-    + ` L ${p3} A `
-    + [hullPadding, hullPadding, '0,0,0', p0].join(',')
+  return `M ${at(p0)} L ${at(p1)} A `
+    + [hullPadding, hullPadding, '0,0,0', at(p2)].join(',')
+    + ` L ${at(p3)} A `
+    + [hullPadding, hullPadding, '0,0,0', at(p0)].join(',')
 }
 
 // Returns the SVG path data string representing the polygon, expanded and rounded.
@@ -65,27 +68,27 @@ const roundedHullN = function (polyPoints: Pair[], hullPadding: number) {
   if (polyPoints.length === 1) return roundedHull1(polyPoints, hullPadding)
   if (polyPoints.length === 2) return roundedHull2(polyPoints, hullPadding)
 
-  let segments = new Array(polyPoints.length)
+  const offsets: [Pair, Pair][] = new Array<[Pair, Pair]>(polyPoints.length)
 
   // Calculate each offset (outwards) segment of the convex hull.
-  for (let segmentIndex = 0; segmentIndex < segments.length; ++segmentIndex) {
+  for (let segmentIndex = 0; segmentIndex < offsets.length; ++segmentIndex) {
     const p0 = (segmentIndex === 0) ? polyPoints[polyPoints.length - 1] : polyPoints[segmentIndex - 1]
     const p1 = polyPoints[segmentIndex]
 
     // Compute the offset vector for the line segment, with length = hullPadding.
     const offset = vecScale(hullPadding, unitNormal(p0, p1))
 
-    segments[segmentIndex] = [vecSum(p0, offset), vecSum(p1, offset)]
+    offsets[segmentIndex] = [vecSum(p0, offset), vecSum(p1, offset)]
   }
 
   const arcData = 'A ' + [hullPadding, hullPadding, '0,0,0,'].join(',')
 
-  segments = segments.map(function (segment, index) {
+  const segments = offsets.map(function (segment, index) {
     let pathFragment = ''
     if (index === 0) {
-      pathFragment = 'M ' + segments[segments.length - 1][1] + ' '
+      pathFragment = 'M ' + at(offsets[offsets.length - 1][1]) + ' '
     }
-    pathFragment += arcData + segment[0] + ' L ' + segment[1]
+    pathFragment += arcData + at(segment[0]) + ' L ' + at(segment[1])
 
     return pathFragment
   })
@@ -93,11 +96,6 @@ const roundedHullN = function (polyPoints: Pair[], hullPadding: number) {
   return segments.join(' ')
 }
 
-/*
- * Calculates rounded hull around given points.
- * @returns path as a string which can be used for the `@d` element 
- * of SVG objects.
- */
 /**
  * The two ends of a set of points that lie on one line. Ordering them by
  * x and then by y puts the ends first and last, whichever way the line runs.
@@ -107,6 +105,11 @@ const extremes = (pairs: Pair[]): Pair[] => {
   return [sorted[0], sorted[sorted.length - 1]]
 }
 
+/*
+ * Calculates rounded hull around given points.
+ * @returns path as a string which can be used for the `@d` element
+ * of SVG objects.
+ */
 export function roundedHull(points: Point[], hullPadding: Svg) {
   const pairs: Pair[] = points.map(({ x, y }) => [x, y])
 

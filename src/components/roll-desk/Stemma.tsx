@@ -33,7 +33,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
         const { nodes, links } = graphOf(view.withGenerations(), problems)
 
         setLinks(links)
-        calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
+        setNodes(calculatePositions(nodes, links, svgWidth, svgHeight))
     }, [versions, view, problems])
 
     useEffect(() => {
@@ -77,6 +77,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
             .translate(-midX, -midY)
 
         // apply initial “fit all nodes” transform
+        // eslint-disable-next-line @typescript-eslint/unbound-method -- d3 means zoom.transform to be passed to `call`
         svg.call(zoom.transform, initialTransform)
 
         return () => {
@@ -223,13 +224,13 @@ const captionHalfWidth = (node: Node) =>
 /** What a node claims of its row, caption included. */
 const spaceFor = (node: Node) => Math.max(radiusOf(node), captionHalfWidth(node))
 
-export const calculatePositions = async (
+export const calculatePositions = (
     nodes: Node[],
     links: Link[],
     width: number,
     height: number,
     n: number = 300
-): Promise<Node[]> => {
+): Node[] => {
 
     const rowGap = 200; // vertical distance between generations
 
@@ -422,8 +423,8 @@ export const LinkContainer = ({
                                 }
                             })
                         }
-                        a={{ x: source.x!, y: source.y! }}
-                        b={{ x: target.x!, y: target.y! }}
+                        a={{ x: source.x, y: source.y }}
+                        b={{ x: target.x, y: target.y }}
                         onSliceClick={(slice) => {
                             if (slice) {
                                 const m = motivations.find(m => m.id === slice.id)

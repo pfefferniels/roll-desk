@@ -50,7 +50,7 @@ export const ZoomSlider = ({ zoom, onScrub, onSettle }: ZoomSliderProps) => {
                 scale={zoomOfPosition}
                 getAriaValueText={labelOfZoom}
                 onChange={(_, newValue) => {
-                    const scrubbed = zoomOfPosition(newValue as number)
+                    const scrubbed = zoomOfPosition(newValue)
                     setValue(scrubbed)
                     onScrub(scrubbed)
                 }}

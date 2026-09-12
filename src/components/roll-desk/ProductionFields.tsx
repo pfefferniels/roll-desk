@@ -72,7 +72,7 @@ export const PaperSpeedFields = ({ value, onChange }: PaperSpeedFieldsProps) => 
         <Select
             size='small'
             value={value.unit}
-            onChange={e => onChange({ ...value, unit: e.target.value as SpeedUnit })}
+            onChange={e => onChange({ ...value, unit: e.target.value })}
         >
             {speedUnits.map(unit => <MenuItem key={unit} value={unit}>{unit}</MenuItem>)}
         </Select>

@@ -29,7 +29,7 @@ export function FeatureConditionDialog({ open, feature, onClose, onDone }: Featu
         setDescription(feature.condition.description)
     }, [feature])
 
-    const handleDone = async () => {
+    const handleDone = () => {
         if (!conditionType) {
             console.error('Condition type is required');
             return;

@@ -33,7 +33,7 @@ export function orderSlicesCenterWeighted(slices: Slice[]): Slice[] {
     withIdx.sort((p, q) => (q.count - p.count) || (p.__i - q.__i));
 
     const n = withIdx.length;
-    const out: Array<(typeof withIdx)[number] | null> = Array(n).fill(null);
+    const out: Array<(typeof withIdx)[number] | null> = Array.from({ length: n }, () => null);
     if (n === 0) return [];
 
     const midL = Math.floor((n - 1) / 2);

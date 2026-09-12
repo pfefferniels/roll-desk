@@ -7,7 +7,8 @@ import { SnackbarContext } from './providers/SnackbarContext';
 import { Desk } from './components/roll-desk/RollDesk';
 import { PianoContextProvider } from 'react-pianosound';
 import { EditionProvider } from './providers/EditionContext';
-import { Edition, importJsonLd } from 'linked-rolls';
+import { Edition } from 'linked-rolls';
+import { checkedDocument, importedEdition } from './helpers/importEdition';
 
 /**
  * The desk opened on one entity of the edition, so that the path of an
@@ -44,9 +45,20 @@ const App = () => {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const json = await res.json();
-        const edition = importJsonLd(json);
-        setExistingEdition(edition);
+
+        // Read as an opened file is: brought up to the current format and
+        // held against the schema, rather than believed as it arrives.
+        const { document, errors } = await checkedDocument(await res.json());
+        if (errors.length > 0) {
+          console.warn('The published edition does not satisfy the schema:', errors);
+        }
+
+        const reading = importedEdition(document);
+        if ('refusal' in reading) {
+          throw new Error(reading.refusal);
+        }
+
+        setExistingEdition(reading.value);
       } catch (err) {
         console.error(err);
         setMessage('Could not load the edition of WM 225.');
@@ -55,7 +67,7 @@ const App = () => {
       }
     };
 
-    loadEdition();
+    void loadEdition();
   }, []);
 
   return (

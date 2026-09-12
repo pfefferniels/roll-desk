@@ -19,7 +19,7 @@ interface DownloadDialogProps {
     onClose: () => void;
     edition: Edition;
     onDownloadMIDI?: () => void;
-    onDownloadAllMIDI?: () => Promise<void>;
+    onDownloadAllMIDI?: () => void | Promise<void>;
     versionSiglum?: string;
     versionCount?: number;
 }
@@ -39,7 +39,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
     const [renderingArchive, setRenderingArchive] = useState(false)
 
     const downloadJsonLd = () => {
-        const jsonld = asJsonLd(edition)
+        const jsonld: unknown = asJsonLd(edition)
         downloadFile('edition.jsonld', JSON.stringify(jsonld, null, 4), 'application/ld+json')
     }
 
@@ -89,7 +89,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
                     >
                         <ListItemButton
                             disabled={versionCount === 0 || renderingArchive}
-                            onClick={downloadAllMIDI}
+                            onClick={() => void downloadAllMIDI()}
                         >
                             <ListItemText
                                 primary='MIDI, all versions (ZIP)'

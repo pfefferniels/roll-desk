@@ -44,7 +44,7 @@ export const unit = (a: Point): Point | undefined => {
 }
 
 /** Turned a quarter turn, which is how a normal to a line is taken. */
-export const perpendicular = ({ x, y }: Point): Point => point(svg(-y), x)
+export const perpendicular = ({ x, y }: Point): Point => point(scale(y, -1), x)
 
 /** A box grown by the same margin on every side. */
 export const padded = (box: Box, margin: Svg): Box => ({

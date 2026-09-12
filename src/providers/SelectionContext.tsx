@@ -1,4 +1,4 @@
-import { createContext, Dispatch, SetStateAction, useContext } from "react";
+import { createContext, Dispatch, SetStateAction, useCallback, useContext } from "react";
 import { Millimeters } from "linked-rolls";
 import { UserSelection } from "../components/roll-desk/RollDesk";
 
@@ -15,20 +15,43 @@ interface SelectionContextProps<T extends UserSelection = UserSelection> {
 
 export const SelectionContext = createContext<SelectionContextProps>({
     selection: [],
-    setSelection: (() => { }) as Dispatch<SetStateAction<UserSelection[]>>,
+    setSelection: (() => { }),
     range: undefined,
-    setRange: (() => { }) as Dispatch<SetStateAction<RollRange | undefined>>
+    setRange: (() => { })
 });
 
+/**
+ * The selection, narrowed to the kind a view deals in.
+ *
+ * The setter is narrowed with it, and what it writes is put back into the
+ * whole selection: an updater is handed only the items of its own kind and
+ * what it returns replaces those, so a view cannot silently drop the
+ * selections it was never shown.
+ */
 export function useSelection<T extends UserSelection = UserSelection>(
     filter?: (item: UserSelection) => item is T
 ): SelectionContextProps<T> {
     const { selection, setSelection, range, setRange } = useContext(SelectionContext);
-    const narrowed = filter ? selection.filter(filter) : selection;
+
+    // Without a filter there is nothing for T to be inferred from, so it
+    // is the whole selection and the assertion holds.
+    const narrow = useCallback(
+        (items: readonly UserSelection[]) => (filter ? items.filter(filter) : items as T[]),
+        [filter]
+    );
+
+    const setNarrowed = useCallback<Dispatch<SetStateAction<T[]>>>(update => {
+        setSelection(whole => {
+            const mine = narrow(whole);
+            const replaced = typeof update === 'function' ? update(mine) : update;
+            const others = whole.filter(item => !mine.includes(item as T));
+            return [...others, ...replaced];
+        });
+    }, [setSelection, narrow]);
 
     return {
-        selection: narrowed as T[],
-        setSelection: setSelection as Dispatch<SetStateAction<T[]>>,
+        selection: narrow(selection),
+        setSelection: setNarrowed,
         range,
         setRange
     };

@@ -143,5 +143,8 @@ export const arrowLine = (from: Boxed, to: Boxed): ArrowLine => {
 }
 
 /** The head, as a triangle whose tip is the origin and which points along +x. */
-export const headPoints = (): string =>
-    `0,0 ${-HEAD},${-HEAD * HEAD_SPREAD} ${-HEAD},${HEAD * HEAD_SPREAD}`
+export const headPoints = (): string => {
+    const back = scale(HEAD, -1)
+    const spread = scale(HEAD, HEAD_SPREAD)
+    return `0,0 ${back},${scale(spread, -1)} ${back},${spread}`
+}

@@ -3,7 +3,13 @@ import { asJsonLd, validate } from 'linked-rolls'
 import { Reading, checkedDocument, importedEdition, readDocument, refusalToOpen } from './importEdition'
 import { fixtureEdition } from './editionFixture'
 
-const current = () => asJsonLd(fixtureEdition())
+/** The stored document has no type of its own, so the test shapes what it edits. */
+type Document = {
+    copies: { keeper: { name: string } }[]
+    versions: { versionType: string }[]
+}
+
+const current = () => asJsonLd(fixtureEdition()) as Document
 
 const refusalIn = <T>(reading: Reading<T>): string | undefined =>
     'refusal' in reading ? reading.refusal : undefined
@@ -11,9 +17,11 @@ const refusalIn = <T>(reading: Reading<T>): string | undefined =>
 /** The document as the 0.1 format wrote it: the keeper a string, the version typed by its typology. */
 const inOldFormat = () => {
     const document = current()
-    document.copies = document.copies.map(({ keeper, ...copy }: { keeper: { name: string } }) => ({ ...copy, location: keeper.name }))
-    document.versions = document.versions.map(({ versionType, ...version }: { versionType: string }) => ({ ...version, '@type': versionType }))
-    return document
+    return {
+        ...document,
+        copies: document.copies.map(({ keeper, ...copy }) => ({ ...copy, location: keeper.name })),
+        versions: document.versions.map(({ versionType, ...version }) => ({ ...version, '@type': versionType }))
+    }
 }
 
 describe('checking a document before importing it', () => {

@@ -11,8 +11,8 @@ const curveOf = (travel: number[]) => ({
 const ramp = (from: number, to: number, steps: number) =>
     Array.from({ length: steps }, (_, i) => from + ((to - from) * (i + 1)) / (steps + 1))
 
-const rest = (length: number) => Array(length).fill(0)
-const held = (length: number) => Array(length).fill(1)
+const rest = (length: number) => Array.from({ length }, () => 0)
+const held = (length: number) => Array.from({ length }, () => 1)
 
 const at = (travel: number[]) => travel.map((value, place) => ({ place: mm(place), travel: value }))
 

@@ -168,7 +168,7 @@ export const Desk = ({ show }: DeskProps) => {
 
         const entity = view.get<object>(show)
         if (entity && path.length > 2 && (isSymbol(entity) || isRollFeature(entity) || isEdit(entity))) {
-            setSelection([entity as UserSelection])
+            setSelection([entity])
             setPendingSpotlight(show)
         }
     }, [show, view, edition])
@@ -215,7 +215,7 @@ export const Desk = ({ show }: DeskProps) => {
     // reaches the desk when nothing is open over it.
     useHotkeys('escape', () => setSelection([]))
 
-    const downloadMIDI = useCallback(async () => {
+    const downloadMIDI = useCallback(() => {
         if (!currentVersion || !view) return
 
         const midi = versionAsMidi(currentVersion, view, emulationOptions)
@@ -224,7 +224,7 @@ export const Desk = ({ show }: DeskProps) => {
         downloadFile(`${currentVersion.siglum}.mid`, midi, 'audio/midi')
     }, [currentVersion, view, emulationOptions])
 
-    const downloadAllMIDI = useCallback(async () => {
+    const downloadAllMIDI = useCallback(() => {
         if (!edition || !view || !edition.versions.length) return
 
         const archiveName = edition.title.trim().replace(/[^\w.-]+/g, '_') || 'edition'
@@ -459,7 +459,7 @@ export const Desk = ({ show }: DeskProps) => {
                                 step={0.05}
                                 marks={[{ value: workingPosition }]}
                                 value={blendPosition}
-                                onChange={(_, value) => setBlendPosition(value as number)}
+                                onChange={(_, value) => setBlendPosition(value)}
                                 aria-label='facsimile against transcription'
                                 sx={{ minWidth: '6rem' }}
                             />

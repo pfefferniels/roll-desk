@@ -87,7 +87,7 @@ export const CommonFields = <T extends CommonOptions,>({ options, onChange }: {
                     value={options.pedalMode}
                     size='small'
                     onChange={event =>
-                        onChange({ ...options, pedalMode: event.target.value as CommonOptions['pedalMode'] })}
+                        onChange({ ...options, pedalMode: event.target.value })}
                 >
                     {pedalModes.map(mode => (
                         <MenuItem key={mode} value={mode}>{mode}</MenuItem>

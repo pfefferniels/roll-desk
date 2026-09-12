@@ -23,6 +23,11 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src"
+    "src",
+    "scripts",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "scripts/replace-widuch-scan.ts"
   ]
 }

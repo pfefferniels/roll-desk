@@ -40,7 +40,7 @@ const PedalPresetField = ({ pedals, onChange }: {
             <Select
                 value={preset ?? ''}
                 size='small'
-                onChange={event => onChange(pedalPresets[event.target.value as PedalPreset])}
+                onChange={event => onChange(pedalPresets[event.target.value])}
             >
                 {(Object.keys(pedalPresets) as PedalPreset[]).map(name => (
                     <MenuItem key={name} value={name}>{name}</MenuItem>
@@ -69,7 +69,7 @@ const T100Panel = ({ options, onChange }: {
                 value={instrumentNameOf(options.nuance) ?? ''}
                 size='small'
                 onChange={event =>
-                    onChange({ ...options, nuance: nuanceOf(instruments[event.target.value as InstrumentName]) })}
+                    onChange({ ...options, nuance: nuanceOf(instruments[event.target.value]) })}
             >
                 {instrumentNames.map(name => (
                     <MenuItem key={name} value={name}>{t100InstrumentLabel(name)}</MenuItem>
@@ -161,7 +161,7 @@ const T98Panel = ({ options, onChange }: {
                     value={options.rewind}
                     size='small'
                     onChange={event =>
-                        onChange({ ...options, rewind: event.target.value as WelteT98Options['rewind'] })}
+                        onChange({ ...options, rewind: event.target.value })}
                 >
                     <MenuItem value='stop'>ends the performance there</MenuItem>
                     <MenuItem value='ignore'>sounds as a sforzando piano only</MenuItem>

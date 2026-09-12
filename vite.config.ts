@@ -136,7 +136,7 @@ export default defineConfig(() => {
             spaFallback(),
         ],
         worker: {
-            format: 'es',
+            format: 'es' as const,
         },
         test: {
             server: {

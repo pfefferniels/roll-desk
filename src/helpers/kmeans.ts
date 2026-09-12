@@ -51,7 +51,7 @@ export function kMeans2D(
     y: points[i].y,
   }));
 
-  const assignments: number[] = new Array(points.length).fill(0);
+  const assignments: number[] = Array.from({ length: points.length }, () => 0);
 
   // --- 2. main loop ---
   for (let iter = 0; iter < maxIters; iter++) {
@@ -74,7 +74,7 @@ export function kMeans2D(
 
     // --- update step: recompute centroids as mean of cluster points ---
     const sums: Point[] = Array.from({ length: k }, () => ({ x: 0, y: 0 }));
-    const counts: number[] = new Array(k).fill(0);
+    const counts: number[] = Array.from({ length: k }, () => 0);
 
     for (let i = 0; i < points.length; i++) {
       const cluster = assignments[i];

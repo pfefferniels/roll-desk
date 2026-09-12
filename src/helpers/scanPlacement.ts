@@ -130,7 +130,7 @@ export const tilePlacement = (
     const height = reachOf(perColumn, tile.tileWidth)
 
     return {
-        transform: `matrix(0 ${-perColumn} ${perRow} 0 ${left} ${bottom})`,
+        transform: `matrix(0 ${scale(perColumn, -1)} ${perRow} 0 ${left} ${bottom})`,
         box: { x: left, y: subtract(bottom, height), width, height }
     }
 }

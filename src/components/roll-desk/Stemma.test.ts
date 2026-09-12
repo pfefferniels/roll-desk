@@ -63,9 +63,9 @@ describe('the room a node takes in its row', () => {
         version('D2', welteT98, 1, 'C')
     ]
 
-    it('keeps two captioned siblings clear of each other', async () => {
+    it('keeps two captioned siblings clear of each other', () => {
         const { nodes, links } = graphOf(siblings, [])
-        const positioned = await calculatePositions(nodes, links, 300, 600)
+        const positioned = calculatePositions(nodes, links, 300, 600)
 
         const [d1, d2] = ['D1', 'D2'].map(id => positioned.find(n => n.id === id)!)
         // as Firefox measures the two captions at font-size 10
