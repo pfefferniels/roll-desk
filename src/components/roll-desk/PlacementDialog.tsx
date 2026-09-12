@@ -38,7 +38,7 @@ export const PlacementDialog = ({ candidates: [first, second], relation, onClose
         { relation, follower: first, reference: second },
         { relation, follower: second, reference: first }
     ]
-    const chosen = directions.find(direction => direction.follower.id === followerId) ?? directions[0]
+    const chosen = directions.find(direction => direction.follower.id === followerId) ?? directions.at(0)
 
     return (
         <Dialog open onClose={onClose}>
@@ -60,7 +60,7 @@ export const PlacementDialog = ({ candidates: [first, second], relation, onClose
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={() => onDone(chosen)} variant='contained'>{titles[relation]}</Button>
+                <Button onClick={() => chosen && onDone(chosen)} disabled={!chosen} variant='contained'>{titles[relation]}</Button>
             </DialogActions>
         </Dialog>
     )

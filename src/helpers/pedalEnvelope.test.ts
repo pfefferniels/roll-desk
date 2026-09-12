@@ -38,7 +38,9 @@ describe('sparse vertices', () => {
     it('thins a traversal to steps of at least the tolerance', () => {
         const alongTheRise = vertices.filter(vertex => vertex.place > 3 && vertex.place < 54)
         alongTheRise.slice(1).forEach((vertex, i) => {
-            expect(vertex.travel - alongTheRise[i].travel).toBeGreaterThanOrEqual(0.02 - 1e-12)
+            const before = alongTheRise[i]
+            expect(before).toBeDefined()
+            expect(vertex.travel - (before?.travel ?? 0)).toBeGreaterThanOrEqual(0.02 - 1e-12)
         })
         expect(alongTheRise.length).toBeLessThan(50)
         expect(alongTheRise.length).toBeGreaterThan(10)
@@ -58,15 +60,15 @@ describe('episodes', () => {
     it('starts and ends every piece where the pedal rests', () => {
         const pieces = episodes(at([0, 0, 0.5, 1, 0.5, 0, 0]))
         pieces.forEach(piece => {
-            expect(piece[0].travel).toEqual(0)
-            expect(piece[piece.length - 1].travel).toEqual(0)
+            expect(piece.at(0)?.travel).toEqual(0)
+            expect(piece.at(-1)?.travel).toEqual(0)
         })
     })
 
     it('keeps an unfinished lift in one piece with the retake', () => {
         const pieces = episodes(at([0, 0, 0.5, 1, 0.6, 0.3, 0.7, 1, 0.5, 0, 0]))
         expect(pieces).toHaveLength(1)
-        expect(pieces[0].map(vertex => vertex.place)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        expect(pieces.at(0)?.map(vertex => vertex.place)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
     })
 
     it('yields nothing for a pedal that never moves', () => {

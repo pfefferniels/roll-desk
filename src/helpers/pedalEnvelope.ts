@@ -21,13 +21,18 @@ export const sparseVertices = (
     const endsAStretch = (i: number) =>
         i === 0 || i === last || (travel[i] === travel[i - 1]) !== (travel[i] === travel[i + 1])
 
-    const { kept } = [...travel.keys()].reduce(
+    interface Gathered { kept: Vertex[], anchor: number }
+
+    const { kept } = [...travel.keys()].reduce<Gathered>(
         ({ kept, anchor }, i) => {
-            if (!endsAStretch(i) && Math.abs(travel[i] - anchor) < tolerance) return { kept, anchor }
-            kept.push({ place: mm(place[i]), travel: travel[i] })
-            return { kept, anchor: travel[i] }
+            const at = travel[i]
+            const along = place[i]
+            if (at === undefined || along === undefined) return { kept, anchor }
+            if (!endsAStretch(i) && Math.abs(at - anchor) < tolerance) return { kept, anchor }
+            kept.push({ place: mm(along), travel: at })
+            return { kept, anchor: at }
         },
-        { kept: [] as Vertex[], anchor: Number.NaN }
+        { kept: [], anchor: Number.NaN }
     )
     return kept
 }
@@ -38,7 +43,7 @@ export const sparseVertices = (
  * asks for the next one never reaches rest, so the two stay one piece.
  */
 export const episodes = (vertices: readonly Vertex[]): Vertex[][] => {
-    const restsAfter = (i: number) => vertices[i].travel === 0 && vertices[i + 1]?.travel === 0
+    const restsAfter = (i: number) => vertices[i]?.travel === 0 && vertices[i + 1]?.travel === 0
     const cuts = vertices.flatMap((_, i) => restsAfter(i) ? [i + 1] : [])
     const bounds = [0, ...cuts, vertices.length]
 

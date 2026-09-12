@@ -30,7 +30,7 @@ describe('blending the scan into its transcription', () => {
 
     it('moves each reading one way only', () => {
         const rises = (readings: number[]) =>
-            readings.every((value, i) => i === 0 || value >= readings[i - 1])
+            readings.every((value, i) => i === 0 || value >= (readings[i - 1] ?? value))
 
         expect(rises(sweep.map(blend => blend.transcription))).toBe(true)
         expect(rises(sweep.map(blend => blend.layout))).toBe(true)

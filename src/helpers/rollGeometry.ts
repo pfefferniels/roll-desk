@@ -112,8 +112,8 @@ export const rollGeometry = (
         return [...acc, { area, top, laneHeight, span: scale(laneHeight, area.to - area.from + 1) }]
     }, [])
 
-    const last = tops[tops.length - 1]
-    const height = add(last.top, last.span)
+    const last = tops.at(-1)
+    const height = last ? add(last.top, last.span) : svg(0)
 
     const blockOf = (position: Track) =>
         tops.find(({ area }) => position >= area.from && position <= area.to)

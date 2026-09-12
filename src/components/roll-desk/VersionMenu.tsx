@@ -39,6 +39,9 @@ interface MenuProps {
 
 export const VersionMenu = ({ versionId }: MenuProps) => {
     const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isMotivation(item))
+
+    /** The one edit selected, where exactly one is, which is what splitting acts on. */
+    const soleEdit = selection.length === 1 && selection.every(isEdit) ? selection[0] : undefined
     const { edition, apply, view } = useContext(EditionContext)
 
     const [editSiglum, setEditSiglum] = useState(false)
@@ -155,10 +158,10 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                                     Merge
                                 </Button>
                             )}
-                            {selection.length === 1 && (
+                            {soleEdit && (
                                 <Button
                                     onClick={() => {
-                                        apply(splitEdit(versionId, selection[0]))
+                                        apply(splitEdit(versionId, soleEdit))
                                         setSelection([])
                                     }}
                                     size='small'

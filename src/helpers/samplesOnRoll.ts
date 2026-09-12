@@ -7,4 +7,7 @@ import { Millimeters, mm } from "linked-rolls"
  */
 export const samplesOnRoll = (place: Float64Array, rollLength: Millimeters, stride: number): number[] =>
     Array.from({ length: Math.ceil(place.length / stride) }, (_, sample) => sample * stride)
-        .filter(index => mm(place[index]) <= rollLength)
+        .filter(index => {
+            const at = place[index]
+            return at !== undefined && mm(at) <= rollLength
+        })

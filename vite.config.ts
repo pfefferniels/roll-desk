@@ -93,7 +93,8 @@ const packageOf = (moduleId: string) => {
     const at = moduleId.lastIndexOf(marker);
     if (at < 0) return undefined;
     const [first, second] = moduleId.slice(at + marker.length).split('/');
-    return first.startsWith('@') ? `${first}/${second}` : first;
+    if (!first) return undefined;
+    return first.startsWith('@') && second ? `${first}/${second}` : first;
 };
 
 const holds = ({ packages }: VendorChunk, pkg: string) =>

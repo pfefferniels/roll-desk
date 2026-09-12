@@ -26,9 +26,11 @@ describe('naming the tiles of an image service', () => {
     })
 
     it('rounds a ragged edge up to a whole pixel', () => {
-        const [, last] = tilesOf(service, 4, { from: px(0), to: px(4096) })
+        const tiles = tilesOf(service, 4, { from: px(0), to: px(4096) })
+        const last = tiles.at(-1)
+        expect(tiles).toHaveLength(2)
         expect(last).toMatchObject({ height: 904, tileHeight: 226 })
-        expect(last.url).toEqual('https://example.org/iiif/scan/0,4096,4096,904/1024,/0/default.jpg')
+        expect(last?.url).toEqual('https://example.org/iiif/scan/0,4096,4096,904/1024,/0/default.jpg')
     })
 
     it('fetches only the tile columns a span of scan columns touches', () => {

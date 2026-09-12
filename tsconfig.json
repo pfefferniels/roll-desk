@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2022",
     "lib": [
       "dom",
       "dom.iterable",
@@ -10,11 +10,11 @@
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "allowJs": true,
-    "downlevelIteration": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "resolveJsonModule": true,
@@ -26,8 +26,5 @@
     "src",
     "scripts",
     "vite.config.ts"
-  ],
-  "exclude": [
-    "scripts/replace-widuch-scan.ts"
   ]
 }

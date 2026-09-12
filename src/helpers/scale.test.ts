@@ -78,7 +78,7 @@ describe('the scale along the roll', () => {
         const parts = plain.filter(at => at > 0 && at < step)
 
         expect(parts).toEqual([20, 40, 60, 80])
-        expect(plain).not.toContain(labelled[1].at)
+        expect(plain).not.toContain(labelled[1]?.at)
     })
 
     it('stays inside the roll', () => {

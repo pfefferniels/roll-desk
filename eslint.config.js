@@ -22,9 +22,8 @@ export default tseslint.config(
     },
     {
         // Outside `tsconfig.json`'s program, so the type-aware rules have
-        // nothing to read: the lint config itself, and the retired migration
-        // script that no longer compiles against the library (see #TODO).
-        files: ['eslint.config.js', 'scripts/replace-widuch-scan.ts'],
+        // nothing to read.
+        files: ['eslint.config.js'],
         ...tseslint.configs.disableTypeChecked,
     },
     {

@@ -51,6 +51,9 @@ interface Step {
     parts: number
 }
 
+/** The largest step, which a reading beyond the ladder falls back to. */
+const widest = { factor: 10, parts: 5 }
+
 /**
  * The steps a ruler is willing to take, each with the number of parts
  * that divides it evenly: a step of two is quartered, the rest fifthed.
@@ -59,7 +62,7 @@ const rungs = [
     { factor: 1, parts: 5 },
     { factor: 2, parts: 4 },
     { factor: 5, parts: 5 },
-    { factor: 10, parts: 5 }
+    widest
 ]
 
 /** The roll is measured to the millimetre, so no ruler goes finer. */
@@ -67,7 +70,7 @@ const finest = mm(1)
 
 const stepAtLeast = (wanted: Millimeters): Step => {
     const decade = 10 ** Math.max(0, Math.floor(Math.log10(wanted)))
-    const rung = rungs.find(({ factor }) => factor * decade >= wanted) ?? rungs[rungs.length - 1]
+    const rung = rungs.find(({ factor }) => factor * decade >= wanted) ?? widest
 
     return { size: max(finest, mm(rung.factor * decade)), parts: rung.parts }
 }

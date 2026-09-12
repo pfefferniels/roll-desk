@@ -33,10 +33,18 @@ const wheelStep = (e: WheelEvent) => {
     return Math.min(1.5, Math.max(2 / 3, step))
 }
 
-const spreadOf = (touches: TouchList) =>
-    Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+/** The two fingers of a pinch, or nothing where there are not two. */
+const pinchedBy = (touches: TouchList) => {
+    const [one, other] = [touches[0], touches[1]]
+    return one && other ? { one, other } : undefined
+}
 
-const middleOf = (touches: TouchList) => (touches[0].clientX + touches[1].clientX) / 2
+const spreadOf = ({ one, other }: Pinch) =>
+    Math.hypot(one.clientX - other.clientX, one.clientY - other.clientY)
+
+const middleOf = ({ one, other }: Pinch) => (one.clientX + other.clientX) / 2
+
+type Pinch = NonNullable<ReturnType<typeof pinchedBy>>
 
 /**
  * Listens for pinches on `element`: two fingers on a touch screen, or two
@@ -95,14 +103,16 @@ export const usePinchGesture = (element: HTMLElement | null, handlers: PinchHand
         }
 
         const onTouchStart = (e: TouchEvent) => {
-            if (e.touches.length !== 2) return
-            initialSpread = spreadOf(e.touches)
+            const pinched = pinchedBy(e.touches)
+            if (!pinched) return
+            initialSpread = spreadOf(pinched)
         }
 
         const onTouchMove = (e: TouchEvent) => {
-            if (e.touches.length !== 2 || initialSpread === undefined) return
+            const pinched = pinchedBy(e.touches)
+            if (!pinched || initialSpread === undefined) return
             e.preventDefault()
-            pinch(spreadOf(e.touches) / initialSpread, middleOf(e.touches))
+            pinch(spreadOf(pinched) / initialSpread, middleOf(pinched))
         }
 
         const onTouchEnd = (e: TouchEvent) => {

@@ -1,4 +1,4 @@
-import { Expression, Millimeters, mm, Note } from "linked-rolls";
+import { add, Expression, Millimeters, mm, Note, scale, subtract } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { usePlaybackMark } from "../../hooks/usePlaybackMark";
@@ -32,12 +32,20 @@ export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: 
     const place = view?.placeOf(symbol)
     const position = bar.positionOf(symbol)
 
-    if (!view || !place || position === undefined) return null;
-    if (onsets.length === 0 || offsets.length === 0) return null;
+    const firstOnset = onsets.at(0)
+    const lastOnset = onsets.at(-1)
+    const firstOffset = offsets.at(0)
+    const lastOffset = offsets.at(-1)
 
-    const innerBoundaries = [onsets[onsets.length - 1], offsets[0]].map(translateX);
-    const onsetStretch = [onsets[0], onsets[onsets.length - 1]].map(translateX);
-    const offsetStretch = [offsets[0], offsets[offsets.length - 1]].map(translateX);
+    if (!view || !place || position === undefined) return null;
+    if (!firstOnset || !lastOnset || !firstOffset || !lastOffset) return null;
+
+    // The stretch every carrier agrees the symbol covers, and how far the
+    // carriers disagree at either end.
+    const innerFrom = translateX(lastOnset)
+    const innerTo = translateX(firstOffset)
+    const onsetFrom = translateX(firstOnset)
+    const offsetTo = translateX(lastOffset)
 
     const meanOnset = place.from
     const meanOffset = place.to
@@ -81,8 +89,8 @@ export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: 
             {/* The body sits where the perforation plays; the measurement stays behind as a shadow. */}
             <g transform={`translate(${dx} 0)`}>
                 <rect
-                    x={innerBoundaries[0]}
-                    width={innerBoundaries[1] - innerBoundaries[0]}
+                    x={innerFrom}
+                    width={subtract(innerTo, innerFrom)}
                     y={y}
                     height={height}
                     fill={highlight ? 'red' : color}
@@ -96,17 +104,17 @@ export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: 
                         fill={color}
                         fillOpacity={opacity}
                         points={`
-                            ${onsetStretch[0]},${y + height / 2}
-                            ${innerBoundaries[0]},${y}
-                            ${innerBoundaries[1]},${y}
-                            ${offsetStretch[1]},${y + height / 2}
-                            ${innerBoundaries[1]},${y + height}
-                            ${innerBoundaries[0]},${y + height}
+                            ${onsetFrom},${add(y, scale(height, 0.5))}
+                            ${innerFrom},${y}
+                            ${innerTo},${y}
+                            ${offsetTo},${add(y, scale(height, 0.5))}
+                            ${innerTo},${add(y, height)}
+                            ${innerFrom},${add(y, height)}
                         `} />
                 )}
                 {detailed && displayDetails && (
                     <text
-                        x={innerBoundaries[0]}
+                        x={innerFrom}
                         y={y - 2}
                         fontSize={12}
                     >
@@ -120,15 +128,15 @@ export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: 
             {shadow && (
                 <g style={{ pointerEvents: 'none' }} opacity={opacity}>
                     <line
-                        x1={innerBoundaries[0]}
-                        x2={innerBoundaries[0] + dx}
+                        x1={innerFrom}
+                        x2={add(innerFrom, dx)}
                         y1={y + height / 2}
                         y2={y + height / 2}
                         stroke={shadowLook.stroke}
                         strokeWidth={0.4} />
                     <rect
-                        x={innerBoundaries[0]}
-                        width={innerBoundaries[1] - innerBoundaries[0]}
+                        x={innerFrom}
+                        width={subtract(innerTo, innerFrom)}
                         y={y}
                         height={height}
                         {...shadowLook} />

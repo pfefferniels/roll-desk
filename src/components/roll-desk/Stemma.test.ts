@@ -67,7 +67,12 @@ describe('the room a node takes in its row', () => {
         const { nodes, links } = graphOf(siblings, [])
         const positioned = calculatePositions(nodes, links, 300, 600)
 
-        const [d1, d2] = ['D1', 'D2'].map(id => positioned.find(n => n.id === id)!)
+        const [d1, d2] = ['D1', 'D2'].map(id => {
+            const found = positioned.find(n => n.id === id)
+            if (!found) throw new Error(`the stemma has no node ${id}`)
+            return found
+        })
+        if (!d1 || !d2) throw new Error('both siblings should be placed')
         // as Firefox measures the two captions at font-size 10
         const captionWidth = (node: Node) => node.system!.length * 5.8
 
@@ -76,6 +81,8 @@ describe('the room a node takes in its row', () => {
     })
 
     it('takes the radius a node was given over the one its type implies', () => {
-        expect(radiusOf({ ...graphOf(siblings, []).nodes[0], radius: 17.5 })).toBe(17.5)
+        const [node] = graphOf(siblings, []).nodes
+        if (!node) throw new Error('the graph should have a node')
+        expect(radiusOf({ ...node, radius: 17.5 })).toBe(17.5)
     })
 })

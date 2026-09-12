@@ -14,6 +14,12 @@ export const zoomRange: ZoomRange = { min: svgPerMm(0.1), max: svgPerMm(12) }
 /** The zooms the slider marks, its ends among them. */
 export const zoomMarks: SvgPerMm[] = [zoomRange.min, 0.25, 0.5, 1, 2, 4, zoomRange.max].map(svgPerMm)
 
+const lastMark = zoomMarks.length - 1
+
+/** The zoom a mark of the track stands at, its ends answering for anything beyond them. */
+const markAt = (index: number): SvgPerMm =>
+    zoomMarks[Math.min(lastMark, Math.max(0, index))] ?? zoomRange.max
+
 /**
  * The slider's track is measured in marks: a whole position is the marked
  * zoom itself, and between two marks the zoom grows geometrically, so that
@@ -24,8 +30,8 @@ export const zoomMarks: SvgPerMm[] = [zoomRange.min, 0.25, 0.5, 1, 2, 4, zoomRan
  */
 export const zoomAt = (position: Mark): SvgPerMm => {
     const passed = Math.floor(position)
-    const from = zoomMarks[passed]
-    const to = zoomMarks[Math.ceil(position)]
+    const from = markAt(passed)
+    const to = markAt(Math.ceil(position))
 
     return svgPerMm(from * (to / from) ** (position - passed))
 }
@@ -36,7 +42,8 @@ export const positionOf = (zoom: SvgPerMm): Mark => {
 
     // Never the first mark, so that a step always lies below.
     const above = Math.max(1, zoomMarks.findIndex(marked => marked >= onTrack))
-    const below = above - 1
+    const foot = markAt(above - 1)
+    const head = markAt(above)
 
-    return mark(below + Math.log(onTrack / zoomMarks[below]) / Math.log(zoomMarks[above] / zoomMarks[below]))
+    return mark(above - 1 + Math.log(onTrack / foot) / Math.log(head / foot))
 }

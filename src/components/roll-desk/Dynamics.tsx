@@ -47,7 +47,12 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
     const pathOf = (curve: DynamicsCurve | undefined, anchor: Svg) => {
         if (!curve) return ""
         return samplesOnRoll(curve.place, rollLength, SAMPLE_STRIDE)
-            .map(index => [translateX(mm(curve.place[index])), belowAnchor(curve.velocity[index], anchor)])
+            .flatMap(index => {
+                const along = curve.place[index]
+                const loudness = curve.velocity[index]
+                if (along === undefined || loudness === undefined) return []
+                return [[translateX(mm(along)), belowAnchor(loudness, anchor)] as const]
+            })
             .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
             .join(" ")
     }

@@ -65,3 +65,46 @@ export const cornersOf = ({ x, y, width, height }: Box): Point[] => [
 /** The middle of a box. */
 export const middleOf = (box: Box): Point =>
     point(add(box.x, scale(box.width, 0.5)), add(box.y, scale(box.height, 0.5)))
+
+/** Which way the turn goes at `a` on the way from `o` to `b`. */
+const cross = (o: Point, a: Point, b: Point): number =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+
+/** Whether the chain's last turn bends back on itself at `p`, so its end should go. */
+const turnsBack = (chain: Point[], p: Point): boolean => {
+    const before = chain.at(-2)
+    const last = chain.at(-1)
+    return before !== undefined && last !== undefined && cross(before, last, p) <= 0
+}
+
+/** One side of the hull, walked over the points in the order given. */
+const chainOver = (points: Point[]): Point[] =>
+    points.reduce<Point[]>((chain, p) => {
+        while (turnsBack(chain, p)) chain.pop()
+        chain.push(p)
+        return chain
+    }, [])
+
+/**
+ * The convex hull of the points, by Andrew's monotone chain: the lower
+ * side walked left to right, the upper side back again. Each side ends
+ * where the other begins, so that end is dropped.
+ */
+export const convexHull = (points: Point[]): Point[] => {
+    if (points.length < 3) return [...points]
+
+    const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y)
+    const lower = chainOver(sorted)
+    const upper = chainOver([...sorted].reverse())
+
+    return [...lower.slice(0, -1), ...upper.slice(0, -1)]
+}
+
+/** A closed path through the points, or nothing where there are none. */
+export const hullToSvgPath = (hull: Point[]): string => {
+    const [first, ...rest] = hull
+    if (!first) return ''
+
+    const lines = rest.map(p => `L ${p.x} ${p.y}`).join(' ')
+    return `M ${first.x} ${first.y} ${lines} Z`
+}

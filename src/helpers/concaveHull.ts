@@ -7,7 +7,9 @@ import { along, minus, Point } from "./drawing";
  */
 const cutCorners = (points: Point[]): Point[] =>
     points.flatMap((corner, i) => {
-        const edge = minus(points[(i + 1) % points.length], corner);
+        const next = points[(i + 1) % points.length];
+        if (!next) return [];
+        const edge = minus(next, corner);
         return [along(corner, edge, 0.25), along(corner, edge, 0.75)];
     });
 

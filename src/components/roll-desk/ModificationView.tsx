@@ -3,7 +3,7 @@ import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { chaikin } from "../../helpers/concaveHull";
-import { apart, cornersOf, middleOf, minus, along, padded, Point } from "../../helpers/drawing";
+import { apart, convexHull, cornersOf, hullToSvgPath, middleOf, minus, along, padded, Point } from "../../helpers/drawing";
 import { Svg, svg } from "../../helpers/units";
 import { Arguable } from "./Arguable";
 import { boxOf, Translation } from "../../helpers/rollGeometry";
@@ -25,59 +25,10 @@ interface FeatureCluster {
 const getFeatureBBox = (feature: AnyFeature, translation: Translation) =>
     boxOf(feature, translation)
 
-function cross(o: Point, a: Point, b: Point): number {
-    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-}
-
 /**
  * Returns the convex hull of a set of 2D points, in counter-clockwise order.
  * If there are 0 or 1 points, returns a shallow copy of the input.
  */
-export function convexHull(points: Point[]): Point[] {
-    if (points.length <= 1) return [...points];
-
-    // Sort by x, then y
-    const pts = [...points].sort((a, b) =>
-        a.x === b.x ? a.y - b.y : a.x - b.x
-    );
-
-    const lower: Point[] = [];
-    for (const p of pts) {
-        while (
-            lower.length >= 2 &&
-            cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
-        ) {
-            lower.pop();
-        }
-        lower.push(p);
-    }
-
-    const upper: Point[] = [];
-    for (let i = pts.length - 1; i >= 0; i--) {
-        const p = pts[i];
-        while (
-            upper.length >= 2 &&
-            cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
-        ) {
-            upper.pop();
-        }
-        upper.push(p);
-    }
-
-    // Last point of each list is the starting point of the other list
-    lower.pop();
-    upper.pop();
-    return lower.concat(upper);
-}
-
-function hullToSvgPath(hull: Point[]): string {
-    if (hull.length === 0) return "";
-    const [first, ...rest] = hull;
-    const move = `M ${first.x} ${first.y}`;
-    const lines = rest.map((p) => `L ${p.x} ${p.y}`).join(" ");
-    return `${move} ${lines} Z`;
-}
-
 interface ModificationGroupProps extends SVGProps<SVGGElement> {
     features: AnyFeature[];
     metadata: Modification;
@@ -178,19 +129,16 @@ export const ModificationView = ({
     positionedEdits
         .sort((a, b) => a.center.x - b.center.x)
         .forEach(({ feature, center }) => {
-            let bestIndex = -1;
-            let bestDistance = Infinity;
+            const nearest = clusters.reduce<{ cluster: FeatureCluster, distance: Svg } | undefined>(
+                (best, cluster) => {
+                    const distance = apart(cluster.centroid, center);
+                    return !best || distance < best.distance ? { cluster, distance } : best;
+                },
+                undefined
+            );
 
-            clusters.forEach((cluster, idx) => {
-                const dist = apart(cluster.centroid, center);
-                if (dist < bestDistance) {
-                    bestDistance = dist;
-                    bestIndex = idx;
-                }
-            });
-
-            if (bestIndex >= 0 && bestDistance <= distanceThreshold) {
-                const cluster = clusters[bestIndex];
+            if (nearest && nearest.distance <= distanceThreshold) {
+                const { cluster } = nearest;
                 const count = cluster.features.length;
                 // The running mean, moved a share of the way towards the newcomer.
                 cluster.centroid = along(cluster.centroid, minus(center, cluster.centroid), 1 / (count + 1));

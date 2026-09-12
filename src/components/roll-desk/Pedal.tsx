@@ -52,9 +52,9 @@ export const Pedals = ({ forEmulation: emulation }: PedalsProps) => {
         <g className='pedals'>
             {excursions.map(({ pedal, episodes }) => (
                 <g key={pedal} className={pedal}>
-                    {episodes.map(episode => (
+                    {episodes.map((episode, index) => (
                         <path
-                            key={episode[0].place}
+                            key={episode.at(0)?.place ?? index}
                             d={outline(episode)}
                             {...lookOf(pedal)}
                         />

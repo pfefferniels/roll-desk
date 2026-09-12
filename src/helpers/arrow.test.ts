@@ -7,15 +7,16 @@ import { svg } from './units'
 const numbersIn = (d: string): number[] =>
     (d.match(/-?\d+(\.\d+)?(e-?\d+)?/g) ?? []).map(Number)
 
-const startOf = (d: string): Point => {
-    const [x, y] = numbersIn(d)
-    return point(svg(x), svg(y))
+/** The nth number of a path, counted from the end where n is negative. */
+const numberIn = (d: string, nth: number): number => {
+    const found = numbersIn(d).at(nth)
+    if (found === undefined) throw new Error(`the path has no number ${nth}: ${d}`)
+    return found
 }
 
-const endOf = (d: string): Point => {
-    const values = numbersIn(d)
-    return point(svg(values[values.length - 2]), svg(values[values.length - 1]))
-}
+const startOf = (d: string): Point => point(svg(numberIn(d, 0)), svg(numberIn(d, 1)))
+
+const endOf = (d: string): Point => point(svg(numberIn(d, -2)), svg(numberIn(d, -1)))
 
 const box = (x: number, y: number, width: number, height: number): Boxed =>
     ({ x: svg(x), y: svg(y), width: svg(width), height: svg(height) })
@@ -113,7 +114,7 @@ describe('the arrow between two things on the roll', () => {
     it('bows out of the straight without swinging across the roll', () => {
         const bowOf = (from: Boxed, to: Boxed) => {
             const { d } = arrowLine(from, to)
-            const [, , cx, cy] = numbersIn(d)
+            const [cx, cy] = [numberIn(d, 2), numberIn(d, 3)]
             const middle = { x: (startOf(d).x + endOf(d).x) / 2, y: (startOf(d).y + endOf(d).y) / 2 }
             return Math.hypot(cx - middle.x, cy - middle.y)
         }
@@ -123,8 +124,8 @@ describe('the arrow between two things on the roll', () => {
     })
 
     it('bows the same way whichever end it starts from', () => {
-        const [, , thereX] = numbersIn(arrowLine(box(0, 0, 10, 10), box(0, 400, 10, 10)).d)
-        const [, , backX] = numbersIn(arrowLine(box(0, 400, 10, 10), box(0, 0, 10, 10)).d)
+        const thereX = numberIn(arrowLine(box(0, 0, 10, 10), box(0, 400, 10, 10)).d, 2)
+        const backX = numberIn(arrowLine(box(0, 400, 10, 10), box(0, 0, 10, 10)).d, 2)
 
         expect(Math.sign(thereX - 5)).not.toEqual(Math.sign(backX - 5))
     })
