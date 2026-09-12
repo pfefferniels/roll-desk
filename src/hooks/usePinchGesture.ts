@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
+import { Svg, svg } from '../helpers/units'
 
 export interface PinchHandlers {
     /** The pinch stands at `factor` times where it began, centred on viewport x `focus`. */
-    onPinch: (factor: number, focus: number) => void
+    onPinch: (factor: number, focus: Svg) => void
 
     /** The fingers have lifted, or the wheel has gone quiet. */
     onEnd: () => void
@@ -59,7 +60,7 @@ export const usePinchGesture = (element: HTMLElement | null, handlers: PinchHand
 
         const pinch = (to: number, clientX: number) => {
             factor = to
-            latest.current.onPinch(factor, clientX - element.getBoundingClientRect().left)
+            latest.current.onPinch(factor, svg(clientX - element.getBoundingClientRect().left))
         }
 
         const end = () => {

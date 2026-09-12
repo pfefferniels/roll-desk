@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { atLeastVisible, evenGeometry, rollGeometry } from './rollGeometry'
-import { track, welteLicensee, welteT100 } from 'linked-rolls'
+import { add, scale, subtract, track, welteLicensee, welteT100 } from 'linked-rolls'
+import { svg } from './units'
 
-const lanes = { note: 4, expression: 7 }
-const spacing = 40
+const lanes = { note: svg(4), expression: svg(7) }
+const spacing = svg(40)
 const geometry = rollGeometry(lanes, spacing, welteT100)
 
 const allTracks = Array.from({ length: welteT100.trackCount }, (_, i) => track(i + 1))
@@ -36,7 +37,7 @@ describe('roll geometry', () => {
      */
     it('picks the track a feature is drawn in', () => {
         allTracks.forEach(position => {
-            const middle = geometry.trackToY(position) + geometry.laneHeight(position) / 2
+            const middle = add(geometry.trackToY(position), scale(geometry.laneHeight(position), 0.5))
             expect(geometry.yToTrack(middle)).toEqual(position)
         })
     })
@@ -49,11 +50,11 @@ describe('roll geometry', () => {
 
     it('reports the gaps between the blocks', () => {
         // above the highest note, below the lowest treble valve
-        expect(geometry.yToTrack(geometry.trackToY(track(90)) - spacing / 2)).toEqual('gap')
+        expect(geometry.yToTrack(subtract(geometry.trackToY(track(90)), scale(spacing, 0.5)))).toEqual('gap')
         // below the lowest note, above the highest bass valve
-        expect(geometry.yToTrack(geometry.trackToY(track(11)) + lanes.note + spacing / 2)).toEqual('gap')
-        expect(geometry.yToTrack(-1)).toEqual('gap')
-        expect(geometry.yToTrack(geometry.height + 1)).toEqual('gap')
+        expect(geometry.yToTrack(add(add(geometry.trackToY(track(11)), lanes.note), scale(spacing, 0.5)))).toEqual('gap')
+        expect(geometry.yToTrack(svg(-1))).toEqual('gap')
+        expect(geometry.yToTrack(add(geometry.height, svg(1)))).toEqual('gap')
     })
 
     it('spans a band across a run of tracks', () => {
@@ -80,7 +81,7 @@ describe('roll geometry', () => {
 })
 
 describe('the bar in even lanes', () => {
-    const even = evenGeometry(200, welteT100)
+    const even = evenGeometry(svg(200), welteT100)
 
     it('divides the drawing among the tracks and no further', () => {
         expect(even.height).toEqual(200)
@@ -102,7 +103,7 @@ describe('the bar in even lanes', () => {
     })
 
     it('divides the same drawing among the tracks of another bar', () => {
-        const licensee = evenGeometry(200, welteLicensee)
+        const licensee = evenGeometry(svg(200), welteLicensee)
         expect(licensee.height).toEqual(200)
         expect(licensee.trackToY(track(welteLicensee.trackCount))).toEqual(0)
         expect(licensee.laneHeight(track(1))).toBeCloseTo(200 / 98, 9)
@@ -111,12 +112,12 @@ describe('the bar in even lanes', () => {
 
 describe('a box drawn too small to see', () => {
     it('is widened to half a pixel each way', () => {
-        expect(atLeastVisible({ x: 3, y: 4, width: 0, height: 0.2 }))
+        expect(atLeastVisible({ x: svg(3), y: svg(4), width: svg(0), height: svg(0.2) }))
             .toEqual({ x: 3, y: 4, width: 0.5, height: 0.5 })
     })
 
     it('leaves a box that is already there alone', () => {
-        const box = { x: 3, y: 4, width: 8, height: 2 }
+        const box = { x: svg(3), y: svg(4), width: svg(8), height: svg(2) }
         expect(atLeastVisible(box)).toEqual(box)
     })
 })

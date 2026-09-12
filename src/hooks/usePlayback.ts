@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { add, inMilliseconds, inSeconds, milliseconds, Seconds, seconds, subtract } from "linked-rolls"
 import { usePiano, type AbsoluteEvent, type Schedule } from "react-pianosound"
 
 const isNote = (event: AbsoluteEvent) =>
@@ -11,9 +12,10 @@ const isNote = (event: AbsoluteEvent) =>
  * are emulated anyway, so the last event of the schedule is a silent one and can
  * lie minutes behind the last note.
  */
-export const lastNoteAt = (schedule: Schedule) => {
+export const lastNoteAt = (schedule: Schedule): Seconds => {
     const lastNote = schedule.events.findLast(isNote)
-    return lastNote ? lastNote.abs / 1000 + schedule.offset : schedule.from
+    if (!lastNote) return seconds(schedule.from)
+    return add(inSeconds(milliseconds(lastNote.abs)), seconds(schedule.offset))
 }
 
 /**
@@ -41,7 +43,7 @@ export const usePlayback = (shown: string | undefined) => {
     useEffect(() => {
         if (!schedule) return
 
-        const untilLastNote = (lastNoteAt(schedule) - schedule.from) * 1000
+        const untilLastNote = inMilliseconds(subtract(lastNoteAt(schedule), seconds(schedule.from)))
         const timer = window.setTimeout(() => setSchedule(null), untilLastNote)
         return () => window.clearTimeout(timer)
     }, [schedule])

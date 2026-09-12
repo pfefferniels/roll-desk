@@ -2,8 +2,9 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, constraintProblems, trackerBarOf, valueOf, isEdit, isPerforation, isRollFeature, isSymbol, welteT100 } from 'linked-rolls'
+import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isEdit, isPerforation, isRollFeature, isSymbol, welteT100 } from 'linked-rolls'
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
+import { svg, svgPerMm } from "../../helpers/units"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../../helpers/reproducingSystems'
 import { Add, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
@@ -70,8 +71,8 @@ export type EventDimension = {
 
 export type UserSelection = (VersionSelection | FacsimileSelection)
 
-/** How long a symbol stays marked once playback has reached it, in milliseconds. */
-const playbackMark = 600
+/** How long a symbol stays marked once playback has reached it. */
+const playbackMark = milliseconds(600)
 
 /**
  * Working on piano rolls is imagined like working on a 
@@ -97,14 +98,14 @@ export const Desk = ({ show }: DeskProps) => {
 
     const { edition, setEdition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
 
-    const initialStretch = viewOnly ? 0.2 : 1
+    const initialStretch = svgPerMm(viewOnly ? 0.2 : 1)
     const {
         committed: stretchZoom, gesturing, stageRef,
         viewportRef, viewport, scrub, scrubBy, settle, jump
     } = useLiveZoom(initialStretch, zoomRange)
     usePinchGesture(viewport, { onPinch: scrubBy, onEnd: settle })
 
-    const length = useMemo(() => edition ? rollLength(edition) : 0, [edition])
+    const length = useMemo(() => edition ? rollLength(edition) : mm(0), [edition])
     const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
 
     const [metadataJob, setMetadataJob] = useState<MetadataJob>()
@@ -544,9 +545,9 @@ export const Desk = ({ show }: DeskProps) => {
                     setZoom={jump}
                     viewport={viewport}
                     gesturing={gesturing}
-                    noteHeight={3}
-                    expressionHeight={10}
-                    spacing={60}
+                    noteHeight={svg(3)}
+                    expressionHeight={svg(10)}
+                    spacing={svg(60)}
                 >
                     <Canvas stageRef={stageRef}>
                         {currentVersion

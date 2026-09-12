@@ -1,22 +1,20 @@
 import React, { createContext, useContext, ReactNode, useMemo, RefObject } from 'react';
-import { TrackerBar, welteT100 } from 'linked-rolls';
-import { RollGeometry, rollGeometry } from '../helpers/rollGeometry';
+import { Millimeters, mm, TrackerBar, welteT100 } from 'linked-rolls';
+import { LaneHeights, RollGeometry, rollGeometry } from '../helpers/rollGeometry';
+import { drawnAt, Svg, svg, SvgPerMm, svgPerMm } from '../helpers/units';
 
 export interface PinchZoomContextProps extends RollGeometry {
-    translateX: (x: number) => number
+    translateX: (x: Millimeters) => Svg
 
-    /** How far the roll runs, in millimetres. */
-    rollLength: number
+    /** How far the roll runs. */
+    rollLength: Millimeters
 
-    trackHeight: {
-        note: number
-        expression: number
-    }
+    trackHeight: LaneHeights
 
     /** The gap left between the blocks of the bar, so a second bar can be laid out the same way. */
-    spacing: number
-    zoom: number
-    setZoom: (zoom: number) => void
+    spacing: Svg
+    zoom: SvgPerMm
+    setZoom: (zoom: SvgPerMm) => void
 
     /**
      * The element the roll is scrolled in, once it is in the document, and
@@ -27,17 +25,17 @@ export interface PinchZoomContextProps extends RollGeometry {
     gesturing: RefObject<boolean>
 }
 
-const emptyGeometry = rollGeometry({ note: 0, expression: 0 }, 0, welteT100)
+const emptyGeometry = rollGeometry({ note: svg(0), expression: svg(0) }, svg(0), welteT100)
 
 const atRest: RefObject<boolean> = { current: false }
 
 const PinchZoomContext = createContext<PinchZoomContextProps>({
     ...emptyGeometry,
-    trackHeight: { note: 0, expression: 0 },
-    spacing: 0,
-    translateX: (x: number) => x,
-    rollLength: 0,
-    zoom: 0,
+    trackHeight: { note: svg(0), expression: svg(0) },
+    spacing: svg(0),
+    translateX: () => svg(0),
+    rollLength: mm(0),
+    zoom: svgPerMm(0),
     setZoom: () => { },
     viewport: null,
     gesturing: atRest
@@ -50,12 +48,12 @@ interface PinchZoomProviderProps {
      * green version is laid out in 98 lanes and a red one in 100.
      */
     bar: TrackerBar
-    spacing?: number
-    zoom: number
-    rollLength: number
-    noteHeight: number
-    expressionHeight: number
-    setZoom: (zoom: number) => void
+    spacing?: Svg
+    zoom: SvgPerMm
+    rollLength: Millimeters
+    noteHeight: Svg
+    expressionHeight: Svg
+    setZoom: (zoom: SvgPerMm) => void
     viewport?: HTMLDivElement | null
     gesturing?: RefObject<boolean>
     children: ReactNode;
@@ -68,7 +66,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     noteHeight,
     expressionHeight,
     children,
-    spacing = 40,
+    spacing = svg(40),
     setZoom,
     viewport = null,
     gesturing = atRest
@@ -87,7 +85,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         ...geometry,
         trackHeight,
         spacing,
-        translateX: (x: number) => zoom * x,
+        translateX: (x: Millimeters) => drawnAt(x, zoom),
         rollLength,
         zoom,
         setZoom,

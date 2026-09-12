@@ -1,26 +1,11 @@
 import { useEffect, useRef } from "react"
-import { AnyFeature, Millimeters, mm, RollCopy, TrackerBar } from "linked-rolls"
+import { add, AnyFeature, Millimeters, RollCopy, scale as times, subtract, TrackerBar } from "linked-rolls"
 import { atLeastVisible, boxOf, evenGeometry, Translation } from "../../helpers/rollGeometry"
+import { padded, Span, spanning } from "../../helpers/scale"
+import { Svg, svg } from "../../helpers/units"
 
-/** A stretch of the shared horizontal axis the preview is drawn on. */
-export interface Span {
-    from: number
-    to: number
-}
-
-/** Where a millimetre of a copy falls on the shared axis. */
-export type Placement = (x: Millimeters) => number
-
-/**
- * The least span covering all of the given ones. Undefined when none of them
- * is there to be covered, which is how a copy without features reaches nowhere.
- */
-export const spanning = (spans: readonly (Span | undefined)[]): Span | undefined =>
-    spans.reduce<Span | undefined>((total, span) => {
-        if (!span) return total
-        if (!total) return span
-        return { from: Math.min(total.from, span.from), to: Math.max(total.to, span.to) }
-    }, undefined)
+/** Where a place in a copy falls on the shared axis, which is the paper's own. */
+export type Placement = (x: Millimeters) => Millimeters
 
 /** Where a set of features reaches, once each is placed on the shared axis. */
 export const spanOf = (features: AnyFeature[], place: Placement): Span | undefined =>
@@ -53,8 +38,8 @@ export interface AlignmentPreviewProps {
 
 /** The same, on a canvas of a given size. */
 export interface AlignmentDrawing extends AlignmentPreviewProps {
-    width: number
-    height: number
+    width: Svg
+    height: Svg
 }
 
 export const drawAlignmentPreview = (
@@ -65,12 +50,12 @@ export const drawAlignmentPreview = (
 
     if (copy.features.length === 0 && alignTo.features.length === 0) return
 
-    const pad = 10
-    const drawH = height - pad * 2
-    const drawW = width - pad * 2
+    const pad = svg(10)
+    const drawH = subtract(height, times(pad, 2))
+    const drawW = subtract(width, times(pad, 2))
 
     const asRead: Placement = x => x
-    const aligned: Placement = x => (x + shift) * scale
+    const aligned: Placement = x => times(add(x, shift), scale)
 
     const layers: Layer[] = [
         {
@@ -95,13 +80,12 @@ export const drawAlignmentPreview = (
 
     const measured: MeasuredLayer[] = layers.map(layer => ({ ...layer, span: spanOf(layer.features, layer.place) }))
     const total = spanning(measured.map(layer => layer.span))
-    if (!total || total.to - total.from <= 0) return
+    if (!total || subtract(total.to, total.from) <= 0) return
 
-    const margin = (total.to - total.from) * 0.05
-    const totalMin = total.from - margin
-    const totalRange = (total.to + margin) - totalMin
+    const axis = padded(total, 0.05)
+    const reach = subtract(axis.to, axis.from)
 
-    const sx = (x: number) => pad + ((x - totalMin) / totalRange) * drawW
+    const sx = (x: Millimeters): Svg => add(pad, times(drawW, subtract(x, axis.from) / reach))
 
     const { bandOf } = evenGeometry(drawH, bar)
 
@@ -109,14 +93,14 @@ export const drawAlignmentPreview = (
         ctx.setLineDash(outline.dash)
         ctx.strokeStyle = outline.stroke
         ctx.lineWidth = outline.width
-        if (span) ctx.strokeRect(sx(span.from), pad, sx(span.to) - sx(span.from), drawH)
+        if (span) ctx.strokeRect(sx(span.from), pad, subtract(sx(span.to), sx(span.from)), drawH)
 
-        const translation: Translation = { translateX: x => sx(place(mm(x))), bandOf, bar }
+        const translation: Translation = { translateX: x => sx(place(x)), bandOf, bar }
 
         ctx.fillStyle = fill
         features.forEach(f => {
             const { x, y, width, height } = atLeastVisible(boxOf(f, translation))
-            ctx.fillRect(x, pad + y, width, height)
+            ctx.fillRect(x, add(pad, y), width, height)
         })
     }
 
@@ -141,8 +125,8 @@ export const AlignmentPreview = ({ copy, alignTo, shift, scale, bar }: Alignment
 
         ctx.scale(dpr, dpr)
         drawAlignmentPreview(ctx, {
-            width: rect.width,
-            height: rect.height,
+            width: svg(rect.width),
+            height: svg(rect.height),
             copy,
             alignTo,
             shift,

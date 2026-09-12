@@ -1,23 +1,25 @@
 import { RefCallback, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { clamp, Millimeters, scale } from 'linked-rolls'
+import { drawnAt, placeAt, Svg, svg, SvgPerMm } from '../helpers/units'
 
 export interface ZoomRange {
-    min: number
-    max: number
+    min: SvgPerMm
+    max: SvgPerMm
 }
 
 /** Roll position held still for the running gesture, and where in the viewport it sits. */
 interface Anchor {
-    roll: number
-    offset: number
+    roll: Millimeters
+    offset: Svg
 }
 
 export interface LiveZoom {
     /**
      * The zoom the drawing is laid out against. It only moves once a
-     * gesture has settled, so everything derived from it — hulls, arrow
-     * heads, level of detail — is exact whenever the roll is at rest.
+     * gesture has settled, so everything derived from it (hulls, arrow
+     * heads, level of detail) is exact whenever the roll is at rest.
      */
-    committed: number
+    committed: SvgPerMm
 
     /**
      * Whether a gesture is running. Held in a ref, so that what only needs
@@ -42,16 +44,16 @@ export interface LiveZoom {
      * Feed a continuous gesture. Cheap enough to call on every pointer move.
      * `focus` is the viewport x held still while zooming, the middle by default.
      */
-    scrub: (zoom: number, focus?: number) => void
+    scrub: (zoom: SvgPerMm, focus?: Svg) => void
 
     /** Like `scrub`, but relative to the zoom the gesture started from. */
-    scrubBy: (factor: number, focus?: number) => void
+    scrubBy: (factor: number, focus?: Svg) => void
 
     /** End the gesture and lay the drawing out again at the zoom last scrubbed to. */
     settle: () => void
 
     /** Go to a zoom in one step, laying out immediately. */
-    jump: (zoom: number) => void
+    jump: (zoom: SvgPerMm) => void
 }
 
 /**
@@ -60,10 +62,10 @@ export interface LiveZoom {
  * rides on a single `scale(ratio, 1)` on the stage, which costs one
  * attribute write rather than a re-render of every perforation. Settling
  * folds the ratio back into the layout, so the distortion a non-uniform
- * scale introduces — elliptical hull corners, slanted arrow heads,
- * stretched labels — only ever lasts as long as the gesture.
+ * scale introduces (elliptical hull corners, slanted arrow heads,
+ * stretched labels) only ever lasts as long as the gesture.
  */
-export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
+export const useLiveZoom = (initial: SvgPerMm, range: ZoomRange): LiveZoom => {
     const [committed, setCommitted] = useState(initial)
 
     const stageRef = useRef<SVGGElement>(null)
@@ -97,17 +99,17 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         if (!viewport || !anchor.current) return
 
         const { roll, offset } = anchor.current
-        viewport.scrollLeft = roll * live.current - offset
+        viewport.scrollLeft = drawnAt(roll, live.current) - offset
     }, [])
 
-    const begin = useCallback((focus?: number) => {
+    const begin = useCallback((focus?: Svg) => {
         gesturing.current = true
         origin.current = live.current
 
         const viewport = viewportRef.current
         if (viewport) {
-            const offset = focus ?? viewport.clientWidth / 2
-            anchor.current = { roll: (viewport.scrollLeft + offset) / live.current, offset }
+            const offset = focus ?? svg(viewport.clientWidth / 2)
+            anchor.current = { roll: placeAt(svg(viewport.scrollLeft + offset), live.current), offset }
         }
         else {
             anchor.current = undefined
@@ -137,19 +139,19 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         holdAnchor()
     }, [holdAnchor])
 
-    const scrub = useCallback((zoom: number, focus?: number) => {
+    const scrub = useCallback((zoom: SvgPerMm, focus?: Svg) => {
         if (!gesturing.current) begin(focus)
 
-        live.current = Math.min(range.max, Math.max(range.min, zoom))
+        live.current = clamp(zoom, range.min, range.max)
         if (frame.current === undefined) {
             frame.current = requestAnimationFrame(paint)
         }
     }, [begin, paint, range.min, range.max])
 
-    const scrubBy = useCallback((factor: number, focus?: number) => {
+    const scrubBy = useCallback((factor: number, focus?: Svg) => {
         if (!gesturing.current) begin(focus)
 
-        scrub(origin.current * factor, focus)
+        scrub(scale(origin.current, factor), focus)
     }, [begin, scrub])
 
     const settle = useCallback(() => {
@@ -161,7 +163,7 @@ export const useLiveZoom = (initial: number, range: ZoomRange): LiveZoom => {
         setCommitted(live.current)
     }, [])
 
-    const jump = useCallback((zoom: number) => {
+    const jump = useCallback((zoom: SvgPerMm) => {
         scrub(zoom)
         settle()
     }, [scrub, settle])

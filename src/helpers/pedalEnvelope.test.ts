@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { mm } from 'linked-rolls'
 import { episodes, sparseVertices, Vertex } from './pedalEnvelope'
 
 const curveOf = (travel: number[]) => ({
@@ -13,7 +14,7 @@ const ramp = (from: number, to: number, steps: number) =>
 const rest = (length: number) => Array(length).fill(0)
 const held = (length: number) => Array(length).fill(1)
 
-const at = (travel: number[]) => travel.map((value, place) => ({ place, travel: value }))
+const at = (travel: number[]) => travel.map((value, place) => ({ place: mm(place), travel: value }))
 
 describe('sparse vertices', () => {
     const curve = curveOf([...rest(4), ...ramp(0, 1, 50), ...held(6), ...ramp(1, 0, 50), ...rest(4)])

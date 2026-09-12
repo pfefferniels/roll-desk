@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ruler, ScaleUnit } from './scale'
+import { mm } from 'linked-rolls'
+import { ruler, ScaleUnit, spanning } from './scale'
+import { svg, svgPerMm } from './units'
 import { positionOf, zoomAt, zoomMarks, zoomRange } from './zoom'
 
-const spacing = 60
-const length = 5000
+const spacing = svg(60)
+const length = mm(5000)
 
 describe('the scale along the roll', () => {
     it('takes the step the zoom asks for', () => {
@@ -18,7 +20,7 @@ describe('the scale along the roll', () => {
         ]
 
         expected.forEach(({ zoom, step, unit }) => {
-            expect(ruler({ length, zoom, spacing })).toMatchObject({ step, unit })
+            expect(ruler({ length, zoom: svgPerMm(zoom), spacing })).toMatchObject({ step, unit })
         })
     })
 
@@ -39,7 +41,7 @@ describe('the scale along the roll', () => {
     })
 
     it('reads in centimetres', () => {
-        expect(ruler({ length, zoom: 1, spacing }).labelled.slice(0, 3)).toEqual([
+        expect(ruler({ length, zoom: svgPerMm(1), spacing }).labelled.slice(0, 3)).toEqual([
             { at: 0, label: '0 cm' },
             { at: 100, label: '10 cm' },
             { at: 200, label: '20 cm' }
@@ -47,7 +49,7 @@ describe('the scale along the roll', () => {
     })
 
     it('turns to millimetres once a step falls short of a centimetre', () => {
-        const { unit, step, labelled } = ruler({ length: 20, zoom: 30, spacing })
+        const { unit, step, labelled } = ruler({ length: mm(20), zoom: svgPerMm(30), spacing })
 
         expect({ unit, step }).toEqual({ unit: 'mm', step: 2 })
         expect(labelled[3]).toEqual({ at: 6, label: '6 mm' })
@@ -55,7 +57,7 @@ describe('the scale along the roll', () => {
 
     it('reaches millimetres at the far end of the desk, and no sooner', () => {
         expect(ruler({ length, zoom: zoomRange.max, spacing }).unit).toEqual('mm')
-        expect(ruler({ length, zoom: zoomRange.max * 0.99, spacing }).unit).toEqual('cm')
+        expect(ruler({ length, zoom: svgPerMm(zoomRange.max * 0.99), spacing }).unit).toEqual('cm')
     })
 
     it('reads in millimetres at the top of the zoom slider', () => {
@@ -68,11 +70,11 @@ describe('the scale along the roll', () => {
     })
 
     it('goes no finer than the millimetre the roll is measured to', () => {
-        expect(ruler({ length, zoom: 1000, spacing }).step).toEqual(1)
+        expect(ruler({ length, zoom: svgPerMm(1000), spacing }).step).toEqual(1)
     })
 
     it('divides every step evenly and leaves the readings to the labelled ticks', () => {
-        const { step, labelled, plain } = ruler({ length, zoom: 1, spacing })
+        const { step, labelled, plain } = ruler({ length, zoom: svgPerMm(1), spacing })
         const parts = plain.filter(at => at > 0 && at < step)
 
         expect(parts).toEqual([20, 40, 60, 80])
@@ -92,7 +94,7 @@ describe('the scale along the roll', () => {
 
 describe('the stretch a scale is laid over', () => {
     const over = (from: number, to: number) =>
-        ruler({ length, zoom: 1, spacing, over: { from, to } })
+        ruler({ length, zoom: svgPerMm(1), spacing, over: { from: mm(from), to: mm(to) } })
 
     it('takes its first reading inside the stretch', () => {
         expect(over(250, 460).labelled).toEqual([
@@ -106,8 +108,8 @@ describe('the stretch a scale is laid over', () => {
     })
 
     it('lays the ticks the whole roll would have there', () => {
-        const zoom = 4
-        const [from, to] = [250, 1300]
+        const zoom = svgPerMm(4)
+        const [from, to] = [mm(250), mm(1300)]
         const inside = (at: number) => at >= from && at < to
 
         const whole = ruler({ length, zoom, spacing })
@@ -141,9 +143,26 @@ describe('the stretch a scale is laid over', () => {
 
     it('steps as the zoom asks whatever stretch it is given', () => {
         zoomMarks.forEach(zoom => {
-            const part = ruler({ length, zoom, spacing, over: { from: 1000, to: 1200 } })
+            const part = ruler({ length, zoom, spacing, over: { from: mm(1000), to: mm(1200) } })
 
             expect(part.step).toEqual(ruler({ length, zoom, spacing }).step)
         })
+    })
+})
+
+describe('spans laid over one another', () => {
+    it('are covered from the leftmost to the rightmost', () => {
+        expect(spanning([{ from: mm(100), to: mm(200) }, { from: mm(50), to: mm(120) }]))
+            .toEqual({ from: 50, to: 200 })
+    })
+
+    it('leave the copies reaching nowhere out of the reckoning', () => {
+        expect(spanning([undefined, { from: mm(50), to: mm(120) }, undefined]))
+            .toEqual({ from: 50, to: 120 })
+    })
+
+    it('cover nothing when not one of them is there', () => {
+        expect(spanning([undefined, undefined])).toBeUndefined()
+        expect(spanning([])).toBeUndefined()
     })
 })

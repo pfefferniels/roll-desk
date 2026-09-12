@@ -1,51 +1,37 @@
 import { useContext } from 'react'
-import { barOf } from 'linked-rolls'
+import { barOf, Edition, mm, RollCopy } from 'linked-rolls'
 import { EditionContext } from '../../providers/EditionContext'
-import { SourcePreview } from './SourcePreview'
+import { asRead, SourcePreview } from './SourcePreview'
+import { padded, Span, spanning } from '../../helpers/scale'
 
 interface SourceStackProps {
     activeId?: string
     onClick: (copyId: string) => void
 }
 
+/** The stretch a stack of previews shares where no copy has been measured. */
+const nothingMeasured: Span = { from: mm(0), to: mm(100) }
+
+/** How far a copy reaches, both where it was collated to and where it was read. */
+const reachOf = (copy: RollCopy): (Span | undefined)[] => {
+    const place = asRead(copy)
+    return copy.features.flatMap(feature => [
+        { from: feature.horizontal.from, to: feature.horizontal.to },
+        { from: place(feature.horizontal.from), to: place(feature.horizontal.to) }
+    ])
+}
+
+/** The axis every preview in the stack is drawn against, so they can be compared. */
+const boundsOf = (edition: Edition): Span => {
+    const covered = spanning(edition.copies.flatMap(reachOf))
+    return covered ? padded(covered, 0.02) : nothingMeasured
+}
+
 export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
     const { edition } = useContext(EditionContext)
     if (!edition || edition.copies.length === 0) return null
 
-    // Compute global bounds across all copies (union of collated + original extents)
-    let globalMinX = Infinity
-    let globalMaxX = -Infinity
-
-    for (const copy of edition.copies) {
-        const shift = copy.measurements.shift?.horizontal || 0
-        const stretch = copy.measurements.scale ?? 1
-
-        for (const feature of copy.features) {
-            // Collated positions
-            globalMinX = Math.min(globalMinX, feature.horizontal.from)
-            globalMaxX = Math.max(globalMaxX, feature.horizontal.to)
-
-            // Original positions (undo transform)
-            const origFrom = (feature.horizontal.from - shift) / stretch
-            const origTo = (feature.horizontal.to - shift) / stretch
-            globalMinX = Math.min(globalMinX, origFrom)
-            globalMaxX = Math.max(globalMaxX, origTo)
-        }
-    }
-
-    // Fallback if no features anywhere
-    if (!isFinite(globalMinX) || !isFinite(globalMaxX)) {
-        globalMinX = 0
-        globalMaxX = 100
-    }
-
-    // Add padding to bounds
-    const rangePad = (globalMaxX - globalMinX) * 0.02
-    const bounds = {
-        minX: globalMinX - rangePad,
-        maxX: globalMaxX + rangePad
-    }
-
+    const bounds = boundsOf(edition)
 
     return (
         <div>

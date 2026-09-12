@@ -1,11 +1,12 @@
-import { Millimeters, mm } from "linked-rolls"
+import { Millimeters } from "linked-rolls"
+import { placeAt, Svg, svg, SvgPerMm } from "./units"
 
 export interface RollPoint {
-    /** Along the roll, in millimetres. */
+    /** Along the roll. */
     x: Millimeters
 
     /** Across the roll, in the units the lanes are laid out in. */
-    y: number
+    y: Svg
 }
 
 /**
@@ -17,11 +18,11 @@ export interface RollPoint {
 export const rollPointAt = (
     element: SVGGraphicsElement,
     { clientX, clientY }: Pick<MouseEvent, 'clientX' | 'clientY'>,
-    zoom: number
+    zoom: SvgPerMm
 ): RollPoint | undefined => {
     const matrix = element.getScreenCTM()
     if (!matrix) return undefined
 
     const { x, y } = new DOMPoint(clientX, clientY).matrixTransform(matrix.inverse())
-    return { x: mm(x / zoom), y }
+    return { x: placeAt(svg(x), zoom), y: svg(y) }
 }

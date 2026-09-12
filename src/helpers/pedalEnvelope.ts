@@ -1,8 +1,8 @@
-import { PedalCurve } from "linked-rolls"
+import { Millimeters, mm, PedalCurve } from "linked-rolls"
 
-/** A place on the roll, in mm, and how far the pedal has travelled there, 0 at rest to 1 down. */
+/** A place on the roll, and how far the pedal has travelled there, 0 at rest to 1 down. */
 export type Vertex = {
-    readonly place: number
+    readonly place: Millimeters
     readonly travel: number
 }
 
@@ -24,7 +24,7 @@ export const sparseVertices = (
     const { kept } = [...travel.keys()].reduce(
         ({ kept, anchor }, i) => {
             if (!endsAStretch(i) && Math.abs(travel[i] - anchor) < tolerance) return { kept, anchor }
-            kept.push({ place: place[i], travel: travel[i] })
+            kept.push({ place: mm(place[i]), travel: travel[i] })
             return { kept, anchor: travel[i] }
         },
         { kept: [] as Vertex[], anchor: Number.NaN }

@@ -1,4 +1,4 @@
-import { Expression, Note } from "linked-rolls";
+import { Expression, Millimeters, mm, Note } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { usePlaybackMark } from "../../hooks/usePlaybackMark";
@@ -10,11 +10,11 @@ interface PerforationProps {
     age?: number;
     highlight: boolean;
     /** How far the performance moves the perforation from where it was measured, in mm. */
-    shift?: number;
+    shift?: Millimeters;
     onClick: () => void;
 }
 
-export const Perforation = ({ symbol, age, highlight, shift = 0, onClick }: PerforationProps) => {
+export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: PerforationProps) => {
     const { view, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
     const { marked, followPlayback } = usePlaybackMark();

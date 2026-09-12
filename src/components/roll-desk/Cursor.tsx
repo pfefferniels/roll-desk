@@ -1,9 +1,10 @@
+import { Millimeters } from "linked-rolls"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { rulerBaseline } from "./Ruler"
 
 interface CursorProps {
-    /** Where the pointer sits on the roll, in millimetres. */
-    at: number
+    /** Where the pointer sits on the roll. */
+    at: Millimeters
 }
 
 /** The reading the pointer stands at, drawn for as long as a drag runs. */

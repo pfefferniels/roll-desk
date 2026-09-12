@@ -1,15 +1,16 @@
 import { RefCallback, useCallback, useState } from 'react'
+import { Milliseconds } from 'linked-rolls'
 
 const eventName = 'playback-event'
 
 /** What playback tells the group drawn for a symbol when it reaches it. */
 interface Reached {
     /** How long the symbol stays marked. */
-    milliseconds: number
+    milliseconds: Milliseconds
 }
 
 /** Announces playback on the shape drawn for `symbolId`, if there is one. */
-export const announcePlayback = (symbolId: string, milliseconds: number) => {
+export const announcePlayback = (symbolId: string, milliseconds: Milliseconds) => {
     const group = document.getElementById(symbolId)
     group?.dispatchEvent(new CustomEvent<Reached>(eventName, { detail: { milliseconds } }))
 }

@@ -1,18 +1,24 @@
 import { Box, Slider } from "@mui/material"
 import { positionOf, zoomAt, zoomMarks, zoomRange } from "../../helpers/zoom"
 import { useDraft } from "../../hooks/useDraft"
+import { mark, SvgPerMm, svgPerMm } from "../../helpers/units"
 
-const percentLabel = (zoom: number) => `${Math.round(zoom * 100)}%`
+const percentLabel = (zoom: SvgPerMm) => `${Math.round(zoom * 100)}%`
 
 const marks = zoomMarks.map(zoom => ({ value: positionOf(zoom), label: percentLabel(zoom) }))
+
+// MUI measures the track in plain numbers, so the units are put back on
+// at its edge rather than carried through it.
+const zoomOfPosition = (position: number) => zoomAt(mark(position))
+const labelOfZoom = (zoom: number) => percentLabel(svgPerMm(zoom))
 
 /** One step of the track, which moves the zoom by about a percent. */
 const step = 0.01
 
 interface ZoomSliderProps {
     /** The zoom the roll is laid out at. The thumb follows it when it moves elsewhere. */
-    zoom: number
-    onScrub: (zoom: number) => void
+    zoom: SvgPerMm
+    onScrub: (zoom: SvgPerMm) => void
     onSettle: () => void
 }
 
@@ -41,10 +47,10 @@ export const ZoomSlider = ({ zoom, onScrub, onSettle }: ZoomSliderProps) => {
                 max={positionOf(zoomRange.max)}
                 step={step}
                 value={positionOf(value)}
-                scale={zoomAt}
-                getAriaValueText={percentLabel}
+                scale={zoomOfPosition}
+                getAriaValueText={labelOfZoom}
                 onChange={(_, newValue) => {
-                    const scrubbed = zoomAt(newValue as number)
+                    const scrubbed = zoomOfPosition(newValue as number)
                     setValue(scrubbed)
                     onScrub(scrubbed)
                 }}
