@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
+import { scale } from 'linked-rolls'
 import { Span } from '../helpers/scale'
+import { placeAt, svg, SvgPerMm } from '../helpers/units'
 import { usePinchZoom } from './usePinchZoom'
 
-/** As much of a scrolling element as it takes to say what it shows. */
+/**
+ * As much of a scrolling element as it takes to say what it shows. A
+ * viewport measures in CSS pixels, which are drawing units as long as no
+ * SVG on the desk carries a viewBox, see `Svg`.
+ */
 interface Viewport {
     scrollLeft: number
     clientWidth: number
@@ -15,16 +21,15 @@ const grain = 0.5
 const slack = 1
 
 /**
- * The stretch of roll a viewport shows at `zoom` SVG units per millimetre,
- * with the slack around it. Where the view sits is read in steps of
- * `grain`, so that scrolling asks for the same stretch again until it has
- * moved on.
+ * The stretch of roll a viewport shows at `zoom`, with the slack around
+ * it. Where the view sits is read in steps of `grain`, so that scrolling
+ * asks for the same stretch again until it has moved on.
  */
-export const spanShown = (viewport: Viewport, zoom: number): Span => {
-    const width = viewport.clientWidth / zoom
+export const spanShown = (viewport: Viewport, zoom: SvgPerMm): Span => {
+    const width = placeAt(svg(viewport.clientWidth), zoom)
     const at = Math.floor(viewport.scrollLeft / viewport.clientWidth / grain) * grain
 
-    return { from: (at - slack) * width, to: (at + 1 + grain + slack) * width }
+    return { from: scale(width, at - slack), to: scale(width, at + 1 + grain + slack) }
 }
 
 const same = (one: Span | undefined, other: Span) =>

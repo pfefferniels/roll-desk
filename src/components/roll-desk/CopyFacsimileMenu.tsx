@@ -22,6 +22,9 @@ interface MenuProps {
 
 export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item) || ('horizontal' in item && 'vertical' in item))
+
+    /** What is selected where one thing is, which is what the dialogs act on. */
+    const sole = selection.length === 1 ? selection[0] : undefined
     const { edition, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
@@ -147,28 +150,22 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 )}
             </Stack>
 
-            {selection.length > 0 && (
-                <>
-                    <AddWritingFeature
-                        copyID={copy.id}
-                        open={addSymbolDialogOpen}
-                        onClose={() => setAddSymbolDialogOpen(false)}
-                        iiifUrl={selectionAsIIIFLink(selection[0], copy)}
-                    />
-                </>
+            {sole && (
+                <AddWritingFeature
+                    copyID={copy.id}
+                    open={addSymbolDialogOpen}
+                    onClose={() => setAddSymbolDialogOpen(false)}
+                    iiifUrl={selectionAsIIIFLink(sole, copy)}
+                />
             )}
 
-            {(selection.length === 1 && isRollFeature(selection[0])) && (
+            {sole && isRollFeature(sole) && (
                 <FeatureConditionDialog
                     open={reportFeatureCondition}
-                    feature={selection[0]}
+                    feature={sole}
                     onClose={() => setReportFeatureCondition(false)}
                     onDone={(condition) => {
-                        apply(stateFeatureCondition(
-                            copyId,
-                            (selection[0] as AnyFeature).id,
-                            condition
-                        ))
+                        apply(stateFeatureCondition(copyId, sole.id, condition))
                         setReportFeatureCondition(false)
                     }}
                 />

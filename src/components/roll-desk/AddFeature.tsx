@@ -85,12 +85,13 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
             <DialogActions>
                 <Button
                     onClick={() => {
-                        const rollSelection = structuredClone(selection)
+                        const dimension = structuredClone(selection).at(0)
+                        if (!dimension) return
 
                         const feature = {
                             type: 'Writing' as const,
                             id: v4(),
-                            ...rollSelection[0],
+                            ...dimension,
                             depiction: iiifUrl,
                             // rotation,
                             method,

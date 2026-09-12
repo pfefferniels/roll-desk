@@ -69,7 +69,7 @@ export const SourceFields = ({ value, onChange }: SourceFieldsProps) => (
                 labelId='source-kind-label'
                 label='Read from'
                 value={value.kind}
-                onChange={e => onChange({ ...value, kind: e.target.value as SourceInput['kind'] })}
+                onChange={e => onChange({ ...value, kind: e.target.value })}
             >
                 <MenuItem value={notStated}><em>not stated</em></MenuItem>
                 {sourceKinds.map(kind => (

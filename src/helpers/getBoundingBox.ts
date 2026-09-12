@@ -1,25 +1,18 @@
-export type BBox = {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+import { max, min, subtract } from 'linked-rolls'
+import { Box, Point } from './drawing'
 
-/**
- * Given a set of points, return the bounding box that contains all the points.
- * @param points 
- * @returns 
- */
-export const getBoundingBox = (points: [number, number][]): BBox => {
-    const minX = Math.min(...points.map(p => p[0]));
-    const minY = Math.min(...points.map(p => p[1]));
-    const maxX = Math.max(...points.map(p => p[0]));
-    const maxY = Math.max(...points.map(p => p[1]));
+/** The least box containing every one of the points. */
+export const getBoundingBox = (points: Point[]): Box => {
+    const xs = points.map(p => p.x)
+    const ys = points.map(p => p.y)
+
+    const left = xs.reduce(min)
+    const top = ys.reduce(min)
 
     return {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY
-    };
-};
+        x: left,
+        y: top,
+        width: subtract(xs.reduce(max), left),
+        height: subtract(ys.reduce(max), top)
+    }
+}

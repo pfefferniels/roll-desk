@@ -1,5 +1,6 @@
-import { columnsOf, px, RollCopy, TrackArea } from "linked-rolls"
+import { add, columnsOf, Millimeters, mm, Pixels, px, RollCopy, scale, subtract, TrackArea } from "linked-rolls"
 import { useEffect, useRef, useState } from "react"
+import { Svg, svg, svgPerScanPixel } from "../../helpers/units"
 import useIsVisible from "../../hooks/useIsVisible"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { FacsimileBlend } from "../../helpers/facsimileBlend"
@@ -18,10 +19,10 @@ import {
 import { fetchImageService, ImageService, scaleFactorFor, Tile, tilesOf } from "./IIIF"
 
 /** Screen x of a scan row, through whatever alignment the copy was given. */
-const rowToXOf = (copy: RollCopy, translateX: (mm: number) => number) => {
-    const shift = copy.measurements.shift?.horizontal ?? 0
-    const scale = copy.measurements.scale ?? 1
-    return (row: number) => translateX((onPaper(px(row), copy) + shift) * scale)
+const rowToXOf = (copy: RollCopy, translateX: (x: Millimeters) => Svg) => {
+    const shift = copy.measurements.shift?.horizontal ?? mm(0)
+    const stretch = copy.measurements.scale ?? 1
+    return (row: Pixels) => translateX(scale(add(onPaper(row, copy), shift), stretch))
 }
 
 /**
@@ -87,7 +88,10 @@ export const Facsimile = ({ copy, blend }: FacsimileProps) => {
     if (!service || !calibration || blend.facsimile === 0) return null
 
     const rowToX = rowToXOf(copy, geometry.translateX)
-    const alongRoll = { x0: rowToX(0), perRow: rowToX(1) - rowToX(0) }
+    const alongRoll = {
+        x0: rowToX(px(0)),
+        perRow: svgPerScanPixel(subtract(rowToX(px(1)), rowToX(px(0))))
+    }
     const scaleFactor = scaleFactorFor(service, alongRoll.perRow)
     const rollWidth = geometry.translateX(geometry.rollLength)
 
@@ -97,7 +101,7 @@ export const Facsimile = ({ copy, blend }: FacsimileProps) => {
 
     /** The paper outside the bar belongs to the strips at either edge. */
     const sourceColumnsOf = (columns: ScanColumns, index: number): ScanColumns => ({
-        from: index === 0 ? 0 : columns.from,
+        from: index === 0 ? px(0) : columns.from,
         to: index === geometry.areas.length - 1 ? scan.columns : columns.to
     })
 
@@ -111,7 +115,7 @@ export const Facsimile = ({ copy, blend }: FacsimileProps) => {
             scanInBand(alongRoll, columns, band),
             blend.layout
         )
-        const clip = betweenBoxes(wholeBox, { x: 0, width: rollWidth, ...band }, blend.layout)
+        const clip = betweenBoxes(wholeBox, { x: svg(0), width: rollWidth, ...band }, blend.layout)
 
         return (
             <g key={area.role}>

@@ -33,8 +33,11 @@ export function orderSlicesCenterWeighted(slices: Slice[]): Slice[] {
     withIdx.sort((p, q) => (q.count - p.count) || (p.__i - q.__i));
 
     const n = withIdx.length;
-    const out: Array<(typeof withIdx)[number] | null> = Array(n).fill(null);
+    const out: Array<(typeof withIdx)[number] | null> = Array.from({ length: n }, () => null);
     if (n === 0) return [];
+
+    /** Whether a slot is spoken for, which a slot off the end counts as. */
+    const taken = (i: number) => out[i] != null;
 
     const midL = Math.floor((n - 1) / 2);
     const midR = Math.ceil((n - 1) / 2);
@@ -43,6 +46,7 @@ export function orderSlicesCenterWeighted(slices: Slice[]): Slice[] {
 
     for (let k = 0; k < n; k++) {
         const s = withIdx[k];
+        if (!s) continue;
         if (k === 0) {
             // Put the biggest at the center-left (or exact center if odd).
             out[left] = s;
@@ -60,23 +64,23 @@ export function orderSlicesCenterWeighted(slices: Slice[]): Slice[] {
         // This keeps the distribution symmetric.
         const placeRight = (k % 2 === 1);
         if (placeRight) {
-            while (right < n && out[right] !== null) right++;
+            while (right < n && taken(right)) right++;
             if (right < n) out[right] = s;
             else {
-                while (left >= 0 && out[left] !== null) left--;
+                while (left >= 0 && taken(left)) left--;
                 if (left >= 0) out[left] = s;
             }
         } else {
-            while (left >= 0 && out[left] !== null) left--;
+            while (left >= 0 && taken(left)) left--;
             if (left >= 0) out[left] = s;
             else {
-                while (right < n && out[right] !== null) right++;
+                while (right < n && taken(right)) right++;
                 if (right < n) out[right] = s;
             }
         }
     }
 
-    return out.filter(Boolean) as Slice[];
+    return out.filter(slot => slot !== null);
 }
 
 /**
@@ -102,8 +106,10 @@ export function computeSliceGeometry(slices: Slice[]) {
         : ordered.map(() => (ordered.length ? 1 / ordered.length : 0));
 
     // Boundaries along width axis: from -0.5 to +0.5 in normalized units.
-    const boundary: number[] = [0];
-    for (let i = 0; i < widths.length; i++) boundary.push(boundary[i] + widths[i]);
+    const boundary = widths.reduce<number[]>(
+        (so_far, width) => [...so_far, (so_far.at(-1) ?? 0) + width],
+        [0]
+    );
 
     // Center so that middle is 0: subtract 0.5.
     const centered = boundary.map((t) => t - 0.5);
@@ -185,15 +191,18 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
         allPts.push(add(add(a, mul(abUnit, 0.5 * L)), mul(n, off)));
     }
 
-    const slicePaths = geom.orderedSlices.map((s, i) => {
+    const slicePaths = geom.orderedSlices.flatMap((s, i) => {
         const left = boundaryOffsets[i];
         const right = boundaryOffsets[i + 1];
+        if (left === undefined || right === undefined) return [];
         const d = `${boundaryCubicPath(a, b, left)} ${boundaryCubicPathReversed(a, b, right)}`;
-        return { slice: s, d };
+        return [{ slice: s, d }];
     });
 
     // Outer outline is the leftmost boundary + rightmost boundary reversed.
-    const outlineD = `${boundaryCubicPath(a, b, boundaryOffsets[0])} ${boundaryCubicPathReversed(a, b, boundaryOffsets[boundaryOffsets.length - 1])}`;
+    const leftmost = boundaryOffsets.at(0) ?? 0;
+    const rightmost = boundaryOffsets.at(-1) ?? 0;
+    const outlineD = `${boundaryCubicPath(a, b, leftmost)} ${boundaryCubicPathReversed(a, b, rightmost)}`;
 
     useEffect(() => {
         if (slices.some(s => s.selected) && !currentSlice) {

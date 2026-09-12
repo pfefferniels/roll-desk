@@ -38,7 +38,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         setSpeed(speedInputOf(event.speed))
     }, [event, editionBar])
 
-    const handleDone = async () => {
+    const handleDone = () => {
         const paperSpeed = paperSpeedOf(speed)
         onDone({
             company: namedOrNone(company, companyAuthority),

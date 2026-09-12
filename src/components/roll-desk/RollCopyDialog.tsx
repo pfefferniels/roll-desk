@@ -118,11 +118,14 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     useEffect(() => {
         let stale = false
-        suggestedSpeed(files, system, editionBar, tempo).then(found => {
-            if (stale) return
-            setSuggestion(found)
-            if (!speedTyped) setSpeed(found ? speedInputOf(found.speed) : noSpeed)
-        })
+        suggestedSpeed(files, system, editionBar, tempo)
+            .then(found => {
+                if (stale) return
+                setSuggestion(found)
+                if (!speedTyped) setSpeed(found ? speedInputOf(found.speed) : noSpeed)
+            })
+            // A speed that cannot be read leaves the field as the user typed it.
+            .catch((error: unknown) => console.warn('No speed could be suggested:', error))
         return () => { stale = true }
     }, [files, system, editionBar, tempo, speedTyped])
 
@@ -304,7 +307,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 <Button
                     variant='contained'
                     disabled={loading}
-                    onClick={handleUpload}
+                    onClick={() => void handleUpload()}
                     startIcon={loading ? <CircularProgress size={16} /> : undefined}
                 >
                     Save

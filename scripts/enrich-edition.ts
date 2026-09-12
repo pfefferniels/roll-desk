@@ -107,8 +107,8 @@ const featureIndex = new Map<string, Feature>(
  */
 const readingsOfFeature = (feature: Feature): string[] =>
     BAR_OF[feature.copy]
-        .meaningsOf({ from: track(feature.across.from), to: feature.across.to === undefined ? undefined : track(feature.across.to) })
-        .map(keyOf)
+        ?.meaningsOf({ from: track(feature.across.from), to: feature.across.to === undefined ? undefined : track(feature.across.to) })
+        .map(keyOf) ?? []
 
 /** What the symbol says, as the same key. */
 const readingOfSymbol = (symbol: Json): string =>
@@ -371,6 +371,7 @@ const mergeDuplicateSymbols = (): string[] => {
         // The elder symbol keeps the reading; the younger hands over its carriers.
         const depth = (id: string) => document.versions.indexOf(home.get(id)!)
         const [elder, ...rest] = [...ids].sort((a, b) => depth(a) - depth(b))
+        if (elder === undefined) return
         rest.forEach(id => {
             const younger = symbols.get(id)!
             const known = new Set((symbols.get(elder)!.carriers ?? []).map((c: Json) => c['@id']))
@@ -441,9 +442,10 @@ const ancestryOf = (siglum: string): string[] => {
  * it, which is why this asks the tree and not the number of witnesses.
  */
 const homeOf = (witnesses: readonly string[]): string | undefined => {
-    const lines = witnesses.map(name => ancestryOf(WITNESSED[name]))
-    if (lines.length === 0) return undefined
-    return lines[0].find(siglum => lines.every(line => line.includes(siglum)))
+    const lines = witnesses.map(name => ancestryOf(WITNESSED[name] ?? ''))
+    const [first] = lines
+    if (!first) return undefined
+    return first.find(siglum => lines.every(line => line.includes(siglum)))
 }
 
 /**

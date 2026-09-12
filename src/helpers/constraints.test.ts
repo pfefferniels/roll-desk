@@ -9,6 +9,22 @@ import {
 } from './constraints'
 import { welteT100 } from 'linked-rolls'
 
+/** The one item a list should hold, so a wrong count fails here and says which. */
+const only = <T>(items: readonly T[]): T => {
+    expect(items).toHaveLength(1)
+    const [first] = items
+    if (!first) throw new Error('expected exactly one item, found none')
+    return first
+}
+
+/** The first item, where the test has already said how many there are. */
+const first = <T>(items: readonly T[]): T => {
+    const [head] = items
+    if (!head) throw new Error('expected at least one item, found none')
+    return head
+}
+
+
 type Arrangement = (view: EditionView) => EditionOp[]
 
 /** The fixture with the given statements made, as a view. */
@@ -27,8 +43,7 @@ const perforation = (view: EditionView, id: string): AnyPerforation => {
 describe('placements of a version', () => {
     it('list a placement both of whose ends the version has, with its relation', () => {
         const view = arranged(v => [placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith')])
-        const [placement, ...rest] = placementsIn(view.snapshot(ids.b))
-        expect(rest).toEqual([])
+        const placement = only(placementsIn(view.snapshot(ids.b)))
         expect(placement.relation).toBe('alignedWith')
         expect(placement.follower.id).toBe(ids.forzandoOff)
         expect(placement.reference.id).toBe(ids.note)
@@ -121,8 +136,7 @@ describe('displaced events', () => {
 
     it('are reported with both places', () => {
         const { view, performed } = performance()
-        const [displacement, ...rest] = displacedEvents(performed, view)
-        expect(rest).toEqual([])
+        const displacement = only(displacedEvents(performed, view))
         expect(displacement.symbol.id).toBe(ids.forzandoOff)
         expect(displacement.measured.from).toBe(1004)
         expect(displacement.performed.from).toBe(1000)
@@ -143,7 +157,7 @@ describe('descriptions', () => {
 
     it('put a placement into words', () => {
         const view = arranged(v => [placePerforation(v, ids.forzandoOn, ids.note, 'before')])
-        const [placement] = placementsIn(view.snapshot(ids.a))
+        const placement = first(placementsIn(view.snapshot(ids.a)))
         expect(describePlacement(placement, view)).toBe('ForzandoOn (treble) at 990 mm lies before Note 60 at 1000 mm')
     })
 
@@ -162,7 +176,7 @@ describe('problems by version', () => {
         const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
         const groups = problemsByVersion(constraintProblems(view), view.edition.versions)
         expect(groups.map(group => group.version.siglum)).toEqual([ids.b])
-        expect(groups[0].problems).toEqual([
+        expect(first(groups).problems).toEqual([
             { version: ids.b, symbol: ids.forzandoOff, problem: 'partner-missing' }
         ])
     })

@@ -1,12 +1,7 @@
 import React, { ReactNode, MouseEventHandler, useState } from "react";
 import { roundedHull } from "../../helpers/roundedHull";
-
-interface Rect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+import { Box, cornersOf } from "../../helpers/drawing";
+import { Svg, svg } from "../../helpers/units";
 
 /**
  * 
@@ -14,19 +9,9 @@ interface Rect {
  * @param svg SVG to search for elements in
  * @returns points and hull of the convex hull of the elements
  */
-export const getHull = (bboxes: Rect[], hullPadding = 3) => {
-    const points =
-        bboxes.map(bbox => {
-            return [
-                [bbox.x, bbox.y] as [number, number],
-                [bbox.x + bbox.width, bbox.y] as [number, number],
-                [bbox.x, bbox.y + bbox.height] as [number, number],
-                [bbox.x + bbox.width, bbox.y + bbox.height] as [number, number]
-            ];
-        })
-            .flat();
-    const hull = roundedHull(points, hullPadding);
-    return { points, hull };
+export const getHull = (boxes: Box[], hullPadding: Svg = svg(3)) => {
+    const points = boxes.flatMap(cornersOf);
+    return { points, hull: roundedHull(points, hullPadding) };
 };
 
 

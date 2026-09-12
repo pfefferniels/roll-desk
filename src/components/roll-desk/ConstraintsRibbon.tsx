@@ -74,8 +74,9 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
         else setCandidates({ pair: [one, other], relation })
     }
 
-    if (perforations.length === 2) {
-        const [one, other] = perforations
+    const [one, other] = perforations
+
+    if (one && other) {
         return (
             <>
                 <Ribbon title='Constraints'>
@@ -121,8 +122,8 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
         )
     }
 
-    if (perforations.length === 1) {
-        const [only] = perforations
+    if (one && !other) {
+        const only = one
         const statement = pairStatementOf(only, snapshot)
         if (!isPlaced(only) && !statement) return null
 

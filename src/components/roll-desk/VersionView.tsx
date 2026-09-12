@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, EditionView, PerformedNoteOnEvent, PerformedNoteOffEvent, trackerBarOf, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, EditionView, Millimeters, trackerBarOf, Version, Edit, Motivation } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -97,7 +97,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
 
     // Where the performance moves a perforation, it is drawn there.
     const shifts = useMemo(
-        () => (view && emulation) ? shiftsIn(emulation.negotiatedEvents, view) : new Map<string, number>(),
+        () => (view && emulation) ? shiftsIn(emulation.negotiatedEvents, view) : new Map<string, Millimeters>(),
         [emulation, view]
     )
 
@@ -188,8 +188,8 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
                             highlight={version ? false : (symbol.carriers?.length !== 0)}
                             onClick={() => {
                                 const performingEvents = emulation?.findEventsPerforming(symbol.id) ?? []
-                                const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn') as PerformedNoteOnEvent | undefined
-                                const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff') as PerformedNoteOffEvent | undefined
+                                const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn')
+                                const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff')
                                 if (noteOn && noteOff) {
                                     playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
                                 }

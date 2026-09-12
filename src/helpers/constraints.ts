@@ -1,6 +1,6 @@
 import {
-    AnyPerforation, AnySymbol, ConstraintProblem, EditionView, HorizontalSpan,
-    NegotiatedEvent, PlacementRelation, Version, idOf, isPerforation, pairsAmong, placementsOf
+    AnyPerforation, AnySymbol, ConstraintProblem, EditionView, HorizontalSpan, Millimeters,
+    NegotiatedEvent, PlacementRelation, Version, idOf, isPerforation, pairsAmong, placementsOf, subtract
 } from "linked-rolls"
 
 export const perforationsIn = (snapshot: readonly AnySymbol[]): AnyPerforation[] =>
@@ -95,11 +95,12 @@ export const displacedEvents = (
         return [{ symbol, measured, performed: event.horizontal }]
     })
 
-/** How far the performance moves each perforation it moves, in mm, by id. */
-export const shiftsIn = (events: readonly NegotiatedEvent[], view: EditionView): ReadonlyMap<string, number> =>
+/** How far the performance moves each perforation it moves, by id. */
+export const shiftsIn = (events: readonly NegotiatedEvent[], view: EditionView): ReadonlyMap<string, Millimeters> =>
     new Map(
         displacedEvents(events, view)
-            .map(({ symbol, measured, performed }): [string, number] => [symbol.id, performed.from - measured.from])
+            .map(({ symbol, measured, performed }): [string, Millimeters] =>
+                [symbol.id, subtract(performed.from, measured.from)])
     )
 
 export const perforationLabel = (symbol: AnyPerforation): string =>

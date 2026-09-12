@@ -70,7 +70,7 @@ export const checkedDocument = async (json: unknown): Promise<CheckedDocument> =
 }
 
 const parsed = (text: string): Reading<unknown> =>
-    attempted(() => JSON.parse(text), reason => `This file could not be read as JSON: ${reason}`)
+    attempted(() => JSON.parse(text) as unknown, reason => `This file could not be read as JSON: ${reason}`)
 
 /** The checked document a file's text holds, or why the desk takes none from it. */
 export const readDocument = async (text: string): Promise<Reading<CheckedDocument>> => {

@@ -1,20 +1,20 @@
-import { Edition } from "linked-rolls"
+import { Edition, max, Millimeters, mm } from "linked-rolls"
 
 /**
  * An edition whose copies carry no measurements yet still needs a canvas
  * wide enough to draw the first features onto.
  */
-const shortestUsefulRoll = 5000
+const shortestUsefulRoll = mm(5000)
 
 /**
- * How far the roll runs, in millimetres, taken from the last measured
- * feature of any copy. Versions are drawn from those same features, so
- * this covers them as well.
+ * How far the roll runs, taken from the last measured feature of any
+ * copy. Versions are drawn from those same features, so this covers
+ * them as well.
  */
-export const rollLength = (edition: Edition) => {
+export const rollLength = (edition: Edition): Millimeters => {
     const measured = edition.copies
         .flatMap(copy => copy.features)
-        .reduce((end, feature) => Math.max(end, feature.horizontal.to), 0)
+        .reduce((end, feature) => max(end, feature.horizontal.to), mm(0))
 
-    return Math.max(measured, shortestUsefulRoll)
+    return max(measured, shortestUsefulRoll)
 }

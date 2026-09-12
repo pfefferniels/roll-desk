@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { subtract } from 'linked-rolls';
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { useSelection } from "../../providers/SelectionContext";
 import { spanDragged, useRollDrag } from "../../hooks/useRollDrag";
@@ -9,14 +10,15 @@ import { RollRange } from "../../providers/SelectionContext";
 const RangeMarker = ({ span }: { span: RollRange }) => {
     const { translateX, height } = usePinchZoom();
 
-    const [from, to] = span.map(translateX);
+    const [start, end] = span;
+    const [from, to] = [translateX(start), translateX(end)];
 
     return (
         <g className="range">
             <rect
                 x={from}
                 y={0}
-                width={to - from}
+                width={subtract(to, from)}
                 height={height}
                 stroke="orange"
                 fillOpacity={0.3}

@@ -1,15 +1,25 @@
-import { HorizontalSpan, Track, track, TrackArea, TrackerBar, TrackRole, VerticalSpan } from 'linked-rolls'
+import {
+    add,
+    HorizontalSpan,
+    max,
+    Millimeters,
+    scale,
+    subtract,
+    Track,
+    track,
+    TrackArea,
+    TrackerBar,
+    TrackRole,
+    VerticalSpan
+} from 'linked-rolls'
+import { Band, Box } from './drawing'
+import { Svg, svg } from './units'
+
+export type { Band, Box }
 
 export interface LaneHeights {
-    note: number
-    expression: number
-}
-
-export interface Box {
-    x: number
-    y: number
-    width: number
-    height: number
+    note: Svg
+    expression: Svg
 }
 
 export interface Dimension {
@@ -18,27 +28,27 @@ export interface Dimension {
 }
 
 export interface RollGeometry {
-    /** Total height of the drawing, in SVG units. */
-    height: number
+    /** Total height of the drawing. */
+    height: Svg
 
     /**
      * Top edge of a track's lane. Features are drawn downwards from
      * here, so `trackToY(t)` and `trackToY(t) + laneHeight(t)` bracket
      * exactly the band that belongs to track t.
      */
-    trackToY: (position: Track) => number
+    trackToY: (position: Track) => Svg
 
     /** Height of one lane, which differs between notes and expression. */
-    laneHeight: (position: Track) => number
+    laneHeight: (position: Track) => Svg
 
     /** The track whose lane contains y, or 'gap' between the blocks. */
-    yToTrack: (y: number) => Track | 'gap'
+    yToTrack: (y: Svg) => Track | 'gap'
 
     /** The band covered by a vertical span, whichever way round it runs. */
-    bandOf: (span: Pick<VerticalSpan, 'from' | 'to'>) => { y: number, height: number }
+    bandOf: (span: Pick<VerticalSpan, 'from' | 'to'>) => Band
 
     /** The band covered by a whole block of the tracker bar. */
-    areaBand: (area: TrackArea) => { y: number, height: number }
+    areaBand: (area: TrackArea) => Band
 
     roleOf: (position: Track) => TrackRole | undefined
 
@@ -49,7 +59,7 @@ export interface RollGeometry {
 }
 
 export type Translation =
-    Pick<RollGeometry, 'bandOf' | 'bar'> & { translateX: (x: number) => number }
+    Pick<RollGeometry, 'bandOf' | 'bar'> & { translateX: (x: Millimeters) => Svg }
 
 /** Where a feature or symbol is drawn, given its measured extent. */
 export const boxOf = (
@@ -57,19 +67,29 @@ export const boxOf = (
     { translateX, bandOf }: Translation
 ): Box => ({
     x: translateX(horizontal.from),
-    width: translateX(horizontal.to) - translateX(horizontal.from),
+    width: subtract(translateX(horizontal.to), translateX(horizontal.from)),
     ...bandOf(vertical)
 })
 
-/** A box drawn no thinner than half a pixel, so that the smallest feature still shows. */
+/** The least a box is drawn at, so that the smallest feature still shows. */
+const visible = svg(0.5)
+
 export const atLeastVisible = (box: Box): Box => ({
     ...box,
-    width: Math.max(box.width, 0.5),
-    height: Math.max(box.height, 0.5)
+    width: max(box.width, visible),
+    height: max(box.height, visible)
 })
 
 const heightOfRole = (role: TrackRole, lanes: LaneHeights) =>
     role === 'note' ? lanes.note : lanes.expression
+
+/** One block of the bar, once it is known where it starts and how tall it is. */
+interface Block {
+    area: TrackArea
+    top: Svg
+    laneHeight: Svg
+    span: Svg
+}
 
 /**
  * Lays the tracker bar out top to bottom, treble first, with a gap
@@ -78,22 +98,22 @@ const heightOfRole = (role: TrackRole, lanes: LaneHeights) =>
  */
 export const rollGeometry = (
     lanes: LaneHeights,
-    spacing: number,
+    spacing: Svg,
     bar: TrackerBar
 ): RollGeometry => {
     const blocks = [...bar.areas].reverse()
 
-    const tops = blocks.reduce((acc, area) => {
+    const tops = blocks.reduce<Block[]>((acc, area) => {
         const previous = acc[acc.length - 1]
         const top = previous
-            ? previous.top + previous.span + spacing
-            : 0
+            ? add(add(previous.top, previous.span), spacing)
+            : svg(0)
         const laneHeight = heightOfRole(area.role, lanes)
-        return [...acc, { area, top, laneHeight, span: laneHeight * (area.to - area.from + 1) }]
-    }, [] as { area: TrackArea, top: number, laneHeight: number, span: number }[])
+        return [...acc, { area, top, laneHeight, span: scale(laneHeight, area.to - area.from + 1) }]
+    }, [])
 
-    const last = tops[tops.length - 1]
-    const height = last.top + last.span
+    const last = tops.at(-1)
+    const height = last ? add(last.top, last.span) : svg(0)
 
     const blockOf = (position: Track) =>
         tops.find(({ area }) => position >= area.from && position <= area.to)
@@ -105,8 +125,8 @@ export const rollGeometry = (
      */
     const trackToY = (position: Track) => {
         const block = blockOf(position)
-        if (!block) return 0
-        return block.top + (block.area.to - position) * block.laneHeight
+        if (!block) return svg(0)
+        return add(block.top, scale(block.laneHeight, block.area.to - position))
     }
 
     const laneHeight = (position: Track) => {
@@ -114,25 +134,25 @@ export const rollGeometry = (
         return role ? heightOfRole(role, lanes) : lanes.note
     }
 
-    const yToTrack = (y: number): Track | 'gap' => {
-        const block = tops.find(({ top, span }) => y >= top && y < top + span)
+    const yToTrack = (y: Svg): Track | 'gap' => {
+        const block = tops.find(({ top, span }) => y >= top && y < add(top, span))
         if (!block) return 'gap'
-        return track(block.area.to - Math.floor((y - block.top) / block.laneHeight))
+        return track(block.area.to - Math.floor(subtract(y, block.top) / block.laneHeight))
     }
 
-    const areaBand = (area: TrackArea) => {
+    const areaBand = (area: TrackArea): Band => {
         const block = blockOf(area.from)
-        if (!block) return { y: 0, height: 0 }
+        if (!block) return { y: svg(0), height: svg(0) }
         return { y: block.top, height: block.span }
     }
 
-    const bandOf = ({ from, to }: Pick<VerticalSpan, 'from' | 'to'>) => {
+    const bandOf = ({ from, to }: Pick<VerticalSpan, 'from' | 'to'>): Band => {
         const [lower, upper] = to === undefined || to === from
             ? [from, from]
             : from < to ? [from, to] : [to, from]
 
         const y = trackToY(upper)
-        return { y, height: trackToY(lower) + laneHeight(lower) - y }
+        return { y, height: subtract(add(trackToY(lower), laneHeight(lower)), y) }
     }
 
     return {
@@ -153,7 +173,7 @@ export const rollGeometry = (
  * what a preview wants: too small to keep the blocks apart, and the same way
  * up as the desk.
  */
-export const evenGeometry = (height: number, bar: TrackerBar): RollGeometry => {
-    const lane = height / bar.trackCount
-    return rollGeometry({ note: lane, expression: lane }, 0, bar)
+export const evenGeometry = (height: Svg, bar: TrackerBar): RollGeometry => {
+    const lane = scale(height, 1 / bar.trackCount)
+    return rollGeometry({ note: lane, expression: lane }, svg(0), bar)
 }

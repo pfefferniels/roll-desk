@@ -1,8 +1,10 @@
 import { ReactNode, useContext, useMemo } from "react"
-import { AnyPerforation, AnySymbol, ConstraintProblem, Path, PlacementRelation, isPerforation } from "linked-rolls"
+import { add, AnyPerforation, AnySymbol, ConstraintProblem, max, Millimeters, mm, Path, PlacementRelation, isPerforation, scale, subtract } from "linked-rolls"
 import { EditionContext } from "../../providers/EditionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Box } from "../../helpers/rollGeometry"
+import { Point } from "../../helpers/drawing"
+import { Svg, svg, svgPerMm } from "../../helpers/units"
 import { pairsIn, placementsIn, troubledSymbols } from "../../helpers/constraints"
 import { getSymbolBBox } from "./EditView"
 import { Arguable } from "./Arguable"
@@ -11,18 +13,17 @@ import { alignmentLook, pairLook, problemLook } from "./constraintLooks"
 /** The shapes let clicks through to the symbols beneath them. */
 const quiet = { pointerEvents: 'none' } as const
 
-const buttonSize = 40
+const buttonSize = svg(40)
 
-const onsetOf = (box: Box): Box => ({ ...box, width: 2 })
-const middleOf = (box: Box) => box.y + box.height / 2
-const shifted = (box: Box, dx: number): Box => ({ ...box, x: box.x + dx })
-const padded = (box: Box, margin: number): Box => ({
-    x: box.x - margin,
-    y: box.y - margin,
-    width: box.width + 2 * margin,
-    height: box.height + 2 * margin
+const onsetOf = (box: Box): Box => ({ ...box, width: svg(2) })
+const middleOf = (box: Box) => add(box.y, scale(box.height, 0.5))
+const shifted = (box: Box, dx: Svg): Box => ({ ...box, x: add(box.x, dx) })
+const padded = (box: Box, margin: Svg): Box => ({
+    x: subtract(box.x, margin),
+    y: subtract(box.y, margin),
+    width: add(box.width, scale(margin, 2)),
+    height: add(box.height, scale(margin, 2))
 })
-type Point = { x: number; y: number }
 
 interface StatementProps {
     shape: ReactNode
@@ -47,10 +48,16 @@ interface ConnectorProps {
 }
 
 /** A straight line from the onset of the follower to the onset of the perforation it is placed by. */
+/** The belief button for a connector, set just above the line's middle. */
+const buttonAbove = (from: Box, to: Box): Point => ({
+    x: add(scale(add(from.x, to.x), 0.5), svg(3)),
+    y: subtract(scale(add(middleOf(from), middleOf(to)), 0.5), svg(14))
+})
+
 const PlacementConnector = ({ from, to, path, detailed }: ConnectorProps) => (
     <Statement
         path={path}
-        button={detailed ? { x: (from.x + to.x) / 2 + 3, y: (middleOf(from) + middleOf(to)) / 2 - 14 } : undefined}
+        button={detailed ? buttonAbove(from, to) : undefined}
         shape={
             <line
                 x1={from.x} y1={middleOf(from)}
@@ -64,11 +71,11 @@ const PlacementConnector = ({ from, to, path, detailed }: ConnectorProps) => (
 
 /** A bracket under both members of a pair. */
 const PairLink = ({ from: one, to: other, path, detailed }: ConnectorProps) => {
-    const bottom = Math.max(one.y + one.height, other.y + other.height) + 6
+    const bottom = add(max(add(one.y, one.height), add(other.y, other.height)), svg(6))
     return (
         <Statement
             path={path}
-            button={detailed ? { x: (one.x + other.x) / 2 - buttonSize / 2, y: bottom } : undefined}
+            button={detailed ? { x: subtract(scale(add(one.x, other.x), 0.5), scale(buttonSize, 0.5)), y: bottom } : undefined}
             shape={
                 <path
                     d={`M ${one.x} ${middleOf(one)} L ${one.x} ${bottom} L ${other.x} ${bottom} L ${other.x} ${middleOf(other)}`}
@@ -82,8 +89,8 @@ const PairLink = ({ from: one, to: other, path, detailed }: ConnectorProps) => {
 
 interface ConstraintViewProps {
     snapshot: readonly AnySymbol[]
-    /** How far the performance moves each perforation it moves, in mm, by id. */
-    shifts: ReadonlyMap<string, number>
+    /** How far the performance moves each perforation it moves, by id. */
+    shifts: ReadonlyMap<string, Millimeters>
     /** The problems of this version. */
     problems: readonly ConstraintProblem[]
 }
@@ -103,12 +110,12 @@ export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewPro
 
     if (!view) return null
 
-    const detailed = translation.zoom >= 0.7
+    const detailed = translation.zoom >= svgPerMm(0.7)
 
     /** Where the perforation is drawn: its measurement, moved as far as the performance moves it. */
     const boxed = (symbol: AnyPerforation) => {
         const box = getSymbolBBox(symbol, view, translation)
-        return box && shifted(box, translation.translateX(shifts.get(symbol.id) ?? 0))
+        return box && shifted(box, translation.translateX(shifts.get(symbol.id) ?? mm(0)))
     }
 
     const connector = (one: AnyPerforation, other: AnyPerforation, key: PlacementRelation | 'pairedWith'): ConnectorProps | undefined => {
@@ -122,7 +129,7 @@ export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewPro
     const mark = (id: string) => {
         const symbol = view.get<AnySymbol>(id)
         const box = isPerforation(symbol) ? boxed(symbol) : undefined
-        return box && <rect key={id} {...padded(box, 2)} {...problemLook} style={quiet} />
+        return box && <rect key={id} {...padded(box, svg(2))} {...problemLook} style={quiet} />
     }
 
     return (
