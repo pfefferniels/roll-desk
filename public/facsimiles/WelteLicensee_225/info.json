@@ -1,0 +1,28 @@
+{
+  "@context": "http://iiif.io/api/image/2/context.json",
+  "@id": "/facsimiles/WelteLicensee_225",
+  "protocol": "http://iiif.io/api/image",
+  "profile": [
+    "http://iiif.io/api/image/2/level0.json"
+  ],
+  "width": 4096,
+  "height": 90477,
+  "sizes": [
+    {
+      "width": 128,
+      "height": 2828
+    }
+  ],
+  "tiles": [
+    {
+      "width": 1024,
+      "scaleFactors": [
+        2,
+        4,
+        8,
+        16,
+        32
+      ]
+    }
+  ]
+}

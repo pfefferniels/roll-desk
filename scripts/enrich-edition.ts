@@ -239,38 +239,47 @@ const copyBy = (id: string): Json => {
 
 const enrichChase = (): string[] => {
     const copy = copyBy(CHASE)
-    copy.measurements.scanResolution = { value: 400, unit: 'px/in' }
+    // scanResolution is no longer set here. The copy is read from the analysis
+    // of the scan itself, which states the resolution its own places are
+    // measured in; the .bar's interpolated 400 rows to the inch are gone.
+    copy.scan = '/facsimiles/WelteLicensee_225'
     copy.production.speed['@annotation'] = believing('likely', [argued(
         'Die Datei W225E.ann nennt roll_tempo 83. Der Leser rechnet zehn Einheiten auf den Fuß je Minute. '
         + 'Das Feld ist als das auf der Rolle aufgedruckte Tempo definiert, und Licensee-Rollen tragen ein '
-        + 'solches, während die roten T-100-Rollen keines tragen. Chases eigene Dateien von 2004 und 2006 '
-        + 'nennen für dieselbe Rolle jedoch 80, Trachtmans Lesung eines anderen Licensee-Exemplars 75, so '
+        + 'solches, während die roten T-100-Rollen keines tragen. Der Kopf des Scans selbst nennt 80, ebenso '
+        + 'Chases eigene Dateien von 2004 und 2006, Trachtmans Lesung eines anderen Licensee-Exemplars 75, so '
         + 'dass höchstens eine dieser Angaben vom Etikett stammen kann.'
     )])
     delete copy.readFrom.device
     copy.readFrom.actor = person('Chase, Spencer')
-    copy.readFrom.output = 'W225E.bar mit W225E.ann, am 26. Dezember 2024 von Spencer Chase geschickt'
+    copy.readFrom.output = '225.CIS, am 12. September 2026 von Spencer Chase geschickt'
     copy.readFrom.note =
-        'Das Lauflängenbild der Abtastleiste, 400 Zeilen auf den Zoll entlang der Rolle, gelesen auf der '
-        + 'Licensee-Leiste, deren Nummerierung die Datei behält. Abgetastet wurde optisch und gröber, mit '
-        + '180 Zeilen auf den Zoll (/scanner_LPI: 180) und 204 dpi quer zur Rolle; das 400er-Raster ist also '
-        + 'eine Interpolation, und Stanzorte liegen nur auf etwa 0,08 mm genau. Das Gerät selbst ist nicht '
+        'Der Rollenscan selbst, 2432 × 54286 Punkte, im frühen CIS-Kopf von 2002, der weder Gerät noch '
+        + 'Querauflösung nennt. Längs 180 Zeilen auf den Zoll, quer aus der Scanbreite erschlossen und vom '
+        + 'gemessenen Spurabstand bestätigt: 203,6 dpi gegen die 204, die Chases eigene Software in ihre '
+        + 'Dateien schrieb. Überführt mit cis2roll.py in ein TIFF von 300 dpi und gelesen mit tiff2holes -l '
+        + 'auf der Licensee-Leiste; deren Nummerierung sitzt zwölf Stellen unter der Spaltenzählung des '
+        + 'Parsers, und die Rückspulperforation auf Bahn 89 legt den Versatz fest. Das Gerät ist nicht '
         + 'überliefert, seine Bauart aber aus der Datei ablesbar: ein Chase-Transport mit Capstan-Antrieb und '
-        + 'ohne Positionsgeber, aus der Generation vor dem Mk3. Die mitgeschickten W225emR.mid und W225emP.mid '
-        + 'sind Emulationen und wurden nicht gelesen. Lochlänge und Stanzschritt hat Chase von Hand gesetzt und '
-        + 'die Rekonstruktion des Stanzrasters abgeschaltet; Abweichungen am Ende einer Note taugen auf diesem '
-        + 'Exemplar nicht als Befund.'
+        + 'ohne Positionsgeber, aus der Generation vor dem Mk3. Zuvor stand hier Chases eigene Lochliste '
+        + 'W225E.bar mit W225E.ann, deren Raster von 400 Zeilen auf den Zoll aus den 180 des Scans '
+        + 'interpoliert war; beide Lesungen stimmen auf 953 von 955 Löchern überein, im Mittel auf 0,000 mm '
+        + 'und im Rest auf 0,06 mm. Ein Vorbehalt bleibt, ein anderer fällt fort: Stanzorte liegen jetzt so '
+        + 'genau wie der Scan, doch liest dieser quer zur Rolle 0,012 Zoll zu breit, so dass Lochbreiten auf '
+        + 'diesem Exemplar nicht als Befund taugen.'
 
     return [
-        'Chase: scanResolution 400 px/in ergänzt (die Zeilen des .bar-Bildes, interpoliert aus 180 lpi)',
+        'Chase: scanResolution bleibt, was die Analyse des Scans nennt (vorher 400 px/in aus dem .bar)',
+        'Chase: Facsimile des Scans eingehängt',
         'Chase: Papiergeschwindigkeit mit ihrer Herkunft belegt (roll_tempo 83 aus der .ann)',
-        'Chase: readFrom nennt den Lesenden, die Dateien, die Abtastung und den Vorbehalt gegen Notenenden'
+        'Chase: readFrom nennt den Scan, seine Auflösungen, den Versatz der Leiste und den Vorbehalt gegen Lochbreiten'
     ]
 }
 
 const enrichDyer = (): string[] => {
     const copy = copyBy(DYER)
     copy.production.company = { name: 'M. Welte & Söhne', sameAs: [] }
+    copy.scan = '/facsimiles/WelteT98_225'
     copy.readFrom.actor = person('Dyer, Julian')
     copy.readFrom.date = {
         '@value': '2015-05-01',
@@ -290,6 +299,7 @@ const enrichDyer = (): string[] => {
 
     return [
         'Dyer: Hersteller M. Welte & Söhne ergänzt',
+        'Dyer: Facsimile des Scans eingehängt',
         'Dyer: readFrom nennt den Lesenden, die Datei und das Datum der Abtastung',
         'Dyer: Rückspulbefehl und Eichtreppe in der Notiz der Quelle festgehalten'
     ]
