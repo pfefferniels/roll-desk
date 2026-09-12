@@ -22,17 +22,11 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import Ajv from 'ajv'
 
-// The checked-out library rather than the one in node_modules: the installed
-// copy is older than the multi-system format this edition is in. Its sources
-// import without extensions, which plain node cannot resolve, so this script
-// is run through vite-node.
-import { keyOf, TrackerBar } from '../../linked-rolls/src/TrackerBar'
-import { welteT100 } from '../../linked-rolls/src/systems/welteT100/bar'
-import { welteLicensee } from '../../linked-rolls/src/systems/welteLicensee/bar'
-import { welteT98 } from '../../linked-rolls/src/systems/welteT98/bar'
-import { track } from '../../linked-rolls/src/Quantity'
+// The library ships extensionless ESM imports, which plain node cannot
+// resolve, so this script is run through vite-node.
+import { keyOf, track, TrackerBar, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 
-const SCHEMA = new URL('../../linked-rolls/src/schema.json', import.meta.url)
+const SCHEMA = new URL('../node_modules/linked-rolls/lib/schema.json', import.meta.url)
 const TARGET = new URL('../../welte225.org/edition.jsonld', import.meta.url)
 
 // The script edits the stored JSON-LD document directly, which has no type of
