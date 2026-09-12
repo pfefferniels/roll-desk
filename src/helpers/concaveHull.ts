@@ -1,16 +1,15 @@
-import { Point } from "./kmeans";
+import { along, minus, Point } from "./drawing";
 
-export function chaikin(points: Point[], iterations = 2) {
-    let pts = points;
-    for (let k = 0; k < iterations; k++) {
-        const next = [];
-        for (let i = 0; i < pts.length; i++) {
-            const { x: x0, y: y0 } = pts[i];
-            const { x: x1, y: y1 } = pts[(i + 1) % pts.length];
-            next.push({ x: 0.75 * x0 + 0.25 * x1, y: 0.75 * y0 + 0.25 * y1 });
-            next.push({ x: 0.25 * x0 + 0.75 * x1, y: 0.25 * y0 + 0.75 * y1 });
-        }
-        pts = next;
-    }
-    return pts;
-}
+/**
+ * One pass of Chaikin's corner cutting: every corner is replaced by the
+ * two points a quarter and three quarters of the way along its edges, so
+ * the outline rounds off a little more with each pass.
+ */
+const cutCorners = (points: Point[]): Point[] =>
+    points.flatMap((corner, i) => {
+        const edge = minus(points[(i + 1) % points.length], corner);
+        return [along(corner, edge, 0.25), along(corner, edge, 0.75)];
+    });
+
+export const chaikin = (points: Point[], iterations = 2): Point[] =>
+    Array.from({ length: iterations }).reduce<Point[]>(cutCorners, points);

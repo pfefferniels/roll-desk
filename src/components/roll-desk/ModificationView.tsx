@@ -3,9 +3,24 @@ import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { chaikin } from "../../helpers/concaveHull";
-import { Point } from "../../helpers/kmeans";
+import { apart, cornersOf, middleOf, minus, along, padded, Point } from "../../helpers/drawing";
+import { Svg, svg } from "../../helpers/units";
 import { Arguable } from "./Arguable";
 import { boxOf, Translation } from "../../helpers/rollGeometry";
+
+/** A feature once it is known where on the drawing it was drawn, and how big. */
+interface PlacedFeature {
+    feature: AnyFeature
+    center: Point
+    diag: Svg
+}
+
+/** Features that sit close enough together to be spoken of as one group. */
+interface FeatureCluster {
+    centroid: Point
+    features: AnyFeature[]
+}
+
 
 const getFeatureBBox = (feature: AnyFeature, translation: Translation) =>
     boxOf(feature, translation)
@@ -74,16 +89,11 @@ const ModificationGroup = ({ features, metadata, ...svgProps }: ModificationGrou
 
     if (!view) return null;
 
-    const margin = 10;
+    const margin = svg(10);
 
     const allPoints = features
         .map((feature) => getFeatureBBox(feature, translation))
-        .flatMap((bbox) => [
-            { x: bbox.x - margin, y: bbox.y - margin },
-            { x: bbox.x + bbox.width + margin, y: bbox.y - margin },
-            { x: bbox.x + bbox.width + margin, y: bbox.y + bbox.height + margin },
-            { x: bbox.x - margin, y: bbox.y + bbox.height + margin },
-        ]);
+        .flatMap((bbox) => cornersOf(padded(bbox, margin)));
 
     const hullPoints = chaikin(convexHull(allPoints), 8);
     const path = hullToSvgPath(hullPoints);
@@ -150,25 +160,20 @@ export const ModificationView = ({
             const bbox = getFeatureBBox(feature, translation);
             if (!bbox) return null;
 
-            const minX = bbox.x;
-            const maxX = bbox.x + bbox.width;
-            const minY = bbox.y;
-            const maxY = bbox.y + bbox.height;
-
             return {
                 feature,
-                center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
-                diag: Math.hypot(maxX - minX, maxY - minY),
+                center: middleOf(bbox),
+                diag: svg(Math.hypot(bbox.width, bbox.height)),
             };
         })
-        .filter((entry): entry is { feature: AnyFeature; center: Point; diag: number } => !!entry);
+        .filter((entry): entry is PlacedFeature => !!entry);
 
     const averageDiag =
         positionedEdits.reduce((sum, { diag }) => sum + diag, 0) /
         (positionedEdits.length || 1);
-    const distanceThreshold = Math.max(500, averageDiag * 1.5);
+    const distanceThreshold = svg(Math.max(500, averageDiag * 1.5));
 
-    const clusters: { centroid: Point; features: AnyFeature[] }[] = [];
+    const clusters: FeatureCluster[] = [];
 
     positionedEdits
         .sort((a, b) => a.center.x - b.center.x)
@@ -177,9 +182,7 @@ export const ModificationView = ({
             let bestDistance = Infinity;
 
             clusters.forEach((cluster, idx) => {
-                const dx = cluster.centroid.x - center.x;
-                const dy = cluster.centroid.y - center.y;
-                const dist = Math.hypot(dx, dy);
+                const dist = apart(cluster.centroid, center);
                 if (dist < bestDistance) {
                     bestDistance = dist;
                     bestIndex = idx;
@@ -189,10 +192,8 @@ export const ModificationView = ({
             if (bestIndex >= 0 && bestDistance <= distanceThreshold) {
                 const cluster = clusters[bestIndex];
                 const count = cluster.features.length;
-                cluster.centroid = {
-                    x: (cluster.centroid.x * count + center.x) / (count + 1),
-                    y: (cluster.centroid.y * count + center.y) / (count + 1),
-                };
+                // The running mean, moved a share of the way towards the newcomer.
+                cluster.centroid = along(cluster.centroid, minus(center, cluster.centroid), 1 / (count + 1));
                 cluster.features.push(feature);
             } else {
                 clusters.push({ centroid: center, features: [feature] });

@@ -4,7 +4,23 @@ import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { chaikin } from "../../helpers/concaveHull";
-import { Point } from "../../helpers/kmeans";
+import { apart, cornersOf, middleOf, minus, along, padded, Point } from "../../helpers/drawing";
+import { getBoundingBox } from "../../helpers/getBoundingBox";
+import { Svg, svg } from "../../helpers/units";
+
+/** An edit once it is known where on the drawing it was drawn, and how big. */
+interface PlacedEdit {
+    edit: Edit
+    center: Point
+    diag: Svg
+}
+
+/** Edits that sit close enough together to be spoken of as one group. */
+interface EditCluster {
+    centroid: Point
+    edits: Edit[]
+}
+
 
 function cross(o: Point, a: Point, b: Point): number {
     return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -70,17 +86,12 @@ const MotivationComprehension = ({ edits, expanded, ...svgProps }: MotivationCom
 
     if (!view) return null;
 
-    const margin = 10;
+    const margin = svg(10);
 
     const allPoints = edits
         .map((edit) => getEditBBoxes(edit, view, translation).filter((bbox) => !!bbox))
         .flat()
-        .flatMap((bbox) => [
-            { x: bbox.x - margin, y: bbox.y - margin },
-            { x: bbox.x + bbox.width + margin, y: bbox.y - margin },
-            { x: bbox.x + bbox.width + margin, y: bbox.y + bbox.height + margin },
-            { x: bbox.x - margin, y: bbox.y + bbox.height + margin },
-        ]);
+        .flatMap((bbox) => cornersOf(padded(bbox, margin)));
 
     const hullPoints = chaikin(convexHull(allPoints), 8);
     const path = hullToSvgPath(hullPoints);
@@ -145,25 +156,22 @@ export const MotivationView = ({
             const bboxes = getEditBBoxes(edit, view, translation).filter((bbox) => !!bbox);
             if (!bboxes.length) return null;
 
-            const minX = Math.min(...bboxes.map((bbox) => bbox.x));
-            const maxX = Math.max(...bboxes.map((bbox) => bbox.x + bbox.width));
-            const minY = Math.min(...bboxes.map((bbox) => bbox.y));
-            const maxY = Math.max(...bboxes.map((bbox) => bbox.y + bbox.height));
+            const around = getBoundingBox(bboxes.flatMap(cornersOf));
 
             return {
                 edit,
-                center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
-                diag: Math.hypot(maxX - minX, maxY - minY),
+                center: middleOf(around),
+                diag: svg(Math.hypot(around.width, around.height)),
             };
         })
-        .filter((entry): entry is { edit: Edit; center: Point; diag: number } => !!entry);
+        .filter((entry): entry is PlacedEdit => !!entry);
 
     const averageDiag =
         positionedEdits.reduce((sum, { diag }) => sum + diag, 0) /
         (positionedEdits.length || 1);
-    const distanceThreshold = Math.max(200, averageDiag * 1.5);
+    const distanceThreshold = svg(Math.max(200, averageDiag * 1.5));
 
-    const clusters: { centroid: Point; edits: Edit[] }[] = [];
+    const clusters: EditCluster[] = [];
 
     positionedEdits
         .sort((a, b) => a.center.x - b.center.x)
@@ -172,9 +180,7 @@ export const MotivationView = ({
             let bestDistance = Infinity;
 
             clusters.forEach((cluster, idx) => {
-                const dx = cluster.centroid.x - center.x;
-                const dy = cluster.centroid.y - center.y;
-                const dist = Math.hypot(dx, dy);
+                const dist = apart(cluster.centroid, center);
                 if (dist < bestDistance) {
                     bestDistance = dist;
                     bestIndex = idx;
@@ -184,10 +190,8 @@ export const MotivationView = ({
             if (bestIndex >= 0 && bestDistance <= distanceThreshold) {
                 const cluster = clusters[bestIndex];
                 const count = cluster.edits.length;
-                cluster.centroid = {
-                    x: (cluster.centroid.x * count + center.x) / (count + 1),
-                    y: (cluster.centroid.y * count + center.y) / (count + 1),
-                };
+                // The running mean, moved a share of the way towards the newcomer.
+                cluster.centroid = along(cluster.centroid, minus(center, cluster.centroid), 1 / (count + 1));
                 cluster.edits.push(edit);
             } else {
                 clusters.push({ centroid: center, edits: [edit] });

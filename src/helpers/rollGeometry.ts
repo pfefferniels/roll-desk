@@ -12,24 +12,14 @@ import {
     TrackRole,
     VerticalSpan
 } from 'linked-rolls'
+import { Band, Box } from './drawing'
 import { Svg, svg } from './units'
+
+export type { Band, Box }
 
 export interface LaneHeights {
     note: Svg
     expression: Svg
-}
-
-export interface Box {
-    x: Svg
-    y: Svg
-    width: Svg
-    height: Svg
-}
-
-/** A horizontal stripe of the drawing, which is what a set of lanes occupies. */
-export interface Band {
-    y: Svg
-    height: Svg
 }
 
 export interface Dimension {

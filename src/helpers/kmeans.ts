@@ -1,3 +1,4 @@
+/** A point in the plane the clustering works over, in whatever units the caller uses. */
 export type Point = { x: number; y: number };
 
 export interface KMeansResult {

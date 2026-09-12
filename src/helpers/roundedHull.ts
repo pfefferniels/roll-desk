@@ -3,8 +3,11 @@
 // ported to Typescript and slightly adapted.
 
 import { polygonHull } from 'd3-polygon'
+import { Point } from './drawing'
+import { Svg } from './units'
 
-type Point = [number, number]
+/** The vendored maths below works in pairs, so the drawing's points are laid out as such. */
+type Pair = [number, number]
 
 // Vector operations, taken from
 // http://bl.ocks.org/hollasch/f70f1fe7700f092b5a505e3efd1d9232
@@ -20,14 +23,14 @@ const vecSum = function (pv1: number[], pv2: number[]) {
 }
 
 // Returns the unit normal to the line segment from p0 to p1.
-const unitNormal = function (p0: Point, p1: Point) {
+const unitNormal = function (p0: Pair, p1: Pair) {
   const n = [p0[1] - p1[1], p1[0] - p0[0]]
   const nLength = Math.sqrt(n[0] * n[0] + n[1] * n[1])
   return [n[0] / nLength, n[1] / nLength]
 }
 
 // Returns the path for a rounded hull around a single point (a circle).
-const roundedHull1 = function (polyPoints: Point[], hullPadding: number) {
+const roundedHull1 = function (polyPoints: Pair[], hullPadding: number) {
   const p1 = [polyPoints[0][0], polyPoints[0][1] - hullPadding]
   const p2 = [polyPoints[0][0], polyPoints[0][1] + hullPadding]
 
@@ -38,7 +41,7 @@ const roundedHull1 = function (polyPoints: Point[], hullPadding: number) {
 }
 
 // Returns the path for a rounded hull around two points (a "capsule" shape).
-const roundedHull2 = function (polyPoints: Point[], hullPadding: number) {
+const roundedHull2 = function (polyPoints: Pair[], hullPadding: number) {
   const offsetVector = vecScale(hullPadding, unitNormal(polyPoints[0], polyPoints[1]))
   const invOffsetVector = vecScale(-1, offsetVector)
   // around that note coordinates are not at the centroids
@@ -55,7 +58,7 @@ const roundedHull2 = function (polyPoints: Point[], hullPadding: number) {
 }
 
 // Returns the SVG path data string representing the polygon, expanded and rounded.
-const roundedHullN = function (polyPoints: Point[], hullPadding: number) {
+const roundedHullN = function (polyPoints: Pair[], hullPadding: number) {
 
   // Handle special cases
   if (!polyPoints || polyPoints.length < 1) return ''
@@ -95,12 +98,29 @@ const roundedHullN = function (polyPoints: Point[], hullPadding: number) {
  * @returns path as a string which can be used for the `@d` element 
  * of SVG objects.
  */
-export function roundedHull(points: Point[], hullPadding = 200) {
-  if (points.length === 1) {
-    return roundedHull1(points, hullPadding)
-  } else if (points.length === 2) {
-    return roundedHull2(points, hullPadding)
-  } else {
-    return roundedHullN(polygonHull(points)!, hullPadding)
+/**
+ * The two ends of a set of points that lie on one line. Ordering them by
+ * x and then by y puts the ends first and last, whichever way the line runs.
+ */
+const extremes = (pairs: Pair[]): Pair[] => {
+  const sorted = [...pairs].sort(([ax, ay], [bx, by]) => ax - bx || ay - by)
+  return [sorted[0], sorted[sorted.length - 1]]
+}
+
+export function roundedHull(points: Point[], hullPadding: Svg) {
+  const pairs: Pair[] = points.map(({ x, y }) => [x, y])
+
+  if (pairs.length === 1) {
+    return roundedHull1(pairs, hullPadding)
   }
+  if (pairs.length === 2) {
+    return roundedHull2(pairs, hullPadding)
+  }
+
+  // Points that lie on one line enclose no area, so d3 finds no polygon
+  // in them and the hull is the capsule around the two furthest apart.
+  const polygon = polygonHull(pairs)
+  return polygon
+    ? roundedHullN(polygon, hullPadding)
+    : roundedHull2(extremes(pairs), hullPadding)
 }

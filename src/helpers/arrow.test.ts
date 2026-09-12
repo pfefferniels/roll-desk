@@ -1,25 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { arrowLine, Boxed, centreOf, LEAST_LENGTH, Point } from './arrow'
+import { add } from 'linked-rolls'
+import { arrowLine, Boxed, centreOf, LEAST_LENGTH } from './arrow'
+import { Point, point } from './drawing'
+import { svg } from './units'
 
 const numbersIn = (d: string): number[] =>
     (d.match(/-?\d+(\.\d+)?(e-?\d+)?/g) ?? []).map(Number)
 
 const startOf = (d: string): Point => {
     const [x, y] = numbersIn(d)
-    return { x, y }
+    return point(svg(x), svg(y))
 }
 
 const endOf = (d: string): Point => {
     const values = numbersIn(d)
-    return { x: values[values.length - 2], y: values[values.length - 1] }
+    return point(svg(values[values.length - 2]), svg(values[values.length - 1]))
 }
 
 const box = (x: number, y: number, width: number, height: number): Boxed =>
-    ({ x, y, width, height })
+    ({ x: svg(x), y: svg(y), width: svg(width), height: svg(height) })
 
-const inside = (point: Point, of: Boxed): boolean =>
-    point.x > of.x && point.x < of.x + of.width
-    && point.y > of.y && point.y < of.y + of.height
+const inside = (at: Point, of: Boxed): boolean =>
+    at.x > of.x && at.x < add(of.x, of.width)
+    && at.y > of.y && at.y < add(of.y, of.height)
 
 /**
  * Every arrangement two perforations can fall in. A command is a wide,
