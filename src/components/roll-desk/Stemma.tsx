@@ -30,37 +30,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
     useEffect(() => {
         if (!versions || !view) return
 
-        const nodes: Node[] = []
-
-        view.withGenerations()
-            .forEach(version => {
-                const troubles = problemsOfVersion(problems, version.id).length
-                nodes.push({
-                    id: version.id,
-                    label: version.siglum,
-                    type: version.versionType,
-                    system: trackerBarOf(version.system)?.name,
-                    generation: version.generation,
-                    overlayInfo: troubles > 0
-                        ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
-                        : null
-                })
-            })
-
-        const links: Link[] = versions
-            .filter(v => v.basedOn !== undefined)
-            .map((version) => {
-                const basedOn = idOf(version.basedOn!)
-
-                const parent = versions.find(other => other.id === basedOn)
-
-                return {
-                    source: nodes.find(n => n.id === version.id) || 'unknown',
-                    target: nodes.find(n => n.id === basedOn) || 'unknown',
-                    transfer: parent !== undefined
-                        && systemIdOf(parent.system) !== systemIdOf(version.system)
-                }
-            })
+        const { nodes, links } = graphOf(view.withGenerations(), problems)
 
         setLinks(links)
         calculatePositions(nodes, links, svgWidth, svgHeight).then(setNodes)
@@ -173,6 +143,12 @@ export interface Node extends d3.SimulationNodeDatum {
     type: VersionType;
     /** The reproducing system the version is coded for, named short. */
     system?: string
+    /**
+     * Whether the version names its system in the drawing. A version
+     * inherits the system of the one it is based on, so only the root
+     * and a version that changes system say which one they are in.
+     */
+    namesSystem?: boolean
     overlayInfo?: ReactNode
 }
 
@@ -187,6 +163,65 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
      */
     transfer?: boolean
 }
+
+const sharesSystem = (a: Version, b: Version) =>
+    systemIdOf(a.system) === systemIdOf(b.system)
+
+/** The versions and their derivations, as the graph the stemma draws. */
+export const graphOf = (
+    versions: readonly (Version & { generation: number })[],
+    problems: readonly ConstraintProblem[]
+): { nodes: Node[], links: Link[] } => {
+    const parentOf = (version: Version) => version.basedOn === undefined
+        ? undefined
+        : versions.find(other => other.id === idOf(version.basedOn!))
+
+    const nodes: Node[] = versions.map(version => {
+        const troubles = problemsOfVersion(problems, version.id).length
+        const parent = parentOf(version)
+
+        return {
+            id: version.id,
+            label: version.siglum,
+            type: version.versionType,
+            system: trackerBarOf(version.system)?.name,
+            namesSystem: parent === undefined || !sharesSystem(parent, version),
+            generation: version.generation,
+            overlayInfo: troubles > 0
+                ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
+                : null
+        }
+    })
+
+    const nodeOf = (id: string) => nodes.find(node => node.id === id) || 'unknown'
+
+    const links: Link[] = versions.flatMap(version => {
+        const parent = parentOf(version)
+        if (!parent) return []
+
+        return [{
+            source: nodeOf(version.id),
+            target: nodeOf(parent.id),
+            transfer: !sharesSystem(parent, version)
+        }]
+    })
+
+    return { nodes, links }
+}
+
+export const radiusOf = (node: Node) =>
+    node.radius ?? (node.type === 'edition' ? 32 : 26)
+
+/**
+ * Half the caption and the gap to the next one. Text cannot be
+ * measured before it is drawn, so the width is estimated at the
+ * 5.8 px a character of 10 px sans-serif takes on average.
+ */
+const captionHalfWidth = (node: Node) =>
+    node.namesSystem && node.system ? node.system.length * 2.9 + 4 : 0
+
+/** What a node claims of its row, caption included. */
+const spaceFor = (node: Node) => Math.max(radiusOf(node), captionHalfWidth(node))
 
 export const calculatePositions = async (
     nodes: Node[],
@@ -223,7 +258,7 @@ export const calculatePositions = async (
         )
         .force(
             "collide",
-            d3.forceCollide<Node>(d => d.radius ?? 40)
+            d3.forceCollide<Node>(spaceFor)
                 .strength(1)
         );
 
@@ -256,10 +291,12 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                 }}
                 ref={elRef}
             >
+                {node.system && <title>{node.system}</title>}
+
                 <circle
                     cx={node.x || 10}
                     cy={node.y || 10}
-                    r={node.radius || (node.type === 'edition' ? 32 : 26)}
+                    r={radiusOf(node)}
                     fill={node.type === 'edition' ? 'darkslategray' : '#8FB1FF'}
                     strokeWidth={highlight ? 3 : 0}
                     stroke='black'
@@ -285,13 +322,16 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     )}
                 </text>
 
-                {node.system && (
+                {node.system && node.namesSystem && (
                     <text
                         x={node.x || 10}
-                        y={(node.y || 10) + (node.radius || (node.type === 'edition' ? 32 : 26)) + 12}
+                        y={(node.y || 10) + radiusOf(node) + 12}
                         textAnchor="middle"
                         fontSize={10}
                         fill="#555"
+                        stroke="white"
+                        strokeWidth={3}
+                        paintOrder="stroke"
                     >
                         {node.system}
                     </text>

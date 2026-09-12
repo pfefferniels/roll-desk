@@ -112,6 +112,33 @@ export const Legend = () => {
           (addition or removal of symbols) observed between two versions.
         `}
       />
+
+      <LegendRow
+        symbol={
+          <svg
+            width={width + shadowMargin}
+            height={width + shadowMargin}
+            className="legend"
+          >
+            <line
+              x1={shadowMargin / 2}
+              y1={width + shadowMargin / 2}
+              x2={width + shadowMargin / 2}
+              y2={shadowMargin / 2}
+              stroke="#b45309"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+            />
+          </svg>
+        }
+        description="Transfer"
+        help={`
+          A derivation that crosses to another reproducing system re-spells the
+          whole expression vocabulary, so the version names the system it is in.
+          A version that stays on the system it was based on names nothing and
+          simply inherits it.
+        `}
+      />
     </LegendPopover>
   )
 }
