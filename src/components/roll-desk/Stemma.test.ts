@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, graphOf, linkMarkAt, Node, radiusOf } from './Stemma'
+import { calculatePositions, fitOf, graphOf, linkMarkAt, Node, radiusOf } from './Stemma'
 import { point } from '../../helpers/drawing'
 import { svg } from '../../helpers/units'
 
@@ -72,6 +72,21 @@ describe('derivations held as hypotheses', () => {
 
         expect(graphOf(contaminated, []).links.map(link => [(link.target as Node).id, link.principal, link.certainty, link.derivation, link.believed]))
             .toEqual([['A', true, 'true', 0, false], ['B', false, 'possible', 1, true]])
+    })
+})
+
+describe('fitting the stemma into its drawing', () => {
+    it('scales by whichever side leaves less room, about the middle of the nodes', () => {
+        const nodes = [
+            { id: 'A', label: 'A', generation: 0, x: 0, y: 0 },
+            { id: 'B', label: 'B', generation: 1, x: 100, y: 200 }
+        ]
+
+        expect(fitOf(nodes, 300, 600)).toEqual({ scale: 2.2, midX: 50, midY: 100 })
+    })
+
+    it('leaves a drawing without nodes as it is', () => {
+        expect(fitOf([], 300, 600)).toEqual({ scale: 1, midX: 0, midY: 0 })
     })
 })
 

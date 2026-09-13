@@ -38,6 +38,8 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
         return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
     }, [versions, view, problems, svgHeight])
 
+    const fit = useMemo(() => fitOf(nodes, svgWidth, svgHeight), [nodes, svgWidth, svgHeight])
+
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
 
@@ -54,29 +56,10 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
 
         svg.call(zoom)
 
-        const xs = nodes.map(n => n.x ?? 0)
-        const ys = nodes.map(n => n.y ?? 0)
-        const minX = Math.min(...xs)
-        const maxX = Math.max(...xs)
-        const minY = Math.min(...ys)
-        const maxY = Math.max(...ys)
-
-        const nodesWidth = maxX - minX || 1
-        const nodesHeight = maxY - minY || 1
-
-        const margin = 40
-        const scale = Math.min(
-            (svgWidth - 2 * margin) / nodesWidth,
-            (svgHeight - 2 * margin) / nodesHeight
-        )
-
-        const midX = (minX + maxX) / 2
-        const midY = (minY + maxY) / 2
-
         const initialTransform = d3.zoomIdentity
             .translate(svgWidth / 2, svgHeight / 2)
-            .scale(scale)
-            .translate(-midX, -midY)
+            .scale(fit.scale)
+            .translate(-fit.midX, -fit.midY)
 
         // apply initial “fit all nodes” transform
         // eslint-disable-next-line @typescript-eslint/unbound-method -- d3 means zoom.transform to be passed to `call`
@@ -85,7 +68,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
         return () => {
             svg.on(".zoom", null)
         }
-    }, [nodes, svgWidth, svgHeight])
+    }, [nodes, fit, svgWidth, svgHeight])
 
     return (
         <Box sx={{ position: 'relative', width: svgWidth, height: svgHeight, flexShrink: 0 }}>
@@ -115,6 +98,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
                     <LinkContainer
                         links={links}
                         positionedNodes={nodes}
+                        markScale={1 / fit.scale}
                         onVersionClick={onClick}
                     />
 
@@ -235,6 +219,20 @@ export const graphOf = (
     })
 
     return { nodes, links }
+}
+
+/** The scale and the centre that fit every node into the drawing, with a margin left around them. */
+export const fitOf = (nodes: readonly Node[], width: number, height: number, margin = 40) => {
+    const xs = nodes.map(node => node.x ?? 0)
+    const ys = nodes.map(node => node.y ?? 0)
+    if (xs.length === 0) return { scale: 1, midX: 0, midY: 0 }
+
+    const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+    return {
+        scale: Math.min((width - 2 * margin) / (maxX - minX || 1), (height - 2 * margin) / (maxY - minY || 1)),
+        midX: (minX + maxX) / 2,
+        midY: (minY + maxY) / 2
+    }
 }
 
 /** Where the mark of a derivation's belief sits: beside the middle of the link, clear of it by the distance given. */
@@ -400,25 +398,41 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
     )
 }
 
+interface BeliefMarkProps {
+    at: Point
+    path: Path
+    /** How much the mark is enlarged against the drawing. */
+    scale: number
+}
+
 /** The mark of the belief a derivation is held under, centred on the point given. */
-const BeliefMark = ({ at, path }: { at: Point, path: Path }) => (
-    <Arguable asSVG={{ buttonPlacement: { x: at.x - 10, y: at.y - 10 } }} path={path}>
-        {null}
-    </Arguable>
+const BeliefMark = ({ at, path, scale }: BeliefMarkProps) => (
+    <g transform={`translate(${at.x} ${at.y}) scale(${scale})`}>
+        <Arguable asSVG={{ buttonPlacement: { x: -10, y: -10 } }} path={path}>
+            {null}
+        </Arguable>
+    </g>
 )
 
-/** How far the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
-const markClearance = svg(22)
+/** How far on the screen the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
+const markClearance = 16
 
 interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
+    /**
+     * How much a mark is enlarged against the drawing: the inverse of the
+     * scale the drawing is fitted at, so that a mark keeps a size one can
+     * click however many generations the stemma has to fit.
+     */
+    markScale: number
     onVersionClick: (versionId: string) => void
 }
 
 export const LinkContainer = ({
     positionedNodes,
     links,
+    markScale,
     onVersionClick,
 }: LinkContainerProps) => {
     const { selection, setSelection } = useSelection()
@@ -441,8 +455,9 @@ export const LinkContainer = ({
                 const versionPath = view?.getPath(source.id)
                 const mark = link.believed && versionPath && (
                     <BeliefMark
-                        at={linkMarkAt(point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y)), markClearance)}
+                        at={linkMarkAt(point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y)), svg(markClearance * markScale))}
                         path={[...versionPath, 'basedOn', link.derivation]}
+                        scale={markScale}
                     />
                 )
 
