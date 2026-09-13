@@ -114,7 +114,7 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, 
                 alignItems: 'center',
             }}>
                 <span>{date}</span>
-                <span>{copy.keeper?.name}</span>
+                <span>{[copy.siglum, copy.keeper?.name].filter(Boolean).join(' · ')}</span>
             </div>
         </div>
     )

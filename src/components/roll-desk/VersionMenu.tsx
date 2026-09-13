@@ -19,7 +19,7 @@ import { VersionCreationDialog } from "./VersionCreationDialog"
 import { isMotivation } from "../../helpers/motivation"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "./Arguable"
-import { heldBy } from "../../helpers/heldBy"
+import { nameOf } from "../../helpers/names"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {
@@ -85,7 +85,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
     const tolerance = derivationToleranceOf(version, edition)
     const principal = principalDerivationOf(version)
-    const sigilOf = (id: string) => edition.versions.find(v => v.id === id)?.siglum ?? 'unknown'
+    const sigilOf = (id: string) => nameOf(view, id) ?? 'unknown'
 
     /** The derivations stated beside the principal one, where each stands in the list. */
     const hypotheses = (version.basedOn ?? [])
@@ -94,10 +94,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
     const witnesses = witnessesOf(view, versionId)
     const reservations = reservationsAboutVersion(view, version)
-    const copyLabelOf = (copyId: string) => {
-        const witness = edition.copies.find(candidate => candidate.id === copyId)
-        return witness ? heldBy(witness) : copyId
-    }
+    const copyLabelOf = (copyId: string) => nameOf(view, copyId) ?? copyId
 
     return (
         <>

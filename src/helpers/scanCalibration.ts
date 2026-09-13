@@ -1,5 +1,5 @@
 import { calibrationOf, RollCopy, TrackCalibration } from "linked-rolls"
-import { heldBy } from "./heldBy"
+import { copyLabel, whichCopy } from "./names"
 
 /**
  * The drawing counts a scan's columns from the bass edge upwards, the
@@ -30,10 +30,11 @@ const scanRunsBackwards = (copy: RollCopy): boolean => {
  * somewhere other than here.
  */
 export const refusalToDrawScans = (copies: readonly RollCopy[]): string | undefined => {
-    const keepers = copies.filter(scanRunsBackwards).map(heldBy)
-    if (keepers.length === 0) return undefined
+    const refused = copies.filter(scanRunsBackwards)
+    const [first, ...others] = refused
+    if (!first) return undefined
 
-    return keepers.length === 1
-        ? `The scan of the copy held by ${keepers[0]} counts its columns against the tracks, so it is not drawn.`
-        : `The scans of the copies held by ${keepers.join(', ')} count their columns against the tracks, so they are not drawn.`
+    return others.length === 0
+        ? `The scan of the copy ${whichCopy(first)} counts its columns against the tracks, so it is not drawn.`
+        : `The scans of the copies ${refused.map(copyLabel).join(', ')} count their columns against the tracks, so they are not drawn.`
 }

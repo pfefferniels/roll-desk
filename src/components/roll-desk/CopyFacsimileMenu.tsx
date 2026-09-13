@@ -13,7 +13,7 @@ import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 import { FeatureConditionDialog } from "./FeatureConditionDialog"
 import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
-import { heldBy } from "../../helpers/heldBy"
+import { whichCopy } from "../../helpers/names"
 
 export type FacsimileSelection = EventDimension | AnyFeature
 
@@ -206,8 +206,8 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 <DialogContent>
                     <DialogContentText>
                         {carriedAlone > 0
-                            ? `Removing the copy held by ${heldBy(copy)} also removes the ${carriedAlone} symbol(s) only this copy carries from the versions.`
-                            : `No symbol of the versions depends on the copy held by ${heldBy(copy)} alone.`}
+                            ? `Removing the copy ${whichCopy(copy)} also removes the ${carriedAlone} symbol(s) only this copy carries from the versions.`
+                            : `No symbol of the versions depends on the copy ${whichCopy(copy)} alone.`}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>

@@ -5,6 +5,7 @@ import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EditionContext } from "../../providers/EditionContext"
 import { Arguable } from "./Arguable"
+import { nameOf } from "../../helpers/names"
 
 /**
  * The versions a copy is held to carry where its features are not read
@@ -20,7 +21,7 @@ export const CarriedVersions = ({ copyId }: { copyId: string }) => {
     if (!edition || !view || !copy) return null
 
     const statements = copy.carries ?? []
-    const sigilOf = (id: string) => edition.versions.find(version => version.id === id)?.siglum ?? 'unknown'
+    const sigilOf = (id: string) => nameOf(view, id) ?? 'unknown'
     const unstated = edition.versions.filter(version => !statements.some(statement => idOf(statement) === version.id))
     const copyPath = view.getPath(copyId) ?? []
 

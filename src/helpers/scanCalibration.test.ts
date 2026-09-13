@@ -67,6 +67,10 @@ describe('what an imported document is told about its scans', () => {
         expect(refusal).not.toContain('Museum')
     })
 
+    it('names a copy by its siglum where it has one', () => {
+        expect(refusalToDrawScans([{ ...copyWith(-25, 'Stanford'), siglum: 'S1' }])).toContain('the copy S1 counts')
+    })
+
     it('names them all when several are left out', () => {
         const refusal = refusalToDrawScans([copyWith(-25, 'Stanford'), copyWith(-30, 'Freiburg')])
 

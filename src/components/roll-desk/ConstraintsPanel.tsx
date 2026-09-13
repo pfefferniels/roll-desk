@@ -1,5 +1,5 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnyPerforation, AnySymbol, CarriageProblem, ConstraintProblem, Path, PlacementRelation, isPerforation } from "linked-rolls"
+import { AnyPerforation, AnySymbol, CarriageProblem, ConstraintProblem, Path, PlacementRelation, RollCopy, isPerforation } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSnapshot } from "../../hooks/useSnapshot"
@@ -10,7 +10,7 @@ import {
 import { Arguable } from "./Arguable"
 import { LegendPopover } from "./Legend"
 import { ConstraintLegend } from "./ConstraintLegend"
-import { heldBy } from "../../helpers/heldBy"
+import { nameOf, whichCopy } from "../../helpers/names"
 
 const Section = ({ title, empty, children }: { title: string; empty: string; children: ReactNode[] }) => (
     <List dense subheader={<ListSubheader disableSticky>{title}</ListSubheader>}>
@@ -83,13 +83,12 @@ const carriageLabels: Record<CarriageProblem['problem'], string> = {
 
 /** The copies whose statements of the versions they carry cannot stand, or nothing where none is. */
 const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) => {
-    const { edition } = useContext(EditionContext)
-    if (!edition || problems.length === 0) return null
+    const { view } = useContext(EditionContext)
+    if (!view || problems.length === 0) return null
 
-    const sigilOf = (id: string) => edition.versions.find(version => version.id === id)?.siglum ?? id
-    const holderOf = (id: string) => {
-        const copy = edition.copies.find(candidate => candidate.id === id)
-        return copy ? heldBy(copy) : id
+    const copyNamed = (id: string) => {
+        const copy = view.get<RollCopy>(id)
+        return copy ? whichCopy(copy) : id
     }
 
     return (
@@ -97,8 +96,8 @@ const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) =>
             {problems.map(problem => (
                 <ListItem key={`${problem.copy}-${problem.version}-${problem.problem}`}>
                     <ListItemText
-                        primary={`The copy held by ${holderOf(problem.copy)} ${carriageLabels[problem.problem]}`}
-                        secondary={sigilOf(problem.version)}
+                        primary={`The copy ${copyNamed(problem.copy)} ${carriageLabels[problem.problem]}`}
+                        secondary={nameOf(view, problem.version) ?? problem.version}
                     />
                 </ListItem>
             ))}
