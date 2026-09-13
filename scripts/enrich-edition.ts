@@ -24,7 +24,7 @@ import Ajv from 'ajv'
 
 // The library ships extensionless ESM imports, which plain node cannot
 // resolve, so this script is run through vite-node.
-import { keyOf, track, TrackerBar, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
+import { keyOf, principalDerivationOf, track, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 
 const SCHEMA = new URL('../node_modules/linked-rolls/lib/schema.json', import.meta.url)
 const TARGET = new URL('../../welte225.org/edition.jsonld', import.meta.url)
@@ -124,7 +124,21 @@ const versionBy = (siglum: string): Json => {
 const versionById = (id: string): Json | undefined =>
     document.versions.find((v: Json) => v['@id'] === id)
 
-const editsOf = (version: Json): Json[] => version.edits
+/**
+ * The derivation the version's text is read against. A stored derivation
+ * carries its belief under the key the library reads, so the library's rule
+ * applies to it as it stands.
+ */
+const principalOf = (version: Json): Json | undefined =>
+    principalDerivationOf(version as unknown as Version) as unknown as Json | undefined
+
+const parentOf = (version: Json): Json | undefined => {
+    const principal = principalOf(version)
+    return principal && versionById(principal['@id'])
+}
+
+/** The edits the version states. One that leaves its text unstated, as C_S does, states none. */
+const editsOf = (version: Json): Json[] => version.edits ?? []
 
 const insertionsOf = (version: Json): Json[] =>
     editsOf(version).flatMap((edit: Json) => edit.insert ?? [])
@@ -171,9 +185,9 @@ const dropInsertions = (version: Json, ids: ReadonlySet<string>) => {
         .map((edit: Json) => (edit.insert.length === 0 ? withoutKey(edit, 'insert') : edit))
 }
 
-/** Drops the named deletions from every version, pruning edits left empty. */
+/** Drops the named deletions from every version that states its edits, pruning edits left empty. */
 const dropDeletions = (ids: ReadonlySet<string>) =>
-    document.versions.forEach((version: Json) => {
+    document.versions.filter((version: Json) => version.edits).forEach((version: Json) => {
         version.edits = editsOf(version)
             .map((edit: Json) => ({ ...edit, delete: (edit.delete ?? []).filter((id: string) => !ids.has(id)) }))
             .filter((edit: Json) => (edit.insert?.length ?? 0) > 0 || edit.delete.length > 0)
@@ -194,7 +208,7 @@ const dropDeletionIn = (version: Json, id: string) => {
 /** The symbols a version shows: what it and its ancestors insert, less everything struck along the way. */
 const snapshotOf = (siglum: string): Json[] => {
     const lineage: Json[] = []
-    for (let version: Json | undefined = versionBy(siglum); version; version = version.basedOn && versionById(version.basedOn['@id'])) {
+    for (let version: Json | undefined = versionBy(siglum); version; version = parentOf(version)) {
         lineage.unshift(version)
     }
     const struck = new Set<string>()
@@ -480,8 +494,7 @@ const WITNESSED: Record<string, string> = { W: 'A1', S1: 'B', S2: 'C', L: 'D1', 
 /** A version and its ancestors, the root last. */
 const ancestryOf = (siglum: string): string[] => {
     const line: string[] = []
-    for (let version: Json | undefined = versionBy(siglum); version;
-        version = version.basedOn && versionById(version.basedOn['@id'])) {
+    for (let version: Json | undefined = versionBy(siglum); version; version = parentOf(version)) {
         line.push(version.siglum)
     }
     return line
@@ -555,7 +568,8 @@ const recollate = (): string[] => {
     document.creation.collationTolerance =
         { toleranceStart: COLLATION_TOLERANCE, toleranceEnd: COLLATION_TOLERANCE }
     document.versions.forEach((version: Json) => {
-        if (version.basedOn) version.basedOn.collationTolerance =
+        const principal = principalOf(version)
+        if (principal) principal.collationTolerance =
             { toleranceStart: COLLATION_TOLERANCE, toleranceEnd: COLLATION_TOLERANCE }
     })
 
@@ -628,10 +642,10 @@ const splitOffStanfordUnicum = (): string[] => {
         siglum: 'B1',
         system: JSON.parse(JSON.stringify(b.system)),
         versionType: 'unicum',
-        basedOn: {
+        basedOn: [{
             '@id': b['@id'],
             collationTolerance: { toleranceStart: COLLATION_TOLERANCE, toleranceEnd: COLLATION_TOLERANCE }
-        },
+        }],
         motivations: [{
             '@type': 'motivation', '@id': 'bass-crescendo-added',
             note: 'Zusätzliches Crescendo im Bass'
@@ -646,7 +660,7 @@ const splitOffStanfordUnicum = (): string[] => {
     // Why these readings sit here and not in B is an assumption about the
     // derivation, not a reason for the edits, so it belongs on the derivation.
     const b1 = versionBy('B1')
-    b1.basedOn['@annotation'] = believing('likely', [argued(
+    principalOf(b1)!['@annotation'] = believing('likely', [argued(
         'Diese Lesarten trägt allein Stanford-1. Hingen sie an der Fassung B, so nähme die Fassung C wirksame '
         + 'Differenzierungen zurück, darunter ein vollständiges Crescendo-Paar. Da bestehende Differenzierungen '
         + 'nicht mutwillig zurückgenommen werden, sind sie die eigene Schicht dieses Exemplars. Eine von ihnen, '
@@ -670,7 +684,7 @@ const nameTheWiduchLayer = (): string[] => {
     // Fifty-two readings with fifty-two local reasons: one motivation over all
     // of them would say nothing about any. Why they sit here rather than in the
     // archetype is a statement about the derivation, and goes there.
-    a1.basedOn['@annotation'] = believing('likely', [argued(
+    principalOf(a1)!['@annotation'] = believing('likely', [argued(
         'Zweiundfünfzig dieser Lesarten trägt allein das Exemplar Widuch. Stünden sie in der Fassung A, so ließe '
         + 'die Fassung B ebenso viele wirksame Differenzierungen fallen. Da bestehende Differenzierungen nicht '
         + 'mutwillig zurückgenommen werden, sind sie die eigene Schicht dieses Exemplars, und die Fassung A '
@@ -946,7 +960,7 @@ document.versions.forEach((version: Json) => {
     const bare = editsOf(version).filter((edit: Json) => !edit.motivation && !edit.editType).length
     console.log(`    ${version.siglum.padEnd(3)} ${String(editsOf(version).length).padStart(4)} Edits, `
         + `${String(snapshot.length).padStart(4)} Symbole, ${bare} ohne Begründung`
-        + `  [${version.versionType}, ${version.system.name}]`)
+        + `  [${version.versionType ?? 'Typ offen'}, ${version.system.name}]`)
 })
 
 const validate = new Ajv({ formats: { date: /^\d{4}-\d{1,2}-\d{1,2}$/ } })
