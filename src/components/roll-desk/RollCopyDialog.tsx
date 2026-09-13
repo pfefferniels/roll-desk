@@ -1,13 +1,14 @@
 import { Delete, MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
+import { addCopy, Agent, assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect, tempoStartOf } from "./ProductionFields";
 import { featureSourceOf, noSource, SourceFields, SourceInput, sourceInputOf } from "./SourceFields";
 import { ReservationList } from "./Reservations";
+import { CarriedVersions } from "./CarriedVersions";
 
 interface RollCopyDialogProps {
     open: boolean
@@ -94,16 +95,16 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     useEffect(() => {
         if (!copy) return
-        setKeeper(copy.keeper.name)
-        setKeeperAuthority(copy.keeper.sameAs[0] ?? '')
+        setKeeper(copy.keeper?.name ?? '')
+        setKeeperAuthority(copy.keeper?.sameAs[0] ?? '')
         setSource(sourceInputOf(copy.readFrom))
     }, [copy])
 
     useEffect(() => {
         if (!open) {
             setFiles([])
-            setKeeper(copy?.keeper.name ?? '')
-            setKeeperAuthority(copy?.keeper.sameAs[0] ?? '')
+            setKeeper(copy?.keeper?.name ?? '')
+            setKeeperAuthority(copy?.keeper?.sameAs[0] ?? '')
             setSiglum('')
             setSystem(editionBar)
             setSpeed(noSpeed)
@@ -131,21 +132,58 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     const rollFile = files.find(isRollFile)
 
+    /** The keeper as typed, or nothing where no name is given. */
+    const keeperStated = (): Agent | undefined => {
+        const name = keeper.trim()
+        if (!name) return undefined
+        return { name, sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : [] }
+    }
+
+    /** The speed as typed, taken over with its reason where it came from a suggestion. */
+    const speedStated = (): ObjectAssumption<PaperSpeed> | undefined => {
+        const paperSpeed = paperSpeedOf(speed)
+        if (!paperSpeed) return undefined
+        return !speedTyped && suggestion ? adopted(suggestion) : assignObject(paperSpeed)
+    }
+
     const handleUpload = async () => {
         if (!edition) return
 
         // A copy already in the edition can have its source stated
         // without reading its file in again.
         if (copy && !rollFile) {
-            const stated = featureSourceOf(source)
+            const stated = featureSourceOf(source, copy.readFrom)
             apply(stated ? stateSource(copy.id, stated) : clearSource(copy.id))
             onDone?.(copy.id)
             onClose()
             return
         }
 
+        // A copy nobody can reach, known only from a recording, has no
+        // file to read and no version of its own; what it carries is stated.
         if (!rollFile) {
-            setError('Please select a roll file to upload.')
+            const stated = featureSourceOf(source)
+            if (!stated) {
+                setError('Please select a roll file, or state the source of a copy known without one.')
+                return
+            }
+            const speedOfCopy = speedStated()
+            const keeperOfCopy = keeperStated()
+            const known: RollCopy = {
+                type: 'RollCopy',
+                id: v4(),
+                ops: [],
+                measurements: {},
+                conditions: [],
+                modifications: [],
+                features: [],
+                production: { system: systemOf(system), ...(speedOfCopy && { speed: speedOfCopy }) },
+                readFrom: stated,
+                ...(keeperOfCopy && { keeper: keeperOfCopy })
+            }
+            apply(addCopy(known))
+            onDone?.(known.id)
+            onClose()
             return
         }
 
@@ -153,16 +191,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
         setLoading(true)
 
         try {
-            let rollCopy: RollCopy = copy || {
-                ops: [],
-                type: 'RollCopy',
-                id: v4(),
-                measurements: {},
-                conditions: [],
-                keeper: { name: '', sameAs: [] },
-                modifications: [],
-                features: [],
-            }
+            let rollCopy: RollCopy
 
             if (rollFile.name.endsWith('.bar')) {
                 rollCopy = readFromSpencerBar(await rollFile.arrayBuffer(), { system });
@@ -180,20 +209,16 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 throw new Error('Expected a Stanford analysis (.txt), a Spencer e-roll (.bar) or a Phillips e-roll (.mid).')
             }
 
-            const paperSpeed = paperSpeedOf(speed)
-            if (paperSpeed) {
-                const stated = !speedTyped && suggestion ? adopted(suggestion) : assignObject(paperSpeed)
-                rollCopy.production = { ...rollCopy.production, speed: stated }
-            }
+            const speedOfCopy = speedStated()
+            if (speedOfCopy) rollCopy.production = { ...rollCopy.production, speed: speedOfCopy }
 
-            rollCopy.keeper = {
-                name: keeper.trim(),
-                sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : []
-            }
+            const keeperOfCopy = keeperStated()
+            if (keeperOfCopy) rollCopy.keeper = keeperOfCopy
 
             // A reader that knows how it read the roll says so itself;
-            // the dialog only overrides that where the editor stated one.
-            rollCopy.readFrom = featureSourceOf(source) ?? rollCopy.readFrom
+            // the dialog only overrides that where the editor stated one,
+            // and keeps who read it.
+            rollCopy.readFrom = featureSourceOf(source, rollCopy.readFrom) ?? rollCopy.readFrom
 
             apply(createVersion(siglum, rollCopy))
             onDone?.(rollCopy.id)
@@ -271,7 +296,13 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                             setSourceTyped(true)
                         }}
                     />
-                    {copy && <ReservationList copy={{ ...copy, readFrom: featureSourceOf(source) }} />}
+                    {copy && <ReservationList copy={{ ...copy, readFrom: featureSourceOf(source, copy.readFrom) }} />}
+                    {copy && (
+                        <>
+                            <Divider flexItem />
+                            <CarriedVersions copyId={copy.id} />
+                        </>
+                    )}
 
                     <Divider flexItem />
                     <Button variant="outlined" component="label" startIcon={<MusicNote />}>
@@ -300,6 +331,12 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                             }}
                         />
                     </Button>
+                    {!copy && (
+                        <Typography variant='caption' color='text.secondary'>
+                            A copy known only from a recording needs no file: state its source above
+                            and save, then say which versions it carries.
+                        </Typography>
+                    )}
                 </Stack>
             </DialogContent>
             <DialogActions>

@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isPerforation, welteT100 } from 'linked-rolls'
+import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isPerforation, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { deskPath, entityOfPath, linkTarget, referenceOf } from "../../helpers/addresses"
@@ -114,6 +114,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     const length = useMemo(() => edition ? rollLength(edition) : mm(0), [edition])
     const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
+    const carriage = useMemo(() => view ? carriageProblems(view) : [], [view])
 
     const [metadataJob, setMetadataJob] = useState<MetadataJob>()
     const [editCopy, setEditCopy] = useState(false)
@@ -134,7 +135,8 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [currentTab, setCurrentTab] = useState<DeskTab>('info')
 
-    const hasProblems = problems.length > 0
+    const troubles = problems.length + carriage.length
+    const hasProblems = troubles > 0
 
     // The problems tab goes with the last problem, taking the choice of it along.
     if (!hasProblems && currentTab === 'problems') setCurrentTab('info')
@@ -421,7 +423,7 @@ export const Desk = ({ show }: DeskProps) => {
                             value='problems'
                             label={
                                 <Badge
-                                    badgeContent={problems.length}
+                                    badgeContent={troubles}
                                     color='error'
                                     sx={{ pr: 1.5 }}
                                 >
@@ -517,6 +519,7 @@ export const Desk = ({ show }: DeskProps) => {
                     <ConstraintsPanel
                         versionId={currentVersionId}
                         problems={problems}
+                        carriage={carriage}
                         onShow={showConstraint}
                     />
                 </TabPanel>

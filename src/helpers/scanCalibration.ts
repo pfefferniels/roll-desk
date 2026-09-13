@@ -1,4 +1,5 @@
 import { calibrationOf, RollCopy, TrackCalibration } from "linked-rolls"
+import { heldBy } from "./heldBy"
 
 /**
  * The drawing counts a scan's columns from the bass edge upwards, the
@@ -22,8 +23,6 @@ const scanRunsBackwards = (copy: RollCopy): boolean => {
     const calibration = calibrationOf(copy)
     return copy.scan !== undefined && calibration !== undefined && !columnsRunWithTracks(calibration)
 }
-
-const heldBy = (copy: RollCopy): string => copy.keeper.name.trim() || 'an unnamed keeper'
 
 /**
  * Why some copies are left without their scan, or nothing if all of them
