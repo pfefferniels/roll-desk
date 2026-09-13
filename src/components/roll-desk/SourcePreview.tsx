@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { add, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
+import { add, Millimeters, mm, RollCopy, scale as times, sourceLabels, subtract, TrackerBar } from 'linked-rolls'
 import { valueOf } from 'linked-rolls'
 import { Arguable } from './Arguable'
 import { atLeastVisible, boxOf, evenGeometry, Translation } from '../../helpers/rollGeometry'
@@ -101,10 +101,18 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, 
                 transition: 'background 0.15s, border-color 0.15s',
             }}
         >
-            <canvas
-                ref={canvasRef}
-                style={{ width: '100%', height: 40, display: 'block' }}
-            />
+            {copy.features.length > 0 ? (
+                <canvas
+                    ref={canvasRef}
+                    style={{ width: '100%', height: 40, display: 'block' }}
+                />
+            ) : (
+                <div style={{ height: 40, display: 'flex', alignItems: 'center', padding: '0 6px', fontSize: 10, color: '#777' }}>
+                    {copy.readFrom
+                        ? `No perforations read, known from ${sourceLabels[copy.readFrom.kind]}`
+                        : 'No perforations read'}
+                </div>
+            )}
             <div style={{
                 padding: '0 6px 4px',
                 fontSize: 10,

@@ -20,7 +20,8 @@ export type Citation =
     | { kind: 'web', href: string, label: string }
     | { kind: 'unknown', label: string }
 
-const webAddressOf = (id: string): URL | undefined => {
+/** The address on the web the text gives, or nothing where it gives none. */
+export const webAddressOf = (id: string): URL | undefined => {
     const url = URL.canParse(id) ? new URL(id) : undefined
     return url && (url.protocol === 'https:' || url.protocol === 'http:') ? url : undefined
 }

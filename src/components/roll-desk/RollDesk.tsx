@@ -37,6 +37,7 @@ import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
 import { AccountPanel, TabColumn } from "./Account"
 import { VersionAccount } from "./VersionAccount"
+import { CopyAccount } from "./CopyAccount"
 import { Arguable } from "./Arguable"
 import { RollRange, SelectionContext } from "../../providers/SelectionContext"
 import { EditionContext, emptyEdition } from "../../providers/EditionContext"
@@ -505,6 +506,7 @@ export const Desk = ({ show }: DeskProps) => {
                 </TabPanel>
 
                 <TabPanel current={currentTab} tab='sources'>
+                    <TabColumn>
                     <SourceStack
                         activeId={currentCopyId}
                         onClick={(copyId) => {
@@ -535,14 +537,22 @@ export const Desk = ({ show }: DeskProps) => {
                         </Stack>
                     )}
 
+                    {currentCopy && (
+                        <AccountPanel>
+                            <CopyAccount copyId={currentCopy.id} />
+                        </AccountPanel>
+                    )}
+
                     {!viewOnly && (
                         <Button
                             startIcon={<Add />}
                             onClick={() => setEditCopy(true)}
+                            sx={{ alignSelf: 'flex-start' }}
                         >
                             Add Copy
                         </Button>
                     )}
+                    </TabColumn>
                 </TabPanel>
 
                 <TabPanel current={currentTab} tab='problems'>
