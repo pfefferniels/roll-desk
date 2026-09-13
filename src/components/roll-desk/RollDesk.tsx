@@ -35,6 +35,8 @@ import { zoomRange } from "../../helpers/zoom"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
+import { AccountPanel, TabColumn } from "./Account"
+import { VersionAccount } from "./VersionAccount"
 import { Arguable } from "./Arguable"
 import { RollRange, SelectionContext } from "../../providers/SelectionContext"
 import { EditionContext, emptyEdition } from "../../providers/EditionContext"
@@ -478,15 +480,28 @@ export const Desk = ({ show }: DeskProps) => {
                 </TabPanel>
 
                 <TabPanel current={currentTab} tab='stemma'>
-                    <Stemma
-                        currentVersionId={currentVersionId}
-                        problems={problems}
-                        onClick={(versionId) => {
-                            setCurrentVersionId(versionId)
-                            setCurrentCopyId(undefined)
-                            setSelection([])
-                        }}
-                    />
+                    <TabColumn>
+                        <Stemma
+                            currentVersionId={currentVersionId}
+                            problems={problems}
+                            height={currentVersion ? 380 : 600}
+                            onClick={(versionId) => {
+                                setCurrentVersionId(versionId)
+                                setCurrentCopyId(undefined)
+                                setSelection([])
+                            }}
+                        />
+                        {currentVersion && (
+                            <AccountPanel>
+                                <VersionAccount versionId={currentVersion.id} />
+                            </AccountPanel>
+                        )}
+                        {currentCopy && (
+                            <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
+                                A copy is open. What is known of it is written out under Sources.
+                            </Typography>
+                        )}
+                    </TabColumn>
                 </TabPanel>
 
                 <TabPanel current={currentTab} tab='sources'>

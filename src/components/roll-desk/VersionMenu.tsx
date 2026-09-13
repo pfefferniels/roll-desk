@@ -1,5 +1,6 @@
 import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred, TypeSpecimen } from "@mui/icons-material"
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from "@mui/material"
+import { ReservationNotes } from "./Reservations"
 import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
@@ -202,11 +203,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 ))}
                 {reservations.length > 0 && (
                     <Tooltip
-                        title={
-                            <Stack component='ul' sx={{ m: 0, pl: 2 }} spacing={0.5}>
-                                {reservations.map(reservation => <li key={reservation.type}>{reservation.note}</li>)}
-                            </Stack>
-                        }
+                        title={<ReservationNotes reservations={reservations} />}
                     >
                         <ReportGmailerrorred fontSize='small' color='warning' sx={{ alignSelf: 'center' }} />
                     </Tooltip>
