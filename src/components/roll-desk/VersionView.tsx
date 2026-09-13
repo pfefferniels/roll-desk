@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, EditionView, Millimeters, trackerBarOf, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, EditionView, editsOf, Millimeters, trackerBarOf, Version, Edit, Motivation } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -28,7 +28,7 @@ const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
 
     view.travelUp(versionId, s => {
         // collect all inserted symbols and tell them their age
-        for (const edit of s.edits) {
+        for (const edit of editsOf(s)) {
             for (const symbol of edit.insert ?? []) {
                 snapshot.push({ ...symbol, age })
             }
@@ -47,7 +47,7 @@ const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
             deletions.splice(deletions.indexOf(del), 1)
         }
 
-        deletions.push(...s.edits.flatMap(edit => edit.delete || []))
+        deletions.push(...editsOf(s).flatMap(edit => edit.delete || []))
         age += 1
     })
 
@@ -107,7 +107,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     // so that is the bar those perforations are drawn by.
     const deletedOn = trackerBarOf(view.predecessorOf(version.id)?.system)
 
-    const edits = version.edits
+    const edits = editsOf(version)
         .map(e => <EditView
             key={`editView_${e.id}`}
             edit={e}

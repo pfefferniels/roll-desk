@@ -1,4 +1,4 @@
-import { ConstraintProblem, idOf, Path, systemIdOf, trackerBarOf, Version, VersionType } from 'linked-rolls'
+import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, systemIdOf, trackerBarOf, Version, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useRef, useState } from "react"
@@ -141,7 +141,8 @@ export interface Node extends d3.SimulationNodeDatum {
     label: string;
     generation: number
     radius?: number;
-    type: VersionType;
+    /** Left out where the version does not say whether it served as a master. */
+    type?: VersionType;
     /** The reproducing system the version is coded for, named short. */
     system?: string
     /**
@@ -163,6 +164,15 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
      * rule stated on the version's creation.
      */
     transfer?: boolean
+
+    /** How certainly the derivation is held. */
+    certainty: Certainty
+
+    /**
+     * Whether the version's text is read against this derivation. The
+     * others stand as hypotheses, drawn apart and carrying no motivations.
+     */
+    principal: boolean
 }
 
 const sharesSystem = (a: Version, b: Version) =>
@@ -173,9 +183,13 @@ export const graphOf = (
     versions: readonly (Version & { generation: number })[],
     problems: readonly ConstraintProblem[]
 ): { nodes: Node[], links: Link[] } => {
-    const parentOf = (version: Version) => version.basedOn === undefined
-        ? undefined
-        : versions.find(other => other.id === idOf(version.basedOn!))
+    const versionBy = (id: string) => versions.find(other => other.id === id)
+
+    /** The version the text is read against. */
+    const parentOf = (version: Version) => {
+        const principal = principalDerivationOf(version)
+        return principal && versionBy(idOf(principal))
+    }
 
     const nodes: Node[] = versions.map(version => {
         const troubles = problemsOfVersion(problems, version.id).length
@@ -197,14 +211,19 @@ export const graphOf = (
     const nodeOf = (id: string) => nodes.find(node => node.id === id) || 'unknown'
 
     const links: Link[] = versions.flatMap(version => {
-        const parent = parentOf(version)
-        if (!parent) return []
+        const principal = parentOf(version)
+        return derivationsOf(version).flatMap(({ parent, certainty }): Link[] => {
+            const target = versionBy(parent)
+            if (!target) return []
 
-        return [{
-            source: nodeOf(version.id),
-            target: nodeOf(parent.id),
-            transfer: !sharesSystem(parent, version)
-        }]
+            return [{
+                source: nodeOf(version.id),
+                target: nodeOf(target.id),
+                transfer: !sharesSystem(target, version),
+                certainty,
+                principal: target === principal
+            }]
+        })
     })
 
     return { nodes, links }
@@ -248,7 +267,7 @@ export const calculatePositions = (
             d3
                 .forceLink<Node, Link>(links.filter(l => l.source !== 'unknown' && l.target !== 'unknown'))
                 .id(d => d.id)
-                .strength(0.6)
+                .strength(link => link.principal ? 0.6 : 0.1)
         )
         .force("charge", d3.forceManyBody().strength(-200))
         .force(
@@ -298,7 +317,7 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     cx={node.x || 10}
                     cy={node.y || 10}
                     r={radiusOf(node)}
-                    fill={node.type === 'edition' ? 'darkslategray' : '#8FB1FF'}
+                    fill={node.type === 'edition' ? 'darkslategray' : node.type === 'unicum' ? '#8FB1FF' : '#9ca3af'}
                     strokeWidth={highlight ? 3 : 0}
                     stroke='black'
                     strokeDasharray={highlight ? '3 2' : undefined}
@@ -393,6 +412,23 @@ export const LinkContainer = ({
 
                 if (!source || !source.x || !source.y || !target || !target.x || !target.y) {
                     return null
+                }
+
+                if (!link.principal) {
+                    return (
+                        <line
+                            key={`link_${i}`}
+                            x1={source.x}
+                            y1={source.y}
+                            x2={target.x}
+                            y2={target.y}
+                            stroke="#6b7280"
+                            strokeWidth={1.5}
+                            strokeDasharray="2 4"
+                        >
+                            <title>{`Also derived from ${target.label}, held ${link.certainty}`}</title>
+                        </line>
+                    )
                 }
 
                 const motivations = view?.get<Version>(source.id)?.motivations || []

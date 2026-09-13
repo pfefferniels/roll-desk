@@ -1,6 +1,6 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -17,11 +17,13 @@ import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../../helpers/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
 import { isMotivation } from "../../helpers/motivation"
+import { HypothesisDialog } from "./HypothesisDialog"
+import { Arguable } from "./Arguable"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {
     const referenced = new Set(
-        version.edits
+        editsOf(version)
             .filter(edit => editIds.includes(edit.id))
             .map(edit => edit.motivation)
     )
@@ -49,6 +51,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
     const [symbolsToRecollate, setSymbolsToRecollate] = useState<string[]>()
     const [confirmDetach, setConfirmDetach] = useState(false)
+    const [stateHypothesis, setStateHypothesis] = useState(false)
 
     // No focused control claims a letter for itself, so unlike the desk's
     // Space these need no guard beyond the one for overlays.
@@ -80,6 +83,13 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     if (!version) return null
 
     const tolerance = derivationToleranceOf(version, edition)
+    const principal = principalDerivationOf(version)
+    const sigilOf = (id: string) => edition.versions.find(v => v.id === id)?.siglum ?? 'unknown'
+
+    /** The derivations stated beside the principal one, where each stands in the list. */
+    const hypotheses = (version.basedOn ?? [])
+        .map((derivation, index) => ({ derivation, index }))
+        .filter(({ derivation }) => derivation !== principal)
 
     return (
         <>
@@ -174,7 +184,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
             )}
             <ConstraintsRibbon versionId={versionId} />
             <Ribbon title='Derivation'>
-                {version.basedOn ? (
+                {principal ? (
                     <Button
                         onClick={() => setConfirmDetach(true)}
                         size='small'
@@ -191,6 +201,24 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                         Attach To
                     </Button>
                 )}
+                <Button
+                    onClick={() => setStateHypothesis(true)}
+                    size='small'
+                    startIcon={<CallMerge />}
+                >
+                    Hypothesis
+                </Button>
+                {hypotheses.map(({ derivation, index }) => (
+                    <Arguable key={idOf(derivation)} path={[...(view.getPath(versionId) ?? []), 'basedOn', index]}>
+                        <Button
+                            onClick={() => apply(clearDerivation(versionId, idOf(derivation)))}
+                            size='small'
+                            startIcon={<LinkOff />}
+                        >
+                            {sigilOf(idOf(derivation))}
+                        </Button>
+                    </Arguable>
+                ))}
                 {selection.length > 0 && selection.every(isEdit) && (
                     <Button
                         onClick={() => {
@@ -243,6 +271,19 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 />
             )}
 
+            {stateHypothesis && (
+                <HypothesisDialog
+                    currentVersionId={versionId}
+                    versions={edition.versions.filter(candidate =>
+                        !(version.basedOn ?? []).some(derivation => idOf(derivation) === candidate.id))}
+                    onClose={() => setStateHypothesis(false)}
+                    onDone={(parentVersionId, certainty) => {
+                        apply(stateDerivation(versionId, parentVersionId, { type: 'belief', id: v4(), certainty, reasons: [] }))
+                        setStateHypothesis(false)
+                    }}
+                />
+            )}
+
             {symbolsToRecollate && (
                 <RecollateDialog
                     tolerance={tolerance}
@@ -274,10 +315,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 <DialogContent>
                     <DialogContentText>
                         Detaching {version.siglum}
-                        {version.basedOn
-                            ? ` from ${edition.versions.find(v => v.id === idOf(version.basedOn!))?.siglum ?? 'parent'}`
-                            : ''
-                        } will discard edit classifications and motivation references.
+                        {principal ? ` from ${sigilOf(idOf(principal))}` : ''} will discard edit classifications,
+                        motivation references and every hypothesis of derivation.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -310,7 +349,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             version.motivations.push(motivation)
                         }
 
-                        version.edits
+                        editsOf(version)
                             .filter(edit => editsToMotivate.includes(edit.id))
                             .forEach(edit => {
                                 edit.motivation = motivation.id
