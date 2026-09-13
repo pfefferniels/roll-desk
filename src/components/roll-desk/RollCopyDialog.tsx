@@ -1,7 +1,7 @@
-import { Delete, MusicNote } from "@mui/icons-material";
-import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, IconButton, Divider, Stack } from "@mui/material";
+import { MusicNote } from "@mui/icons-material";
+import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { addCopy, Agent, assignObject, clearSource, createVersion, Millimeters, mm, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, removeCopy, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
+import { addCopy, Agent, assignObject, clearSource, createVersion, EditionOp, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
@@ -75,6 +75,9 @@ const adopted = (suggestion: Suggestion): ObjectAssumption<PaperSpeed> => ({
     }
 })
 
+/** The operations applied as one, so that undoing takes them back together. */
+const together = (...ops: EditionOp[]): EditionOp => draft => ops.forEach(op => op(draft))
+
 export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogProps) => {
     const { edition, apply } = useContext(EditionContext)
     // A copy is read by the bar it was cut for; naming none, it is read by the T-100.
@@ -83,6 +86,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     const [files, setFiles] = useState<File[]>([]);
     const [keeper, setKeeper] = useState('')
     const [keeperAuthority, setKeeperAuthority] = useState('')
+    const [copySiglum, setCopySiglum] = useState('')
     const [siglum, setSiglum] = useState('')
     const [system, setSystem] = useState<TrackerBar>(editionBar)
     const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
@@ -97,6 +101,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
         if (!copy) return
         setKeeper(copy.keeper?.name ?? '')
         setKeeperAuthority(copy.keeper?.sameAs[0] ?? '')
+        setCopySiglum(copy.siglum ?? '')
         setSource(sourceInputOf(copy.readFrom))
     }, [copy])
 
@@ -105,6 +110,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             setFiles([])
             setKeeper(copy?.keeper?.name ?? '')
             setKeeperAuthority(copy?.keeper?.sameAs[0] ?? '')
+            setCopySiglum(copy?.siglum ?? '')
             setSiglum('')
             setSystem(editionBar)
             setSpeed(noSpeed)
@@ -149,11 +155,21 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     const handleUpload = async () => {
         if (!edition) return
 
-        // A copy already in the edition can have its source stated
-        // without reading its file in again.
-        if (copy && !rollFile) {
+        // A copy already in the edition is described again without
+        // reading its file in again.
+        if (copy) {
             const stated = featureSourceOf(source, copy.readFrom)
-            apply(stated ? stateSource(copy.id, stated) : clearSource(copy.id))
+            const keeperOfCopy = keeperStated()
+            apply(together(
+                stated ? stateSource(copy.id, stated) : clearSource(copy.id),
+                nameCopy(copy.id, copySiglum),
+                draft => {
+                    const edited = draft.copies.find(candidate => candidate.id === copy.id)
+                    if (!edited) return
+                    if (keeperOfCopy) edited.keeper = keeperOfCopy
+                    else delete edited.keeper
+                }
+            ))
             onDone?.(copy.id)
             onClose()
             return
@@ -181,7 +197,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 readFrom: stated,
                 ...(keeperOfCopy && { keeper: keeperOfCopy })
             }
-            apply(addCopy(known))
+            apply(together(addCopy(known), nameCopy(known.id, copySiglum)))
             onDone?.(known.id)
             onClose()
             return
@@ -220,7 +236,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             // and keeps who read it.
             rollCopy.readFrom = featureSourceOf(source, rollCopy.readFrom) ?? rollCopy.readFrom
 
-            apply(createVersion(siglum, rollCopy))
+            apply(together(createVersion(siglum, rollCopy), nameCopy(rollCopy.id, copySiglum)))
             onDone?.(rollCopy.id)
             onClose()
         } catch (e) {
@@ -240,7 +256,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Add or Edit Roll Copy</DialogTitle>
+            <DialogTitle>{copy ? 'Edit Roll Copy' : 'Add Roll Copy'}</DialogTitle>
             <DialogContent>
                 <Stack spacing={1}>
                     {error && <Alert severity="error">{error}</Alert>}
@@ -261,14 +277,23 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                         label='Authority record (GND, Wikidata, ISIL)'
                     />
 
-                    <Typography>(Preliminary) Siglum</Typography>
+                    <Typography>Siglum</Typography>
                     <TextField
                         size='small'
-                        value={siglum}
-                        onChange={e => setSiglum(e.target.value)}
-                        placeholder='e. g. B1'
-                        label='Siglum'
+                        value={copySiglum}
+                        onChange={e => setCopySiglum(e.target.value)}
+                        placeholder='e. g. W1'
+                        label='Siglum of the copy'
                     />
+                    {!copy && (
+                        <TextField
+                            size='small'
+                            value={siglum}
+                            onChange={e => setSiglum(e.target.value)}
+                            placeholder='e. g. B1'
+                            label='(Preliminary) siglum of its version'
+                        />
+                    )}
 
                     {!copy && (
                         <>
@@ -304,38 +329,40 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                         </>
                     )}
 
-                    <Divider flexItem />
-                    <Button variant="outlined" component="label" startIcon={<MusicNote />}>
-                        {files.length > 0
-                            ? files.map(file => file.name).join(', ')
-                            : 'Upload Roll Analysis (.txt), Spencer E-Roll (.bar with its .ann) or Phillips E-Roll (.mid)'}
-                        <input
-                            type="file"
-                            hidden
-                            multiple
-                            accept=".txt,.bar,.ann,.mid"
-                            onChange={(e) => {
-                                const chosen = Array.from(e.target.files ?? [])
-                                setFiles(chosen)
-                                // Spencer's Welte e-rolls are Licensee rolls
-                                if (chosen.some(file => file.name.endsWith('.bar'))) setSystem(welteLicensee)
-                                const roll = chosen.find(isRollFile)
-                                // A hole list somebody measured on a scan. A
-                                // Phillips e-roll says for itself that it was
-                                // played on his reader, and says who read it,
-                                // so leaving the field empty keeps the more
-                                // it knows.
-                                if (roll && !roll.name.endsWith('.mid') && !sourceTyped) {
-                                    setSource(current => ({ ...current, kind: 'analysis' }))
-                                }
-                            }}
-                        />
-                    </Button>
                     {!copy && (
-                        <Typography variant='caption' color='text.secondary'>
-                            A copy known only from a recording needs no file: state its source above
-                            and save, then say which versions it carries.
-                        </Typography>
+                        <>
+                            <Divider flexItem />
+                            <Button variant="outlined" component="label" startIcon={<MusicNote />}>
+                                {files.length > 0
+                                    ? files.map(file => file.name).join(', ')
+                                    : 'Upload Roll Analysis (.txt), Spencer E-Roll (.bar with its .ann) or Phillips E-Roll (.mid)'}
+                                <input
+                                    type="file"
+                                    hidden
+                                    multiple
+                                    accept=".txt,.bar,.ann,.mid"
+                                    onChange={(e) => {
+                                        const chosen = Array.from(e.target.files ?? [])
+                                        setFiles(chosen)
+                                        // Spencer's Welte e-rolls are Licensee rolls
+                                        if (chosen.some(file => file.name.endsWith('.bar'))) setSystem(welteLicensee)
+                                        const roll = chosen.find(isRollFile)
+                                        // A hole list somebody measured on a scan. A
+                                        // Phillips e-roll says for itself that it was
+                                        // played on his reader, and says who read it,
+                                        // so leaving the field empty keeps the more
+                                        // it knows.
+                                        if (roll && !roll.name.endsWith('.mid') && !sourceTyped) {
+                                            setSource(current => ({ ...current, kind: 'analysis' }))
+                                        }
+                                    }}
+                                />
+                            </Button>
+                            <Typography variant='caption' color='text.secondary'>
+                                A copy known only from a recording needs no file: state its source above
+                                and save, then say which versions it carries.
+                            </Typography>
+                        </>
                     )}
                 </Stack>
             </DialogContent>
@@ -349,12 +376,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 >
                     Save
                 </Button>
-                <IconButton color='secondary' onClick={() => {
-                    if (!copy) return
-                    apply(removeCopy(copy.id))
-                }}>
-                    <Delete />
-                </IconButton>
             </DialogActions>
         </Dialog >
     );

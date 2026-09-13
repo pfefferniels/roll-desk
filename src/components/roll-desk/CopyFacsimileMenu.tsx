@@ -6,7 +6,7 @@ import { useContext, useState } from "react"
 import { selectionAsIIIFLink } from "./RollGrid"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
-import { Add, BrokenImage, Delete, Deselect, Edit as EditIcon, GroupAdd, SelectAll } from "@mui/icons-material"
+import { Add, BrokenImage, Delete, Description, Deselect, Edit as EditIcon, GroupAdd, SelectAll } from "@mui/icons-material"
 import { AlignToDialog } from "./AlignToDialog"
 import { EditString } from "./EditString"
 import { EditionContext } from "../../providers/EditionContext"
@@ -14,6 +14,7 @@ import { useSelection } from "../../providers/SelectionContext"
 import { FeatureConditionDialog } from "./FeatureConditionDialog"
 import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
 import { whichCopy } from "../../helpers/names"
+import { RollCopyDialog } from "./RollCopyDialog"
 
 export type FacsimileSelection = EventDimension | AnyFeature
 
@@ -34,6 +35,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const [editProduction, setEditProduction] = useState(false)
     const [alignCopies, setAlignCopies] = useState(false)
     const [confirmRemove, setConfirmRemove] = useState(false)
+    const [showDetails, setShowDetails] = useState(false)
 
     if (!edition) return null
 
@@ -48,6 +50,12 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
         <>
             <Stack direction='row' spacing={1}>
                 <Ribbon title='Copy'>
+                    <Button
+                        onClick={() => setShowDetails(true)}
+                        startIcon={<Description />}
+                    >
+                        Details
+                    </Button>
                     <Button
                         onClick={() => setEditProduction(true)}
                         startIcon={<EditIcon />}
@@ -221,6 +229,14 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {showDetails && (
+                <RollCopyDialog
+                    open
+                    copy={copy}
+                    onClose={() => setShowDetails(false)}
+                />
+            )}
 
             <AlignToDialog
                 copy={copy}
