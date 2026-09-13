@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, graphOf, Node, radiusOf } from './Stemma'
+import { calculatePositions, graphOf, linkMarkAt, Node, radiusOf } from './Stemma'
+import { point } from '../../helpers/drawing'
+import { svg } from '../../helpers/units'
 
 const version = (
     siglum: string,
@@ -68,8 +70,23 @@ describe('derivations held as hypotheses', () => {
             { ...version('S', welteT100, 1, 'A'), basedOn: [assignReference('A'), possibly] }
         ]
 
-        expect(graphOf(contaminated, []).links.map(link => [(link.target as Node).id, link.principal, link.certainty]))
-            .toEqual([['A', true, 'true'], ['B', false, 'possible']])
+        expect(graphOf(contaminated, []).links.map(link => [(link.target as Node).id, link.principal, link.certainty, link.derivation, link.believed]))
+            .toEqual([['A', true, 'true', 0, false], ['B', false, 'possible', 1, true]])
+    })
+})
+
+describe('where the mark of a derivation sits', () => {
+    it('sits beside the middle of the link, as far off it as asked', () => {
+        const mark = linkMarkAt(point(svg(0), svg(0)), point(svg(0), svg(100)), svg(20))
+
+        expect(mark.y).toBeCloseTo(50)
+        expect(Math.abs(mark.x)).toBeCloseTo(20)
+    })
+
+    it('sits on a link that has no length', () => {
+        const at = point(svg(5), svg(5))
+
+        expect(linkMarkAt(at, at, svg(20))).toEqual(at)
     })
 })
 

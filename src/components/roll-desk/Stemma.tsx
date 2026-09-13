@@ -1,40 +1,42 @@
 import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, systemIdOf, trackerBarOf, Version, VersionType } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
-import { useContext, useRef, useState } from "react"
+import { useContext, useMemo, useRef, useState } from "react"
 import * as d3 from "d3";
 import { ReactNode, SVGProps, useEffect } from "react";
 import { EditionContext } from '../../providers/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../../providers/SelectionContext';
 import { SlicedBalloon } from './SlicedBalloon';
+import { Arguable } from './Arguable';
+import { along, minus, perpendicular, point, Point, unit } from '../../helpers/drawing';
+import { Svg, svg } from '../../helpers/units';
 
 interface Stemma {
     currentVersionId: string | undefined
     /** The constraint problems of the whole edition, counted per node. */
     problems?: readonly ConstraintProblem[]
+    /** How tall the drawing is, which leaves room beneath it for what is written about a version. */
+    height?: number
     onClick: (versionId: string) => void
 }
 
-export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => {
+export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 }: Stemma) => {
     const { edition, view } = useContext(EditionContext)
-    const [nodes, setNodes] = useState<Node[]>([])
-    const [links, setLinks] = useState<Link[]>([])
 
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
     const svgWidth = 300
-    const svgHeight = 600
+    const svgHeight = height
     const versions = edition?.versions
 
-    useEffect(() => {
-        if (!versions || !view) return
+    // Laid out while rendering, so that no link outlives the derivation its mark addresses.
+    const { nodes, links } = useMemo(() => {
+        if (!versions || !view) return { nodes: [], links: [] }
 
-        const { nodes, links } = graphOf(view.withGenerations(), problems)
-
-        setLinks(links)
-        setNodes(calculatePositions(nodes, links, svgWidth, svgHeight))
-    }, [versions, view, problems])
+        const graph = graphOf(view.withGenerations(), problems)
+        return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
+    }, [versions, view, problems, svgHeight])
 
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
@@ -86,7 +88,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
     }, [nodes, svgWidth, svgHeight])
 
     return (
-        <>
+        <Box sx={{ position: 'relative', width: svgWidth, height: svgHeight, flexShrink: 0 }}>
             <div style={{ position: 'absolute', bottom: 0, right: 0, padding: '0.5rem', zIndex: 10 }}>
                 <Legend />
             </div>
@@ -94,6 +96,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
                 width={svgWidth}
                 height={svgHeight}
                 ref={svgRef}
+                style={{ display: 'block' }}
             >
                 <defs>
                     <filter id="f1"
@@ -112,9 +115,6 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
                     <LinkContainer
                         links={links}
                         positionedNodes={nodes}
-                        onChange={() => {
-                            setLinks([...links])
-                        }}
                         onVersionClick={onClick}
                     />
 
@@ -131,7 +131,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [] }: Stemma) => 
                     ))}
                 </g>
             </svg>
-        </>
+        </Box>
     )
 }
 
@@ -173,6 +173,12 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
      * others stand as hypotheses, drawn apart and carrying no motivations.
      */
     principal: boolean
+
+    /** Where the derivation stands in the version's `basedOn`, which is how its belief is addressed. */
+    derivation: number
+
+    /** Whether a belief is stated of the derivation, which is then marked on the link. */
+    believed: boolean
 }
 
 const sharesSystem = (a: Version, b: Version) =>
@@ -212,7 +218,7 @@ export const graphOf = (
 
     const links: Link[] = versions.flatMap(version => {
         const principal = parentOf(version)
-        return derivationsOf(version).flatMap(({ parent, certainty }): Link[] => {
+        return derivationsOf(version).flatMap(({ parent, certainty, belief }, derivation): Link[] => {
             const target = versionBy(parent)
             if (!target) return []
 
@@ -221,12 +227,21 @@ export const graphOf = (
                 target: nodeOf(target.id),
                 transfer: !sharesSystem(target, version),
                 certainty,
-                principal: target === principal
+                principal: target === principal,
+                derivation,
+                believed: belief !== undefined
             }]
         })
     })
 
     return { nodes, links }
+}
+
+/** Where the mark of a derivation's belief sits: beside the middle of the link, clear of it by the distance given. */
+export const linkMarkAt = (a: Point, b: Point, clearance: Svg): Point => {
+    const middle = along(a, minus(b, a), 0.5)
+    const direction = unit(minus(b, a))
+    return direction ? along(middle, perpendicular(direction), clearance) : middle
 }
 
 export const radiusOf = (node: Node) =>
@@ -385,10 +400,19 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
     )
 }
 
+/** The mark of the belief a derivation is held under, centred on the point given. */
+const BeliefMark = ({ at, path }: { at: Point, path: Path }) => (
+    <Arguable asSVG={{ buttonPlacement: { x: at.x - 10, y: at.y - 10 } }} path={path}>
+        {null}
+    </Arguable>
+)
+
+/** How far the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
+const markClearance = svg(22)
+
 interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
-    onChange: () => void
     onVersionClick: (versionId: string) => void
 }
 
@@ -414,20 +438,40 @@ export const LinkContainer = ({
                     return null
                 }
 
+                const versionPath = view?.getPath(source.id)
+                const mark = link.believed && versionPath && (
+                    <BeliefMark
+                        at={linkMarkAt(point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y)), markClearance)}
+                        path={[...versionPath, 'basedOn', link.derivation]}
+                    />
+                )
+
                 if (!link.principal) {
                     return (
-                        <line
-                            key={`link_${i}`}
-                            x1={source.x}
-                            y1={source.y}
-                            x2={target.x}
-                            y2={target.y}
-                            stroke="#6b7280"
-                            strokeWidth={1.5}
-                            strokeDasharray="2 4"
-                        >
-                            <title>{`Also derived from ${target.label}, held ${link.certainty}`}</title>
-                        </line>
+                        <g key={`link_${i}`}>
+                            <g style={{ cursor: 'pointer' }} onClick={() => onVersionClick(source.id)}>
+                                <title>{`Also derived from ${target.label}, held ${link.certainty}`}</title>
+                                <line
+                                    x1={source.x}
+                                    y1={source.y}
+                                    x2={target.x}
+                                    y2={target.y}
+                                    stroke="#6b7280"
+                                    strokeWidth={1.5}
+                                    strokeDasharray="2 4"
+                                />
+                                <line
+                                    x1={source.x}
+                                    y1={source.y}
+                                    x2={target.x}
+                                    y2={target.y}
+                                    stroke="transparent"
+                                    strokeWidth={12}
+                                    pointerEvents="stroke"
+                                />
+                            </g>
+                            {mark}
+                        </g>
                     )
                 }
 
@@ -473,6 +517,7 @@ export const LinkContainer = ({
                             }
                         }}
                         />
+                        {mark}
                     </g>
                 )
             })}

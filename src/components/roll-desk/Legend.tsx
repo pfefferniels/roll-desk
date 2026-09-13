@@ -2,6 +2,7 @@ import { Help } from "@mui/icons-material"
 import { Box, Stack, IconButton, Popover } from "@mui/material"
 import { ReactNode, useState } from "react"
 import { NavigationNode } from "./Stemma"
+import { CertaintyIcon } from "./CertaintyIcon"
 
 interface LegendRowProps {
   symbol: ReactNode
@@ -137,6 +138,47 @@ export const Legend = () => {
           whole expression vocabulary, so the version names the system it is in.
           A version that stays on the system it was based on names nothing and
           simply inherits it.
+        `}
+      />
+
+      <LegendRow
+        symbol={
+          <svg
+            width={width + shadowMargin}
+            height={width + shadowMargin}
+            className="legend"
+          >
+            <line
+              x1={shadowMargin / 2}
+              y1={width + shadowMargin / 2}
+              x2={width + shadowMargin / 2}
+              y2={shadowMargin / 2}
+              stroke="#6b7280"
+              strokeWidth={1.5}
+              strokeDasharray="2 4"
+            />
+          </svg>
+        }
+        description="Hypothesis"
+        help={`
+          A derivation stated beside the one the version's text is read
+          against, such as a contamination. It carries no motivations.
+        `}
+      />
+
+      <LegendRow
+        symbol={
+          <Stack direction='row' spacing={0.5} sx={{ width: width + shadowMargin, justifyContent: 'center' }}>
+            {(['true', 'likely', 'possible', 'unlikely'] as const).map(certainty => (
+              <CertaintyIcon key={certainty} certainty={certainty} size={16} />
+            ))}
+          </Stack>
+        }
+        description="Truth value"
+        help={`
+          An editorial assumption is marked by the truth value it is held to
+          have: true, likely, possible, or unlikely and false. The mark opens
+          the reasons it rests on.
         `}
       />
     </LegendPopover>
