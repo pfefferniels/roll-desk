@@ -31,7 +31,7 @@ const version = (id: string, edits: Version['edits'], basedOn?: string): Version
     versionType: 'edition',
     edits,
     motivations: [],
-    ...(basedOn ? { basedOn: assignReference(basedOn) } : {})
+    ...(basedOn ? { basedOn: [assignReference(basedOn)] } : {})
 })
 
 export const ids = {

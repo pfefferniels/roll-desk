@@ -14,7 +14,7 @@ const held = (id: string): Assumption['@annotation'] => ({
 const motivatedEdition = () => {
     const edition = fixtureEdition()
     const version = edition.versions[1]
-    const edit = version?.edits[0]
+    const edit = version?.edits?.[0]
     if (!version || !edit) throw new Error('the fixture has changed')
 
     const motivation: Motivation = { type: 'motivation', id: 'chord-shading' }

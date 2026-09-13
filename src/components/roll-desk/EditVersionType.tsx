@@ -5,7 +5,8 @@ interface EditType<T extends string> {
     open: boolean;
     onClose: () => void;
     onSave: (type: T) => void;
-    value: T;
+    /** Left out where no type is stated yet. */
+    value?: T;
     readonly types: readonly T[];
 }
 
@@ -23,7 +24,7 @@ export const EditType = <T extends string,>({
         >
             <Stack direction='row' spacing={2} alignItems='center' sx={{ padding: 2 }}>
                 <Select
-                    value={value}
+                    value={value ?? ''}
                     onChange={(e) => onSave(e.target.value as T)}
                 >
                     {types.map(type => {

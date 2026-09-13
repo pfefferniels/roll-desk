@@ -13,7 +13,7 @@ const version = (
     siglum,
     system: systemOf(bar),
     versionType: 'edition',
-    ...(basedOn && { basedOn: assignReference(basedOn) }),
+    ...(basedOn && { basedOn: [assignReference(basedOn)] }),
     edits: [],
     motivations: [],
     generation
@@ -53,6 +53,23 @@ describe('which version names its system', () => {
         const orphan = [version('B', welteT100, 1, 'A')]
 
         expect(graphOf(orphan, []).links).toHaveLength(0)
+    })
+})
+
+describe('derivations held as hypotheses', () => {
+    it('draws every derivation and tells the one the text is read against apart', () => {
+        const possibly = {
+            ...assignReference('B'),
+            '@annotation': { id: 'annotation', belief: { type: 'belief' as const, id: 'belief', certainty: 'possible' as const, reasons: [] } }
+        }
+        const contaminated = [
+            version('A', welteT100, 0),
+            version('B', welteT100, 0),
+            { ...version('S', welteT100, 1, 'A'), basedOn: [assignReference('A'), possibly] }
+        ]
+
+        expect(graphOf(contaminated, []).links.map(link => [(link.target as Node).id, link.principal, link.certainty]))
+            .toEqual([['A', true, 'true'], ['B', false, 'possible']])
     })
 })
 
