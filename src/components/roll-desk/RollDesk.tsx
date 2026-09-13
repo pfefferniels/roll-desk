@@ -5,7 +5,8 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isPerforation, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
-import { deskPath, entityOfPath, linkTarget, referenceOf } from "../../helpers/addresses"
+import { deskPath, entityOfPath, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
+import { OpenContext } from "../../providers/OpenContext"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { CopyReference } from "./CopyReference"
 import { svg, svgPerMm } from "../../helpers/units"
@@ -158,16 +159,14 @@ export const Desk = ({ show }: DeskProps) => {
     const shown = useRef<string | undefined>(undefined)
     const [pendingSpotlight, setPendingSpotlight] = useState<string>()
 
-    // A link to an entity opens what it lies on and marks it.
-    useEffect(() => {
-        if (!view || shown.current === show) return
-        shown.current = show
-        if (!show) return
+    /** Opens what the entity lies on and marks it, or says that the edition holds nothing under the id. */
+    const open = useCallback((id: string): LinkTarget | undefined => {
+        if (!view) return undefined
 
-        const target = linkTarget(view, show)
+        const target = linkTarget(view, id)
         if (!target) {
-            setMessage(`The edition of WM 225 holds nothing under the identifier ${show}.`)
-            return
+            setMessage(`The edition of WM 225 holds nothing under the identifier ${id}.`)
+            return undefined
         }
 
         if (target.on === 'version') {
@@ -189,7 +188,22 @@ export const Desk = ({ show }: DeskProps) => {
             setSelection([mark])
             setPendingSpotlight(mark.id)
         }
-    }, [show, view, setMessage])
+        return target
+    }, [view, setMessage])
+
+    // A link to an entity opens what it lies on and marks it.
+    useEffect(() => {
+        if (!view || shown.current === show) return
+        shown.current = show
+        if (show) open(show)
+    }, [show, view, open])
+
+    /** Opens what an account refers to, and turns to the tab it is read in. */
+    const openFromAccount = useCallback((id: string) => {
+        const target = open(id)
+        if (target?.on === 'version') setCurrentTab('stemma')
+        if (target?.on === 'copy') setCurrentTab('sources')
+    }, [open])
 
     const shownPath = deskPath({ versionId: currentVersionId, copyId: currentCopyId, selection })
 
@@ -402,6 +416,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     return (
         <SelectionContext.Provider value={{ selection, setSelection, range, setRange }}>
+        <OpenContext.Provider value={openFromAccount}>
             {viewOnly ? viewControl : toolbar}
 
             <Paper
@@ -653,6 +668,7 @@ export const Desk = ({ show }: DeskProps) => {
                     setSelection([])
                 }}
             />
+        </OpenContext.Provider>
         </SelectionContext.Provider>
     )
 }

@@ -1,6 +1,6 @@
-import { Add, Delete, Done, DoneAll, Edit, QuestionMarkTwoTone, RadioButtonUnchecked, RemoveDone } from "@mui/icons-material";
-import { Button, IconButton, List, ListItem, ListItemText, Popover, Portal, Stack, Tooltip } from "@mui/material";
-import { AnyFeature, isEdit, isSymbol, Path } from "linked-rolls";
+import { Add, Delete, Edit } from "@mui/icons-material";
+import { Button, IconButton, Popover, Portal, Stack, Tooltip } from "@mui/material";
+import { isEdit, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useState } from "react";
 import { useSelection } from "../../providers/SelectionContext";
 import { EditChoice, EditString } from "./EditString";
@@ -8,6 +8,8 @@ import { useAssumption } from "../../hooks/useAssumption";
 import { useDraft } from "../../hooks/useDraft";
 import { EditionContext } from "../../providers/EditionContext";
 import { Argumentation, BeliefAdoption, MeaningComprehension, certainties } from "linked-rolls";
+import { CertaintyIcon } from "./CertaintyIcon";
+import { Reasons } from "./Reasons";
 
 interface ArguableProps {
     anchor?: Element
@@ -22,7 +24,7 @@ interface ArguableProps {
 }
 
 export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
-    const { view, viewOnly } = useContext(EditionContext)
+    const { viewOnly } = useContext(EditionContext)
 
     const [anchorEl, setAnchorEl] = useDraft<Element | null>(anchor || null)
     const [editValue, setEditValue] = useState(false)
@@ -44,24 +46,14 @@ export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
 
     const belief = about['@annotation']?.belief;
 
+    if (viewOnly && !belief) {
+        return asSVG ? <g>{children}</g> : <span>{children}</span>
+    }
+
     const button = (
         <Tooltip title={belief ? belief.certainty : 'No Belief'}>
             <IconButton size='small' sx={{ padding: '2px' }} onClick={e => setAnchorEl(e.currentTarget)}>
-                {belief?.certainty === 'true' && (
-                    <DoneAll sx={{ fontSize: 14 }} />
-                )}
-                {belief?.certainty === 'likely' && (
-                    <Done sx={{ fontSize: 14 }} />
-                )}
-                {belief?.certainty === 'possible' && (
-                    <QuestionMarkTwoTone sx={{ fontSize: 14 }} />
-                )}
-                {(belief?.certainty === 'unlikely' || belief?.certainty === 'false') && (
-                    <RemoveDone sx={{ fontSize: 14 }} />
-                )}
-                {!belief && (
-                    <RadioButtonUnchecked sx={{ fontSize: 14 }} />
-                )}
+                <CertaintyIcon certainty={belief?.certainty} />
             </IconButton>
         </Tooltip>
     )
@@ -102,87 +94,9 @@ export function Arguable({ asSVG, anchor, path, children }: ArguableProps) {
                             )}
                         </div>
 
-                        <div style={{ paddingLeft: '1rem' }}>
+                        <div style={{ padding: '0 1rem 1rem', maxWidth: '500px' }}>
                             {belief.reasons.length > 0 && <b>Reasons</b>}
-                            <List style={{ paddingLeft: '1rem', maxWidth: '500px' }}>
-                                {belief.reasons.map((reason, i) => {
-                                    if (reason.type === 'meaningComprehension') {
-                                        return (
-                                            <ListItem
-                                                key={`reason_${i}`}
-                                                secondaryAction={
-                                                    !viewOnly && (
-                                                        <IconButton
-                                                            size='small'
-                                                            onClick={() => removeReason(i)}
-                                                        >
-                                                            <Delete />
-                                                        </IconButton>
-                                                    )}
-                                            >
-                                                <ListItemText
-                                                    primary={
-                                                        <span>Meaning Comprehension</span>
-                                                    }
-                                                    secondary={
-                                                        reason.comprehends.map((subject: string) => {
-                                                            const target = view?.get(subject)
-                                                            const key = `comprehends-${subject}`
-
-                                                            if (!target) {
-                                                                return <span key={key}>{subject}</span>
-                                                            }
-
-                                                            if (!isSymbol(target)) {
-                                                                // Meaning Comprehension can only target symbols
-                                                                // (E73 Information Object, to be more precise)
-                                                                return <span key={key}>unknown type</span>
-                                                            }
-
-                                                            const featurePath = view?.getPath(subject)?.slice(0, -1)
-                                                            let feature
-                                                            if (featurePath) {
-                                                                feature = view?.atPath<AnyFeature>(featurePath)
-                                                            }
-
-                                                            return (
-                                                                <div key={key}>
-                                                                    <div>{'text' in target ? target.text : 'no text'}</div>
-                                                                    <img src={feature?.depiction} width={200} />
-                                                                </div>
-                                                            )
-                                                        })
-
-                                                    }
-                                                />
-                                            </ListItem>
-                                        )
-                                    }
-                                    else {
-                                        return (
-                                            <ListItem
-                                                key={`reason_${i}`}
-                                                secondaryAction={
-                                                    !viewOnly && (
-                                                        <IconButton
-                                                            size='small'
-                                                            onClick={() => removeReason(i)}
-                                                        >
-                                                            <Delete />
-                                                        </IconButton>
-                                                    )}
-                                            >
-                                                <ListItemText
-                                                    primary={reason.note || 'no note'}
-                                                    secondary={
-                                                        <span>{reason.type}</span>
-                                                    }
-                                                />
-                                            </ListItem>
-                                        )
-                                    }
-                                })}
-                            </List>
+                            <Reasons reasons={belief.reasons} onRemove={viewOnly ? undefined : removeReason} />
 
                             {!viewOnly && (
                                 <Stack direction='column' spacing={1}>
