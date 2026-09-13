@@ -130,7 +130,7 @@ const versionById = (id: string): Json | undefined =>
  * applies to it as it stands.
  */
 const principalOf = (version: Json): Json | undefined =>
-    principalDerivationOf(version as unknown as Version) as unknown as Json | undefined
+    principalDerivationOf(version as unknown as Version)
 
 const parentOf = (version: Json): Json | undefined => {
     const principal = principalOf(version)
