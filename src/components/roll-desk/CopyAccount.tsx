@@ -3,7 +3,6 @@ import { FeatureSource, sourceLabels, valueOf } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { copyAccount } from "../../helpers/account"
-import { copyLabel } from "../../helpers/names"
 import { heldBy } from "../../helpers/heldBy"
 import { webAddressOf } from "../../helpers/reasons"
 import { AccountSection, HeldStatement } from "./Account"
@@ -57,7 +56,7 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
     return (
         <Stack spacing={1}>
             <div>
-                <Typography variant='subtitle2'>Copy {copyLabel(copy)}</Typography>
+                <Typography variant='subtitle2'>{copy.siglum ? `Copy ${copy.siglum}` : 'Copy'}</Typography>
                 <Typography variant='caption' color='text.secondary'>
                     {copy.keeper ? `held by ${heldBy(copy)}` : 'keeper unknown'}
                 </Typography>

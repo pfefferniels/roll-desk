@@ -23,6 +23,7 @@ describe('what a reader calls a copy', () => {
     it('says so where nobody is known to hold it', () => {
         const unheld = copy()
         delete unheld.keeper
+        expect(copyLabel(unheld)).toBe('unnamed copy')
         expect(whichCopy(unheld)).toBe('held by an unnamed keeper')
     })
 })

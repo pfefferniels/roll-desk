@@ -2,7 +2,7 @@ import { EditionView, RollCopy, Version } from "linked-rolls"
 import { heldBy } from "./heldBy"
 
 /** What a reader calls the copy: its siglum, or where it has none, who holds it. */
-export const copyLabel = (copy: RollCopy): string => copy.siglum || heldBy(copy)
+export const copyLabel = (copy: RollCopy): string => copy.siglum || copy.keeper?.name.trim() || 'unnamed copy'
 
 /** Which copy is meant, as a sentence goes on after "the copy". */
 export const whichCopy = (copy: RollCopy): string => copy.siglum || `held by ${heldBy(copy)}`
