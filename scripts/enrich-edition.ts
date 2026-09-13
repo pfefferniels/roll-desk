@@ -41,6 +41,9 @@ if (!sourcePath) {
 }
 const write = flag === '--write'
 
+const STANFORD_1 = 'd229954b-086c-44d6-a589-aaa324d31d88'
+const STANFORD_2 = '88460599-2e0d-4759-851c-903a5a521997'
+const WIDUCH = 'a7ff95b7-f43a-4341-ba86-80fa4e84499c'
 const CHASE = '6e1ce072-7490-44b6-b8e8-eb1bbffc3cad'
 const DYER = '9ae56c3e-b058-4972-9895-96946c6b93f8'
 
@@ -68,9 +71,9 @@ const document: Json = JSON.parse(readFileSync(sourcePath, 'utf-8'))
 // --------------------------------------------------------- reading the roll
 
 const SHORT: Record<string, string> = {
-    'd229954b-086c-44d6-a589-aaa324d31d88': 'S1',
-    '88460599-2e0d-4759-851c-903a5a521997': 'S2',
-    'a7ff95b7-f43a-4341-ba86-80fa4e84499c': 'W',
+    [STANFORD_1]: 'S1',
+    [STANFORD_2]: 'S2',
+    [WIDUCH]: 'W',
     [CHASE]: 'L',
     [DYER]: 'G'
 }
@@ -286,6 +289,60 @@ const enrichDyer = (): string[] => {
         'Dyer: Facsimile des Scans eingehängt',
         'Dyer: readFrom nennt den Lesenden, die Datei und das Datum der Abtastung',
         'Dyer: Rückspulbefehl und Eichtreppe in der Notiz der Quelle festgehalten'
+    ]
+}
+
+/**
+ * Which of the two red Stanford copies is which. Both came in as SUPRA
+ * analyses and said nothing about where they came from. Each file names
+ * itself by the measurements the edition already holds, and the repository
+ * gives both of them a shelfmark in the Condon collection.
+ */
+const enrichStanford = (): string[] => {
+    const readFromSupra = (druid: string, note: string): Json => ({
+        kind: 'analysis',
+        actor: person('Stanford University Libraries'),
+        device: { name: 'Rollenscanner der Stanford University Libraries', sameAs: [] },
+        output: `${druid}_analysis.txt`,
+        note
+    })
+
+    copyBy(STANFORD_1).readFrom = readFromSupra('mf320jq4997',
+        'Die Lesung kommt aus der Analyse, die SUPRA zum eigenen Scan veröffentlicht, '
+        + 'mf320jq4997_analysis.txt zu https://purl.stanford.edu/mf320jq4997. Dass es diese und nicht die '
+        + 'andere rote Analyse ist, sagen deren eigene Maße, die hier eingetragenen: Ränder 54 und 117 px, '
+        + 'Rollenbreite 3888,91 px, Spurabstand 37,7646 px. Das Exemplar trägt die Signatur „Stanford '
+        + 'Libraries CONDON ROLL 47“ (sul:ars0163_cr47_welte_225) und kommt damit, wie das zweite Stanforder '
+        + 'Exemplar, aus der Sammlung Denis Condon. Der Katalog vermerkt dazu allein das Papier, „Lined '
+        + 'paper“ und „Ruled paper“; Randrisse zählt die Analyse keine, und die rote 225, die Peter Phillips '
+        + 'gelesen hat, ist daher das andere Stanforder Exemplar. Gemessen hat Stanford, nicht die Edition, '
+        + 'und die Längsauflösung von 300,25 dpi, die in jeder Analyse steht, ist eine Konstante ihres Geräts '
+        + 'und keine Messung an dieser Rolle.')
+
+    copyBy(STANFORD_2).readFrom = readFromSupra('wv912mm2332',
+        'Die Lesung kommt aus wv912mm2332_analysis.txt zu https://purl.stanford.edu/wv912mm2332, kenntlich '
+        + 'an den hier eingetragenen Maßen: Ränder 32 und 152 px, Rollenbreite 3899,59 px, Spurabstand '
+        + '37,7477 px. Die Signatur lautet „Stanford Libraries CONDON ROLL 48“ (sul:ars0163_cr48_welte_225); '
+        + 'da beide roten Stanforder Exemplare aus der Sammlung Condon stammen, unterscheidet die Provenienz '
+        + 'sie nicht. Der Zustand des Papiers tut es. Peter Phillips, der seine rote 225 von einer '
+        + 'Condon-Rolle gelesen hat, notiert dazu „roll has damaged edges from half way in, otherwise good“, '
+        + 'und die Analyse zählt hier sieben Randrisse zwischen 73 und 89 Prozent der Rollenlänge, fünf im '
+        + 'Bass und zwei im Diskant, dazu 104 Staubausschlüsse und ein zweifelhaftes Loch, während Stanford-1 '
+        + 'keinen einzigen Riss hat. Seine Datei „Traumerei (Schumann) Grunfeld RW.mid“ von 2022, am '
+        + '8. September 2026 per Mail geschickt, zählt 463 Töne wie die Lesung dieses Exemplars, Stanford-1 '
+        + 'zählt 464, und ihr Lautstärkeverlauf korreliert über die gemeinsamen Töne mit diesem Exemplar zu '
+        + 'r = 0,93 (457 von 463 zugeordnet) gegen r = 0,72 bei Stanford-1 (432 Töne). Beide Vergleiche '
+        + 'laufen über zwei verschiedene Emulatoren, seinen und midi2exp, so dass der Abstand der Werte zählt '
+        + 'und nicht ihre Höhe. Phillips liest die Rollen pneumatisch, nicht optisch. Was er geschickt hat, '
+        + 'ist allerdings die emulierte Fassung seiner Lesung: Tonumfang 34 bis 82, neunundzwanzig '
+        + 'Anschlagstärken, Pedale als Controller 64 und 67. Die Ausdrucksperforationen selbst stehen nicht '
+        + 'darin, so dass die Datei als Zeuge für Stanzorte erst taugt, wenn die E-Roll-Datei dazukommt.')
+
+    return [
+        'Stanford-1: readFrom nennt die Analyse mf320jq4997, CONDON ROLL 47, und woran sie zu erkennen ist',
+        'Stanford-2: readFrom nennt die Analyse wv912mm2332, CONDON ROLL 48',
+        'Stanford: beide Exemplare als Rollen der Sammlung Condon bestimmt; welches davon Phillips gelesen '
+        + 'hat, bleibt offen'
     ]
 }
 
@@ -864,6 +921,7 @@ const explain = (
 const report = [
     ...enrichChase(),
     ...enrichDyer(),
+    ...enrichStanford(),
     ...enrichVersionCreation(),
     ...untangleSharedCarriers(),
     ...mergeDuplicateSymbols(),
