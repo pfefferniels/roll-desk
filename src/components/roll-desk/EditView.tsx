@@ -8,6 +8,9 @@ import { Arrow } from "./Arrow";
 import { EditionView } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometry";
+import { cornersOf, point, Point } from "../../helpers/drawing";
+import { add, subtract } from "linked-rolls";
+import { svg } from "../../helpers/units";
 
 
 export type { Translation }
@@ -82,6 +85,15 @@ export const getEditBBoxes = (
 ) => {
     const { insertions, deletions } = editBoxes(edit, editionView, translation, deletedIn)
     return [...insertions, ...deletions]
+}
+
+/** How far the mark of an edit's belief is raised above what the edit touches. */
+const beliefMarkRise = svg(20)
+
+/** Where the mark of the belief an edit is held under sits: just above the right edge of what it touches. */
+export const beliefMarkAt = (boxes: readonly Box[]): Point => {
+    const { x, y, width } = getBoundingBox(boxes.flatMap(cornersOf))
+    return point(add(x, width), subtract(y, beliefMarkRise))
 }
 
 /** The word written under an edit's insertions, where its type calls for one. */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Edit, editTypes, Note } from 'linked-rolls'
-import { editTypeLabel, hullId } from './EditView'
+import { beliefMarkAt, editTypeLabel, hullId } from './EditView'
+import { svg } from '../../helpers/units'
 
 const note = (id: string): Note => ({ type: 'note', id, pitch: 60, carriers: [] })
 
@@ -45,5 +46,16 @@ describe('the id a hull is drawn under', () => {
 
         expect(hullId(replacement, 'insert')).toBe('edit-1-insert')
         expect(hullId(replacement, 'delete')).toBe('edit-1-delete')
+    })
+})
+
+describe('where the mark of an edit\'s belief sits', () => {
+    it('is just above the right edge of everything the edit touches', () => {
+        const boxes = [
+            { x: svg(10), y: svg(40), width: svg(5), height: svg(3) },
+            { x: svg(30), y: svg(50), width: svg(10), height: svg(3) }
+        ]
+
+        expect(beliefMarkAt(boxes)).toEqual({ x: 40, y: 20 })
     })
 })

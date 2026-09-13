@@ -1,7 +1,8 @@
 import { Edit, Motivation } from "linked-rolls";
-import { EditView, getEditBBoxes } from "./EditView";
+import { beliefMarkAt, EditView, getEditBBoxes } from "./EditView";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
-import { SVGProps, useContext } from "react";
+import { CSSProperties, SVGProps, useContext } from "react";
+import { Arguable } from "./Arguable";
 import { EditionContext } from "../../providers/EditionContext";
 import { chaikin } from "../../helpers/concaveHull";
 import { apart, convexHull, cornersOf, hullToSvgPath, middleOf, minus, along, padded, Point } from "../../helpers/drawing";
@@ -51,18 +52,15 @@ const MotivationComprehension = ({ motivationId, edits, expanded, ...svgProps }:
     const color = "gray";
 
     const hullFillOpacity = expanded ? 0.1 : 0.4;
-    const editsOpacity = expanded ? 1 : 0;
-    const editsPointerEvents = expanded ? "auto" : "none";
+    const revealed: CSSProperties = {
+        opacity: expanded ? 1 : 0,
+        pointerEvents: expanded ? "auto" : "none",
+        transition: "opacity 180ms ease-out",
+    };
 
     return (
         <g {...svgProps}>
-            <g
-                style={{
-                    opacity: editsOpacity,
-                    pointerEvents: editsPointerEvents,
-                    transition: "opacity 180ms ease-out",
-                }}
-            >
+            <g style={revealed}>
                 {edits.map((edit) => (
                     <EditView
                         key={`motivation_edit_${edit.id}`}
@@ -83,6 +81,23 @@ const MotivationComprehension = ({ motivationId, edits, expanded, ...svgProps }:
                     transition: "transform 200ms ease-out, fill-opacity 200ms ease-out",
                 }}
             />
+
+            {/* Above the hull, so that the hull does not take their clicks, and
+                kept mounted while hidden, so that an open popover outlives the
+                motivation folding up again. */}
+            <g style={revealed}>
+                {edits.flatMap((edit) => {
+                    const path = edit['@annotation'] && view.getPath(edit.id);
+                    const boxes = getEditBBoxes(edit, view, translation);
+                    return path && boxes.length > 0
+                        ? [
+                            <Arguable key={`belief_${edit.id}`} asSVG={{ buttonPlacement: beliefMarkAt(boxes) }} path={path}>
+                                {null}
+                            </Arguable>
+                        ]
+                        : [];
+                })}
+            </g>
         </g>
     );
 }
