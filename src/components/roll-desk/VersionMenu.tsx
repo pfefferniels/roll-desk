@@ -88,10 +88,11 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const principal = principalDerivationOf(version)
     const sigilOf = (id: string) => nameOf(view, id) ?? 'unknown'
 
-    /** The derivations stated beside the principal one, where each stands in the list. */
-    const hypotheses = (version.basedOn ?? [])
-        .map((derivation, index) => ({ derivation, index }))
-        .filter(({ derivation }) => derivation !== principal)
+    /** Each derivation the version states, with where it stands in the list. */
+    const derivations = (version.basedOn ?? []).map((derivation, index) => ({ derivation, index }))
+    const principalEntry = derivations.find(({ derivation }) => derivation === principal)
+    const hypotheses = derivations.filter(({ derivation }) => derivation !== principal)
+    const versionPath = view.getPath(versionId) ?? []
 
     const witnesses = witnessesOf(view, versionId)
     const reservations = reservationsAboutVersion(view, version)
@@ -210,14 +211,16 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 )}
             </Ribbon>
             <Ribbon title='Derivation'>
-                {principal ? (
-                    <Button
-                        onClick={() => setConfirmDetach(true)}
-                        size='small'
-                        startIcon={<LinkOff />}
-                    >
-                        Detach
-                    </Button>
+                {principalEntry ? (
+                    <Arguable path={[...versionPath, 'basedOn', principalEntry.index]}>
+                        <Button
+                            onClick={() => setConfirmDetach(true)}
+                            size='small'
+                            startIcon={<LinkOff />}
+                        >
+                            Detach from {sigilOf(idOf(principalEntry.derivation))}
+                        </Button>
+                    </Arguable>
                 ) : (
                     <Button
                         onClick={() => setAttachTo(true)}
@@ -235,7 +238,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     Hypothesis
                 </Button>
                 {hypotheses.map(({ derivation, index }) => (
-                    <Arguable key={idOf(derivation)} path={[...(view.getPath(versionId) ?? []), 'basedOn', index]}>
+                    <Arguable key={idOf(derivation)} path={[...versionPath, 'basedOn', index]}>
                         <Button
                             onClick={() => apply(clearDerivation(versionId, idOf(derivation)))}
                             size='small'
