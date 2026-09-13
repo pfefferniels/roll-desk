@@ -5,6 +5,7 @@ import { EditionContext } from "../../providers/EditionContext";
 import { valueOf } from "linked-rolls";
 import { PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, tempoStartOf } from "./ProductionFields";
 import { AlignmentPreview } from "./AlignmentPreview";
+import { heldBy } from "../../helpers/heldBy";
 
 /**
  * Whether there is an alignment to apply. Its numbers say nothing about that:
@@ -91,7 +92,7 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
                             )
                             return (
                                 <MenuItem value={c.id} key={`alignSymbols_${c.id}`}>
-                                    {date} ({c.keeper.name})
+                                    {date} ({heldBy(c)})
                                 </MenuItem>
                             )
                         })}

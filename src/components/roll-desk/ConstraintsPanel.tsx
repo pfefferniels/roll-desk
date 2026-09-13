@@ -1,5 +1,5 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnyPerforation, AnySymbol, ConstraintProblem, Path, PlacementRelation, isPerforation } from "linked-rolls"
+import { AnyPerforation, AnySymbol, CarriageProblem, ConstraintProblem, Path, PlacementRelation, isPerforation } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSnapshot } from "../../hooks/useSnapshot"
@@ -10,6 +10,7 @@ import {
 import { Arguable } from "./Arguable"
 import { LegendPopover } from "./Legend"
 import { ConstraintLegend } from "./ConstraintLegend"
+import { heldBy } from "../../helpers/heldBy"
 
 const Section = ({ title, empty, children }: { title: string; empty: string; children: ReactNode[] }) => (
     <List dense subheader={<ListSubheader disableSticky>{title}</ListSubheader>}>
@@ -55,7 +56,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
     return (
         <List dense subheader={<ListSubheader disableSticky>Problems</ListSubheader>}>
             {groups.length === 0 && (
-                <ListItem><ListItemText secondary='No problems.' /></ListItem>
+                <ListItem><ListItemText secondary='No problems in the versions.' /></ListItem>
             )}
             {groups.flatMap(({ version, problems }) => [
                 <ListSubheader key={version.id} disableSticky sx={{ lineHeight: 2 }}>{version.siglum}</ListSubheader>,
@@ -75,11 +76,43 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
     )
 }
 
+const carriageLabels: Record<CarriageProblem['problem'], string> = {
+    'stated-beside-carriers': 'states what it carries, though its features carry symbols already',
+    'version-missing': 'states that it carries a version the edition lacks'
+}
+
+/** The copies whose statements of the versions they carry cannot stand, or nothing where none is. */
+const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) => {
+    const { edition } = useContext(EditionContext)
+    if (!edition || problems.length === 0) return null
+
+    const sigilOf = (id: string) => edition.versions.find(version => version.id === id)?.siglum ?? id
+    const holderOf = (id: string) => {
+        const copy = edition.copies.find(candidate => candidate.id === id)
+        return copy ? heldBy(copy) : id
+    }
+
+    return (
+        <List dense subheader={<ListSubheader disableSticky>Copies</ListSubheader>}>
+            {problems.map(problem => (
+                <ListItem key={`${problem.copy}-${problem.version}-${problem.problem}`}>
+                    <ListItemText
+                        primary={`The copy held by ${holderOf(problem.copy)} ${carriageLabels[problem.problem]}`}
+                        secondary={sigilOf(problem.version)}
+                    />
+                </ListItem>
+            ))}
+        </List>
+    )
+}
+
 interface ConstraintsPanelProps {
     /** The version whose constraints are shown, absent while none is chosen. */
     versionId?: string
     /** The problems of the whole edition. */
     problems: readonly ConstraintProblem[]
+    /** What the copies state about the versions they carry, where it cannot stand. */
+    carriage: readonly CarriageProblem[]
     onShow: ShowConstraint
 }
 
@@ -88,7 +121,7 @@ interface ConstraintsPanelProps {
  * shown version, each with its belief. An entry opens its version and
  * marks its symbols.
  */
-export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPanelProps) => {
+export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: ConstraintsPanelProps) => {
     const { edition, view } = useContext(EditionContext)
     const snapshot = useSnapshot(versionId)
     const placements = useMemo(() => placementsIn(snapshot), [snapshot])
@@ -106,6 +139,7 @@ export const ConstraintsPanel = ({ versionId, problems, onShow }: ConstraintsPan
     return (
         <Box sx={{ width: 320, maxHeight: '70vh', overflow: 'auto' }}>
             <ProblemList problems={problems} onShow={onShow} />
+            <CarriageList problems={carriage} />
 
             <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ pl: 2 }}>
                 <Typography variant='subtitle2'>

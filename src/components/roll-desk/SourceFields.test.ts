@@ -14,6 +14,7 @@ describe('reading a source from what was typed', () => {
 
     it('takes the fields that were filled in', () => {
         const source = featureSourceOf({
+            ...noSource,
             kind: 'emulation',
             output: ' https://example.org/wm225.mid ',
             device: ' Kodak i5850 ',
@@ -33,6 +34,36 @@ describe('reading a source from what was typed', () => {
     it('drops a field holding nothing but spaces', () => {
         expect(featureSourceOf({ ...noSource, kind: 'scan', device: '   ', note: '  ' }))
             .toEqual({ kind: 'scan' })
+    })
+
+    it('takes the software and the instrument, and drops software that names nothing', () => {
+        const source = featureSourceOf({
+            ...noSource,
+            kind: 'recording',
+            software: [{ name: ' Transkun ', version: ' 2.0 ' }, { name: '  ', version: '1' }],
+            instrument: ' Steinway with a Welte-Mignon Vorsetzer '
+        })
+
+        expect(source).toEqual({
+            kind: 'recording',
+            software: [{ name: 'Transkun', version: '2.0' }],
+            instrument: { name: 'Steinway with a Welte-Mignon Vorsetzer', sameAs: [] }
+        })
+    })
+
+    it('keeps what the form does not edit from the source it started from', () => {
+        const previous = {
+            kind: 'recording' as const,
+            actor: { name: 'TACET', sameAs: [] },
+            instrument: {
+                name: 'a Vorsetzer',
+                sameAs: [],
+                condition: { type: 'ConditionState' as const, conditionType: 'general' as const, description: 'regulated for the recording' }
+            }
+        }
+
+        expect(featureSourceOf({ ...sourceInputOf(previous), note: 'played for the CD' }, previous))
+            .toEqual({ ...previous, note: 'played for the CD' })
     })
 })
 

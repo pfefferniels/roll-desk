@@ -1,6 +1,6 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, TypeSpecimen } from "@mui/icons-material"
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation } from "linked-rolls"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred, TypeSpecimen } from "@mui/icons-material"
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
+import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
@@ -19,6 +19,7 @@ import { VersionCreationDialog } from "./VersionCreationDialog"
 import { isMotivation } from "../../helpers/motivation"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "./Arguable"
+import { heldBy } from "../../helpers/heldBy"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {
@@ -90,6 +91,13 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const hypotheses = (version.basedOn ?? [])
         .map((derivation, index) => ({ derivation, index }))
         .filter(({ derivation }) => derivation !== principal)
+
+    const witnesses = witnessesOf(view, versionId)
+    const reservations = reservationsAboutVersion(view, version)
+    const copyLabelOf = (copyId: string) => {
+        const witness = edition.copies.find(candidate => candidate.id === copyId)
+        return witness ? heldBy(witness) : copyId
+    }
 
     return (
         <>
@@ -183,6 +191,30 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 </>
             )}
             <ConstraintsRibbon versionId={versionId} />
+            <Ribbon title='Witnesses'>
+                {witnesses.map(witness => (
+                    <Chip
+                        key={witness.copy}
+                        size='small'
+                        variant={witness.by === 'statement' ? 'outlined' : 'filled'}
+                        label={witness.by === 'statement'
+                            ? `${copyLabelOf(witness.copy)} (${witness.certainty})`
+                            : copyLabelOf(witness.copy)}
+                        sx={{ m: 0.25 }}
+                    />
+                ))}
+                {reservations.length > 0 && (
+                    <Tooltip
+                        title={
+                            <Stack component='ul' sx={{ m: 0, pl: 2 }} spacing={0.5}>
+                                {reservations.map(reservation => <li key={reservation.type}>{reservation.note}</li>)}
+                            </Stack>
+                        }
+                    >
+                        <ReportGmailerrorred fontSize='small' color='warning' sx={{ alignSelf: 'center' }} />
+                    </Tooltip>
+                )}
+            </Ribbon>
             <Ribbon title='Derivation'>
                 {principal ? (
                     <Button
