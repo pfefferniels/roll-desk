@@ -137,7 +137,7 @@ const parentOf = (version: Json): Json | undefined => {
     return principal && versionById(principal['@id'])
 }
 
-/** The edits the version states. One that leaves its text unstated, as C_S does, states none. */
+/** The edits the version states. One that leaves its text unstated, as C1 does, states none. */
 const editsOf = (version: Json): Json[] => version.edits ?? []
 
 const insertionsOf = (version: Json): Json[] =>

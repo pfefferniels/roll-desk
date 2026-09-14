@@ -345,14 +345,7 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     fontSize={14}
                     fill="white"
                 >
-                    {node.label.includes('_') ? (
-                        <tspan>
-                            {node.label.split('_')[0]}
-                            <tspan baselineShift='super' fontSize={9}>{node.label.split('_')[1]}</tspan>
-                        </tspan>
-                    ) : (
-                        node.label
-                    )}
+                    {node.label}
                 </text>
 
                 {node.system && node.namesSystem && (
@@ -507,31 +500,44 @@ export const LinkContainer = ({
                                 <title>Transferred to another reproducing system</title>
                             </line>
                         )}
-                        <SlicedBalloon
-                        slices={
-                            motivations.map(m => {
-                                return {
-                                    count: view?.linksTo(m.id).length || 0,
-                                    id: m.id,
-                                    selected: selection.some(s => 'id' in s && s.id === m.id),
-                                    description: m.note || 'No description'
+                        {motivations.length === 0 && !link.transfer && (
+                            <line
+                                x1={source.x}
+                                y1={source.y}
+                                x2={target.x}
+                                y2={target.y}
+                                stroke="gray"
+                                strokeOpacity={0.5}
+                                strokeWidth={2}
+                            />
+                        )}
+                        {motivations.length > 0 && (
+                            <SlicedBalloon
+                                slices={
+                                    motivations.map(m => {
+                                        return {
+                                            count: view?.linksTo(m.id).length || 0,
+                                            id: m.id,
+                                            selected: selection.some(s => 'id' in s && s.id === m.id),
+                                            description: m.note || 'No description'
+                                        }
+                                    })
                                 }
-                            })
-                        }
-                        a={{ x: source.x, y: source.y }}
-                        b={{ x: target.x, y: target.y }}
-                        onSliceClick={(slice) => {
-                            if (slice) {
-                                const m = motivations.find(m => m.id === slice.id)
-                                if (m) {
-                                    onVersionClick(source.id)
-                                    queueMicrotask(() => setSelection([m]))
-                                }
-                            } else {
-                                setSelection([])
-                            }
-                        }}
-                        />
+                                a={{ x: source.x, y: source.y }}
+                                b={{ x: target.x, y: target.y }}
+                                onSliceClick={(slice) => {
+                                    if (slice) {
+                                        const m = motivations.find(m => m.id === slice.id)
+                                        if (m) {
+                                            onVersionClick(source.id)
+                                            queueMicrotask(() => setSelection([m]))
+                                        }
+                                    } else {
+                                        setSelection([])
+                                    }
+                                }}
+                            />
+                        )}
                         {mark}
                     </g>
                 )
