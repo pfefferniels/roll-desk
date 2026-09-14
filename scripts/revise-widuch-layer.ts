@@ -10,60 +10,22 @@
  * A1: the rapid soft-pedal changes of bar 9, which A1 adds in place of A's
  * plain release, and the rewind hole.
  *
- *     npx vite-node scripts/revise-widuch-layer.ts [--write]
+ *     npx vite-node --options.deps.inline=linked-rolls scripts/revise-widuch-layer.ts [--write]
  */
 
-import { readFileSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
-import Ajv from 'ajv'
-import { principalDerivationOf, Version } from 'linked-rolls'
-
-const SCHEMA = new URL('../node_modules/linked-rolls/lib/schema.json', import.meta.url)
-const TARGET = new URL('../../welte225.org/edition.jsonld', import.meta.url)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = Record<string, any>
+import {
+    changedTexts, danglingDeletions, dropUnusedMotivations, editsOf, finish, insertionsIn, Json, likely,
+    principalOf, pruneEdits, readEdition, removeDeletion, removeInsertion, structuralProblems, textOf, textsOf, versionBy
+} from './storedEdition'
 
 const WIDUCH = 'a7ff95b7-f43a-4341-ba86-80fa4e84499c'
 
-const write = process.argv.includes('--write')
-const document: Json = JSON.parse(readFileSync(TARGET, 'utf-8'))
-
-// ------------------------------------------------------------ the document
-
-const versionBy = (siglum: string): Json => {
-    const version = document.versions.find((v: Json) => v.siglum === siglum)
-    if (!version) throw new Error(`no version ${siglum}`)
-    return version
-}
-
-const principalOf = (version: Json): Json | undefined =>
-    principalDerivationOf(version as unknown as Version)
-
-const parentOf = (version: Json): Json | undefined => {
-    const principal = principalOf(version)
-    return principal && document.versions.find((v: Json) => v['@id'] === principal['@id'])
-}
-
-const editsOf = (version: Json): Json[] => version.edits ?? []
-
-const lineageOf = (version: Json): Json[] => {
-    const parent = parentOf(version)
-    return parent ? [...lineageOf(parent), version] : [version]
-}
-
-/** The ids of the symbols the version shows. */
-const textOf = (version: Json): Set<string> => {
-    const edits = lineageOf(version).flatMap(editsOf)
-    const struck = new Set(edits.flatMap(edit => edit.delete ?? []))
-    return new Set(edits.flatMap(edit => (edit.insert ?? []).map((s: Json) => s['@id'])).filter(id => !struck.has(id)))
-}
+const document = readEdition()
 
 const featureIndex = new Map<string, { copy: string, from: number }>(
     document.copies.flatMap((copy: Json) => (copy.features ?? []).map((feature: Json) =>
         [feature['@id'], { copy: copy['@id'], from: feature.horizontal.from }] as const)))
-
-const insertionsIn = (version: Json): Json[] => editsOf(version).flatMap(edit => edit.insert ?? [])
 
 const homeOf = (id: string): Json | undefined =>
     document.versions.find((version: Json) => insertionsIn(version).some(symbol => symbol['@id'] === id))
@@ -91,48 +53,15 @@ const symbolAt = (expressionType: string, scope: string, place: number): Json =>
     return found[0]
 }
 
-const likely = (note: string): Json => ({
-    '@id': randomUUID(),
-    belief: { '@type': 'belief', '@id': randomUUID(), certainty: 'likely', reasons: [{ '@type': 'simpleArgumentation', note }] }
-})
-
-// ------------------------------------------------------------- operations
-
-/** Drops edits that neither insert nor delete anything, and empty lists within edits. */
-const pruneEdits = (version: Json) => {
-    version.edits = editsOf(version)
-        .map(edit => Object.fromEntries(Object.entries(edit).filter(([key, value]) =>
-            !((key === 'insert' || key === 'delete') && Array.isArray(value) && value.length === 0))))
-        .filter(edit => (edit.insert?.length ?? 0) + (edit.delete?.length ?? 0) > 0)
-}
-
-const removeInsertion = (version: Json, id: string) => {
-    version.edits = editsOf(version).map(edit =>
-        ({ ...edit, insert: (edit.insert ?? []).filter((s: Json) => s['@id'] !== id) }))
-    pruneEdits(version)
-}
-
-const removeDeletion = (version: Json, id: string) => {
-    version.edits = editsOf(version).map(edit =>
-        ({ ...edit, delete: (edit.delete ?? []).filter((d: string) => d !== id) }))
-    pruneEdits(version)
-}
-
 /** Moves a symbol from the version that inserts it into the archetype's text. */
 const liftIntoA = (id: string) => {
     const home = homeOf(id)
     if (!home || home.siglum === 'A') return
     const symbol = symbolById(id)
     removeInsertion(home, id)
-    const text = editsOf(versionBy('A')).reduce((largest, edit) =>
+    const text = editsOf(versionBy(document, 'A')).reduce((largest, edit) =>
         (edit.insert?.length ?? 0) > (largest.insert?.length ?? 0) ? edit : largest)
     text.insert.push(symbol)
-}
-
-const danglingDeletions = (version: Json): string[] => {
-    const parent = parentOf(version)
-    const held = parent ? textOf(parent) : new Set<string>()
-    return editsOf(version).flatMap(edit => edit.delete ?? []).filter((id: string) => !held.has(id))
 }
 
 /** Joins the edits of one step that the collation left apart. */
@@ -153,20 +82,11 @@ const mergeEditsWith = (version: Json, ids: string[]) => {
     pruneEdits(version)
 }
 
-const dropUnusedMotivations = (version: Json): string[] => {
-    const used = new Set(editsOf(version).map(edit => edit.motivation))
-    const unused = (version.motivations ?? []).filter((m: Json) => !used.has(m['@id'])).map((m: Json) => m['@id'])
-    if (version.motivations) version.motivations = version.motivations.filter((m: Json) => used.has(m['@id']))
-    return unused
-}
+const textsBefore = textsOf(document)
+const sizeBefore = (siglum: string): number => textsBefore.get(siglum)?.size ?? 0
 
-// ----------------------------------------------------------------- the run
-
-const textsBefore = new Map<string, Set<string>>(document.versions.map((v: Json) => [v.siglum, textOf(v)]))
-const textBefore = (siglum: string): Set<string> => textsBefore.get(siglum) ?? new Set()
-
-const a1 = versionBy('A1')
-const b = versionBy('B')
+const a1 = versionBy(document, 'A1')
+const b = versionBy(document, 'B')
 
 const flicker = ([
     ['SoftPedalOff', 5507.0], ['SoftPedalOn', 5534.9], ['SoftPedalOff', 5549.4],
@@ -180,17 +100,19 @@ const keptInA1 = new Set([
 ])
 
 // B deleted these while A1 held them: each belongs to A unless it is A1's own.
-const lifted = danglingDeletions(b)
+const lifted = danglingDeletions(document, b)
     .filter(id => !keptInA1.has(id))
     .filter(id => homeOf(id)?.siglum === 'A1' && carriedOnlyByWiduch(symbolById(id)))
 lifted.forEach(liftIntoA)
-danglingDeletions(b).forEach(id => removeDeletion(b, id))
+danglingDeletions(document, b).forEach(id => removeDeletion(b, id))
 
 // A1 deletes the crescendo release of bar 2 that B inserted; it belongs to A
 // (abb-18 of the dissertation), like the plain soft-pedal release of bars 8′–10.
-const liftedForA1 = danglingDeletions(a1)
+const liftedForA1 = [
+    ...danglingDeletions(document, a1),
+    ...plainRelease.map(symbol => symbol['@id']).filter(id => homeOf(id)?.siglum !== 'A')
+]
 liftedForA1.forEach(liftIntoA)
-plainRelease.forEach(symbol => liftIntoA(symbol['@id']))
 
 const gradualLift = 'una-corda-lifted-gradually'
 if (!editsOf(a1).some(edit => edit.motivation === gradualLift)) {
@@ -229,7 +151,7 @@ mergeEditsWith(b, [symbolAt('SlowCrescendoOff', 'treble', 5584.3), symbolAt('Slo
 mergeEditsWith(b, [symbolAt('SlowCrescendoOff', 'treble', 6466.2), symbolAt('SlowCrescendoOn', 'treble', 6503.3), symbolAt('SlowCrescendoOn', 'treble', 6457.6)].map(s => s['@id']))
 
 // D1 removes a soft-pedal release in bar 13 that has no effect: the pedal was already released.
-const d1 = versionBy('D1')
+const d1 = versionBy(document, 'D1')
 const heldPedal = d1.motivations.find((m: Json) => m['@id'] === 'soft-pedal-held')
 if (heldPedal) {
     heldPedal['@id'] = 'redundant-soft-pedal-release'
@@ -242,7 +164,8 @@ const ownDeletions = editsOf(a1).flatMap(edit => edit.delete ?? []).filter((id: 
 if (ownAdditions.length !== 5 || ownDeletions.length !== 2) {
     throw new Error(`A1 holds ${ownAdditions.length} additions and ${ownDeletions.length} deletions of its own, where the note names 5 and 2`)
 }
-const widuchReadingsInA = [...textOf(versionBy('A'))].filter(id => carriedOnlyByWiduch(symbolById(id))).length
+const textOfA = textOf(document, versionBy(document, 'A'))
+const widuchReadingsInA = [...textOfA].filter(id => carriedOnlyByWiduch(symbolById(id))).length
 const derivationOfA1 = principalOf(a1)
 if (!derivationOfA1?.['@annotation']) throw new Error('A1 states no belief about its derivation')
 derivationOfA1['@annotation'].belief.reasons = [{
@@ -259,50 +182,15 @@ derivationOfA1['@annotation'].belief.reasons = [{
 const unusedMotivations = document.versions.flatMap((v: Json) => dropUnusedMotivations(v).map(id => `${v.siglum}: ${id}`))
 document.versions.forEach(pruneEdits)
 
-// ----------------------------------------------------------- verification
-
-const problems = [
-    ...document.versions.flatMap((v: Json) => danglingDeletions(v).map(id => `${v.siglum} deletes ${id}, which its parent does not hold`)),
-    ...document.versions.flatMap((v: Json) => {
-        const ids = lineageOf(v).flatMap(insertionsIn).map(s => s['@id'])
-        return ids.filter((id, i) => ids.indexOf(id) !== i).map(id => `${v.siglum} inserts ${id} a second time`)
-    }),
-    ...document.versions.flatMap((v: Json) => editsOf(v)
-        .filter(edit => edit.motivation && !(v.motivations ?? []).some((m: Json) => m['@id'] === edit.motivation))
-        .map(edit => `${v.siglum} names the undefined motivation ${edit.motivation}`)),
-    ...document.versions.filter((v: Json) => v.siglum !== 'A').flatMap((v: Json) => {
-        const before = textBefore(v.siglum)
-        const after = textOf(v)
-        const same = before.size === after.size && [...before].every(id => after.has(id))
-        return same ? [] : [`the text of ${v.siglum} changed`]
-    })
-]
-
-const report = [
+finish(document, [
     `A: ${lifted.length} Lesarten allein des Exemplars Widuch aus A1 übernommen, die B verschiebt oder tilgt`,
-    `A: ${liftedForA1.length + plainRelease.length} Lesarten aus B übernommen, die A1 tilgt (Crescendo-Ab in T. 2, schlichte Aufhebung der Verschiebung in T. 8′–10)`,
+    `A: ${liftedForA1.length} Lesarten aus B übernommen, die A1 tilgt (Crescendo-Ab in T. 2, schlichte Aufhebung der Verschiebung in T. 8′–10)`,
     'A1: das allmähliche Aufheben der Verschiebung als eine Bearbeitung mit Begründung',
     'B: die Tilgung des Pianozugs in T. 13 begründet, drei auf mehrere Bearbeitungen verteilte Schritte zusammengefasst',
     'D1: die Begründung der Tilgung in T. 13 berichtigt',
-    `A: ${textOf(versionBy('A')).size - textBefore('A').size} Symbole mehr im Text, ${widuchReadingsInA} davon allein vom Exemplar Widuch getragen`,
-    ...(unusedMotivations.length ? [`nicht mehr gebrauchte Begründungen entfernt: ${unusedMotivations.join(', ')}`] : []),
-    ...problems.map(problem => `PROBLEM: ${problem}`)
-]
-report.forEach(line => console.log('  ' + line))
-
-const validate = new Ajv({ formats: { date: /^\d{4}-\d{1,2}-\d{1,2}$/ } })
-    .compile(JSON.parse(readFileSync(SCHEMA, 'utf-8')))
-const sound = validate(document)
-console.log(`\n  gegen das Schema: ${sound ? 'gültig' : 'UNGÜLTIG'}`)
-if (!sound || problems.length > 0) {
-    if (!sound) console.log(JSON.stringify(validate.errors?.slice(0, 5), null, 2))
-    console.error('\n  nicht geschrieben')
-    process.exit(1)
-}
-
-if (write) {
-    writeFileSync(TARGET, JSON.stringify(document, null, 4) + '\n')
-    console.log(`\n  geschrieben nach ${TARGET.pathname}`)
-} else {
-    console.log('\n  (nichts geschrieben; --write schreibt nach ../welte225.org/edition.jsonld)')
-}
+    `A: ${textOfA.size - sizeBefore('A')} Symbole mehr im Text, ${widuchReadingsInA} davon allein vom Exemplar Widuch getragen`,
+    ...(unusedMotivations.length ? [`nicht mehr gebrauchte Begründungen entfernt: ${unusedMotivations.join(', ')}`] : [])
+], [
+    ...structuralProblems(document),
+    ...changedTexts(document, textsBefore, ['A']).map(siglum => `the text of ${siglum} changed`)
+])
