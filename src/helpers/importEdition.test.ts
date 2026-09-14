@@ -6,7 +6,7 @@ import { fixtureEdition } from './editionFixture'
 /** The stored document has no type of its own, so the test shapes what it edits. */
 type Document = {
     copies: { keeper: { name: string } }[]
-    versions: { versionType: string }[]
+    versions: object[]
 }
 
 const current = () => asJsonLd(fixtureEdition()) as Document
@@ -20,7 +20,7 @@ const inOldFormat = () => {
     return {
         ...document,
         copies: document.copies.map(({ keeper, ...copy }) => ({ ...copy, location: keeper.name })),
-        versions: document.versions.map(({ versionType, ...version }) => ({ ...version, '@type': versionType }))
+        versions: document.versions.map(version => ({ ...version, '@type': 'edition' }))
     }
 }
 

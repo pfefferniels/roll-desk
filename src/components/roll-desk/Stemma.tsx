@@ -1,4 +1,4 @@
-import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, systemIdOf, trackerBarOf, Version, VersionType } from 'linked-rolls'
+import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useMemo, useRef, useState } from "react"
@@ -125,8 +125,6 @@ export interface Node extends d3.SimulationNodeDatum {
     label: string;
     generation: number
     radius?: number;
-    /** Left out where the version does not say whether it served as a master. */
-    type?: VersionType;
     /** The reproducing system the version is coded for, named short. */
     system?: string
     /**
@@ -188,7 +186,6 @@ export const graphOf = (
         return {
             id: version.id,
             label: version.siglum,
-            type: version.versionType,
             system: trackerBarOf(version.system)?.name,
             namesSystem: parent === undefined || !sharesSystem(parent, version),
             generation: version.generation,
@@ -243,7 +240,7 @@ export const linkMarkAt = (a: Point, b: Point, clearance: Svg): Point => {
 }
 
 export const radiusOf = (node: Node) =>
-    node.radius ?? (node.type === 'edition' ? 32 : 26)
+    node.radius ?? 32
 
 /**
  * Half the caption and the gap to the next one. Text cannot be
@@ -330,7 +327,7 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     cx={node.x || 10}
                     cy={node.y || 10}
                     r={radiusOf(node)}
-                    fill={node.type === 'edition' ? 'darkslategray' : node.type === 'unicum' ? '#8FB1FF' : '#9ca3af'}
+                    fill='darkslategray'
                     strokeWidth={highlight ? 3 : 0}
                     stroke='black'
                     strokeDasharray={highlight ? '3 2' : undefined}

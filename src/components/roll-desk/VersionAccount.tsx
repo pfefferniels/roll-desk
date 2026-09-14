@@ -21,7 +21,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             <div>
                 <Typography variant='subtitle2'>Version {version.siglum}</Typography>
                 <Typography variant='caption' color='text.secondary'>
-                    {version.versionType ?? 'type not stated'} · {trackerBarOf(version.system)?.name ?? version.system.name}
+                    {trackerBarOf(version.system)?.name ?? version.system.name}
                 </Typography>
             </div>
 

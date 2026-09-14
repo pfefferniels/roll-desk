@@ -1,14 +1,13 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred, TypeSpecimen } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred } from "@mui/icons-material"
 import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from "@mui/material"
 import { ReservationNotes } from "./Reservations"
-import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, versionTypes, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
 import { AttachToDialog } from "./AttachToDialog"
 import { useHotkeys } from "react-hotkeys-hook"
-import { EditType } from "./EditVersionType"
 import { ConstraintsRibbon } from "./ConstraintsRibbon"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
@@ -49,7 +48,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const [editSiglum, setEditSiglum] = useState(false)
     const [editCreation, setEditCreation] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
-    const [versionType, setVersionType] = useState(false)
     const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
     const [symbolsToRecollate, setSymbolsToRecollate] = useState<string[]>()
     const [confirmDetach, setConfirmDetach] = useState(false)
@@ -101,13 +99,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     return (
         <>
             <Ribbon title='Version'>
-                <Button
-                    onClick={() => setVersionType(true)}
-                    size='small'
-                    startIcon={<TypeSpecimen />}
-                >
-                    Type
-                </Button>
                 <Button
                     onClick={() => apply(removeVersion(view, versionId))}
                     size='small'
@@ -324,20 +315,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     }}
                 />
             )}
-
-            <EditType
-                open={versionType}
-                onClose={() => setVersionType(false)}
-                onSave={(type) => {
-                    apply((draft) => {
-                        const version = draft.versions.find(v => v.id === versionId)
-                        if (!version) return
-                        version.versionType = type
-                    })
-                }}
-                value={version.versionType}
-                types={versionTypes}
-            />
 
             <Dialog open={confirmDetach} onClose={() => setConfirmDetach(false)}>
                 <DialogTitle>Detach Version</DialogTitle>

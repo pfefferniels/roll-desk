@@ -641,7 +641,6 @@ const splitOffStanfordUnicum = (): string[] => {
         '@id': randomUUID(),
         siglum: 'B1',
         system: JSON.parse(JSON.stringify(b.system)),
-        versionType: 'unicum',
         basedOn: [{
             '@id': b['@id'],
             collationTolerance: { toleranceStart: COLLATION_TOLERANCE, toleranceEnd: COLLATION_TOLERANCE }
@@ -679,7 +678,6 @@ const splitOffStanfordUnicum = (): string[] => {
  */
 const nameTheWiduchLayer = (): string[] => {
     const a1 = versionBy('A1')
-    a1.versionType = 'unicum'
 
     // Fifty-two readings with fifty-two local reasons: one motivation over all
     // of them would say nothing about any. Why they sit here rather than in the
@@ -694,7 +692,7 @@ const nameTheWiduchLayer = (): string[] => {
 
     const bare = editsOf(a1).filter((edit: Json) => !edit.motivation).length
     return [
-        `A1: versionType auf unicum gesetzt, die Begründung der Ableitung an ihr vermerkt`
+        `A1: die Begründung der Ableitung an ihr vermerkt`
         + ` (${bare} Bearbeitungen warten noch auf eine eigene Motivation)`
     ]
 }
@@ -960,7 +958,7 @@ document.versions.forEach((version: Json) => {
     const bare = editsOf(version).filter((edit: Json) => !edit.motivation && !edit.editType).length
     console.log(`    ${version.siglum.padEnd(3)} ${String(editsOf(version).length).padStart(4)} Edits, `
         + `${String(snapshot.length).padStart(4)} Symbole, ${bare} ohne Begründung`
-        + `  [${version.versionType ?? 'Typ offen'}, ${version.system.name}]`)
+        + `  [${version.system.name}]`)
 })
 
 const validate = new Ajv({ formats: { date: /^\d{4}-\d{1,2}-\d{1,2}$/ } })

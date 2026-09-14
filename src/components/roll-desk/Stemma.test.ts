@@ -14,7 +14,6 @@ const version = (
     id: siglum,
     siglum,
     system: systemOf(bar),
-    versionType: 'edition',
     ...(basedOn && { basedOn: [assignReference(basedOn)] }),
     edits: [],
     motivations: [],

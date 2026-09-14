@@ -66,7 +66,6 @@ export const Legend = () => {
             <NavigationNode
               node={{
                 generation: 0,
-                type: 'edition',
                 id: '',
                 label: 'V',
                 x: width / 2 + shadowMargin / 2,
