@@ -2,7 +2,9 @@ import { useContext } from 'react'
 import { barOf, Edition, mm, RollCopy } from 'linked-rolls'
 import { EditionContext } from '../../providers/EditionContext'
 import { asRead, SourcePreview } from './SourcePreview'
+import { AccountSection } from './Account'
 import { padded, Span, spanning } from '../../helpers/scale'
+import { secondarySourceOf } from '../../helpers/names'
 
 interface SourceStackProps {
     activeId?: string
@@ -32,20 +34,30 @@ export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
     if (!edition || edition.copies.length === 0) return null
 
     const bounds = boundsOf(edition)
+    const entries = edition.copies.map((copy, copyIndex) => ({ copy, copyIndex }))
+    const secondary = entries.filter(({ copy }) => secondarySourceOf(copy) !== undefined)
+    const measured = entries.filter(({ copy }) => secondarySourceOf(copy) === undefined)
+
+    const previewOf = ({ copy, copyIndex }: { copy: RollCopy, copyIndex: number }) => (
+        <SourcePreview
+            key={copy.id}
+            copy={copy}
+            copyIndex={copyIndex}
+            active={copy.id === activeId}
+            onClick={() => onClick(copy.id)}
+            globalBounds={bounds}
+            bar={barOf(copy)}
+        />
+    )
 
     return (
         <div>
-            {edition.copies.map((copy, index) => (
-                <SourcePreview
-                    key={copy.id}
-                    copy={copy}
-                    copyIndex={index}
-                    active={copy.id === activeId}
-                    onClick={() => onClick(copy.id)}
-                    globalBounds={bounds}
-                    bar={barOf(copy)}
-                />
-            ))}
+            {measured.map(previewOf)}
+            {secondary.length > 0 && (
+                <AccountSection title='Secondary sources'>
+                    <div>{secondary.map(previewOf)}</div>
+                </AccountSection>
+            )}
         </div>
     )
 }

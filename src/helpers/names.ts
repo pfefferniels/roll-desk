@@ -1,5 +1,19 @@
-import { EditionView, RollCopy, Version } from "linked-rolls"
+import { EditionView, isMeasured, RollCopy, SourceKind, Version } from "linked-rolls"
 import { heldBy } from "./heldBy"
+
+/** Each kind of source as a title, where `sourceLabels` gives the phrase a sentence needs. */
+const sourceTitles: Record<SourceKind, string> = {
+    roll: 'Roll',
+    scan: 'Scan',
+    analysis: 'Hole analysis',
+    reading: 'Roll reader',
+    emulation: 'MIDI emulation',
+    recording: 'Audio recording'
+}
+
+/** The kind of secondary source a copy is known from, or nothing where its features were measured. */
+export const secondarySourceOf = (copy: RollCopy): string | undefined =>
+    copy.readFrom && !isMeasured(copy.readFrom.kind) ? sourceTitles[copy.readFrom.kind] : undefined
 
 /** What a reader calls the copy: its siglum, or where it has none, who holds it. */
 export const copyLabel = (copy: RollCopy): string => copy.siglum || copy.keeper?.name.trim() || 'unnamed copy'

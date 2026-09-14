@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { add, Millimeters, mm, RollCopy, scale as times, sourceLabels, subtract, TrackerBar } from 'linked-rolls'
+import { add, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
 import { valueOf } from 'linked-rolls'
 import { Arguable } from './Arguable'
+import { secondarySourceOf } from '../../helpers/names'
 import { atLeastVisible, boxOf, evenGeometry, Translation } from '../../helpers/rollGeometry'
 import { Span, spanning } from '../../helpers/scale'
 import { Svg, svg } from '../../helpers/units'
@@ -84,6 +85,11 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, 
         )
         : 'unknown date'
 
+    const secondary = secondarySourceOf(copy)
+    const drawn = copy.features.length > 0
+    /** A copy known at second hand and with nothing to draw says what it is known from, with no empty box above. */
+    const boxed = drawn || !secondary
+
     return (
         <div
             ref={containerRef}
@@ -101,27 +107,25 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, 
                 transition: 'background 0.15s, border-color 0.15s',
             }}
         >
-            {copy.features.length > 0 ? (
+            {boxed && (drawn ? (
                 <canvas
                     ref={canvasRef}
                     style={{ width: '100%', height: 40, display: 'block' }}
                 />
             ) : (
                 <div style={{ height: 40, display: 'flex', alignItems: 'center', padding: '0 6px', fontSize: 10, color: '#777' }}>
-                    {copy.readFrom
-                        ? `No perforations read, known from ${sourceLabels[copy.readFrom.kind]}`
-                        : 'No perforations read'}
+                    No perforations read
                 </div>
-            )}
+            ))}
             <div style={{
-                padding: '0 6px 4px',
+                padding: boxed ? '0 6px 4px' : '4px 6px',
                 fontSize: 10,
                 color: '#777',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
             }}>
-                <span>{date}</span>
+                <span>{secondary && `${secondary} · `}{date}</span>
                 <span>{[copy.siglum, copy.keeper?.name].filter(Boolean).join(' · ')}</span>
             </div>
         </div>
