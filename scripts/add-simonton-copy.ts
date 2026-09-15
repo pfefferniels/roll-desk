@@ -87,6 +87,7 @@ const copy: Json = {
     conditions: [],
     modifications: [],
     features: [],
+    keeper: person('USC Libraries'),
     production: { system: schmitz.production.system },
     readFrom: {
         kind: 'recording',
@@ -109,9 +110,9 @@ const copy: Json = {
             + '2022 auf YouTube unter der Nummer SWV 6633 veröffentlicht hat. Nach der Abschrift der Plattentasche auf '
             + 'mmdigest.com wurde die Kassette von Richard C. Simonton für den Book-of-the-Month Club hergestellt, von Walter S. '
             + 'Heebner produziert und „in Los Angeles, California, winter 1962-1963, on Steinway Concert Grand No. 261“ '
-            + 'aufgenommen. Welche Rolle gespielt wurde und wo sie heute ist, ist nicht bekannt. Das Verzeichnis der Welte-Rollen '
-            + 'der Sammlung Simonton an der University of Southern California (2000) führt Nr. 0225 in drei Exemplaren, keines '
-            + 'davon als Rolle der amerikanischen Tochtergesellschaft vermerkt. Töne und Timing folgen den roten Exemplaren: '
+            + 'aufgenommen. Simontons Welte-Rollen liegen heute in den USC Libraries. Deren Verzeichnis (2000) führt Nr. 0225 in '
+            + 'drei Exemplaren, keines davon als Rolle der amerikanischen Tochtergesellschaft vermerkt. Welches von ihnen gespielt '
+            + 'wurde, ist nicht bekannt. Töne und Timing folgen den roten Exemplaren: '
             + 'die Neuanschläge von D3 sind nicht zu hören, das e′′ '
             + `bei ${decimal(tied?.mm ?? 0)} mm, das D3 überbindet, erklingt, und an den beiden Stellen, an denen die Licensee-`
             + `Exemplare rund 27 mm länger laufen, weicht die Aufnahme um höchstens ${decimal(largestStretch)} mm ab, bei einer `
