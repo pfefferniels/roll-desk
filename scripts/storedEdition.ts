@@ -89,10 +89,30 @@ export const dropUnusedMotivations = (version: Json): string[] => {
     return unused
 }
 
-export const likely = (note: string): Json => ({
+/** An annotation holding a belief of the given certainty. */
+export const believing = (certainty: string, reasons: Json[]): Json => ({
     '@id': randomUUID(),
-    belief: { '@type': 'belief', '@id': randomUUID(), certainty: 'likely', reasons: [{ '@type': 'simpleArgumentation', note }] }
+    belief: { '@type': 'belief', '@id': randomUUID(), certainty, reasons }
 })
+
+export const argued = (note: string): Json => ({ '@type': 'simpleArgumentation', note })
+
+export const adopted = (note: string): Json => ({ '@type': 'beliefAdoption', note })
+
+export const inferred = (note: string, used: string[]): Json => ({ '@type': 'inference', note, premises: [], used })
+
+export const likely = (note: string): Json => believing('likely', [argued(note)])
+
+export const person = (name: string): Json => ({ name, sameAs: [] })
+
+export const dated = (value: string, annotation: Json): Json => ({ '@value': value, '@type': 'xsd:date', '@annotation': annotation })
+
+/** A number as the German notes write it. */
+export const decimal = (x: number, digits = 1) => x.toFixed(digits).replace('.', ',')
+
+const NUMBER_WORDS = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf']
+
+export const inWords = (n: number) => NUMBER_WORDS[n] ?? String(n)
 
 /** What no edition should contain: a deletion of what the parent lacks, a symbol inserted twice, an undefined motivation. */
 export const structuralProblems = (document: Json): string[] => [

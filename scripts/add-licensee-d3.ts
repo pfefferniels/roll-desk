@@ -21,8 +21,8 @@ import { randomUUID } from 'node:crypto'
 import { keyOf, mm, readFromPhillipsEroll, track, welteLicensee } from 'linked-rolls'
 import type { Millimeters, Seconds } from 'linked-rolls'
 import {
-    changedTexts, editsOf, finish, insertionsIn, Json, readEdition, structuralProblems,
-    symbolsShownBy, textOf, textsOf, versionBy
+    adopted, argued, believing, changedTexts, dated, decimal, editsOf, finish, inferred, insertionsIn, inWords, Json,
+    person, readEdition, structuralProblems, symbolsShownBy, textOf, textsOf, versionBy
 } from './storedEdition'
 
 const args = process.argv.slice(2)
@@ -160,21 +160,6 @@ const chordOrder = <T extends { pitch: number }>(items: readonly T[], place: (it
             return chords
         }, [])
         .flatMap(chord => chord.sort((x, y) => x.pitch - y.pitch))
-
-// ------------------------------------------------------- stated assumptions
-
-const believing = (certainty: string, reasons: Json[]): Json => ({
-    '@id': randomUUID(),
-    belief: { '@type': 'belief', '@id': randomUUID(), certainty, reasons }
-})
-const argued = (note: string): Json => ({ '@type': 'simpleArgumentation', note })
-const adopted = (note: string): Json => ({ '@type': 'beliefAdoption', note })
-const inferred = (note: string, used: string[]): Json => ({ '@type': 'inference', note, premises: [], used })
-const person = (name: string): Json => ({ name, sameAs: [] })
-const dated = (value: string, annotation: Json): Json => ({ '@value': value, '@type': 'xsd:date', '@annotation': annotation })
-const decimal = (x: number, digits = 1) => x.toFixed(digits).replace('.', ',')
-const NUMBER_WORDS = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf']
-const inWords = (n: number) => NUMBER_WORDS[n] ?? String(n)
 
 // ------------------------------------------------------------- the reading
 

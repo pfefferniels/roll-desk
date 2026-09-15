@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { changedTexts, editsOf, finish, Json, readEdition, structuralProblems, textOf, textsOf, versionBy } from './storedEdition'
+import { changedTexts, decimal, editsOf, finish, Json, likely, readEdition, structuralProblems, textOf, textsOf, versionBy } from './storedEdition'
 
 const STANFORD_1 = 'd229954b-086c-44d6-a589-aaa324d31d88'
 const CRESCENDO_ON = '2494e2e5-d884-40c9-b25b-a83a7f705809'
@@ -30,11 +30,6 @@ const b1 = versionBy(document, 'B1')
 const b2 = versionBy(document, 'B2')
 const d3 = versionBy(document, 'D3')
 
-const believing = (certainty: string, note: string): Json => ({
-    '@id': randomUUID(),
-    belief: { '@type': 'belief', '@id': randomUUID(), certainty, reasons: [{ '@type': 'simpleArgumentation', note }] }
-})
-const decimal = (x: number) => x.toFixed(1).replace('.', ',')
 const median = (values: readonly number[]): number => {
     const sorted = [...values].sort((x, y) => x - y)
     const [lower, upper] = [sorted[(sorted.length - 1) >> 1], sorted[sorted.length >> 1]]
@@ -74,7 +69,7 @@ b.edits = editsOf(b)
         editType: 'additional-accent',
         motivation: 'crescendo-onset-moved',
         insert: [on, leftover, off],
-        '@annotation': believing('likely',
+        '@annotation': likely(
             `Das zweite An bei ${decimal(leftoverAt)} mm trägt allein Stanford-1. Es steht im Crescendo von `
             + `${Math.round(onAt)} bis ${Math.round(offAt)} mm und bewirkt dort nichts. Ein An nach einem An ist die Spur einer `
             + `Verschiebung: das An stand zuerst bei ${decimal(leftoverAt)} mm und wurde auf ${Math.round(onAt)} mm vorgezogen, `
