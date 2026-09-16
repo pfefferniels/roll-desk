@@ -1,7 +1,7 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
-import { assignValue, Named, ProductionEvent, systemOf, TrackerBar, trackerBarOf, valueOf, welteT100 } from "linked-rolls";
-import { DateField } from "./DateField";
+import { DateAssignment, Named, ProductionEvent, systemOf, TrackerBar, trackerBarOf, welteT100 } from "linked-rolls";
+import { DateStatementField } from "./DateStatementField";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
 
 interface ProductionEventDialog {
@@ -22,7 +22,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
     const [companyAuthority, setCompanyAuthority] = useState('');
     const [paper, setPaper] = useState('');
     const [paperAuthority, setPaperAuthority] = useState('');
-    const [date, setDate] = useState<Date>();
+    const [date, setDate] = useState<DateAssignment>();
     const [system, setSystem] = useState<TrackerBar>(editionBar)
     const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
 
@@ -33,7 +33,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         setCompanyAuthority(event.company?.sameAs[0] ?? '')
         setPaper(event.paper?.name ?? '')
         setPaperAuthority(event.paper?.sameAs[0] ?? '')
-        setDate(event.date ? valueOf(event.date) : undefined)
+        setDate(event.date)
         setSystem(trackerBarOf(event.system) ?? editionBar)
         setSpeed(speedInputOf(event.speed))
     }, [event, editionBar])
@@ -43,7 +43,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         onDone({
             company: namedOrNone(company, companyAuthority),
             paper: namedOrNone(paper, paperAuthority),
-            date: date && assignValue(date),
+            date,
             system: systemOf(system),
             // the belief held about an earlier statement of the speed stays with the new value
             speed: paperSpeed && { ...event?.speed, ...paperSpeed }
@@ -88,11 +88,10 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
                         onChange={e => setPaperAuthority(e.target.value)}
                         fullWidth
                     />
-                    <DateField
+                    <DateStatementField
                         label="Roll Date"
                         value={date}
                         onChange={setDate}
-                        mayBeEmpty
                     />
                     <SystemSelect value={system} onChange={setSystem} />
                     <PaperSpeedFields value={speed} onChange={setSpeed} />

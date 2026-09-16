@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { add, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
-import { valueOf } from 'linked-rolls'
 import { Arguable } from './Arguable'
+import { dateStatement } from '../../helpers/dateStatement'
 import { secondarySourceOf } from '../../helpers/names'
 import { atLeastVisible, boxOf, evenGeometry, Translation } from '../../helpers/rollGeometry'
 import { Span, spanning } from '../../helpers/scale'
@@ -78,9 +78,7 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, 
             <Arguable
                 path={['copies', copyIndex, 'production', 'date']}
             >
-                {new Intl.DateTimeFormat().format(
-                    valueOf(copy.production.date)
-                )}
+                {dateStatement(copy.production.date)}
             </Arguable>
         )
         : 'unknown date'

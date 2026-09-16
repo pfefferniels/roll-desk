@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignValue, valueOf } from 'linked-rolls'
+import { assignDate } from 'linked-rolls'
 import { featureSourceOf, noSource, sourceInputOf } from './SourceFields'
 
 describe('reading a source from what was typed', () => {
@@ -18,7 +18,7 @@ describe('reading a source from what was typed', () => {
             kind: 'emulation',
             output: ' https://example.org/wm225.mid ',
             device: ' Kodak i5850 ',
-            date: new Date(2015, 0, 1),
+            date: assignDate(new Date(2015, 0, 1)),
             note: ' the emulator is not named '
         })
 
@@ -26,7 +26,7 @@ describe('reading a source from what was typed', () => {
             kind: 'emulation',
             output: 'https://example.org/wm225.mid',
             device: { name: 'Kodak i5850', sameAs: [] },
-            date: assignValue(new Date(2015, 0, 1)),
+            date: assignDate(new Date(2015, 0, 1)),
             note: 'the emulator is not named'
         })
     })
@@ -77,14 +77,14 @@ describe('showing a source that was stated', () => {
             kind: 'analysis' as const,
             output: 'https://example.org/wm225.txt',
             device: { name: 'a scanner', sameAs: [] },
-            date: assignValue(new Date(2019, 5, 1)),
+            date: assignDate(new Date(2019, 5, 1)),
             note: 'measured by somebody else'
         }
 
         const input = sourceInputOf(source)
         expect(input.kind).toBe('analysis')
         expect(input.device).toBe('a scanner')
-        expect(input.date).toEqual(valueOf(source.date))
+        expect(input.date).toEqual(source.date)
         expect(featureSourceOf(input)).toEqual(source)
     })
 })

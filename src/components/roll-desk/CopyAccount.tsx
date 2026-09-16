@@ -1,8 +1,9 @@
 import { Link, Stack, Typography } from "@mui/material"
-import { FeatureSource, sourceLabels, valueOf } from "linked-rolls"
+import { FeatureSource, sourceLabels } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { copyAccount } from "../../helpers/account"
+import { dateStatement } from "../../helpers/dateStatement"
 import { heldBy } from "../../helpers/heldBy"
 import { webAddressOf } from "../../helpers/reasons"
 import { AccountSection, HeldStatement } from "./Account"
@@ -27,7 +28,7 @@ const SourceAccount = ({ source }: { source: FeatureSource }) => (
         ))}
         {source.date && (
             <HeldStatement belief={source.date['@annotation']?.belief}>
-                {new Intl.DateTimeFormat().format(valueOf(source.date))}
+                {dateStatement(source.date)}
             </HeldStatement>
         )}
         {source.output && (

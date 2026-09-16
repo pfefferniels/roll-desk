@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material"
-import { assignObject, assignValue, Concept, valueOf, VersionCreation } from "linked-rolls"
-import { DateField } from "./DateField"
+import { assignObject, Concept, VersionCreation } from "linked-rolls"
+import { DateStatementField } from "./DateStatementField"
 import { useDraft } from "../../hooks/useDraft"
 
 /**
@@ -33,7 +33,7 @@ interface VersionCreationDialogProps {
 export const VersionCreationDialog = ({ open, value, onClose, onDone }: VersionCreationDialogProps) => {
     const [actor, setActor] = useDraft(value?.actor?.name ?? '')
     const [authority, setAuthority] = useDraft(value?.actor?.sameAs[0] ?? '')
-    const [date, setDate] = useDraft(value?.date ? valueOf(value.date) : undefined)
+    const [date, setDate] = useDraft(value?.date)
     const [procedure, setProcedure] = useDraft(value?.procedure?.id ?? '')
 
     const stated = (): VersionCreation | undefined => {
@@ -46,7 +46,7 @@ export const VersionCreationDialog = ({ open, value, onClose, onDone }: VersionC
                     sameAs: authority.trim() ? [authority.trim()] : []
                 })
             }),
-            ...(date && { date: assignValue(date) }),
+            ...(date && { date }),
             ...(chosen && { procedure: chosen })
         }
 
@@ -73,7 +73,7 @@ export const VersionCreationDialog = ({ open, value, onClose, onDone }: VersionC
                         value={authority}
                         onChange={event => setAuthority(event.target.value)}
                     />
-                    <DateField label='Date' value={date} onChange={setDate} mayBeEmpty />
+                    <DateStatementField label='Date' value={date} onChange={setDate} />
                     <TextField
                         label='Rule followed'
                         select

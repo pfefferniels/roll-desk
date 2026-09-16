@@ -2,10 +2,11 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, valueOf, isPerforation, welteT100 } from 'linked-rolls'
+import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isPerforation, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { deskPath, entityOfPath, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
+import { dateStatement } from "../../helpers/dateStatement"
 import { OpenContext } from "../../providers/OpenContext"
 import { useSnackbar } from "../../providers/SnackbarContext"
 import { CopyReference } from "./CopyReference"
@@ -461,9 +462,7 @@ export const Desk = ({ show }: DeskProps) => {
                         <Arguable
                             path={['roll', 'recordingEvent', 'date'] as const}
                         >
-                            ({new Intl.DateTimeFormat().format(
-                                valueOf(edition.roll.recordingEvent.date)
-                            )})
+                            ({dateStatement(edition.roll.recordingEvent.date)})
                         </Arguable>
 
                         {editorLine && (

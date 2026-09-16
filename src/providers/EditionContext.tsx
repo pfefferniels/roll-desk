@@ -1,4 +1,4 @@
-import { assignValue, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView } from "linked-rolls";
+import { assignDate, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView } from "linked-rolls";
 import { createContext, useMemo, useReducer } from "react";
 import { editionReducer, editionState } from "./editionReducer";
 
@@ -24,7 +24,7 @@ export const emptyMetadata: EditionMetadata = {
                 },
                 playing: ''
             },
-            date: assignValue(new Date()),
+            date: assignDate(new Date()),
             place: { name: '', sameAs: [] }
         }
     }

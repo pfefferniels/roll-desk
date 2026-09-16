@@ -1,7 +1,7 @@
 import { Add, Delete } from "@mui/icons-material"
 import { Button, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
-import { assignValue, FeatureSource, SourceKind, sourceKinds, sourceLabels, valueOf } from "linked-rolls"
-import { DateField } from "./DateField"
+import { DateAssignment, FeatureSource, SourceKind, sourceKinds, sourceLabels } from "linked-rolls"
+import { DateStatementField } from "./DateStatementField"
 
 const notStated = ''
 
@@ -21,7 +21,7 @@ export interface SourceInput {
     device: string
     software: SoftwareInput[]
     instrument: string
-    date: Date | undefined
+    date: DateAssignment | undefined
     note: string
 }
 
@@ -43,7 +43,7 @@ export const sourceInputOf = (source: FeatureSource | undefined): SourceInput =>
             device: source.device?.name ?? '',
             software: (source.software ?? []).map(({ name, version }) => ({ name, version: version ?? '' })),
             instrument: source.instrument?.name ?? '',
-            date: source.date ? valueOf(source.date) : undefined,
+            date: source.date,
             note: source.note ?? ''
         }
         : noSource
@@ -76,7 +76,7 @@ export const featureSourceOf = (input: SourceInput, previous?: FeatureSource): F
         ...(device ? { device: { name: device, sameAs: [] } } : {}),
         ...(software.length > 0 ? { software } : {}),
         ...(instrument ? { instrument: { ...previous?.instrument, name: instrument, sameAs: previous?.instrument?.sameAs ?? [] } } : {}),
-        ...(input.date ? { date: assignValue(input.date) } : {}),
+        ...(input.date ? { date: input.date } : {}),
         ...(note ? { note } : {})
     }
 }
@@ -172,11 +172,10 @@ export const SourceFields = ({ value, onChange }: SourceFieldsProps) => (
                         fullWidth
                     />
                 )}
-                <DateField
+                <DateStatementField
                     label='Date of the capture'
                     value={value.date}
                     onChange={date => onChange({ ...value, date })}
-                    mayBeEmpty
                     size='small'
                     fullWidth
                 />

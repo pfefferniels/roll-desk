@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, FormControlLabel, MenuIte
 import { alignFeatures, AlignmentResult, assignObject, barOf, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
-import { valueOf } from "linked-rolls";
+import { dateStatement } from "../../helpers/dateStatement";
 import { PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, tempoStartOf } from "./ProductionFields";
 import { AlignmentPreview } from "./AlignmentPreview";
 import { copyLabel } from "../../helpers/names";
@@ -87,9 +87,7 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
                         setCopyB(edition.copies.find(copy => copy.id === e.target.value))
                     }}>
                         {otherCopies.map(c => {
-                            const date = c.production?.date && new Intl.DateTimeFormat().format(
-                                valueOf(c.production.date)
-                            )
+                            const date = c.production?.date && dateStatement(c.production.date)
                             return (
                                 <MenuItem value={c.id} key={`alignSymbols_${c.id}`}>
                                     {date} ({copyLabel(c)})

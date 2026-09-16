@@ -2,9 +2,10 @@ import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack, IconButton, Typography } from '@mui/material';
 import { Add, DeleteOutline, Save as SaveIcon } from '@mui/icons-material';
 import { EditionContext } from '../../providers/EditionContext';
-import { assignValue, CollationTolerance, Editor, EditorialRole, editorialRoles, valueOf } from 'linked-rolls';
+import { assignDate, CollationTolerance, DateAssignment, Editor, EditorialRole, editorialRoles } from 'linked-rolls';
 import { toleranceOf } from '../../helpers/collationTolerance';
 import { DateField } from './DateField';
+import { DateStatementField } from './DateStatementField';
 import { ToleranceFields } from './ToleranceFields';
 
 /** The two jobs the dialog does: naming a new edition, or revising the metadata of one. */
@@ -33,7 +34,7 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const [license, setLicense] = useState<string>('');
   const [baseURI, setBaseURI] = useState<string>('');
   const [catalogueNumber, setCatalogueNumber] = useState<string>('');
-  const [recordingDate, setRecordingDate] = useState<Date>(new Date());
+  const [recordingDate, setRecordingDate] = useState<DateAssignment>(assignDate(new Date()));
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
   const [publicationDate, setPublicationDate] = useState<Date>(new Date());
@@ -60,7 +61,7 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
     setTolerance(toleranceOf(edition));
     setEditors(edition.creation.editors ?? []);
     setCatalogueNumber(edition.roll.catalogueNumber);
-    setRecordingDate(valueOf(edition.roll.recordingEvent.date));
+    setRecordingDate(edition.roll.recordingEvent.date);
     setRecordingPlace(edition.roll.recordingEvent.place.name);
   }, [edition])
 
@@ -76,7 +77,7 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
       draft.creation.collationTolerance = tolerance
       draft.creation.editors = editors
       draft.roll.catalogueNumber = catalogueNumber
-      draft.roll.recordingEvent.date = assignValue(recordingDate)
+      draft.roll.recordingEvent.date = recordingDate
       draft.roll.recordingEvent.place.name = recordingPlace
     })
 
@@ -138,10 +139,10 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
               value={catalogueNumber}
               onChange={(e) => setCatalogueNumber(e.target.value)}
             />
-            <DateField
+            <DateStatementField
               label="Roll Date"
               value={recordingDate}
-              onChange={setRecordingDate}
+              onChange={date => date && setRecordingDate(date)}
             />
 
             <TextField

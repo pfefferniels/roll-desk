@@ -1,8 +1,9 @@
 import { Stack, Typography } from "@mui/material"
-import { trackerBarOf, valueOf } from "linked-rolls"
+import { trackerBarOf } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { describeEdit, versionAccount } from "../../helpers/account"
+import { dateStatement } from "../../helpers/dateStatement"
 import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
 import { ReservationNotes } from "./Reservations"
@@ -47,7 +48,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                     )}
                     {creation.date && (
                         <HeldStatement belief={creation.date['@annotation']?.belief}>
-                            {new Intl.DateTimeFormat().format(valueOf(creation.date))}
+                            {dateStatement(creation.date)}
                         </HeldStatement>
                     )}
                 </AccountSection>
