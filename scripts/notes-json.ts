@@ -21,8 +21,23 @@ const label = (id: string) => {
 /** Every version a note can refer to, by siglum. */
 const sigla = Object.fromEntries(view.edition.versions.map(version => [label(version.id) ?? version.id, version.id]))
 
-const bySiglum = (note: string) =>
-    note.replace(/\{\{([^}]+)\}\}/g, (whole, id: string) => `{{${label(id) ?? id}}}`)
+/**
+ * A perforation has no name to stand in the editor either, and its id is
+ * a line of its own, so each one a note refers to gets a short alias.
+ */
+const aliases: Record<string, string> = {}
+const aliasFor = (id: string) => {
+    const known = Object.entries(aliases).find(([, held]) => held === id)?.[0]
+    if (known) return known
+    const alias = `p${Object.keys(aliases).length + 1}`
+    aliases[alias] = id
+    return alias
+}
+
+/** The note as the editor shows it: versions by siglum, everything else by alias. */
+const readable = (note: string) =>
+    note.replace(/\{\{([^}|]+)(\|[^}]*)?\}\}/g, (whole, id: string, label_: string | undefined) =>
+        label_ === undefined ? `{{${label(id) ?? id}}}` : `{{${aliasFor(id)}${label_}}}`)
 
 const notes: Json[] = []
 
@@ -31,7 +46,7 @@ const walk = (node: unknown, path: string[]) => {
     else if (node !== null && typeof node === 'object') {
         Object.entries(node as Json).forEach(([key, value]) =>
             key === 'note' && typeof value === 'string'
-                ? notes.push({ path: path.join('/'), where: whereOf(path), kind: kindOf(path), text: bySiglum(value) })
+                ? notes.push({ path: path.join('/'), where: whereOf(path), kind: kindOf(path), text: readable(value) })
                 : walk(value, [...path, key]))
     }
 }
@@ -67,4 +82,4 @@ function kindOf(path: string[]): string {
 
 walk(document, [])
 
-console.log(JSON.stringify({ sigla, notes }, null, 2))
+console.log(JSON.stringify({ sigla, aliases, notes }, null, 2))
