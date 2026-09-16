@@ -56,12 +56,9 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             )}
 
             <AccountSection title='Witnesses'>
-                {witnesses.length === 0 && (
-                    <Typography variant='body2' color='text.secondary'>
-                        {indirect.length > 0
-                            ? 'No copy carries it at first hand.'
-                            : 'No copy bears witness to it.'}
-                    </Typography>
+                {/* Where only indirect witnesses are left, the reservation says so. */}
+                {witnesses.length === 0 && indirect.length === 0 && (
+                    <Typography variant='body2' color='text.secondary'>No copy bears witness to it.</Typography>
                 )}
                 {witnesses.map(witness => (
                     <HeldStatement key={witness.copy} belief={witness.belief}>
