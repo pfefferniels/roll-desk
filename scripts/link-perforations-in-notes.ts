@@ -12,7 +12,7 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/link-perforations-in-notes.ts [--write]
  */
 
-import { AnySymbol, EditionView, importJsonLd, insertedBy, migrate } from "linked-rolls"
+import { AnySymbol, EditionView, importJsonLd, insertedBy, migrate, NotePart, partsOfNote, siglaOf } from "linked-rolls"
 import { finish, Json, readEdition, structuralProblems } from './storedEdition'
 
 /** How near a symbol has to sit for a figure to name it. The notes give 0,1 mm. */
@@ -43,24 +43,74 @@ const describe = (symbol: AnySymbol) =>
 /** A figure as the notes write it, and as a number. */
 const figure = /(\d{3,}(?:,\d+)?) mm/g
 
+/**
+ * Where two punchings sit at one figure, the sentence says which it
+ * means. These six were read off the wording and confirmed against the
+ * versions; a figure not named here is still left to the editor.
+ */
+interface Decision {
+    written: string
+    /** The function the sentence names. */
+    type: string
+    /** The version the sentence points at, where the type alone does not tell them apart. */
+    version?: string
+}
+
+const DECIDED: readonly Decision[] = [
+    { written: '6250,4 mm', type: 'SoftPedalOn' },
+    { written: '5159 mm', type: 'SlowCrescendoOn' },
+    { written: '4287 mm', type: 'ForzandoOff' },
+    { written: '4050 mm', type: 'ForzandoOn' },
+    { written: '2872,9 mm', type: 'SlowCrescendoOn', version: 'R1' },
+    { written: '5582,7 mm', type: 'SlowCrescendoOn', version: 'R1' }
+]
+
+const sigla = siglaOf(view.edition)
+
+/** Which version inserts the symbol, by siglum. */
+const versionOf = (symbol: AnySymbol) => {
+    const holder = view.edition.versions.find(version => insertedBy(version).some(one => one.id === symbol.id))
+    return holder && sigla.get(holder.id)
+}
+
 const report: string[] = []
 const problems: string[] = []
 const unresolved: string[] = []
 let linked = 0
 
-/** The note with every figure that one symbol answers to turned into a link. */
+/** A reference as it is written, so that one already laid down is left alone. */
+const written = (part: NotePart) =>
+    part.type === 'text' ? part.text : `{{${part.id}${part.label ? `|${part.label}` : ''}}}`
+
+/**
+ * The note with every figure that one symbol answers to turned into a
+ * link. A figure inside a reference already made is passed over, so that
+ * running this again lays no link inside a link.
+ */
 const withLinks = (note: string, where: string): string =>
-    note.replace(figure, (whole, written: string) => {
+    partsOfNote(note)
+        .map(part => part.type === 'text' ? linkFigures(part.text, where) : written(part))
+        .join('')
+
+const linkFigures = (text: string, where: string): string =>
+    text.replace(figure, (whole, written: string) => {
         const at = Number(written.replace(',', '.'))
         if (at < SHORTEST_PLACE) return whole
 
-        const near = placed.filter(candidate => Math.abs(candidate.at - at) <= TOLERANCE)
-        if (near.length === 0) {
+        const all = placed.filter(candidate => Math.abs(candidate.at - at) <= TOLERANCE)
+        if (all.length === 0) {
             unresolved.push(`${where}: ${whole} – keine Stanzung an dieser Stelle`)
             return whole
         }
-        if (near.length > 1) {
-            unresolved.push(`${where}: ${whole} – ${near.length} Stanzungen (${near.map(one => describe(one.symbol)).join(', ')})`)
+
+        const decision = all.length > 1 ? DECIDED.find(one => one.written === whole) : undefined
+        const near = decision
+            ? all.filter(one => 'expressionType' in one.symbol && one.symbol.expressionType === decision.type
+                && (decision.version === undefined || versionOf(one.symbol) === decision.version))
+            : all
+
+        if (near.length !== 1) {
+            unresolved.push(`${where}: ${whole} – ${all.length} Stanzungen (${all.map(one => describe(one.symbol)).join(', ')})`)
             return whole
         }
 

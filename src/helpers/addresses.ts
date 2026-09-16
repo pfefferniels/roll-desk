@@ -9,7 +9,8 @@ import { AnyFeature, AnySymbol, Edit, EditionView, Motivation, Path, isEdit, isR
 import { isMotivation } from "./motivation"
 import type { UserSelection } from "../components/roll-desk/RollDesk"
 
-const pathOf = (id: string) => `/${encodeURIComponent(id)}`
+/** The address of the entity under the id, which a link can carry as its href. */
+export const pathOf = (id: string) => `/${encodeURIComponent(id)}`
 
 /** The entity an address names, or nothing where it names none. */
 export const entityOfPath = (pathname: string): string | undefined => {
