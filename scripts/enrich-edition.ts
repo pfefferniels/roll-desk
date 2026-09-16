@@ -253,7 +253,7 @@ const enrichChase = (): string[] => {
     )])
     delete copy.readFrom.device
     copy.readFrom.actor = person('Chase, Spencer')
-    copy.readFrom.output = '225.CIS, am 12. September 2026 von Spencer Chase geschickt'
+    copy.readFrom.output = '225.CIS, am 12. September 2026 von Bill Luecht geschickt'
     copy.readFrom.note =
         'Der Rollenscan selbst, 2432 × 54286 Punkte, im frühen CIS-Kopf von 2002, der weder Gerät noch '
         + 'Querauflösung nennt. Längs 180 Zeilen auf den Zoll, quer aus der Scanbreite erschlossen und vom '
