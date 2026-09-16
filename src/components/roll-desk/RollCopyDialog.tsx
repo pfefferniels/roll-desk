@@ -1,7 +1,7 @@
 import { MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { addCopy, Agent, assignObject, clearSource, createVersion, EditionOp, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
+import { addCopy, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
@@ -136,11 +136,20 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     const rollFile = files.find(isRollFile)
 
-    /** The keeper as typed, or nothing where no name is given. */
-    const keeperStated = (): Agent | undefined => {
+    /**
+     * The keeper as typed, or nothing where no name is given. A belief the
+     * keeper carries stays on it, since it is cleared where it is read, in
+     * the copy's account.
+     */
+    const keeperStated = (held?: KeeperAssignment): KeeperAssignment | undefined => {
         const name = keeper.trim()
         if (!name) return undefined
-        return { name, sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : [] }
+        const annotation = held?.['@annotation']
+        return {
+            name,
+            sameAs: keeperAuthority.trim() ? [keeperAuthority.trim()] : [],
+            ...(annotation && { '@annotation': annotation })
+        }
     }
 
     /** The speed as typed, taken over with its reason where it came from a suggestion. */
@@ -157,7 +166,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
         // reading its file in again.
         if (copy) {
             const stated = featureSourceOf(source, copy.readFrom)
-            const keeperOfCopy = keeperStated()
+            const keeperOfCopy = keeperStated(copy.keeper)
             apply(together(
                 stated ? stateSource(copy.id, stated) : clearSource(copy.id),
                 nameCopy(copy.id, copySiglum),

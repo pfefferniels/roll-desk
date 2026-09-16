@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignReference, Belief, Certainty, Edition, RollCopy, stateCarriage } from 'linked-rolls'
+import { assignReference, Belief, Certainty, Edition, KeeperAssignment, RollCopy, stateCarriage } from 'linked-rolls'
 import { produce } from 'immer'
 import { copyAccount, describeEdit, versionAccount } from './account'
 import { fixtureEdition, hole, ids, note, viewOf } from './editionFixture'
@@ -90,6 +90,14 @@ describe('the account of a copy', () => {
 
     it('is none for anything but a copy', () => {
         expect(copyAccount(viewOf(fixtureEdition()), ids.a)).toBeUndefined()
+    })
+
+    /** The account argues the keeper along the copy's path, and an Arguable throws where its path names nothing. */
+    it('is read at a path that reaches the keeper', () => {
+        const view = viewOf(fixtureEdition())
+        const path = [...(view.getPath('copy') ?? []), 'keeper']
+
+        expect(view.atPath<KeeperAssignment>(path)?.name).toBe('Test')
     })
 })
 

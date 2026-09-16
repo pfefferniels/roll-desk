@@ -7,6 +7,7 @@ import { dateStatement } from "../../helpers/dateStatement"
 import { heldBy } from "../../helpers/heldBy"
 import { webAddressOf } from "../../helpers/reasons"
 import { AccountSection, HeldStatement } from "./Account"
+import { Arguable } from "./Arguable"
 import { EntityLink } from "./EntityLink"
 import { NoteText } from "./NoteText"
 import { ReservationNotes } from "./Reservations"
@@ -51,14 +52,20 @@ const SourceAccount = ({ source }: { source: FeatureSource }) => (
 export const CopyAccount = ({ copyId }: { copyId: string }) => {
     const { view } = useContext(EditionContext)
     const account = view && copyAccount(view, copyId)
-    if (!account) return null
+    if (!view || !account) return null
 
     const { copy, carriages, reservations } = account
 
     return (
         <Stack spacing={1}>
             <Typography variant='caption' color='text.secondary'>
-                {copy.keeper ? `held by ${heldBy(copy)}` : 'keeper unknown'}
+                {copy.keeper
+                    ? (
+                        <Arguable path={[...(view.getPath(copyId) ?? []), 'keeper']}>
+                            held by {heldBy(copy)}
+                        </Arguable>
+                    )
+                    : 'keeper unknown'}
             </Typography>
 
             {copy.readFrom && (
