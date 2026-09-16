@@ -35,12 +35,12 @@ for (const { siglum, keeper, scan } of SIGLA) {
     const found = copies.filter((copy: Json) =>
         copy.keeper?.name === keeper && (scan === undefined || String(copy.scan ?? '').includes(scan)))
 
-    if (found.length !== 1) {
+    const [copy, ...more] = found
+    if (!copy || more.length > 0) {
         problems.push(`${found.length} copies answer to ${keeper}${scan ? ` and ${scan}` : ''}, which should name ${siglum}`)
         continue
     }
 
-    const [copy] = found
     if (copy.siglum && copy.siglum !== siglum) problems.push(`the copy to be named ${siglum} already carries ${copy.siglum}`)
     copy.siglum = siglum
     named.add(copy)
