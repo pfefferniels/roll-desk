@@ -456,7 +456,7 @@ export const LinkContainer = ({
                     return (
                         <g key={`link_${i}`}>
                             <g style={{ cursor: 'pointer' }} onClick={() => onVersionClick(source.id)}>
-                                <title>{`Also derived from ${target.label}, held ${link.certainty}`}</title>
+                                <title>{`Also derived from ${target.label}`}</title>
                                 <line
                                     x1={source.x}
                                     y1={source.y}

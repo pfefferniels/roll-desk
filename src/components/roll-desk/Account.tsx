@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from "@mui/material"
 import { Belief } from "linked-rolls"
 import { ReactNode } from "react"
+import { CertaintyMark } from "./CertaintyMark"
 import { BeliefAccount } from "./Reasons"
 
 /**
@@ -46,14 +47,14 @@ interface HeldStatementProps {
     children: ReactNode
 }
 
-/** A statement, followed by the belief it is held under and the reasons for it. */
+/** A statement, with the mark of the belief it is held under, which opens the reasons for it. */
 export const HeldStatement = ({ belief, children }: HeldStatementProps) => (
-    <Stack spacing={0.25}>
-        <Typography variant='body2' component='div'>{children}</Typography>
+    <Typography variant='body2' component='div'>
+        {children}
         {belief && (
-            <Box sx={{ pl: 1.5, borderLeft: '2px solid #e5e7eb' }}>
+            <CertaintyMark certainty={belief.certainty}>
                 <BeliefAccount belief={belief} />
-            </Box>
+            </CertaintyMark>
         )}
-    </Stack>
+    </Typography>
 )

@@ -1,7 +1,7 @@
 import { Delete } from "@mui/icons-material"
 import { IconButton, Link, List, ListItem, Stack, Typography } from "@mui/material"
 import { AnyArgumentation, AnyFeature, Belief, isSymbol, MeaningComprehension } from "linked-rolls"
-import { useContext } from "react"
+import { ReactNode, useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../../helpers/reasons"
 import { CertaintyIcon } from "./CertaintyIcon"
@@ -115,13 +115,22 @@ export const Reasons = ({ reasons, onRemove }: ReasonsProps) => (
     </List>
 )
 
+interface BeliefAccountProps {
+    belief: Belief
+    /** Where given, each reason can be taken back. */
+    onRemove?: (index: number) => void
+    /** What can be done to the belief, set beside how certainly it is held. */
+    actions?: ReactNode
+}
+
 /** How certainly a statement is held and why, written out in full for reading. */
-export const BeliefAccount = ({ belief }: { belief: Belief }) => (
+export const BeliefAccount = ({ belief, onRemove, actions }: BeliefAccountProps) => (
     <Stack spacing={0.25}>
         <Stack direction='row' spacing={0.5} alignItems='center' color='text.secondary'>
             <CertaintyIcon certainty={belief.certainty} />
             <Typography variant='caption'>held {belief.certainty}</Typography>
+            {actions}
         </Stack>
-        <Reasons reasons={belief.reasons} />
+        <Reasons reasons={belief.reasons} onRemove={onRemove} />
     </Stack>
 )

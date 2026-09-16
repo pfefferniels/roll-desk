@@ -1,5 +1,5 @@
 import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred } from "@mui/icons-material"
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from "@mui/material"
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
 import { ReservationNotes } from "./Reservations"
 import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
 import { useContext, useState } from "react"
@@ -18,6 +18,8 @@ import { VersionCreationDialog } from "./VersionCreationDialog"
 import { isMotivation } from "../../helpers/motivation"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "./Arguable"
+import { CertaintyMark } from "./CertaintyMark"
+import { BeliefAccount } from "./Reasons"
 import { nameOf } from "../../helpers/names"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
@@ -174,15 +176,18 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
             <ConstraintsRibbon versionId={versionId} />
             <Ribbon title='Witnesses'>
                 {witnesses.map(witness => (
-                    <Chip
-                        key={witness.copy}
-                        size='small'
-                        variant={witness.by === 'statement' ? 'outlined' : 'filled'}
-                        label={witness.by === 'statement'
-                            ? `${copyLabelOf(witness.copy)} (${witness.certainty})`
-                            : copyLabelOf(witness.copy)}
-                        sx={{ m: 0.25 }}
-                    />
+                    <Stack key={witness.copy} direction='row' alignItems='center' sx={{ m: 0.25 }}>
+                        <Chip
+                            size='small'
+                            variant={witness.by === 'statement' ? 'outlined' : 'filled'}
+                            label={copyLabelOf(witness.copy)}
+                        />
+                        {witness.belief && (
+                            <CertaintyMark certainty={witness.belief.certainty}>
+                                <BeliefAccount belief={witness.belief} />
+                            </CertaintyMark>
+                        )}
+                    </Stack>
                 ))}
                 {reservations.length > 0 && (
                     <Tooltip
