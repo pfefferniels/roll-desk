@@ -31,6 +31,7 @@ const R1 = refer('0e5f443d-0dd9-4810-9dbe-7f5007df490f')
 const R2 = refer('19fd4209-81cc-4d03-b2c3-fc7518dbba14')
 const R3 = refer('bab25aef-f80d-4ff0-b187-63030df8305a')
 const L1 = refer('2767844e-311e-4b97-8fb2-1b78db41e220')
+const L2 = refer('e07c4be8-f44b-496d-8a6c-026006340441')
 const R4 = refer('c9050e75-97a8-4862-9533-0f4b1439802b')
 
 /** A punching named in words, with the link carrying where it lies. */
@@ -47,6 +48,30 @@ const at = (id: string, words: string) => refer(`symbol_${id}`, words)
  * yet, so dropping them would take away what a reader needs to find them.
  */
 const REWORDINGS: readonly Rewording[] = [
+    {
+        path: 'versions/2/edits/65/@annotation/belief/reasons/0',
+        startsWith: 'Diese Befehle bei ',
+        after: [
+            `Sechs Befehle (${at('439d043c-d24c-4bad-8a45-4ecdabe79dea', '1')}, ${at('3c9e07f9-cf46-4464-bf55-8e7e2345cdc7', '2')}, ${at('e78861eb-3a3d-4adc-9503-cbfe80fd78f8', '3')}, ${at('9204e24b-3abd-447c-b7b2-51b5b27bfe18', '4')}, ${at('ca71370f-1594-4ef0-877f-dfc04eccfe3d', '5')}, ${at('eeebe4c9-ae1e-4f35-9a99-fb961f24c845', '6')}) fehlen in St2, dem Zeugen dieser Fassung, ebenso in der Licensee- und in der grünen Umstanzung; getragen allein von St1 und Wi1. Vier von ihnen werden erst durch Bearbeitungen von ${R2} wirkungslos, zwei sind es schon in ${R1}.`
+        ],
+        mayDrop: ['1691', '1775', '2582', '2608', '7444', '8037']
+    },
+    {
+        path: 'versions/8/basedOn/0/@annotation/belief/reasons/0',
+        startsWith: 'Phillips’ Lesung: 142 der 157 Stanzungen',
+        after: [
+            `Phillips’ Lesung: 142 der 157 Stanzungen, die ${R2} zu ${R1} hinzufügt, an ihrer Stelle; dazu die sieben Hinzufügungen, die ${R3} begründen, und eine weitere nahebei; dazu das Crescendo-Paar vor dem Auftakt, sonst nur in St1.`,
+
+            `Eigen: an drei Stellen (${at('ca35af75-d7df-4a1b-bd7e-989a86543bf9', '1')}, ${at('583a4144-9e67-449a-a323-1a12abd38273', '2')}, ${at('b517dbe5-f735-4134-87d2-f6babcd82e30', '3')}) fehlt das An eines Crescendos von ${R2}, dessen Ab wirkungslos stehen bleibt – die Betonungen also vorgefunden und deren An getilgt.`,
+
+            `Nicht vorhanden: Lesarten von {{755d411a-0ba4-4f59-90a7-f231be3e66ad}} und ${L2}. Erhalten: die Redundanzen von ${R2} im Diskant, die ${R4} bereinigt.`,
+
+            `Dagegen: an vier der 45 Stellen, an denen ${R2} eine Stanzung von ${R1} verlegt oder tilgt, trägt sie die von ${R1}. Doch treffen zufällig gelegte Stanzungen dieser Lesung solche Stellen im Mittel 0,7-mal und bis zu siebenmal, während die Hinzufügungen, die ${R3} begründen, weit über dem Zufall liegen.`,
+
+            `Gegenüber ${L2} eine eigene Umstanzung: beginnt mit einer Löschreihe, die ${L2} nicht hat; Trachtmans Lesung von Gourlins Exemplar dieser Fassung nennt Tempo 75, Chases Exemplar von ${L2} dagegen 80.`
+        ],
+        mayDrop: ['3459', '8104', '9042']
+    },
     {
         path: 'versions/0/edits/9/@annotation/belief/reasons/0',
         startsWith: 'Das zweite An bei ',
