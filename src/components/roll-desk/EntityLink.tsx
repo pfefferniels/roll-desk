@@ -6,7 +6,11 @@ import { nameOf } from "../../helpers/names"
 
 interface EntityLinkProps {
     id: string
-    /** Given where the entity has no name a reader calls it by, as an edit has none. */
+    /**
+     * Stands in where the entity has no name a reader calls it by, as an
+     * edit and a perforation have none. The name wins where the edition
+     * gives one, so a siglum written out cannot outlive the stemma.
+     */
     label?: string
 }
 
@@ -17,7 +21,7 @@ export const EntityLink = ({ id, label }: EntityLinkProps) => {
 
     return (
         <Link component='button' onClick={() => open(id)} sx={{ font: 'inherit', verticalAlign: 'baseline', textAlign: 'left' }}>
-            {label ?? (view && nameOf(view, id)) ?? id}
+            {(view && nameOf(view, id)) ?? label ?? id}
         </Link>
     )
 }

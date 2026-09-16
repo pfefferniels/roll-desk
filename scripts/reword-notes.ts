@@ -339,7 +339,7 @@ REWORDINGS.forEach(({ path, startsWith, after, mayDrop = [] }) => {
     const note: string | undefined = reason?.note
     const text = after.join('\n\n')
 
-    if (note === undefined) return problems.push(`${path} trägt keine Notiz`)
+    if (!reason || note === undefined) return problems.push(`${path} trägt keine Notiz`)
     if (note === text) return report.push(`${path} ist schon umformuliert`)
     if (!note.startsWith(startsWith)) return problems.push(`${path} beginnt nicht wie erwartet`)
 
