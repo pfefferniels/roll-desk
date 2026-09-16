@@ -5,7 +5,10 @@
  * it becomes and how often it is expected, so that a re-run both applies
  * what is new and reports if a settled term has crept back. `REWORDINGS`
  * rewrites a whole note, checking how it begins and refusing to drop a
- * number or a reference.
+ * number or a reference. It is emptied again after every write, since a
+ * rewording left standing is replayed and puts back wording that TERMS
+ * has settled since. To write one, bring back the `refer`/`at` helpers
+ * from the history and name the punchings with `scripts/probe-ids.ts`.
  *
  *     npx vite-node --options.deps.inline=linked-rolls scripts/reword-notes.ts [--write]
  */
@@ -25,143 +28,11 @@ interface Rewording {
     mayUnlink?: readonly string[]
 }
 
-const refer = (id: string, label?: string) => `{{${id}${label ? `|${label}` : ''}}}`
-
-const R1 = refer('0e5f443d-0dd9-4810-9dbe-7f5007df490f')
-const R2 = refer('19fd4209-81cc-4d03-b2c3-fc7518dbba14')
-const R3 = refer('bab25aef-f80d-4ff0-b187-63030df8305a')
-const L1 = refer('2767844e-311e-4b97-8fb2-1b78db41e220')
-const L2 = refer('e07c4be8-f44b-496d-8a6c-026006340441')
-const R4 = refer('c9050e75-97a8-4862-9533-0f4b1439802b')
-
-/** A punching named in words, with the link carrying where it lies. */
-const at = (id: string, words: string) => refer(`symbol_${id}`, words)
-
-/**
- * The millimetre figures leave the prose. A note names the punching it
- * means and the reference holds the place, so that a figure written once
- * can neither go stale nor contradict the same punching named elsewhere,
- * as 5370,8 and 5370,9 did.
- *
- * Three notes are left alone: in them the figures are a list of places
- * rather than the name of one, and half of the places named have no link
- * yet, so dropping them would take away what a reader needs to find them.
- */
 const REWORDINGS: readonly Rewording[] = [
-    {
-        path: 'versions/2/edits/65/@annotation/belief/reasons/0',
-        startsWith: 'Diese Befehle bei ',
-        after: [
-            `Sechs Befehle (${at('439d043c-d24c-4bad-8a45-4ecdabe79dea', '1')}, ${at('3c9e07f9-cf46-4464-bf55-8e7e2345cdc7', '2')}, ${at('e78861eb-3a3d-4adc-9503-cbfe80fd78f8', '3')}, ${at('9204e24b-3abd-447c-b7b2-51b5b27bfe18', '4')}, ${at('ca71370f-1594-4ef0-877f-dfc04eccfe3d', '5')}, ${at('eeebe4c9-ae1e-4f35-9a99-fb961f24c845', '6')}) fehlen in St2, dem Zeugen dieser Fassung, ebenso in der Licensee- und in der grünen Umstanzung; getragen allein von St1 und Wi1. Vier von ihnen werden erst durch Bearbeitungen von ${R2} wirkungslos, zwei sind es schon in ${R1}.`
-        ],
-        mayDrop: ['1691', '1775', '2582', '2608', '7444', '8037']
-    },
-    {
-        path: 'versions/8/basedOn/0/@annotation/belief/reasons/0',
-        startsWith: 'Phillips’ Lesung: 142 der 157 Stanzungen',
-        after: [
-            `Phillips’ Lesung: 142 der 157 Stanzungen, die ${R2} zu ${R1} hinzufügt, an ihrer Stelle; dazu die sieben Hinzufügungen, die ${R3} begründen, und eine weitere nahebei; dazu das Crescendo-Paar vor dem Auftakt, sonst nur in St1.`,
-
-            `Eigen: an drei Stellen (${at('ca35af75-d7df-4a1b-bd7e-989a86543bf9', '1')}, ${at('583a4144-9e67-449a-a323-1a12abd38273', '2')}, ${at('b517dbe5-f735-4134-87d2-f6babcd82e30', '3')}) fehlt das An eines Crescendos von ${R2}, dessen Ab wirkungslos stehen bleibt – die Betonungen also vorgefunden und deren An getilgt.`,
-
-            `Nicht vorhanden: Lesarten von {{755d411a-0ba4-4f59-90a7-f231be3e66ad}} und ${L2}. Erhalten: die Redundanzen von ${R2} im Diskant, die ${R4} bereinigt.`,
-
-            `Dagegen: an vier der 45 Stellen, an denen ${R2} eine Stanzung von ${R1} verlegt oder tilgt, trägt sie die von ${R1}. Doch treffen zufällig gelegte Stanzungen dieser Lesung solche Stellen im Mittel 0,7-mal und bis zu siebenmal, während die Hinzufügungen, die ${R3} begründen, weit über dem Zufall liegen.`,
-
-            `Gegenüber ${L2} eine eigene Umstanzung: beginnt mit einer Löschreihe, die ${L2} nicht hat; Trachtmans Lesung von Gourlins Exemplar dieser Fassung nennt Tempo 75, Chases Exemplar von ${L2} dagegen 80.`
-        ],
-        mayDrop: ['3459', '8104', '9042']
-    },
-    {
-        path: 'versions/0/edits/9/@annotation/belief/reasons/0',
-        startsWith: 'Das zweite An bei ',
-        after: [
-            `Das ${at('058f3b2f-6f66-4754-9e71-b4c858187e1f', 'zweite An')} des Crescendos im Bass trägt allein St1; es steht zwischen dem ${at('9d2ed841-8f5e-4c58-bfbb-258d930302f4', 'An')} und dem ${at('9618ebdc-40ae-4469-8fcf-473ee6d2965b', 'Ab')} und ist dort wirkungslos. Ein An nach einem An ist die Spur einer Verlegung: das An stand zuerst an der ${at('058f3b2f-6f66-4754-9e71-b4c858187e1f', 'späteren')} Stelle und wurde auf die ${at('9d2ed841-8f5e-4c58-bfbb-258d930302f4', 'frühere')} vorgezogen, die alte Stanzung blieb stehen; ${R3} tilgt sie. Die Öffnung misst auf St1 7,2 mm gegen im Median 5,1 mm bei den Crescendo-Öffnungen im Bass, was eine eigene Stanzung dieses Exemplars nicht ausschließt.`
-        ],
-        mayDrop: ['7364,7', '7396', '7348']
-    },
-    {
-        path: 'versions/0/edits/17/@annotation/belief/reasons/0',
-        startsWith: 'Das An des Una Corda-Pedals bei ',
-        after: [
-            `Das ${at('ff2b533b-cc1f-4783-a224-31c24eee0900', 'An des Una Corda-Pedals')} trägt allein Wi1. Ohne es stünde schon in ${R1} das ${at('05dbd89d-9db1-42fb-a745-59913ee4ed9b', 'zweite Ab')} ohne Wirkung, wie St1 und St2 es tragen. Eine spätere Einfügung, die eine bestehende Redundanz nachträglich erklärt, ist unwahrscheinlich. Also steht das An in ${R1}; ${R2} hat es getilgt und das Ab stehen lassen.`
-        ],
-        mayDrop: ['6250,4', '6338,5']
-    },
-    {
-        path: 'versions/4/edits/7/@annotation/belief/reasons/0',
-        startsWith: 'Das Loslassen bei ',
-        after: [
-            `Das ${at('321fbdb3-85db-4c44-8f72-0019d9c619b3', 'Loslassen des Dämpferpedals')} fehlt allein auf Wi1; es steht auf St1, St2, Ch1 und Ph1, und Bo1 hält das Pedal genau bis dorthin. Wäre es eine Zutat von ${R2}, machte diese Zutat eine in ${R1} bereits stehende Redundanz sinnvoll, was Bearbeitungen nicht tun. Also steht es in ${R1}, und dieses Exemplar hat es verloren.`
-        ],
-        mayDrop: ['5370,8']
-    },
-    {
-        path: 'copies/5/carries/0/@annotation/belief/reasons/0',
-        startsWith: 'Lautstärke der gehörten Töne folgt der Dynamik von ',
-        after: [
-            `Lautstärke der gehörten Töne folgt der Dynamik von {{c9050e75-97a8-4862-9533-0f4b1439802b}} besser als der von ${R1}, {{755d411a-0ba4-4f59-90a7-f231be3e66ad}} und ${R2}: Anschlagstärken von Transkun allein R² 0,65 gegen 0,61 bei ${R2}; von Kong allein 0,55 gegen 0,49; ebenso auf dem Mittel der vier Lautstärkemaße unter allen sieben Einstellungen des Emulators.`,
-
-            `Die Lesarten, die ${R2} und {{c9050e75-97a8-4862-9533-0f4b1439802b}} zu ${R1} hinzufügen, vorhanden (A-posteriori-Wahrscheinlichkeit 1,00 auf dem Mittel der vier Maße).`,
-
-            `Zuordnung der Töne allein über ihr Timing, das in allen roten Fassungen gleich ist; gegen ${R1} oder ${R2} ausgerichtet dieselbe Paarung.`,
-
-            `Von 33 Passagen, deren Lesarten die Lautstärke genug ändern, um sie zu beurteilen, weicht eine von {{c9050e75-97a8-4862-9533-0f4b1439802b}} ab: das ${at('134b68f6-7af4-4b57-907d-b613a103db29', 'Crescendo im Bass')} von ${R2} (p = 0,013), im Rahmen des Zufalls.`,
-
-            `Die Prämissen schließen ein Instrument unbekannter Regulierung ein; daher nicht höher als wahrscheinlich gehalten.`
-        ],
-        mayDrop: ['3360,8']
-    },
-    {
-        path: 'versions/4/basedOn/0/@annotation/belief/reasons/0',
-        startsWith: '{{755d411a-0ba4-4f59-90a7-f231be3e66ad}}: nur in Wi1',
-        after: [
-            `{{755d411a-0ba4-4f59-90a7-f231be3e66ad}}: nur in Wi1, ohne Antwort auf anderem Ast – allmähliches Aufheben der Verschiebung T. 9; Rückspulstanzung; fünf Crescendo-/Forzando-Befehle T. 2, 6, 7; zwei Tilgungen (${at('b145db1a-a9d1-43db-bed6-d3fd7e24575b', 'Ab des Diskant-Crescendos')}; ${at('321fbdb3-85db-4c44-8f72-0019d9c619b3', 'Ab des Dämpferpedals')}).`,
-
-            `45 weitere Lesarten nur in Wi1, doch schon in ${R1}: meist ${R2} nahebei gleichartig, also verlegt; sonst Auflösung einer Redundanz von ${R1}, die eine spätere Einfügung nicht nachträglich erklärte.`
-        ],
-        mayDrop: ['1708,6', '5370,9']
-    },
-    ...['453db0e0-ee3d-457a-876f-ed6d82af162d', '094529d8-ffa4-4398-b18a-e4b9a3e6881e',
-        '24440ecd-f24a-4d6f-9c39-79438a3d4b43', 'baf595b7-4ca6-4610-99f8-6fb7cee39ae5']
-        .map((symbol, index) => ({
-            path: `versions/8/edits/${[5, 22, 35, 48][index]}/@annotation/belief/reasons/0`,
-            startsWith: 'Stanzung an der Stelle von ',
-            after: [
-                `Eine ${at(symbol, 'Stanzung')} an der Stelle von ${R1}, überliefert allein in Wi1, dort wo ${R2} sie verlegt oder getilgt hat. Eine von vier solchen Stellen: entweder eigene Lesart von ${L1}, die die Stelle von ${R1} wieder trifft, oder Bewahrung gegen ${R2}, was sich mit der Ableitung über ${R3} nur unter Kontamination verträgt. Zur Abwägung siehe die Ableitung von ${L1}.`
-            ],
-            mayDrop: ['1986,7', '2872,9', '4055,7', '5582,7']
-        })),
-    {
-        path: 'copies/7/carries/0/@annotation/belief/reasons/0',
-        startsWith: 'Töne und Dämpferpedal stimmen mit Phillips’ Lesung überein',
-        after: [
-            `Töne und Dämpferpedal stimmen mit Phillips’ Lesung überein; abweichend allein ein cis′′ in T. 14 (Lücke von 3 mm, vermutlich eine fehlende Stanzung dieses Exemplars) und ein doppeltes ${at('1d1ecad2-6934-4afa-8204-e7a36fe30ed9', 'Ab des Pedals')}.`,
-
-            `Anschlagstärken folgen der Dynamik von Phillips’ Stanzungen, geprüft in deren Kodierung. Wo das Verfahren unterscheiden kann: Hinzufügungen von {{c9050e75-97a8-4862-9533-0f4b1439802b}}, die ${L1} trägt, vorhanden (sieben Einheiten, gepoolter z-Wert +1,15 ± 0,23); Stanzungen von ${R2}, die ${L1} tilgt, fehlen (vier Einheiten, −1,26 ± 0,10); Differenzierung der Mittelstimmen fehlt (−1,00 ± 0,18).`,
-
-            `Auf Phillips’ eigener Standard-MIDI-Datei gibt dasselbe Verfahren wieder, was seine Stanzungen zeigen, außer vor dem ersten Ton; das Crescendo-Paar vor dem Auftakt ist daher allein durch Phillips’ Lesung bezeugt.`,
-
-            `Eine Änderung durch das Una Corda-Pedal zeigen die Anschlagstärken in T. 8′ bis 15 nicht.`
-        ],
-        mayDrop: ['4468']
-    },
-    {
-        path: 'versions/1/basedOn/0/@annotation/belief/reasons/0',
-        startsWith: `${R3}: durch kein Exemplar überliefert`,
-        after: [
-            `${R3} ist durch kein Exemplar überliefert und ergibt sich aus dem Verhältnis von ${R4} und ${L1}.`,
-
-            `Sieben Hinzufügungen, bisher ${R4} allein zugeschrieben, finden sich in ${L1} an genau deren Stelle (${at('57a10a1f-5eba-40b8-b071-d0136ae7ec30', '1')}, ${at('9ecc1747-1258-4e70-be6f-971ceee0f964', '2')}, ${at('c664a1f1-b165-4819-be70-ab2566219cc3', '3')}, ${at('89b316e0-bc3a-464d-99a4-cb8d1b14eea1', '4')}, ${at('36fa67a1-2d4c-46e5-b1b0-852c8933c898', '5')}, ${at('387034e3-9b47-41e2-8896-8ac233c2049e', '6')}, ${at('cfe69211-dd09-4f9a-afbb-d075ec271a5f', '7')}, vermutlich auch ${at('9d1b33d2-f273-4136-ad10-f2c59f0d4961', '8')}). Dagegen stehen die übrigen 118 Hinzufügungen von ${R4}, von denen ${L1} keine trägt. ${R4} und ${L1} gehen also auf eine gemeinsame Vorlage nach ${R2} zurück.`,
-
-            `Gegen die Editionsregeln verstößt allerdings ein ${at('23e43b39-886f-4b6c-8827-127a70774470', 'Forzando ab')}, das ein redundantes ${at('92c575eb-5767-4cf8-9d74-2f5de03dfcbc', 'An')} von ${R2} wirksam macht.`
-        ],
-        mayDrop: ['3,3', '2365', '4281', '5159', '4816', '5037', '6663', '7832',
-                  '2464', '3,8', '23', '4', '4287', '4334', '4050'],
-        // The first was G1's crescendo, linked in error; the second is the
-        // open An, which the paragraph no longer names.
-        mayUnlink: ['7c9e1156-ad28-412a-ab0c-400137b2f6b0', 'f9292c10-fe39-46d9-9169-a237822d8176']
-    }
+    // Empty on purpose, and emptied again after every write. A rewording
+    // holds the note's whole text, so one left here is replayed on the
+    // next run and puts back the wording that TERMS has since settled.
+    // The history holds what was done; this list holds what is still to do.
 ]
 
 /**
@@ -203,7 +74,67 @@ const TERMS: readonly { before: string, after: string, times: number }[] = [
     // Typographie: ein gerades Anführungszeichen, neun gerade Genitiv-Apostrophe.
     { before: '„corrigiert"', after: '„corrigiert“', times: 1 },
     { before: "Phillips'", after: 'Phillips’', times: 8 },
-    { before: "Schmitz'", after: 'Schmitz’', times: 1 }
+    { before: "Schmitz'", after: 'Schmitz’', times: 1 },
+// Das gestanzte Loch hieß sechsfach. Jetzt: Stanzung für das, was
+    // gestanzt wurde, Loch für das, was am Papier gemessen wird,
+    // Perforation nur, wo eine fremde Quelle so spricht.
+    { before: 'händische Perforierungen', after: 'händische Stanzungen', times: 1 },
+    { before: 'Die Öffnung misst auf St1', after: 'Das Loch misst auf St1', times: 1 },
+    { before: 'den Crescendo-Öffnungen', after: 'den Crescendo-Löchern', times: 1 },
+    { before: 'Die Öffnung ist 0,19 Zoll breit', after: 'Das Loch ist 0,19 Zoll breit', times: 1 },
+    { before: 'Haltende Perforation', after: 'Haltende Stanzung', times: 1 },
+    { before: 'keine Perforation lang genug', after: 'keine Stanzung lang genug', times: 1 },
+    { before: 'jede andere Perforation dieser Rolle misst', after: 'jedes andere Loch dieser Rolle misst', times: 1 },
+    { before: 'eine 499 mm lange Perforation', after: 'ein 499 mm langes Loch', times: 1 },
+    { before: 'Die Ausdrucksperforationen fehlen', after: 'Die Ausdrucksstanzungen fehlen', times: 1 },
+    { before: 'als die Perforation lang ist', after: 'als die Stanzung lang ist', times: 1 },
+    { before: 'Rückspulperforation', after: 'Rückspulstanzung', times: 3 },
+
+    // Hinzufügen und Tilgen hießen je drei bis vier Wörter.
+    { before: 'Eine spätere Einfügung', after: 'Eine spätere Hinzufügung', times: 1 },
+    { before: 'eine spätere Einfügung', after: 'eine spätere Hinzufügung', times: 1 },
+    { before: 'Wäre es eine Zutat von', after: 'Wäre es eine Hinzufügung von', times: 1 },
+    { before: 'machte diese Zutat eine', after: 'machte diese eine', times: 1 },
+    { before: 'als Zusatz dieser Fassung', after: 'als Hinzufügung dieser Fassung', times: 1 },
+    { before: 'sieben Entfernungen', after: 'sieben Tilgungen', times: 1 },
+    { before: 'für die Entfernungen', after: 'für die Tilgungen', times: 1 },
+
+    // Kleinere Dubletten und Prägungen.
+    { before: 'der Ziehungen', after: 'der Stichproben', times: 1 },
+    { before: 'Keine Kopie zeigt', after: 'Kein Exemplar zeigt', times: 1 },
+    { before: 'nimmt den Aufwickelzug auf', after: 'nimmt den wachsenden Durchmesser der Aufwickelrolle auf', times: 1 },
+    { before: 'Ventile eines Sperr-und-Lösch-Paares', after: 'Ventile von Mezzoforte-Aus und Mezzoforte-Ein', times: 1 },
+    { before: 'gepoolter z-Wert', after: 'zusammengefasster z-Wert', times: 2 },
+    { before: 'Spaltenzählung des Parsers', after: 'Spaltenzählung von tiff2holes', times: 1 },
+    { before: 'sieben Einheiten', after: 'sieben Stellen', times: 1 },
+    { before: 'vier Einheiten', after: 'vier Stellen', times: 1 },
+
+    // Eine Schreibung für die Systeme.
+    { before: 'Blockskala T 98', after: 'Blockskala T-98', times: 1 },
+    { before: 'linierte T100-Rolle', after: 'linierte T-100-Rolle', times: 1 },
+
+    // Dieselbe Größe stand mit zwei Werten da; 203,6 ist der erschlossene.
+    { before: '203 dpi quer', after: '203,6 dpi quer', times: 1 },
+
+    // Die Sigle bei der Erstnennung, damit Prosa und Stemma zusammenfinden.
+    { before: 'Trachtmans Lesung von Gourlins Exemplar dieser Fassung',
+      after: 'Trachtmans Lesung von Gourlins Exemplar (Go1) dieser Fassung', times: 1 },
+    { before: 'Trachtmans Emulation von Gourlins Exemplar',
+      after: 'Trachtmans Emulation von Gourlins Exemplar (Go1)', times: 1 },
+    { before: 'die Aufnahme von Schmitz’ Exemplar', after: 'die Aufnahme von Schmitz’ Exemplar (Sc1)', times: 1 },
+
+    // Dasselbe Exemplar trug zwei Tempoangaben, ohne dass eine Notiz es sagte.
+    { before: 'Chases Exemplar von {{e07c4be8-f44b-496d-8a6c-026006340441}} dagegen 80.',
+      after: 'Chases Exemplar (Ch1) von {{e07c4be8-f44b-496d-8a6c-026006340441}} dagegen 80 (so der Scankopf; W225E.ann nennt 83).', times: 1 },
+
+    // Eine Form für dieselbe Zeitschrift.
+    { before: 'Rex Lawson, Pianola Journal 20 (2009), S. 26',
+      after: 'Rex Lawson, The Pianola Journal 20 (2009), S. 26', times: 1 },
+    { before: '(„On the Right Track“, The Pianola Journal 20, 2009, S. 37)',
+      after: '(„On the Right Track“, The Pianola Journal 20 (2009), S. 37)', times: 1 },
+
+    { before: '361 Perforationen, die zum Scanner gehören', after: '361 Löcher, die zum Scanner gehören', times: 1 },
+    { before: 'beim Durchlauf ihrer Perforation', after: 'beim Durchlauf ihrer Stanzung', times: 1 }
 ]
 
 /** Every number a note gives, which a rewording has to carry over. */
