@@ -134,7 +134,13 @@ const TERMS: readonly { before: string, after: string, times: number }[] = [
       after: '(„On the Right Track“, The Pianola Journal 20 (2009), S. 37)', times: 1 },
 
     { before: '361 Perforationen, die zum Scanner gehören', after: '361 Löcher, die zum Scanner gehören', times: 1 },
-    { before: 'beim Durchlauf ihrer Perforation', after: 'beim Durchlauf ihrer Stanzung', times: 1 }
+    { before: 'beim Durchlauf ihrer Perforation', after: 'beim Durchlauf ihrer Stanzung', times: 1 },
+
+    // Ein Exemplar ist überliefert, nicht bekannt, und es ist in einer Quelle, nicht aus ihr.
+    { before: 'Bekannt allein aus der Einspielung von', after: 'Überliefert allein in der Einspielung von', times: 1 },
+    { before: 'Bekannt allein aus der Einspielung in', after: 'Überliefert allein in der Einspielung in', times: 1 },
+    // „in der Einspielung in Legendary Masters“ doppelt die Präposition; auf einer Platte steht die Einspielung.
+    { before: 'in der Einspielung in Legendary Masters', after: 'in der Einspielung auf Legendary Masters', times: 1 }
 ]
 
 /** Every number a note gives, which a rewording has to carry over. */
