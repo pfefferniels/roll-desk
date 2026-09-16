@@ -3,6 +3,7 @@ import { trackerBarOf } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { describeEdit, versionAccount } from "../../helpers/account"
+import { versionLabel } from "../../helpers/names"
 import { dateStatement } from "../../helpers/dateStatement"
 import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
@@ -20,7 +21,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
     return (
         <Stack spacing={1}>
             <div>
-                <Typography variant='subtitle2'>Version {version.siglum}</Typography>
+                <Typography variant='subtitle2'>Version {versionLabel(view, version.id)}</Typography>
                 <Typography variant='caption' color='text.secondary'>
                     {trackerBarOf(version.system)?.name ?? version.system.name}
                 </Typography>

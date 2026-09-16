@@ -1,4 +1,4 @@
-import { EditionView, Version } from "linked-rolls"
+import { EditionView, siglaOf, Version } from "linked-rolls"
 import { write } from "midifile-ts"
 import { zipSync } from "fflate"
 import { emulationOf, EmulationOptions } from "./reproducingSystems"
@@ -22,12 +22,9 @@ export const versionAsMidi = (
 }
 
 const fileNameOf = (version: Version, among: Version[]) => {
-    const base = version.siglum.trim().replace(/[^\w.-]+/g, '_') || version.id
-    const homonyms = among.filter(other => other.siglum === version.siglum)
-
-    return homonyms.length > 1
-        ? `${base}_${homonyms.indexOf(version) + 1}.mid`
-        : `${base}.mid`
+    const sigla = siglaOf({ versions: among })
+    const siglum = sigla.get(version.id) ?? version.id
+    return `${siglum.replace(/[^\w.-]+/g, '_')}.mid`
 }
 
 /** Every version the desk can perform, each on its own machine. */

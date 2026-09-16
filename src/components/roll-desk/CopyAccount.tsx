@@ -8,6 +8,7 @@ import { heldBy } from "../../helpers/heldBy"
 import { webAddressOf } from "../../helpers/reasons"
 import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
+import { NoteText } from "./NoteText"
 import { ReservationNotes } from "./Reservations"
 
 /** What a copy's features were read from, and who read it, with what and when. */
@@ -40,7 +41,7 @@ const SourceAccount = ({ source }: { source: FeatureSource }) => (
         )}
         {source.note && (
             <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
-                {source.note}
+                <NoteText note={source.note} />
             </Typography>
         )}
     </>

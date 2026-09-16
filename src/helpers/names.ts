@@ -1,4 +1,4 @@
-import { EditionView, isMeasured, RollCopy, SourceKind, Version } from "linked-rolls"
+import { EditionView, isMeasured, RollCopy, siglaOf, SourceKind, Version } from "linked-rolls"
 import { heldBy } from "./heldBy"
 
 /** Each kind of source as a title, where `sourceLabels` gives the phrase a sentence needs. */
@@ -21,10 +21,17 @@ export const copyLabel = (copy: RollCopy): string => copy.siglum || copy.keeper?
 /** Which copy is meant, as a sentence goes on after "the copy". */
 export const whichCopy = (copy: RollCopy): string => copy.siglum || `held by ${heldBy(copy)}`
 
+/**
+ * What the stemma calls the version as it stands. The label is read off
+ * the stemma rather than stored, so it follows every change to it.
+ */
+export const versionLabel = (view: EditionView, versionId: string): string =>
+    siglaOf(view.edition).get(versionId) ?? 'unnamed version'
+
 /** What a reader calls the version or the copy under the id, or nothing where it names neither. */
 export const nameOf = (view: EditionView, id: string): string | undefined => {
     const entity = view.get<Version | RollCopy>(id)
-    if (entity?.type === 'Version') return entity.siglum
+    if (entity?.type === 'Version') return versionLabel(view, entity.id)
     if (entity?.type === 'RollCopy') return copyLabel(entity)
     return undefined
 }

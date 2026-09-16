@@ -27,12 +27,12 @@ describe('what a reason cites', () => {
     })
 
     it('names a version or a copy as a reader calls it', () => {
-        expect(citationOf(view, ids.b)).toEqual({ kind: 'entity', id: ids.b, label: 'B' })
+        expect(citationOf(view, ids.b)).toEqual({ kind: 'entity', id: ids.b, label: 'R2' })
         expect(citationOf(view, 'copy')).toEqual({ kind: 'entity', id: 'copy', label: 'Test' })
     })
 
     it('names anything else by the version it lies on', () => {
-        expect(citationOf(view, ids.note)).toEqual({ kind: 'entity', id: ids.note, label: 'on A' })
+        expect(citationOf(view, ids.note)).toEqual({ kind: 'entity', id: ids.note, label: 'on R1' })
     })
 
     it('gives back an id the edition lacks as it stands', () => {

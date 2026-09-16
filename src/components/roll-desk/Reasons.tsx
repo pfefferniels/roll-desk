@@ -6,6 +6,7 @@ import { EditionContext } from "../../providers/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../../helpers/reasons"
 import { CertaintyIcon } from "./CertaintyIcon"
 import { EntityLink } from "./EntityLink"
+import { NoteText } from "./NoteText"
 
 const CitationLink = ({ citation }: { citation: Citation }) => {
     if (citation.kind === 'web') {
@@ -74,7 +75,7 @@ const Reason = ({ reason }: { reason: AnyArgumentation }) => {
             {heading && <Typography variant='caption' color='text.secondary'>{heading}</Typography>}
             {reason.note && (
                 <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
-                    {reason.note}
+                    <NoteText note={reason.note} />
                 </Typography>
             )}
             {reason.type === 'meaningComprehension' && <Comprehended reason={reason} />}

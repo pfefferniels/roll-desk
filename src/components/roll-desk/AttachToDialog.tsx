@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Stack, TextField } from "@mui/material";
-import { CollationTolerance, Version } from "linked-rolls";
+import { CollationTolerance, siglaOf, Version } from "linked-rolls";
 import { useState } from "react";
 import { ToleranceFields } from "./ToleranceFields";
 
@@ -18,6 +18,7 @@ interface AttachToDialogProps {
  * symbols may lie and still be taken for the same one.
  */
 export const AttachToDialog = ({ currentVersionId, versions, tolerance, onClose, onDone }: AttachToDialogProps) => {
+    const sigla = siglaOf({ versions })
     const candidates = versions.filter(version => version.id !== currentVersionId)
     const [parentVersionId, setParentVersionId] = useState(candidates[0]?.id ?? '')
     const [chosen, setChosen] = useState(tolerance)
@@ -40,7 +41,7 @@ export const AttachToDialog = ({ currentVersionId, versions, tolerance, onClose,
                     >
                         {candidates.map(version => (
                             <MenuItem key={version.id} value={version.id}>
-                                {version.siglum}
+                                {sigla.get(version.id)}
                             </MenuItem>
                         ))}
                     </TextField>

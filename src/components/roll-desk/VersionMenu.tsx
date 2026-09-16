@@ -3,7 +3,6 @@ import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, 
 import { ReservationNotes } from "./Reservations"
 import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
 import { useContext, useState } from "react"
-import { EditString } from "./EditString"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
 import { AttachToDialog } from "./AttachToDialog"
@@ -45,7 +44,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const soleEdit = selection.length === 1 && selection.every(isEdit) ? selection[0] : undefined
     const { edition, apply, view } = useContext(EditionContext)
 
-    const [editSiglum, setEditSiglum] = useState(false)
     const [editCreation, setEditCreation] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
     const [editsToMotivate, setEditsToMotivate] = useState<string[]>()
@@ -105,13 +103,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     startIcon={<Delete />}
                 >
                     Remove
-                </Button>
-                <Button
-                    onClick={() => setEditSiglum(true)}
-                    startIcon={<EditIcon />}
-                    size='small'
-                >
-                    Siglum
                 </Button>
                 <Button
                     onClick={() => setEditCreation(true)}
@@ -264,20 +255,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 })}
             />
 
-            <EditString
-                open={editSiglum}
-                value={version.siglum}
-                onDone={(newSiglum) => {
-                    apply(draft => {
-                        const version = draft.versions.find(v => v.id === versionId)
-                        if (!version) return
-                        version.siglum = newSiglum
-                    })
-                    setEditSiglum(false)
-                }}
-                onClose={() => setEditSiglum(false)}
-            />
-
             {attachTo && (
                 <AttachToDialog
                     currentVersionId={versionId}
@@ -320,7 +297,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 <DialogTitle>Detach Version</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Detaching {version.siglum}
+                        Detaching {sigilOf(versionId)}
                         {principal ? ` from ${sigilOf(idOf(principal))}` : ''} will discard edit classifications,
                         motivation references and every hypothesis of derivation.
                     </DialogContentText>

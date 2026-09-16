@@ -1,6 +1,8 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Stack, TextField } from "@mui/material"
 import { certainties, Certainty, Version } from "linked-rolls"
-import { useState } from "react"
+import { useContext, useState } from "react"
+import { EditionContext } from "../../providers/EditionContext"
+import { versionLabel } from "../../helpers/names"
 
 interface HypothesisDialogProps {
     /** The version a further derivation is stated for. */
@@ -17,6 +19,7 @@ interface HypothesisDialogProps {
  * read against the derivation it has, unless this one is held more certain.
  */
 export const HypothesisDialog = ({ currentVersionId, versions, onClose, onDone }: HypothesisDialogProps) => {
+    const { view } = useContext(EditionContext)
     const candidates = versions.filter(version => version.id !== currentVersionId)
     const [parentVersionId, setParentVersionId] = useState(candidates[0]?.id ?? '')
     const [certainty, setCertainty] = useState<Certainty>('possible')
@@ -38,7 +41,7 @@ export const HypothesisDialog = ({ currentVersionId, versions, onClose, onDone }
                     >
                         {candidates.map(version => (
                             <MenuItem key={version.id} value={version.id}>
-                                {version.siglum}
+                                {view && versionLabel(view, version.id)}
                             </MenuItem>
                         ))}
                     </TextField>

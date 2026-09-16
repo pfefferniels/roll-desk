@@ -59,7 +59,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
                 <ListItem><ListItemText secondary='No problems in the versions.' /></ListItem>
             )}
             {groups.flatMap(({ version, problems }) => [
-                <ListSubheader key={version.id} disableSticky sx={{ lineHeight: 2 }}>{version.siglum}</ListSubheader>,
+                <ListSubheader key={version.id} disableSticky sx={{ lineHeight: 2 }}>{nameOf(view, version.id)}</ListSubheader>,
                 ...problems.map(problem => (
                     <ListItemButton
                         key={`${problem.version}-${problem.symbol}-${problem.problem}`}
@@ -142,7 +142,7 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
 
             <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ pl: 2 }}>
                 <Typography variant='subtitle2'>
-                    {version ? `Constraints in ${version.siglum}` : 'Constraints'}
+                    {version ? `Constraints in ${nameOf(view, version.id)}` : 'Constraints'}
                 </Typography>
                 <LegendPopover><ConstraintLegend /></LegendPopover>
             </Stack>
@@ -155,7 +155,7 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
 
             {version && (
                 <>
-                    <Section title='Placements' empty={`No placements in ${version.siglum}.`}>
+                    <Section title='Placements' empty={`No placements in ${nameOf(view, version.id)}.`}>
                         {placements.map(placement => (
                             <ConstraintItem
                                 key={placement.follower.id}
@@ -165,7 +165,7 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
                             />
                         ))}
                     </Section>
-                    <Section title='Pairs' empty={`No pairs in ${version.siglum}.`}>
+                    <Section title='Pairs' empty={`No pairs in ${nameOf(view, version.id)}.`}>
                         {pairs.map(({ stating, partner }) => (
                             <ConstraintItem
                                 key={stating.id}

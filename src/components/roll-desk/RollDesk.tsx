@@ -20,6 +20,7 @@ import { SourceStack } from "./SourceStack"
 import { Canvas } from "./LayeredRolls"
 import { downloadFile } from "../../helpers/downloadFile"
 import { versionAsMidi, versionsAsMidiArchive } from "../../helpers/versionMidi"
+import { versionLabel } from "../../helpers/names"
 import { EmulationSettingsDialog } from "./EmulationSettingsDialog"
 import { ImportButton } from "./ImportButton"
 import DownloadDialog from "./DownloadDialog"
@@ -269,7 +270,7 @@ export const Desk = ({ show }: DeskProps) => {
         const midi = versionAsMidi(currentVersion, view, emulationOptions)
         if (!midi) return
 
-        downloadFile(`${currentVersion.siglum}.mid`, midi, 'audio/midi')
+        downloadFile(`${versionLabel(view, currentVersion.id).replace(/[^\w.-]+/g, '_')}.mid`, midi, 'audio/midi')
     }, [currentVersion, view, emulationOptions])
 
     const downloadAllMIDI = useCallback(() => {
@@ -672,7 +673,7 @@ export const Desk = ({ show }: DeskProps) => {
                 onClose={() => setDownloadDialogOpen(false)}
                 onDownloadMIDI={downloadMIDI}
                 onDownloadAllMIDI={downloadAllMIDI}
-                versionSiglum={currentVersion?.siglum}
+                versionSiglum={currentVersion && view ? versionLabel(view, currentVersion.id) : undefined}
                 versionCount={edition.versions.length}
             />
 

@@ -31,8 +31,8 @@ describe('what a reader calls a copy', () => {
 describe('the name under an id', () => {
     const view = viewOf(fixtureEdition())
 
-    it('is the siglum of a version and the label of a copy', () => {
-        expect(nameOf(view, ids.b)).toBe('B')
+    it('is what the stemma calls a version and the label of a copy', () => {
+        expect(nameOf(view, ids.b)).toBe('R2')
         expect(nameOf(view, 'copy')).toBe('Test')
     })
 

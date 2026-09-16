@@ -87,7 +87,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     const [keeper, setKeeper] = useState('')
     const [keeperAuthority, setKeeperAuthority] = useState('')
     const [copySiglum, setCopySiglum] = useState('')
-    const [siglum, setSiglum] = useState('')
     const [system, setSystem] = useState<TrackerBar>(editionBar)
     const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
     const [speedTyped, setSpeedTyped] = useState(false)
@@ -111,7 +110,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             setKeeper(copy?.keeper?.name ?? '')
             setKeeperAuthority(copy?.keeper?.sameAs[0] ?? '')
             setCopySiglum(copy?.siglum ?? '')
-            setSiglum('')
             setSystem(editionBar)
             setSpeed(noSpeed)
             setSpeedTyped(false)
@@ -236,7 +234,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             // and keeps who read it.
             rollCopy.readFrom = featureSourceOf(source, rollCopy.readFrom) ?? rollCopy.readFrom
 
-            apply(together(createVersion(siglum, rollCopy), nameCopy(rollCopy.id, copySiglum)))
+            apply(together(createVersion(rollCopy), nameCopy(rollCopy.id, copySiglum)))
             onDone?.(rollCopy.id)
             onClose()
         } catch (e) {
@@ -285,15 +283,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                         placeholder='e. g. W1'
                         label='Siglum of the copy'
                     />
-                    {!copy && (
-                        <TextField
-                            size='small'
-                            value={siglum}
-                            onChange={e => setSiglum(e.target.value)}
-                            placeholder='e. g. B1'
-                            label='(Preliminary) siglum of its version'
-                        />
-                    )}
 
                     {!copy && (
                         <>

@@ -1,4 +1,4 @@
-import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
+import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useMemo, useRef, useState } from "react"
@@ -172,6 +172,7 @@ export const graphOf = (
     problems: readonly ConstraintProblem[]
 ): { nodes: Node[], links: Link[] } => {
     const versionBy = (id: string) => versions.find(other => other.id === id)
+    const sigla = siglaOf({ versions: [...versions] })
 
     /** The version the text is read against. */
     const parentOf = (version: Version) => {
@@ -185,7 +186,7 @@ export const graphOf = (
 
         return {
             id: version.id,
-            label: version.siglum,
+            label: sigla.get(version.id) ?? '?',
             system: trackerBarOf(version.system)?.name,
             namesSystem: parent === undefined || !sharesSystem(parent, version),
             generation: version.generation,

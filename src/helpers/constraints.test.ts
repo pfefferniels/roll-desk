@@ -175,7 +175,7 @@ describe('problems by version', () => {
     it('groups them under the versions they hold in, leaving out the sound ones', () => {
         const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
         const groups = problemsByVersion(constraintProblems(view), view.edition.versions)
-        expect(groups.map(group => group.version.siglum)).toEqual([ids.b])
+        expect(groups.map(group => group.version.id)).toEqual([ids.b])
         expect(first(groups).problems).toEqual([
             { version: ids.b, symbol: ids.forzandoOff, problem: 'partner-missing' }
         ])

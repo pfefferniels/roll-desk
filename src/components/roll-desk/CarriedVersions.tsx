@@ -48,7 +48,7 @@ export const CarriedVersions = ({ copyId }: { copyId: string }) => {
                     sx={{ minWidth: 120 }}
                 >
                     {unstated.map(version => (
-                        <MenuItem key={version.id} value={version.id}>{version.siglum}</MenuItem>
+                        <MenuItem key={version.id} value={version.id}>{sigilOf(version.id)}</MenuItem>
                     ))}
                 </TextField>
                 <TextField
