@@ -20,7 +20,7 @@ import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "./Arguable"
 import { CertaintyMark } from "./CertaintyMark"
 import { BeliefAccount } from "./Reasons"
-import { nameOf } from "../../helpers/names"
+import { nameOf, versionLabel } from "../../helpers/names"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {
@@ -179,8 +179,10 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     <Stack key={witness.copy} direction='row' alignItems='center' sx={{ m: 0.25 }}>
                         <Chip
                             size='small'
-                            variant={witness.by === 'statement' ? 'outlined' : 'filled'}
-                            label={copyLabelOf(witness.copy)}
+                            variant={witness.by === 'statement' || witness.through ? 'outlined' : 'filled'}
+                            label={witness.through
+                                ? `${copyLabelOf(witness.copy)}, through ${versionLabel(view, witness.through)}`
+                                : copyLabelOf(witness.copy)}
                         />
                         {witness.belief && (
                             <CertaintyMark certainty={witness.belief.certainty}>

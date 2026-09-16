@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { assignReference, Belief, Certainty, Edition, RollCopy, stateCarriage } from 'linked-rolls'
 import { produce } from 'immer'
 import { copyAccount, describeEdit, versionAccount } from './account'
-import { fixtureEdition, ids, viewOf } from './editionFixture'
+import { fixtureEdition, hole, ids, note, viewOf } from './editionFixture'
 
 const belief = (certainty: Certainty): Belief => ({ type: 'belief', id: `belief-${certainty}`, certainty, reasons: [] })
 
@@ -43,6 +43,20 @@ describe('the account of a version', () => {
             { copy: 'copy', by: 'carriers' },
             { copy: 'recorded', by: 'statement', certainty: 'likely', belief: belief('likely') }
         ])
+        expect(account?.indirect).toEqual([])
+    })
+
+    it('holds a copy reaching the version through a later one apart from the rest', () => {
+        const edition = fixtureEdition()
+        const copy = edition.copies[0]
+        if (!copy) throw new Error('the fixture has changed')
+        copy.features.push(hole('hole-added', 1200, 1210, 51))
+        edition.versions[1]?.edits?.push({ type: 'edit', id: 'edit-added', insert: [note('note-64', 64, 'hole-added')] })
+        const account = versionAccount(viewOf(edition), ids.a)
+
+        expect(account?.witnesses).toEqual([])
+        expect(account?.indirect).toEqual([{ copy: 'copy', by: 'carriers', through: ids.b }])
+        expect(versionAccount(viewOf(edition), ids.b)?.witnesses).toEqual([{ copy: 'copy', by: 'carriers' }])
     })
 
     it('gathers the edits that carry a belief', () => {

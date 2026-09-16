@@ -1,14 +1,14 @@
 import { Edition, EditionView, Expression, Hole, Note, RollCopy, Text, Version, assignReference, mm, systemOf, track, welteT100 } from "linked-rolls"
 import { emptyMetadata } from "../providers/EditionContext"
 
-const hole = (id: string, from: number, to: number, position: number): Hole => ({
+export const hole = (id: string, from: number, to: number, position: number): Hole => ({
     type: 'Hole',
     id,
     horizontal: { unit: 'mm', from: mm(from), to: mm(to) },
     vertical: { unit: 'track', from: track(position) }
 })
 
-const note = (id: string, pitch: number, carrier: string): Note => ({
+export const note = (id: string, pitch: number, carrier: string): Note => ({
     type: 'note',
     id,
     pitch,

@@ -74,7 +74,10 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
                 {carriages.map(carriage => (
                     <HeldStatement key={carriage.version} belief={carriage.belief}>
                         <EntityLink id={carriage.version} />
-                        {carriage.by === 'carriers' ? ', by its perforations' : ', by statement'}
+                        {carriage.by === 'statement' && ', by statement'}
+                        {carriage.by === 'carriers' && (carriage.through
+                            ? <>, through <EntityLink id={carriage.through} /></>
+                            : ', by its perforations')}
                     </HeldStatement>
                 ))}
             </AccountSection>

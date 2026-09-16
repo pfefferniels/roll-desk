@@ -15,7 +15,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
     const account = view && versionAccount(view, versionId)
     if (!view || !account) return null
 
-    const { version, derivations, witnesses, arguedEdits, reservations } = account
+    const { version, derivations, witnesses, indirect, arguedEdits, reservations } = account
     const { creation } = version
 
     return (
@@ -57,13 +57,22 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
 
             <AccountSection title='Witnesses'>
                 {witnesses.length === 0 && (
-                    <Typography variant='body2' color='text.secondary'>No copy bears witness to it.</Typography>
+                    <Typography variant='body2' color='text.secondary'>
+                        {indirect.length > 0
+                            ? 'No copy carries it at first hand.'
+                            : 'No copy bears witness to it.'}
+                    </Typography>
                 )}
                 {witnesses.map(witness => (
                     <HeldStatement key={witness.copy} belief={witness.belief}>
                         <EntityLink id={witness.copy} />
                         {witness.by === 'carriers' ? ', by its perforations' : ', by statement'}
                     </HeldStatement>
+                ))}
+                {indirect.map(witness => (
+                    <Typography key={witness.copy} variant='body2' color='text.secondary'>
+                        <EntityLink id={witness.copy} />, through <EntityLink id={witness.through} />
+                    </Typography>
                 ))}
             </AccountSection>
 
