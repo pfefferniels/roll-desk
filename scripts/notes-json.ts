@@ -6,7 +6,7 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/notes-json.ts > notes.json
  */
 
-import { EditionView, importJsonLd, migrate } from 'linked-rolls'
+import { AnySymbol, EditionView, importJsonLd, migrate } from 'linked-rolls'
 import { copyLabel, nameOf } from '../src/helpers/names'
 import { Json, readEdition } from './storedEdition'
 
@@ -26,11 +26,24 @@ const sigla = Object.fromEntries(view.edition.versions.map(version => [label(ver
  * a line of its own, so each one a note refers to gets a short alias.
  */
 const aliases: Record<string, string> = {}
+/** What each alias points at, so that the page can say it rather than leave a bare p15. */
+const targets: Record<string, string> = {}
+
+const describe = (id: string) => {
+    const symbol = view.get<AnySymbol>(id)
+    if (!symbol) return 'nicht gefunden'
+    const what = 'expressionType' in symbol ? `${symbol.expressionType} ${symbol.scope ?? ''}`.trim()
+        : 'pitch' in symbol ? `Ton ${symbol.pitch}` : symbol.type
+    const at = view.placeOf(symbol)
+    return at === undefined ? what : `${what}, ${at.from.toFixed(1).replace('.', ',')} mm`
+}
+
 const aliasFor = (id: string) => {
     const known = Object.entries(aliases).find(([, held]) => held === id)?.[0]
     if (known) return known
     const alias = `p${Object.keys(aliases).length + 1}`
     aliases[alias] = id
+    targets[alias] = describe(id)
     return alias
 }
 
@@ -82,4 +95,4 @@ function kindOf(path: string[]): string {
 
 walk(document, [])
 
-console.log(JSON.stringify({ sigla, aliases, notes }, null, 2))
+console.log(JSON.stringify({ sigla, aliases, targets, notes }, null, 2))
