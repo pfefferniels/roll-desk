@@ -45,7 +45,12 @@ const walk = (node: unknown, path: string[]) => {
 
         partsOfNote(value).forEach(part => {
             if (part.type !== 'reference' || part.label === undefined) return
-            const written = Number((part.label.match(/([\d,]+)\s*mm/)?.[1] ?? '').replace(',', '.'))
+
+            // A label that names the punching in words gives no figure to hold against anything.
+            const figure = part.label.match(/([\d,]+)\s*mm/)?.[1]
+            if (figure === undefined) return
+
+            const written = Number(figure.replace(',', '.'))
             const at = places.get(part.id)
             if (at === undefined || Number.isNaN(written)) return
             figures.push({ written: part.label, at, drift: Math.abs(at - written), where: path.join('/') })
