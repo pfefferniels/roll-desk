@@ -21,6 +21,8 @@ interface Rewording {
     after: readonly string[]
     /** Numbers the new note leaves out on purpose, because they are made elsewhere. */
     mayDrop?: readonly string[]
+    /** Ids the new note stops pointing at on purpose: a link dropped, or one that was wrong. */
+    mayUnlink?: readonly string[]
 }
 
 const refer = (id: string, label?: string) => `{{${id}${label ? `|${label}` : ''}}}`
@@ -120,22 +122,20 @@ const REWORDINGS: readonly Rewording[] = [
         mayDrop: ['4468']
     },
     {
-        // Only the last paragraph changes: the second lists seven places,
-        // four of which have no link yet, so its figures have to stay.
         path: 'versions/1/basedOn/0/@annotation/belief/reasons/0',
         startsWith: `${R3}: durch kein Exemplar überliefert`,
         after: [
-            `${R3}: durch kein Exemplar überliefert, erschlossen aus dem Verhältnis von ${R4} und ${L1}.`,
+            `${R3} ist durch kein Exemplar überliefert und ergibt sich aus dem Verhältnis von ${R4} und ${L1}.`,
 
-            `Sieben Hinzufügungen, bisher ${R4} allein zugeschrieben, in ${L1} an genau deren Stelle, innerhalb von 3,3 mm und damit so genau wie die gemeinsamen Stanzungen: Forzandi im Bass 2365 und ${at('9ecc1747-1258-4e70-be6f-971ceee0f964', '4281 mm')}, Crescendo im Diskant ${at('36fa67a1-2d4c-46e5-b1b0-852c8933c898', '5159 mm')}, je mit beiden Stanzungen; Crescendi im Diskant 4816, 5037, 6663 und 7832 mm mit einer. Das Crescendo im Bass ${at('7c9e1156-ad28-412a-ab0c-400137b2f6b0', '2464 mm')} liegt 3,8 mm davor, knapp außerhalb, gehört aber wohl hierher: zwei unabhängige Paare so nah beieinander sind unwahrscheinlich.`,
+            `Sieben Hinzufügungen, bisher ${R4} allein zugeschrieben, finden sich in ${L1} an genau deren Stelle (${at('57a10a1f-5eba-40b8-b071-d0136ae7ec30', '1')}, ${at('9ecc1747-1258-4e70-be6f-971ceee0f964', '2')}, ${at('c664a1f1-b165-4819-be70-ab2566219cc3', '3')}, ${at('89b316e0-bc3a-464d-99a4-cb8d1b14eea1', '4')}, ${at('36fa67a1-2d4c-46e5-b1b0-852c8933c898', '5')}, ${at('387034e3-9b47-41e2-8896-8ac233c2049e', '6')}, ${at('cfe69211-dd09-4f9a-afbb-d075ec271a5f', '7')}, vermutlich auch ${at('9d1b33d2-f273-4136-ad10-f2c59f0d4961', '8')}). Dagegen stehen die übrigen 118 Hinzufügungen von ${R4}, von denen ${L1} keine trägt. ${R4} und ${L1} gehen also auf eine gemeinsame Vorlage nach ${R2} zurück.`,
 
-            `Gleiche Stanzung an gleicher Stelle kaum zweimal unabhängig. ${L1} unter ${R4} erklärte das; dagegen stehen die übrigen 118 Stanzungen von ${R4}, von denen ${L1} keine trägt, darunter keines der 23 Paare der Mittelstimmen-Differenzierung, dazu die Bereinigungen und die Verlegung des c′ in T. 4. Wer von ${R4} ausginge, hätte das alles zurücknehmen müssen.`,
-
-            `Also standen die sieben vor beiden: ${R4} und ${L1} gehen auf eine gemeinsame Vorlage nach ${R2} zurück, und das ist ${R3}. Ihr gehören die sieben, ${R4} erst die 118 übrigen.`,
-
-            `Dazu das ${at('23e43b39-886f-4b6c-8827-127a70774470', 'Forzando ab')}: es macht das ${at('92c575eb-5767-4cf8-9d74-2f5de03dfcbc', 'An')} von ${R2} wirksam, das nach dem ${at('f9292c10-fe39-46d9-9169-a237822d8176', 'offenen An')} ohne Wirkung war. Eine Einfügung, die eine Redundanz wirksam macht, ist sonst nicht anzunehmen; hier liest sie sich als Korrektur.`
+            `Gegen die Editionsregeln verstößt allerdings ein ${at('23e43b39-886f-4b6c-8827-127a70774470', 'Forzando ab')}, das ein redundantes ${at('92c575eb-5767-4cf8-9d74-2f5de03dfcbc', 'An')} von ${R2} wirksam macht.`
         ],
-        mayDrop: ['4287', '4334', '4050']
+        mayDrop: ['3,3', '2365', '4281', '5159', '4816', '5037', '6663', '7832',
+                  '2464', '3,8', '23', '4', '4287', '4334', '4050'],
+        // The first was G1's crescendo, linked in error; the second is the
+        // open An, which the paragraph no longer names.
+        mayUnlink: ['7c9e1156-ad28-412a-ab0c-400137b2f6b0', 'f9292c10-fe39-46d9-9169-a237822d8176']
     }
 ]
 
@@ -205,7 +205,7 @@ const document = readEdition()
 const report: string[] = []
 const problems: string[] = []
 
-REWORDINGS.forEach(({ path, startsWith, after, mayDrop = [] }) => {
+REWORDINGS.forEach(({ path, startsWith, after, mayDrop = [], mayUnlink = [] }) => {
     const reason = noteAt(document, path)
     const note: string | undefined = reason?.note
     const text = after.join('\n\n')
@@ -217,7 +217,8 @@ REWORDINGS.forEach(({ path, startsWith, after, mayDrop = [] }) => {
     const lost = figuresIn(note).filter(figure => !figuresIn(text).includes(figure) && !mayDrop.includes(figure))
     if (lost.length > 0) return problems.push(`${path} verlöre die Zahlen ${lost.join(', ')}`)
 
-    const unlinked = referencesIn(note).filter(reference => !text.includes(reference))
+    const unlinked = referencesIn(note)
+        .filter(reference => !text.includes(reference) && !mayUnlink.some(id => reference.includes(id)))
     if (unlinked.length > 0) return problems.push(`${path} verlöre ${unlinked.length} Verweis(e)`)
 
     reason.note = text
