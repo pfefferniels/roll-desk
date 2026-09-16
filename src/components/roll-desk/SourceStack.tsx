@@ -9,6 +9,7 @@ import { secondarySourceOf } from '../../helpers/names'
 interface SourceStackProps {
     activeId?: string
     onClick: (copyId: string) => void
+    onShowAccount: (copyId: string) => void
 }
 
 /** The stretch a stack of previews shares where no copy has been measured. */
@@ -29,7 +30,7 @@ const boundsOf = (edition: Edition): Span => {
     return covered ? padded(covered, 0.02) : nothingMeasured
 }
 
-export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
+export const SourceStack = ({ activeId, onClick, onShowAccount }: SourceStackProps) => {
     const { edition } = useContext(EditionContext)
     if (!edition || edition.copies.length === 0) return null
 
@@ -45,6 +46,7 @@ export const SourceStack = ({ activeId, onClick }: SourceStackProps) => {
             copyIndex={copyIndex}
             active={copy.id === activeId}
             onClick={() => onClick(copy.id)}
+            onShowAccount={() => onShowAccount(copy.id)}
             globalBounds={bounds}
             bar={barOf(copy)}
         />

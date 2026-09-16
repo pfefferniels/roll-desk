@@ -57,12 +57,9 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
 
     return (
         <Stack spacing={1}>
-            <div>
-                <Typography variant='subtitle2'>{copy.siglum ? `Copy ${copy.siglum}` : 'Copy'}</Typography>
-                <Typography variant='caption' color='text.secondary'>
-                    {copy.keeper ? `held by ${heldBy(copy)}` : 'keeper unknown'}
-                </Typography>
-            </div>
+            <Typography variant='caption' color='text.secondary'>
+                {copy.keeper ? `held by ${heldBy(copy)}` : 'keeper unknown'}
+            </Typography>
 
             {copy.readFrom && (
                 <AccountSection title='Read from'>

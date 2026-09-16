@@ -39,7 +39,7 @@ import { RollCopyDialog } from "./RollCopyDialog"
 import { Stemma } from "./Stemma"
 import { AccountPanel, TabColumn } from "./Account"
 import { VersionAccount } from "./VersionAccount"
-import { CopyAccount } from "./CopyAccount"
+import { CopyAccountDialog } from "./CopyAccountDialog"
 import { Arguable } from "./Arguable"
 import { RollRange, SelectionContext } from "../../providers/SelectionContext"
 import { EditionContext, emptyEdition } from "../../providers/EditionContext"
@@ -132,6 +132,8 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
+    /** The copy whose account is being read, which is shown apart from the desk. */
+    const [accountCopyId, setAccountCopyId] = useState<string>()
     const [blendPosition, setBlendPosition] = useState(workingPosition)
 
     // The desk shows a version or a copy, never both.
@@ -499,7 +501,7 @@ export const Desk = ({ show }: DeskProps) => {
                         )}
                         {currentCopy && (
                             <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
-                                A copy is open. What is known of it is written out under Sources.
+                                A copy is open. What is known of it is under Sources, behind its info button.
                             </Typography>
                         )}
                     </TabColumn>
@@ -507,13 +509,16 @@ export const Desk = ({ show }: DeskProps) => {
 
                 <TabPanel current={currentTab} tab='sources'>
                     <TabColumn>
-                    <SourceStack
-                        activeId={currentCopyId}
-                        onClick={(copyId) => {
-                            setCurrentVersionId(undefined)
-                            setCurrentCopyId(copyId)
-                        }}
-                    />
+                    <Box sx={{ minHeight: 0, overflow: 'auto' }}>
+                        <SourceStack
+                            activeId={currentCopyId}
+                            onClick={(copyId) => {
+                                setCurrentVersionId(undefined)
+                                setCurrentCopyId(copyId)
+                            }}
+                            onShowAccount={setAccountCopyId}
+                        />
+                    </Box>
 
                     {currentCopy?.scan && (
                         <Stack direction='row' spacing={2} alignItems='center' sx={{ px: 1 }}>
@@ -535,12 +540,6 @@ export const Desk = ({ show }: DeskProps) => {
                                 Transcription
                             </Typography>
                         </Stack>
-                    )}
-
-                    {currentCopy && (
-                        <AccountPanel>
-                            <CopyAccount copyId={currentCopy.id} />
-                        </AccountPanel>
                     )}
 
                     {!viewOnly && (
@@ -676,6 +675,13 @@ export const Desk = ({ show }: DeskProps) => {
                 versionSiglum={currentVersion && view ? versionLabel(view, currentVersion.id) : undefined}
                 versionCount={edition.versions.length}
             />
+
+            {accountCopyId && (
+                <CopyAccountDialog
+                    copyId={accountCopyId}
+                    onClose={() => setAccountCopyId(undefined)}
+                />
+            )}
 
             {metadataJob && (
                 <EditMetadata

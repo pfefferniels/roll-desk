@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { IconButton } from '@mui/material'
+import { InfoOutlined } from '@mui/icons-material'
 import { add, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
 import { Arguable } from './Arguable'
 import { dateStatement } from '../../helpers/dateStatement'
-import { secondarySourceOf } from '../../helpers/names'
+import { copyLabel, secondarySourceOf } from '../../helpers/names'
 import { atLeastVisible, boxOf, evenGeometry, Translation } from '../../helpers/rollGeometry'
 import { Span, spanning } from '../../helpers/scale'
 import { Svg, svg } from '../../helpers/units'
@@ -22,13 +24,15 @@ interface SourcePreviewProps {
     copyIndex: number
     active: boolean
     onClick: () => void
+    /** Asks for what is known of the copy, which is read in its own dialog. */
+    onShowAccount: () => void
     /** The axis the whole stack is drawn against, so the previews can be compared. */
     globalBounds: Span
     /** The bar the tracks are read against, which fixes how the height is divided. */
     bar: TrackerBar
 }
 
-export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, bar }: SourcePreviewProps) => {
+export const SourcePreview = ({ copy, copyIndex, active, onClick, onShowAccount, globalBounds, bar }: SourcePreviewProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [hovered, setHovered] = useState(false)
@@ -124,7 +128,20 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, globalBounds, 
                 alignItems: 'center',
             }}>
                 <span>{secondary && `${secondary} · `}{date}</span>
-                <span>{[copy.siglum, copy.keeper?.name].filter(Boolean).join(' · ')}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, textAlign: 'right' }}>
+                    {[copy.siglum, copy.keeper?.name].filter(Boolean).join(' · ')}
+                    <IconButton
+                        size='small'
+                        aria-label={`What is known of copy ${copyLabel(copy)}`}
+                        onClick={event => {
+                            event.stopPropagation()
+                            onShowAccount()
+                        }}
+                        sx={{ p: 0.25, color: '#777' }}
+                    >
+                        <InfoOutlined sx={{ fontSize: 14 }} />
+                    </IconButton>
+                </span>
             </div>
         </div>
     )
