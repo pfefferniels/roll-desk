@@ -1,27 +1,28 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material"
-import { assignObject, Concept, VersionCreation } from "linked-rolls"
+import { assignObject, Concept, procedures, VersionCreation } from "linked-rolls"
 import { DateStatementField } from "./DateStatementField"
 import { useDraft } from "../../hooks/useDraft"
 
+/** Stands for a stored procedure that names no IRI of its own. */
+const UNDECLARED = 'undeclared'
+
+/** What the field holds for a procedure. */
+export const keyOf = (procedure: Concept) => procedure.id ?? UNDECLARED
+
 /**
- * The rules a version may have been made by. A roll issued for another
- * system was re-punched by an editor of the publisher's, who carried
- * the notes over at their pitch and re-spelled the expression in the
- * other system's words. That rule is what the version's edits carry
- * out, so it is named once here instead of per symbol.
+ * The procedures to offer. A version may state one the vocabulary does
+ * not know, from an older edition or a hand-written one, and one written
+ * before the procedures had IRIs states no id at all. Such a procedure is
+ * offered beside the declared ones, so that saving cannot drop it.
  */
-const procedures: Concept[] = [
-    {
-        id: 'https://w3id.org/reo/type/procedure/system-transfer',
-        name: 'transferred to another reproducing system',
-        sameAs: []
-    },
-    {
-        id: 'https://w3id.org/reo/type/procedure/revision',
-        name: 'revised on the same system',
-        sameAs: []
-    }
-]
+export const proceduresOffered = (stored: Concept | undefined): readonly Concept[] =>
+    stored && !procedures.some(candidate => candidate.id === stored.id)
+        ? [...procedures, stored]
+        : procedures
+
+/** The procedure the field stands on, none where it stands on nothing. */
+export const procedureIn = (offered: readonly Concept[], key: string): Concept | undefined =>
+    offered.find(candidate => keyOf(candidate) === key)
 
 interface VersionCreationDialogProps {
     open: boolean
@@ -34,11 +35,12 @@ export const VersionCreationDialog = ({ open, value, onClose, onDone }: VersionC
     const [actor, setActor] = useDraft(value?.actor?.name ?? '')
     const [authority, setAuthority] = useDraft(value?.actor?.sameAs[0] ?? '')
     const [date, setDate] = useDraft(value?.date)
-    const [procedure, setProcedure] = useDraft(value?.procedure?.id ?? '')
+    const offered = proceduresOffered(value?.procedure)
+    const [procedure, setProcedure] = useDraft(value?.procedure ? keyOf(value.procedure) : '')
 
     const stated = (): VersionCreation | undefined => {
         const named = actor.trim()
-        const chosen = procedures.find(candidate => candidate.id === procedure)
+        const chosen = procedureIn(offered, procedure)
         const creation: VersionCreation = {
             ...(named && {
                 actor: assignObject({
@@ -81,8 +83,8 @@ export const VersionCreationDialog = ({ open, value, onClose, onDone }: VersionC
                         onChange={event => setProcedure(event.target.value)}
                     >
                         <MenuItem value=''>Not stated</MenuItem>
-                        {procedures.map(candidate => (
-                            <MenuItem key={candidate.id} value={candidate.id}>
+                        {offered.map(candidate => (
+                            <MenuItem key={keyOf(candidate)} value={keyOf(candidate)}>
                                 {candidate.name}
                             </MenuItem>
                         ))}
