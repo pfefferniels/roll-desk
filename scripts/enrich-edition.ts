@@ -24,7 +24,7 @@ import Ajv from 'ajv'
 
 // The library ships extensionless ESM imports, which plain node cannot
 // resolve, so this script is run through vite-node.
-import { keyOf, principalDerivationOf, track, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
+import { keyOf, nameOf, principalDerivationOf, track, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 
 const SCHEMA = new URL('../node_modules/linked-rolls/lib/schema.json', import.meta.url)
 const TARGET = new URL('../../welte225.org/edition.jsonld', import.meta.url)
@@ -958,7 +958,7 @@ document.versions.forEach((version: Json) => {
     const bare = editsOf(version).filter((edit: Json) => !edit.motivation && !edit.editType).length
     console.log(`    ${version.siglum.padEnd(3)} ${String(editsOf(version).length).padStart(4)} Edits, `
         + `${String(snapshot.length).padStart(4)} Symbole, ${bare} ohne Begründung`
-        + `  [${version.system.name}]`)
+        + `  [${nameOf(version.system)}]`)
 })
 
 const validate = new Ajv({ formats: { date: /^\d{4}-\d{1,2}-\d{1,2}$/ } })
