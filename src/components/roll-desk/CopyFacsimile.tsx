@@ -299,9 +299,13 @@ const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
 
     const chunks = feature.transcription.text.split("\n");
 
+    // The roll is drawn running from left to right, so a writing across it
+    // stands upright, and its rotation turns it from there.
+    const askew = 90 + Number(feature.rotation?.value ?? 0);
+
     return (
         <text
-            transform={`rotate(90 ${x + width / 2} ${y + height / 2})`}
+            transform={`rotate(${askew} ${x + width / 2} ${y + height / 2})`}
             x={x + width / 2}
             y={y + height / 2}
             fontSize={8}

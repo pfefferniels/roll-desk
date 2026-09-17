@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { addFeature, Writing, WritingMethod, writingMethods } from "linked-rolls"
+import { addFeature, degrees, Writing, WritingMethod, writingMethods } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension, UserSelection } from "./RollDesk"
@@ -99,7 +99,8 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
                             horizontal: dimension.horizontal,
                             vertical: dimension.vertical,
                             depiction: iiifUrl,
-                            // rotation,
+                            // A writing straight across the roll states no rotation.
+                            ...(rotation !== 0 && { rotation: { value: degrees(rotation), unit: 'deg' as const } }),
                             method,
                             transcription: {
                                 type: 'text' as const,

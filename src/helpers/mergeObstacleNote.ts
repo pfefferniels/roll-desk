@@ -1,4 +1,4 @@
-import { EditionView, FeatureOrPatch, MergeObstacle, mergeObstacle } from "linked-rolls"
+import { EditionView, FeatureOrPatch, MergeObstacle, mergeObstacle, mergeObstacleIn } from "linked-rolls"
 
 const notes: Record<MergeObstacle, string> = {
     'fewer-than-two': 'Fewer than two features are selected.',
@@ -13,15 +13,14 @@ const notes: Record<MergeObstacle, string> = {
 export const mergeObstacleNote = (obstacle: MergeObstacle): string => notes[obstacle]
 
 /**
- * What stands in the way of reading the selected features as one. Two
- * features stand in one act exactly when the view gives back the same act,
- * and `mergeFeatures` throws across two of them, so the act is asked here
- * before a merge is offered.
+ * What stands in the way of reading the selected features as one. The
+ * view is asked where there is one, so that the desk offers a merge on
+ * the same grounds `mergeFeatures` acts on, the acts included.
  */
 export const mergeObstacleFor = (
     features: readonly FeatureOrPatch[],
     view?: EditionView
-): MergeObstacle | undefined => {
-    const acts = new Set(features.map(feature => view?.actOf(feature.id)))
-    return acts.size > 1 ? 'different-acts' : mergeObstacle(features)
-}
+): MergeObstacle | undefined =>
+    view
+        ? mergeObstacleIn(view, features.map(feature => feature.id))
+        : mergeObstacle(features)
