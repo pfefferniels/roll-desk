@@ -1,4 +1,4 @@
-import { Edit, EditType, isPerforation, positionOfSameFunction, Track, TrackerBar } from "linked-rolls";
+import { Edit, EditType, isCommand, positionOfSameFunction, Track, TrackerBar } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext, useMemo } from "react";
@@ -30,7 +30,7 @@ const deletionFill = '#fb7f78ff'
  * be drawn and would vanish instead of being shown.
  */
 const laneOf = (symbol: AnySymbol, bar: TrackerBar): Track | undefined => {
-    if (!isPerforation(symbol)) return undefined
+    if (!isCommand(symbol)) return undefined
 
     const read = bar.positionOf(symbol)
     if (read !== undefined) return read

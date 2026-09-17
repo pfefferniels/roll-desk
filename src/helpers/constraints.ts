@@ -1,71 +1,71 @@
 import {
-    AnyPerforation, AnySymbol, ConstraintProblem, EditionView, HorizontalSpan, Millimeters,
-    NegotiatedEvent, PlacementRelation, Version, idOf, isPerforation, pairsAmong, placementsOf, subtract
+    AnyCommand, AnySymbol, ConstraintProblem, EditionView, HorizontalSpan, Millimeters,
+    NegotiatedEvent, PlacementRelation, Version, idOf, isCommand, pairsAmong, placementsOf, subtract
 } from "linked-rolls"
 
-export const perforationsIn = (snapshot: readonly AnySymbol[]): AnyPerforation[] =>
-    snapshot.filter(isPerforation)
+export const commandsIn = (snapshot: readonly AnySymbol[]): AnyCommand[] =>
+    snapshot.filter(isCommand)
 
-type ById = ReadonlyMap<string, AnyPerforation>
+type ById = ReadonlyMap<string, AnyCommand>
 
-const indexed = (perforations: readonly AnyPerforation[]): ById =>
-    new Map(perforations.map(perforation => [perforation.id, perforation]))
+const indexed = (commands: readonly AnyCommand[]): ById =>
+    new Map(commands.map(command => [command.id, command]))
 
 /** A placement both of whose ends the version has. */
-export type Placement = { relation: PlacementRelation; follower: AnyPerforation; reference: AnyPerforation }
+export type Placement = { relation: PlacementRelation; follower: AnyCommand; reference: AnyCommand }
 
-/** The statement placing a perforation, where the version has its reference. */
-const placementOf = (follower: AnyPerforation, known: ById): Placement | undefined => {
+/** The statement placing a command, where the version has its reference. */
+const placementOf = (follower: AnyCommand, known: ById): Placement | undefined => {
     const statement = placementsOf(follower)[0]
     const reference = statement && known.get(idOf(statement.reference))
     return statement && reference ? { relation: statement.relation, follower, reference } : undefined
 }
 
 export const placementsIn = (snapshot: readonly AnySymbol[]): Placement[] => {
-    const perforations = perforationsIn(snapshot)
-    const known = indexed(perforations)
-    return perforations.flatMap(follower => {
+    const commands = commandsIn(snapshot)
+    const known = indexed(commands)
+    return commands.flatMap(follower => {
         const placement = placementOf(follower, known)
         return placement ? [placement] : []
     })
 }
 
-/** Whether a perforation makes a placing statement, whether or not its reference is at hand. */
-export const isPlaced = (symbol: AnyPerforation): boolean => placementsOf(symbol).length > 0
+/** Whether a command makes a placing statement, whether or not its reference is at hand. */
+export const isPlaced = (symbol: AnyCommand): boolean => placementsOf(symbol).length > 0
 
 /** A pair as the format states it: `stating` carries the `pairedWith`. */
-export type Pair = { stating: AnyPerforation; partner: AnyPerforation }
+export type Pair = { stating: AnyCommand; partner: AnyCommand }
 
 export const pairsIn = (snapshot: readonly AnySymbol[]): Pair[] =>
-    pairsAmong(perforationsIn(snapshot)).map(([stating, partner]) => ({ stating, partner }))
+    pairsAmong(commandsIn(snapshot)).map(([stating, partner]) => ({ stating, partner }))
 
 /**
- * The perforation carrying the statement that binds `symbol` into a
+ * The command carrying the statement that binds `symbol` into a
  * pair, whether or not the version has the partner.
  */
-export const pairStatementOf = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): AnyPerforation | undefined =>
+export const pairStatementOf = (symbol: AnyCommand, snapshot: readonly AnySymbol[]): AnyCommand | undefined =>
     symbol.pairedWith
         ? symbol
-        : perforationsIn(snapshot).find(other => other.pairedWith && idOf(other.pairedWith) === symbol.id)
+        : commandsIn(snapshot).find(other => other.pairedWith && idOf(other.pairedWith) === symbol.id)
 
-export const partnerOf = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): AnyPerforation | undefined => {
+export const partnerOf = (symbol: AnyCommand, snapshot: readonly AnySymbol[]): AnyCommand | undefined => {
     const stating = pairStatementOf(symbol, snapshot)
     if (!stating) return undefined
     if (stating.id !== symbol.id) return stating
-    return symbol.pairedWith && indexed(perforationsIn(snapshot)).get(idOf(symbol.pairedWith))
+    return symbol.pairedWith && indexed(commandsIn(snapshot)).get(idOf(symbol.pairedWith))
 }
 
-/** What binds a perforation within a version, both ends present. */
-export type Constraints = { placement?: Placement; pairedWith?: AnyPerforation }
+/** What binds a command within a version, both ends present. */
+export type Constraints = { placement?: Placement; pairedWith?: AnyCommand }
 
-export const constraintsOf = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): Constraints => ({
-    placement: placementOf(symbol, indexed(perforationsIn(snapshot))),
+export const constraintsOf = (symbol: AnyCommand, snapshot: readonly AnySymbol[]): Constraints => ({
+    placement: placementOf(symbol, indexed(commandsIn(snapshot))),
     pairedWith: partnerOf(symbol, snapshot)
 })
 
-/** The ids a perforation is placed by, one after the other, until the chain ends or turns back on itself. */
+/** The ids a command is placed by, one after the other, until the chain ends or turns back on itself. */
 export const placementChain = (id: string, snapshot: readonly AnySymbol[]): string[] => {
-    const known = indexed(perforationsIn(snapshot))
+    const known = indexed(commandsIn(snapshot))
     const nextOf = (from: string): string | undefined => {
         const symbol = known.get(from)
         const statement = symbol && placementsOf(symbol)[0]
@@ -79,9 +79,9 @@ export const placementChain = (id: string, snapshot: readonly AnySymbol[]): stri
     return onward(id, [])
 }
 
-export type Displacement = { symbol: AnyPerforation; measured: HorizontalSpan; performed: HorizontalSpan }
+export type Displacement = { symbol: AnyCommand; measured: HorizontalSpan; performed: HorizontalSpan }
 
-/** Where the performance puts a perforation elsewhere than it was measured. */
+/** Where the performance puts a command elsewhere than it was measured. */
 export const displacedEvents = (
     events: readonly NegotiatedEvent[],
     view: EditionView,
@@ -89,13 +89,13 @@ export const displacedEvents = (
 ): Displacement[] =>
     events.flatMap(event => {
         const symbol = view.get<AnySymbol>(event.id)
-        if (!isPerforation(symbol)) return []
+        if (!isCommand(symbol)) return []
         const measured = view.placeOf(symbol)
         if (!measured || Math.abs(event.horizontal.from - measured.from) <= epsilon) return []
         return [{ symbol, measured, performed: event.horizontal }]
     })
 
-/** How far the performance moves each perforation it moves, by id. */
+/** How far the performance moves each command it moves, by id. */
 export const shiftsIn = (events: readonly NegotiatedEvent[], view: EditionView): ReadonlyMap<string, Millimeters> =>
     new Map(
         displacedEvents(events, view)
@@ -103,16 +103,16 @@ export const shiftsIn = (events: readonly NegotiatedEvent[], view: EditionView):
                 [symbol.id, subtract(performed.from, measured.from)])
     )
 
-export const perforationLabel = (symbol: AnyPerforation): string =>
+export const commandLabel = (symbol: AnyCommand): string =>
     symbol.type === 'note'
         ? `Note ${symbol.pitch}`
         : `${symbol.expressionType} (${symbol.scope})`
 
-export const describePerforation = (symbol: AnyPerforation, view: EditionView): string => {
+export const describeCommand = (symbol: AnyCommand, view: EditionView): string => {
     const place = view.placeOf(symbol)?.from
     return place === undefined
-        ? perforationLabel(symbol)
-        : `${perforationLabel(symbol)} at ${place.toFixed(0)} mm`
+        ? commandLabel(symbol)
+        : `${commandLabel(symbol)} at ${place.toFixed(0)} mm`
 }
 
 export const relationLabel: Record<PlacementRelation, string> = {
@@ -122,17 +122,17 @@ export const relationLabel: Record<PlacementRelation, string> = {
 }
 
 export const describePlacement = ({ relation, follower, reference }: Placement, view: EditionView): string =>
-    `${describePerforation(follower, view)} ${relationLabel[relation]} ${describePerforation(reference, view)}`
+    `${describeCommand(follower, view)} ${relationLabel[relation]} ${describeCommand(reference, view)}`
 
 export type ProblemKind = ConstraintProblem['problem']
 
 const problemLabels: Record<ProblemKind, string> = {
-    'alignment-reference-missing': 'Aligned with a perforation this version does not have',
-    'before-reference-missing': 'Placed before a perforation this version does not have',
-    'after-reference-missing': 'Placed after a perforation this version does not have',
+    'alignment-reference-missing': 'Aligned with a command this version does not have',
+    'before-reference-missing': 'Placed before a command this version does not have',
+    'after-reference-missing': 'Placed after a command this version does not have',
     'placed-relative-to-itself': 'Placed relative to itself',
     'placed-several-ways': 'Placed in several ways at once',
-    'partner-missing': 'Paired with a perforation this version does not have',
+    'partner-missing': 'Paired with a command this version does not have',
     'paired-with-itself': 'Paired with itself',
     'type-not-on-the-bar': 'A command this version\u2019s system has no word for',
     'carrier-on-another-track': 'Carried by a hole on a track that says something else',
@@ -163,18 +163,18 @@ export const troubledSymbols = (problems: readonly ConstraintProblem[]): Readonl
 export const problemCount = (count: number): string =>
     `${count} constraint problem${count === 1 ? '' : 's'}`
 
-const alreadyPaired = (symbol: AnyPerforation, snapshot: readonly AnySymbol[]): string | undefined => {
+const alreadyPaired = (symbol: AnyCommand, snapshot: readonly AnySymbol[]): string | undefined => {
     if (!pairStatementOf(symbol, snapshot)) return undefined
     const partner = partnerOf(symbol, snapshot)
     return partner
-        ? `${perforationLabel(symbol)} is already paired with ${perforationLabel(partner)}`
-        : `${perforationLabel(symbol)} is already paired`
+        ? `${commandLabel(symbol)} is already paired with ${commandLabel(partner)}`
+        : `${commandLabel(symbol)} is already paired`
 }
 
 /** Why the two may not be paired, or nothing if they may. */
-export const refusalToPair = (one: AnyPerforation, other: AnyPerforation, snapshot: readonly AnySymbol[]): string | undefined =>
+export const refusalToPair = (one: AnyCommand, other: AnyCommand, snapshot: readonly AnySymbol[]): string | undefined =>
     one.id === other.id
-        ? 'A perforation cannot be paired with itself'
+        ? 'A command cannot be paired with itself'
         : alreadyPaired(one, snapshot) ?? alreadyPaired(other, snapshot)
 
 /**
@@ -182,7 +182,7 @@ export const refusalToPair = (one: AnyPerforation, other: AnyPerforation, snapsh
  * to the note. Between two of a kind nothing decides, and the editor
  * is asked.
  */
-export const placementBetween = (one: AnyPerforation, other: AnyPerforation, relation: PlacementRelation): Placement | undefined => {
+export const placementBetween = (one: AnyCommand, other: AnyCommand, relation: PlacementRelation): Placement | undefined => {
     if (one.type === 'expression' && other.type === 'note') return { relation, follower: one, reference: other }
     if (one.type === 'note' && other.type === 'expression') return { relation, follower: other, reference: one }
     return undefined
@@ -190,16 +190,16 @@ export const placementBetween = (one: AnyPerforation, other: AnyPerforation, rel
 
 /** Why the placement may not be stated, or nothing if it may. */
 export const refusalToPlace = ({ follower, reference }: Placement, snapshot: readonly AnySymbol[]): string | undefined => {
-    if (follower.id === reference.id) return 'A perforation cannot be placed relative to itself'
+    if (follower.id === reference.id) return 'A command cannot be placed relative to itself'
     if (follower.type === 'note' && reference.type === 'expression') {
         return 'A note is not placed relative to an expression: expressions follow notes'
     }
     if (placementChain(reference.id, snapshot).includes(follower.id)) {
-        return `${perforationLabel(reference)} is already placed relative to ${perforationLabel(follower)}, so the statement would run in a circle`
+        return `${commandLabel(reference)} is already placed relative to ${commandLabel(follower)}, so the statement would run in a circle`
     }
     const partner = partnerOf(follower, snapshot)
     if (partner && isPlaced(partner)) {
-        return `Its partner ${perforationLabel(partner)} is already placed, and a pair follows one reference only`
+        return `Its partner ${commandLabel(partner)} is already placed, and a pair follows one reference only`
     }
     return undefined
 }

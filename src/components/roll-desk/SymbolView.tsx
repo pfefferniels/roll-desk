@@ -5,16 +5,16 @@ import { usePlaybackMark } from "../../hooks/usePlaybackMark";
 import { EditionContext } from "../../providers/EditionContext";
 import { shadowLook } from "./constraintLooks";
 
-interface PerforationProps {
+interface CommandProps {
     symbol: Note | Expression;
     age?: number;
     highlight: boolean;
-    /** How far the performance moves the perforation from where it was measured, in mm. */
+    /** How far the performance moves the command from where it was measured, in mm. */
     shift?: Millimeters;
     onClick: () => void;
 }
 
-export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: PerforationProps) => {
+export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: CommandProps) => {
     const { view, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
     const { marked, followPlayback } = usePlaybackMark();
@@ -86,7 +86,7 @@ export const Perforation = ({ symbol, age, highlight, shift = mm(0), onClick }: 
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            {/* The body sits where the perforation plays; the measurement stays behind as a shadow. */}
+            {/* The body sits where the command plays; the measurement stays behind as a shadow. */}
             <g transform={`translate(${dx} 0)`}>
                 <rect
                     x={innerFrom}

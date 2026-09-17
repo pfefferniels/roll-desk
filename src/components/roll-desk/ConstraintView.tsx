@@ -1,5 +1,5 @@
 import { ReactNode, useContext, useMemo } from "react"
-import { add, AnyPerforation, AnySymbol, ConstraintProblem, max, Millimeters, mm, Path, PlacementRelation, isPerforation, scale, subtract } from "linked-rolls"
+import { add, AnyCommand, AnySymbol, ConstraintProblem, max, Millimeters, mm, Path, PlacementRelation, isCommand, scale, subtract } from "linked-rolls"
 import { EditionContext } from "../../providers/EditionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Box } from "../../helpers/rollGeometry"
@@ -47,7 +47,7 @@ interface ConnectorProps {
     detailed: boolean
 }
 
-/** A straight line from the onset of the follower to the onset of the perforation it is placed by. */
+/** A straight line from the onset of the follower to the onset of the command it is placed by. */
 /** The belief button for a connector, set just above the line's middle. */
 const buttonAbove = (from: Box, to: Box): Point => ({
     x: add(scale(add(from.x, to.x), 0.5), svg(3)),
@@ -89,7 +89,7 @@ const PairLink = ({ from: one, to: other, path, detailed }: ConnectorProps) => {
 
 interface ConstraintViewProps {
     snapshot: readonly AnySymbol[]
-    /** How far the performance moves each perforation it moves, by id. */
+    /** How far the performance moves each command it moves, by id. */
     shifts: ReadonlyMap<string, Millimeters>
     /** The problems of this version. */
     problems: readonly ConstraintProblem[]
@@ -97,7 +97,7 @@ interface ConstraintViewProps {
 
 /**
  * The placements and pairs among the symbols of a version, attached to
- * the perforations where they play, and the statements that cannot
+ * the commands where they play, and the statements that cannot
  * hold. Drawn over the symbols, which stay clickable.
  */
 export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewProps) => {
@@ -112,13 +112,13 @@ export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewPro
 
     const detailed = translation.zoom >= svgPerMm(0.7)
 
-    /** Where the perforation is drawn: its measurement, moved as far as the performance moves it. */
-    const boxed = (symbol: AnyPerforation) => {
+    /** Where the command is drawn: its measurement, moved as far as the performance moves it. */
+    const boxed = (symbol: AnyCommand) => {
         const box = getSymbolBBox(symbol, view, translation)
         return box && shifted(box, translation.translateX(shifts.get(symbol.id) ?? mm(0)))
     }
 
-    const connector = (one: AnyPerforation, other: AnyPerforation, key: PlacementRelation | 'pairedWith'): ConnectorProps | undefined => {
+    const connector = (one: AnyCommand, other: AnyCommand, key: PlacementRelation | 'pairedWith'): ConnectorProps | undefined => {
         const from = boxed(one)
         const to = boxed(other)
         const path = view.getPath(one.id)
@@ -128,7 +128,7 @@ export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewPro
 
     const mark = (id: string) => {
         const symbol = view.get<AnySymbol>(id)
-        const box = isPerforation(symbol) ? boxed(symbol) : undefined
+        const box = isCommand(symbol) ? boxed(symbol) : undefined
         return box && <rect key={id} {...padded(box, svg(2))} {...problemLook} style={quiet} />
     }
 

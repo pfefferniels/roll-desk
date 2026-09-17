@@ -3,7 +3,7 @@ import { AnySymbol, ConstraintProblem, EditionView, editsOf, Millimeters, tracke
 import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
-import { Perforation } from "./SymbolView"
+import { Command } from "./SymbolView"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
 import { MotivationView } from "./MotivationView"
@@ -95,7 +95,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
         [version, view]
     )
 
-    // Where the performance moves a perforation, it is drawn there.
+    // Where the performance moves a command, it is drawn there.
     const shifts = useMemo(
         () => (view && emulation) ? shiftsIn(emulation.negotiatedEvents, view) : new Map<string, Millimeters>(),
         [emulation, view]
@@ -104,7 +104,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     if (!view) return null
 
     // What this version does away with was coded for its parent's system,
-    // so that is the bar those perforations are drawn by.
+    // so that is the bar those commands are drawn by.
     const deletedOn = trackerBarOf(view.predecessorOf(version.id)?.system)
 
     const edits = editsOf(version)
@@ -180,7 +180,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
                     if (symbol.type === 'text') return null
 
                     return (
-                        <Perforation
+                        <Command
                             key={`${symbol.id || i}`}
                             symbol={symbol}
                             age={symbol.age}

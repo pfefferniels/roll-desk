@@ -9,7 +9,7 @@ interface EntityLinkProps {
     id: string
     /**
      * Stands in where the entity has no name a reader calls it by, as an
-     * edit and a perforation have none. The name wins where the edition
+     * edit and a command have none. The name wins where the edition
      * gives one, so a siglum written out cannot outlive the stemma.
      */
     label?: string

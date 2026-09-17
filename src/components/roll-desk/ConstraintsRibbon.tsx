@@ -1,7 +1,7 @@
 import { AlignHorizontalLeft, East, JoinInner, LinkOff, RemoveCircleOutline, West } from "@mui/icons-material"
 import { Button } from "@mui/material"
 import {
-    AnyPerforation, EditionView, PlacementRelation, isPerforation, pairPerforations, placePerforation, unpairPerforation, unplacePerforation
+    AnyCommand, EditionView, PlacementRelation, isCommand, pairCommands, placeCommand, unpairCommand, unplaceCommand
 } from "linked-rolls"
 import { useContext, useState } from "react"
 import type { UserSelection } from "./RollDesk"
@@ -22,14 +22,14 @@ import {
 const current = (view: EditionView) => (item: UserSelection): UserSelection =>
     'id' in item ? view.get<UserSelection>(item.id) ?? item : item
 
-type Candidates = { pair: [AnyPerforation, AnyPerforation]; relation: PlacementRelation }
+type Candidates = { pair: [AnyCommand, AnyCommand]; relation: PlacementRelation }
 
 interface ConstraintsRibbonProps {
     versionId: string
 }
 
 /**
- * Stating and taking back placements and pairs: with two perforations
+ * Stating and taking back placements and pairs: with two commands
  * selected, between them, and with one, whatever binds it.
  */
 export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
@@ -41,18 +41,18 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
 
     if (!view) return null
 
-    const perforations = selection.map(current(view)).filter(isPerforation)
-    if (perforations.length !== selection.length) return null
+    const commands = selection.map(current(view)).filter(isCommand)
+    if (commands.length !== selection.length) return null
 
     const done = () => setSelection([])
 
-    const pairSelected = (one: AnyPerforation, other: AnyPerforation) => {
+    const pairSelected = (one: AnyCommand, other: AnyCommand) => {
         const refusal = refusalToPair(one, other, snapshot)
         if (refusal) {
             setMessage(refusal)
             return
         }
-        apply(pairPerforations(view, one.id, other.id))
+        apply(pairCommands(view, one.id, other.id))
         done()
     }
 
@@ -63,18 +63,18 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
             setMessage(refusal)
             return
         }
-        apply(placePerforation(view, placement.follower.id, placement.reference.id, placement.relation))
+        apply(placeCommand(view, placement.follower.id, placement.reference.id, placement.relation))
         done()
     }
 
     /** The kinds decide the direction where they can; otherwise the editor is asked. */
-    const placeSelected = (one: AnyPerforation, other: AnyPerforation, relation: PlacementRelation) => {
+    const placeSelected = (one: AnyCommand, other: AnyCommand, relation: PlacementRelation) => {
         const decided = placementBetween(one, other, relation)
         if (decided) placeChosen(decided)
         else setCandidates({ pair: [one, other], relation })
     }
 
-    const [one, other] = perforations
+    const [one, other] = commands
 
     if (one && other) {
         return (
@@ -134,7 +134,7 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
                         size='small'
                         startIcon={<RemoveCircleOutline />}
                         onClick={() => {
-                            apply(unplacePerforation(view, only.id))
+                            apply(unplaceCommand(view, only.id))
                             done()
                         }}
                     >
@@ -146,7 +146,7 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
                         size='small'
                         startIcon={<LinkOff />}
                         onClick={() => {
-                            apply(unpairPerforation(view, statement.id))
+                            apply(unpairCommand(view, statement.id))
                             done()
                         }}
                     >

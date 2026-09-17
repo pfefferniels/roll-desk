@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { AnyPerforation, AnySymbol, EditionOp, EditionView, constraintProblems, isPerforation, mm, pairPerforations, placePerforation } from 'linked-rolls'
+import { AnyCommand, AnySymbol, EditionOp, EditionView, constraintProblems, isCommand, mm, pairCommands, placeCommand } from 'linked-rolls'
 import { fixtureEdition, ids, viewOf } from './editionFixture'
 import {
-    ProblemKind, constraintsOf, describePerforation, describePlacement, displacedEvents,
-    pairStatementOf, pairsIn, partnerOf, perforationsIn, placementBetween, placementChain,
+    ProblemKind, constraintsOf, describeCommand, describePlacement, displacedEvents,
+    pairStatementOf, pairsIn, partnerOf, commandsIn, placementBetween, placementChain,
     placementsIn, problemLabel, problemsByVersion, refusalToPair, refusalToPlace, shiftsIn
 } from './constraints'
 import { welteT100 } from 'linked-rolls'
@@ -34,15 +34,15 @@ const arranged = (arrange: Arrangement): EditionView => {
     return viewOf(arrange(view).reduce((state, op) => produce(state, op), edition))
 }
 
-const perforation = (view: EditionView, id: string): AnyPerforation => {
+const command = (view: EditionView, id: string): AnyCommand => {
     const symbol = view.get<AnySymbol>(id)
-    if (!isPerforation(symbol)) throw new Error(`no perforation ${id}`)
+    if (!isCommand(symbol)) throw new Error(`no command ${id}`)
     return symbol
 }
 
 describe('placements of a version', () => {
     it('list a placement both of whose ends the version has, with its relation', () => {
-        const view = arranged(v => [placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith')])
+        const view = arranged(v => [placeCommand(v, ids.forzandoOff, ids.note, 'alignedWith')])
         const placement = only(placementsIn(view.snapshot(ids.b)))
         expect(placement.relation).toBe('alignedWith')
         expect(placement.follower.id).toBe(ids.forzandoOff)
@@ -50,13 +50,13 @@ describe('placements of a version', () => {
     })
 
     it('list an order the same way', () => {
-        const view = arranged(v => [placePerforation(v, ids.forzandoOn, ids.note, 'before')])
+        const view = arranged(v => [placeCommand(v, ids.forzandoOn, ids.note, 'before')])
         expect(placementsIn(view.snapshot(ids.a)).map(p => [p.relation, p.follower.id]))
             .toEqual([['before', ids.forzandoOn]])
     })
 
     it('leave out a placement whose reference the version does not have', () => {
-        const view = arranged(v => [placePerforation(v, ids.forzandoOff, ids.forzandoOn, 'after')])
+        const view = arranged(v => [placeCommand(v, ids.forzandoOff, ids.forzandoOn, 'after')])
         expect(placementsIn(view.snapshot(ids.a))).toHaveLength(1)
         expect(placementsIn(view.snapshot(ids.b))).toEqual([])
     })
@@ -64,10 +64,10 @@ describe('placements of a version', () => {
 
 describe('pairs of a version', () => {
     it('are found from either side', () => {
-        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
         const snapshot = view.snapshot(ids.a)
-        const off = perforation(view, ids.forzandoOff)
-        const on = perforation(view, ids.forzandoOn)
+        const off = command(view, ids.forzandoOff)
+        const on = command(view, ids.forzandoOn)
 
         expect(pairsIn(snapshot).map(p => [p.stating.id, p.partner.id]))
             .toEqual([[ids.forzandoOff, ids.forzandoOn]])
@@ -77,9 +77,9 @@ describe('pairs of a version', () => {
     })
 
     it('keep the statement but lose the partner where the version lacks it', () => {
-        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
         const snapshot = view.snapshot(ids.b)
-        const off = perforation(view, ids.forzandoOff)
+        const off = command(view, ids.forzandoOff)
 
         expect(pairsIn(snapshot)).toEqual([])
         expect(pairStatementOf(off, snapshot)?.id).toBe(ids.forzandoOff)
@@ -87,13 +87,13 @@ describe('pairs of a version', () => {
     })
 })
 
-describe('what binds a perforation', () => {
+describe('what binds a command', () => {
     it('names the placement and the partner', () => {
         const view = arranged(v => [
-            placePerforation(v, ids.forzandoOff, ids.note, 'before'),
-            pairPerforations(v, ids.forzandoOn, ids.forzandoOff)
+            placeCommand(v, ids.forzandoOff, ids.note, 'before'),
+            pairCommands(v, ids.forzandoOn, ids.forzandoOff)
         ])
-        const bound = constraintsOf(perforation(view, ids.forzandoOff), view.snapshot(ids.a))
+        const bound = constraintsOf(command(view, ids.forzandoOff), view.snapshot(ids.a))
         expect(bound.placement?.relation).toBe('before')
         expect(bound.placement?.reference.id).toBe(ids.note)
         expect(bound.pairedWith?.id).toBe(ids.forzandoOn)
@@ -101,8 +101,8 @@ describe('what binds a perforation', () => {
 
     it('follows a chain of placements to its end', () => {
         const view = arranged(v => [
-            placePerforation(v, ids.forzandoOn, ids.forzandoOff, 'before'),
-            placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith')
+            placeCommand(v, ids.forzandoOn, ids.forzandoOff, 'before'),
+            placeCommand(v, ids.forzandoOff, ids.note, 'alignedWith')
         ])
         expect(placementChain(ids.forzandoOn, view.snapshot(ids.a)))
             .toEqual([ids.forzandoOff, ids.note])
@@ -110,8 +110,8 @@ describe('what binds a perforation', () => {
 
     it('stops where a chain turns back on itself', () => {
         const view = arranged(v => [
-            placePerforation(v, ids.forzandoOn, ids.forzandoOff, 'alignedWith'),
-            placePerforation(v, ids.forzandoOff, ids.forzandoOn, 'after')
+            placeCommand(v, ids.forzandoOn, ids.forzandoOff, 'alignedWith'),
+            placeCommand(v, ids.forzandoOff, ids.forzandoOn, 'after')
         ])
         expect(placementChain(ids.forzandoOn, view.snapshot(ids.a)))
             .toEqual([ids.forzandoOff, ids.forzandoOn])
@@ -122,7 +122,7 @@ describe('displaced events', () => {
     /** The fixture performed with the forzando off moved 4 mm back. */
     const performance = () => {
         const view = viewOf(fixtureEdition())
-        const events = perforationsIn(view.snapshot(ids.a))
+        const events = commandsIn(view.snapshot(ids.a))
             .flatMap(symbol => {
                 const event = view.simplifySymbol(symbol, welteT100)
                 return event ? [event] : []
@@ -142,21 +142,21 @@ describe('displaced events', () => {
         expect(displacement.performed.from).toBe(1000)
     })
 
-    it('give the shift of each moved perforation by id', () => {
+    it('give the shift of each moved command by id', () => {
         const { view, performed } = performance()
         expect(Array.from(shiftsIn(performed, view))).toEqual([[ids.forzandoOff, -4]])
     })
 })
 
 describe('descriptions', () => {
-    it('name a perforation by its kind and place', () => {
+    it('name a command by its kind and place', () => {
         const view = viewOf(fixtureEdition())
-        expect(describePerforation(perforation(view, ids.note), view)).toBe('Note 60 at 1000 mm')
-        expect(describePerforation(perforation(view, ids.forzandoOff), view)).toBe('ForzandoOff (treble) at 1004 mm')
+        expect(describeCommand(command(view, ids.note), view)).toBe('Note 60 at 1000 mm')
+        expect(describeCommand(command(view, ids.forzandoOff), view)).toBe('ForzandoOff (treble) at 1004 mm')
     })
 
     it('put a placement into words', () => {
-        const view = arranged(v => [placePerforation(v, ids.forzandoOn, ids.note, 'before')])
+        const view = arranged(v => [placeCommand(v, ids.forzandoOn, ids.note, 'before')])
         const placement = first(placementsIn(view.snapshot(ids.a)))
         expect(describePlacement(placement, view)).toBe('ForzandoOn (treble) at 990 mm lies before Note 60 at 1000 mm')
     })
@@ -173,7 +173,7 @@ describe('descriptions', () => {
 
 describe('problems by version', () => {
     it('groups them under the versions they hold in, leaving out the sound ones', () => {
-        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
+        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
         const groups = problemsByVersion(constraintProblems(view), view.edition.versions)
         expect(groups.map(group => group.version.id)).toEqual([ids.b])
         expect(first(groups).problems).toEqual([
@@ -183,10 +183,10 @@ describe('problems by version', () => {
 })
 
 describe('refusals', () => {
-    it('refuse to pair a perforation with itself or into a second pair', () => {
-        const view = arranged(v => [pairPerforations(v, ids.forzandoOff, ids.forzandoOn)])
+    it('refuse to pair a command with itself or into a second pair', () => {
+        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
         const snapshot = view.snapshot(ids.a)
-        const at = (id: string) => perforation(view, id)
+        const at = (id: string) => command(view, id)
 
         expect(refusalToPair(at(ids.note), at(ids.note), snapshot)).toMatch(/itself/)
         expect(refusalToPair(at(ids.note), at(ids.forzandoOn), snapshot)).toMatch(/already paired with/)
@@ -196,13 +196,13 @@ describe('refusals', () => {
 
     it('refuse a placement relative to itself, in a circle, of a note after an expression, or on both sides of a pair', () => {
         const view = arranged(v => [
-            placePerforation(v, ids.otherNote, ids.note, 'before'),
-            placePerforation(v, ids.forzandoOff, ids.note, 'alignedWith'),
-            pairPerforations(v, ids.forzandoOn, ids.forzandoOff)
+            placeCommand(v, ids.otherNote, ids.note, 'before'),
+            placeCommand(v, ids.forzandoOff, ids.note, 'alignedWith'),
+            pairCommands(v, ids.forzandoOn, ids.forzandoOff)
         ])
         const snapshot = view.snapshot(ids.a)
         const placing = (follower: string, reference: string) => refusalToPlace(
-            { relation: 'after', follower: perforation(view, follower), reference: perforation(view, reference) },
+            { relation: 'after', follower: command(view, follower), reference: command(view, reference) },
             snapshot
         )
 
@@ -217,8 +217,8 @@ describe('refusals', () => {
 describe('the direction of a placement', () => {
     it('is decided between an expression and a note, whichever was picked first', () => {
         const view = viewOf(fixtureEdition())
-        const note = perforation(view, ids.note)
-        const off = perforation(view, ids.forzandoOff)
+        const note = command(view, ids.note)
+        const off = command(view, ids.forzandoOff)
 
         expect(placementBetween(off, note, 'before')).toEqual({ relation: 'before', follower: off, reference: note })
         expect(placementBetween(note, off, 'after')).toEqual({ relation: 'after', follower: off, reference: note })
@@ -226,7 +226,7 @@ describe('the direction of a placement', () => {
 
     it('is left open between two of a kind', () => {
         const view = viewOf(fixtureEdition())
-        expect(placementBetween(perforation(view, ids.note), perforation(view, ids.otherNote), 'alignedWith')).toBeUndefined()
-        expect(placementBetween(perforation(view, ids.forzandoOn), perforation(view, ids.forzandoOff), 'before')).toBeUndefined()
+        expect(placementBetween(command(view, ids.note), command(view, ids.otherNote), 'alignedWith')).toBeUndefined()
+        expect(placementBetween(command(view, ids.forzandoOn), command(view, ids.forzandoOff), 'before')).toBeUndefined()
     })
 })

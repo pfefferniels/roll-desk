@@ -60,7 +60,7 @@ export interface LiveZoom {
  * Horizontal zoom, split into a value the drawing is laid out against and
  * a value the gesture is currently at. While the two differ the difference
  * rides on a single `scale(ratio, 1)` on the stage, which costs one
- * attribute write rather than a re-render of every perforation. Settling
+ * attribute write rather than a re-render of every command. Settling
  * folds the ratio back into the layout, so the distortion a non-uniform
  * scale introduces (elliptical hull corners, slanted arrow heads,
  * stretched labels) only ever lasts as long as the gesture.

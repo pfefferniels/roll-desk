@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isPerforation, welteT100 } from 'linked-rolls'
+import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { deskPath, entityOfPath, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
@@ -158,7 +158,7 @@ export const Desk = ({ show }: DeskProps) => {
         : currentCopy && barOf(currentCopy)) ?? welteT100
 
     const [soleSelected] = selection.length === 1 ? selection : []
-    const selectedPerforation = soleSelected && 'id' in soleSelected
+    const selectedCommand = soleSelected && 'id' in soleSelected
         ? view?.get<AnySymbol>(soleSelected.id)
         : undefined
 
@@ -596,9 +596,9 @@ export const Desk = ({ show }: DeskProps) => {
 
                                     </>
                                 )}
-                                {isPerforation(selectedPerforation) && currentVersionId && (
+                                {isCommand(selectedCommand) && currentVersionId && (
                                     <ConstraintSummary
-                                        symbol={selectedPerforation}
+                                        symbol={selectedCommand}
                                         versionId={currentVersionId}
                                     />
                                 )}

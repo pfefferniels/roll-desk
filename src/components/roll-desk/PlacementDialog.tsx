@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Radio, RadioGroup } from "@mui/material"
-import { AnyPerforation, PlacementRelation } from "linked-rolls"
+import { AnyCommand, PlacementRelation } from "linked-rolls"
 import { useContext, useState } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { Placement, describePlacement } from "../../helpers/constraints"
@@ -17,15 +17,15 @@ const explanations: Record<PlacementRelation, string> = {
 }
 
 interface PlacementDialogProps {
-    /** The two perforations, in the order they were picked. */
-    candidates: [AnyPerforation, AnyPerforation]
+    /** The two commands, in the order they were picked. */
+    candidates: [AnyCommand, AnyCommand]
     relation: PlacementRelation
     onClose: () => void
     onDone: (placement: Placement) => void
 }
 
 /**
- * Which of two perforations of the same kind is placed relative to
+ * Which of two commands of the same kind is placed relative to
  * the other. The first picked is taken to be the one that moves.
  */
 export const PlacementDialog = ({ candidates: [first, second], relation, onClose, onDone }: PlacementDialogProps) => {

@@ -26,7 +26,7 @@ const inside = (at: Point, of: Boxed): boolean =>
     && at.y > of.y && at.y < add(of.y, of.height)
 
 /**
- * Every arrangement two perforations can fall in. A command is a wide,
+ * Every arrangement two commands can fall in. A command is a wide,
  * shallow box, one lane high and as long as it sounds, so most of these
  * are wide boxes lying over each other.
  */
@@ -67,7 +67,7 @@ describe('the arrow between two things on the roll', () => {
     })
 
     /**
-     * A head buried in a black perforation reads as a spike growing out
+     * A head buried in a black command reads as a spike growing out
      * of it rather than as an arrow arriving at it.
      */
     it('never puts its head inside what it points at', () => {

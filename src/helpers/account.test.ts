@@ -101,7 +101,7 @@ describe('the account of a copy', () => {
 })
 
 describe('an edit in a line of text', () => {
-    it('says what it does to the first perforation it touches, and where', () => {
+    it('says what it does to the first command it touches, and where', () => {
         const edition = fixtureEdition()
         const edit = edition.versions[1]?.edits?.[0]
         if (!edit) throw new Error('the fixture has changed')

@@ -1,10 +1,10 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnyPerforation, AnySymbol, CarriageProblem, ConstraintProblem, Path, PlacementRelation, RollCopy, isPerforation } from "linked-rolls"
+import { AnyCommand, AnySymbol, CarriageProblem, ConstraintProblem, Path, PlacementRelation, RollCopy, isCommand } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSnapshot } from "../../hooks/useSnapshot"
 import {
-    constraintsOf, describePerforation, describePlacement, pairsIn,
+    constraintsOf, describeCommand, describePlacement, pairsIn,
     placementsIn, problemLabel, problemsByVersion, relationLabel
 } from "../../helpers/constraints"
 import { Arguable } from "./Arguable"
@@ -50,7 +50,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
     const groups = problemsByVersion(problems, edition.versions)
     const describe = (id: string) => {
         const symbol = view.get<AnySymbol>(id)
-        return isPerforation(symbol) ? describePerforation(symbol, view) : id
+        return isCommand(symbol) ? describeCommand(symbol, view) : id
     }
 
     return (
@@ -129,8 +129,8 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
     if (!edition || !view) return null
 
     const version = edition.versions.find(v => v.id === versionId)
-    const describe = (symbol: AnyPerforation) => describePerforation(symbol, view)
-    const pathTo = (symbol: AnyPerforation, key: PlacementRelation | 'pairedWith'): Path | undefined => {
+    const describe = (symbol: AnyCommand) => describeCommand(symbol, view)
+    const pathTo = (symbol: AnyCommand, key: PlacementRelation | 'pairedWith'): Path | undefined => {
         const path = view.getPath(symbol.id)
         return path && [...path, key]
     }
@@ -182,11 +182,11 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
 }
 
 interface ConstraintSummaryProps {
-    symbol: AnyPerforation
+    symbol: AnyCommand
     versionId: string
 }
 
-/** What binds a selected perforation, in a line or two. */
+/** What binds a selected command, in a line or two. */
 export const ConstraintSummary = ({ symbol, versionId }: ConstraintSummaryProps) => {
     const { view } = useContext(EditionContext)
     const snapshot = useSnapshot(versionId)
@@ -197,8 +197,8 @@ export const ConstraintSummary = ({ symbol, versionId }: ConstraintSummaryProps)
 
     return (
         <div style={{ color: 'gray', fontSize: '8pt' }}>
-            {placement && <div>{relationLabel[placement.relation]} {describePerforation(placement.reference, view)}</div>}
-            {pairedWith && <div>paired with {describePerforation(pairedWith, view)}</div>}
+            {placement && <div>{relationLabel[placement.relation]} {describeCommand(placement.reference, view)}</div>}
+            {pairedWith && <div>paired with {describeCommand(pairedWith, view)}</div>}
         </div>
     )
 }

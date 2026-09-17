@@ -38,7 +38,7 @@ export const ConstraintLegend = () => (
                 </Glyph>
             }
             description='Measured place'
-            help='A perforation is drawn where it plays once its constraints are applied. The dashed outline is where its holes were measured, shown once the shift is visible at the zoom.'
+            help='A command is drawn where it plays once its constraints are applied. The dashed outline is where its holes were measured, shown once the shift is visible at the zoom.'
         />
         <LegendRow
             symbol={

@@ -8,7 +8,7 @@ const isNote = (event: AbsoluteEvent) =>
 /**
  * The transport second at which a schedule plays its last note.
  *
- * A range narrows the notes while the expression perforations of the whole roll
+ * A range narrows the notes while the expression commands of the whole roll
  * are emulated anyway, so the last event of the schedule is a silent one and can
  * lie minutes behind the last note.
  */

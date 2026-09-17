@@ -34,7 +34,7 @@ const HEAD = svg(9)
 /** Half the width of the head at its base, against its length. */
 const HEAD_SPREAD = 0.42
 
-/** The air left between an arrow and the perforations it runs between. */
+/** The air left between an arrow and the commands it runs between. */
 const GAP = svg(3)
 
 /**
@@ -55,7 +55,7 @@ export const centreOf = (box: Boxed): Point =>
  * Where a ray from the middle of a box towards a point leaves it.
  *
  * An arrow stops at the edge of what it joins rather than at the middle,
- * so that its head arrives at a perforation instead of being buried in
+ * so that its head arrives at a command instead of being buried in
  * it.
  */
 const edgeTowards = (box: Boxed, target: Point): Point => {
@@ -78,7 +78,7 @@ const stepped = (from: Point, towards: Point, by: Svg): Point => {
 /**
  * Where an arrow with nowhere to come from starts and ends: down and
  * across into the top of what it points at, so that it reads as an
- * arrow beside a long perforation rather than as a spike on it.
+ * arrow beside a long command rather than as a spike on it.
  */
 const stub = (to: Boxed): { start: Point, tip: Point } => {
     const tip = point(centreOf(to).x, subtract(to.y, GAP))
@@ -102,9 +102,9 @@ const doublesBack = (start: Point, tip: Point, from: Point, to: Point): boolean 
  * It holds up wherever the two fall: far apart or lying over each other,
  * across the paper or along it, in either direction. Each end stops at
  * the edge of its box with a little air, so the head arrives at a
- * perforation rather than inside it, and every arrow keeps some of the
+ * command rather than inside it, and every arrow keeps some of the
  * same bow whatever its length, so that a straight one is not taken for
- * a perforation. Where the two are so nearly one place that no arrow
+ * a command. Where the two are so nearly one place that no arrow
  * between them could be read, one is drawn into the second from above.
  */
 export const arrowLine = (from: Boxed, to: Boxed): ArrowLine => {
