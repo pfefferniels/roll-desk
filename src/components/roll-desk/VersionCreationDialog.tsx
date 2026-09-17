@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material"
-import { assignObject, Concept, procedures, VersionCreation } from "linked-rolls"
+import { assignObject, Concept, conceptOf, nameOf, procedures, VersionCreation } from "linked-rolls"
 import { DateStatementField } from "./DateStatementField"
 import { useDraft } from "../../hooks/useDraft"
 
@@ -20,9 +20,17 @@ export const proceduresOffered = (stored: Concept | undefined): readonly Concept
         ? [...procedures, stored]
         : procedures
 
-/** The procedure the field stands on, none where it stands on nothing. */
-export const procedureIn = (offered: readonly Concept[], key: string): Concept | undefined =>
-    offered.find(candidate => keyOf(candidate) === key)
+/**
+ * The procedure the field stands on, as the edition should state it: a
+ * declared one by its IRI alone, since what it is called stands in the
+ * vocabulary, any other one as it came in. None where the field stands
+ * on nothing.
+ */
+export const procedureIn = (offered: readonly Concept[], key: string): Concept | undefined => {
+    const chosen = offered.find(candidate => keyOf(candidate) === key)
+    if (!chosen) return undefined
+    return chosen.id && conceptOf(chosen.id) ? { id: chosen.id } : chosen
+}
 
 interface VersionCreationDialogProps {
     open: boolean
@@ -85,7 +93,7 @@ export const VersionCreationDialog = ({ open, value, onClose, onDone }: VersionC
                         <MenuItem value=''>Not stated</MenuItem>
                         {offered.map(candidate => (
                             <MenuItem key={keyOf(candidate)} value={keyOf(candidate)}>
-                                {candidate.name}
+                                {nameOf(candidate)}
                             </MenuItem>
                         ))}
                     </TextField>

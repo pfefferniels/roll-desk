@@ -30,9 +30,9 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         if (!event) return
 
         setCompany(event.company?.name ?? '')
-        setCompanyAuthority(event.company?.sameAs[0] ?? '')
+        setCompanyAuthority(event.company?.sameAs?.[0] ?? '')
         setPaper(event.paper?.name ?? '')
-        setPaperAuthority(event.paper?.sameAs[0] ?? '')
+        setPaperAuthority(event.paper?.sameAs?.[0] ?? '')
         setDate(event.date)
         setSystem(trackerBarOf(event.system) ?? editionBar)
         setSpeed(speedInputOf(event.speed))

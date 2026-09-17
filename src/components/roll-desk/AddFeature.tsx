@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { addFeature, degrees, Writing, WritingMethod, writingMethods } from "linked-rolls"
+import { addFeature, degrees, Technique, techniques, Writing } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension, UserSelection } from "./RollDesk"
@@ -7,7 +7,7 @@ import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 
 /** Most of what is written on these rolls is written by hand, so the dialog opens there. */
-const byHand = writingMethods.find(name => name.toLowerCase() === 'handwriting') ?? writingMethods[0]
+const byHand = techniques.find(name => name.toLowerCase() === 'handwriting') ?? techniques[0]
 
 const isEventDimension = (selection: UserSelection): selection is EventDimension => {
     return 'horizontal' in selection && 'vertical' in selection
@@ -36,7 +36,7 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
 
     const [text, setText] = useState<string>('')
     const [rotation, setRotation] = useState<number>(0)
-    const [method, setMethod] = useState<WritingMethod>(byHand)
+    const [technique, setTechnique] = useState<Technique>(byHand)
 
     if (!edition) {
         return null
@@ -49,13 +49,13 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
 
                 <Stack direction='column' sx={{ m: 1 }} spacing={1}>
                     <FormControl>
-                        <FormLabel>Method</FormLabel>
+                        <FormLabel>Technique</FormLabel>
                         <Select
-                            value={method}
-                            onChange={e => setMethod(e.target.value)}
+                            value={technique}
+                            onChange={e => setTechnique(e.target.value)}
                             size='small'
                         >
-                            {writingMethods.map(name => (
+                            {techniques.map(name => (
                                 <MenuItem key={name} value={name} sx={{ textTransform: 'capitalize' }}>
                                     {name}
                                 </MenuItem>
@@ -101,7 +101,7 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
                             depiction: iiifUrl,
                             // A writing straight across the roll states no rotation.
                             ...(rotation !== 0 && { rotation: { value: degrees(rotation), unit: 'deg' as const } }),
-                            method,
+                            technique,
                             transcription: {
                                 type: 'text' as const,
                                 id: v4(),

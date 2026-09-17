@@ -19,8 +19,8 @@ describe('the procedures the dialog offers', () => {
 })
 
 describe('the procedure a saved dialog states', () => {
-    it('keeps a declared one', () => {
-        expect(procedureIn(proceduresOffered(declared), keyOf(declared))).toEqual(declared)
+    it('states a declared one by its IRI alone', () => {
+        expect(procedureIn(proceduresOffered(declared), keyOf(declared))).toEqual({ id: declared.id })
     })
 
     it('keeps one the vocabulary does not know rather than dropping it', () => {

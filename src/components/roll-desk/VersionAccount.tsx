@@ -1,5 +1,5 @@
 import { Stack, Typography } from "@mui/material"
-import { trackerBarOf } from "linked-rolls"
+import { nameOf, trackerBarOf } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { describeEdit, versionAccount } from "../../helpers/account"
@@ -23,7 +23,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             <div>
                 <Typography variant='subtitle2'>Version {versionLabel(view, version.id)}</Typography>
                 <Typography variant='caption' color='text.secondary'>
-                    {trackerBarOf(version.system)?.name ?? version.system.name}
+                    {trackerBarOf(version.system)?.name ?? nameOf(version.system)}
                 </Typography>
             </div>
 
@@ -41,7 +41,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
 
             {creation && (
                 <AccountSection title='Made'>
-                    {creation.procedure && <HeldStatement>{creation.procedure.name}</HeldStatement>}
+                    {creation.procedure && <HeldStatement>{nameOf(creation.procedure)}</HeldStatement>}
                     {creation.actor && (
                         <HeldStatement belief={creation.actor['@annotation']?.belief}>
                             by {creation.actor.name}
