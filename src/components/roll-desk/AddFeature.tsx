@@ -1,10 +1,13 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { WritingMethod } from "linked-rolls"
+import { WritingMethod, writingMethods } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension, UserSelection } from "./RollDesk"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
+
+/** Most of what is written on these rolls is written by hand, so the dialog opens there. */
+const byHand = writingMethods.find(name => name.toLowerCase() === 'handwriting') ?? writingMethods[0]
 
 const isEventDimension = (selection: UserSelection): selection is EventDimension => {
     return 'horizontal' in selection && 'vertical' in selection
@@ -33,7 +36,7 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
 
     const [text, setText] = useState<string>('')
     const [rotation, setRotation] = useState<number>(0)
-    const [method, setMethod] = useState<WritingMethod>('Handwriting')
+    const [method, setMethod] = useState<WritingMethod>(byHand)
 
     if (!edition) {
         return null
@@ -52,9 +55,11 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
                             onChange={e => setMethod(e.target.value)}
                             size='small'
                         >
-                            <MenuItem value='Handwriting'>Handwriting</MenuItem>
-                            <MenuItem value='Stamp'>Stamp</MenuItem>
-                            <MenuItem value='Printed'>Printed</MenuItem>
+                            {writingMethods.map(name => (
+                                <MenuItem key={name} value={name} sx={{ textTransform: 'capitalize' }}>
+                                    {name}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                     <FormControl>
