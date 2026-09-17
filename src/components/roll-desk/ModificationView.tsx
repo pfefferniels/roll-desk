@@ -1,4 +1,4 @@
-import { AnyFeature, Modification } from "linked-rolls";
+import { FeatureOrPatch, Modification } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
@@ -10,7 +10,7 @@ import { boxOf, Translation } from "../../helpers/rollGeometry";
 
 /** A feature once it is known where on the drawing it was drawn, and how big. */
 interface PlacedFeature {
-    feature: AnyFeature
+    feature: FeatureOrPatch
     center: Point
     diag: Svg
 }
@@ -18,11 +18,11 @@ interface PlacedFeature {
 /** Features that sit close enough together to be spoken of as one group. */
 interface FeatureCluster {
     centroid: Point
-    features: AnyFeature[]
+    features: FeatureOrPatch[]
 }
 
 
-const getFeatureBBox = (feature: AnyFeature, translation: Translation) =>
+const getFeatureBBox = (feature: FeatureOrPatch, translation: Translation) =>
     boxOf(feature, translation)
 
 /**
@@ -30,7 +30,7 @@ const getFeatureBBox = (feature: AnyFeature, translation: Translation) =>
  * If there are 0 or 1 points, returns a shallow copy of the input.
  */
 interface ModificationGroupProps extends SVGProps<SVGGElement> {
-    features: AnyFeature[];
+    features: FeatureOrPatch[];
     metadata: Modification;
 }
 
@@ -102,9 +102,9 @@ export const ModificationView = ({
 
     if (modification.type === 'Removal') return null
 
-    const features = modification.added
-        .map(id => view.get<AnyFeature>(id))
-        .filter(f => !!f)
+    // Each act states its own features: a patch is added, everything else produced.
+    const features: FeatureOrPatch[] =
+        modification.type === 'Attachment' ? modification.added : modification.produced
 
     const positionedEdits = features
         .map((feature) => {
@@ -161,7 +161,7 @@ export const ModificationView = ({
         <g>
             {groups.map((comp, i) => (
                 <ModificationGroup
-                    key={`${modification.added.join('-')}-${i}`}
+                    key={`${features.map(feature => feature.id).join('-')}-${i}`}
                     features={comp}
                     metadata={modification}
                     {...svgProps}

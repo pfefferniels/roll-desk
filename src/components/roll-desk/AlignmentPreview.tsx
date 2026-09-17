@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { add, AnyFeature, Millimeters, RollCopy, scale as times, subtract, TrackerBar } from "linked-rolls"
+import { add, featuresOf, FeatureOrPatch, Millimeters, RollCopy, scale as times, subtract, TrackerBar } from "linked-rolls"
 import { atLeastVisible, boxOf, evenGeometry, Translation } from "../../helpers/rollGeometry"
 import { padded, Span, spanning } from "../../helpers/scale"
 import { Svg, svg } from "../../helpers/units"
@@ -8,12 +8,12 @@ import { Svg, svg } from "../../helpers/units"
 export type Placement = (x: Millimeters) => Millimeters
 
 /** Where a set of features reaches, once each is placed on the shared axis. */
-export const spanOf = (features: AnyFeature[], place: Placement): Span | undefined =>
+export const spanOf = (features: FeatureOrPatch[], place: Placement): Span | undefined =>
     spanning(features.map(f => ({ from: place(f.horizontal.from), to: place(f.horizontal.to) })))
 
 /** One copy, drawn at one placement, in one pair of colours. */
 interface Layer {
-    features: AnyFeature[]
+    features: FeatureOrPatch[]
     place: Placement
     fill: string
     outline: {
@@ -48,7 +48,7 @@ export const drawAlignmentPreview = (
 ) => {
     ctx.clearRect(0, 0, width, height)
 
-    if (copy.features.length === 0 && alignTo.features.length === 0) return
+    if (featuresOf(copy).length === 0 && featuresOf(alignTo).length === 0) return
 
     const pad = svg(10)
     const drawH = subtract(height, times(pad, 2))
@@ -59,19 +59,19 @@ export const drawAlignmentPreview = (
 
     const layers: Layer[] = [
         {
-            features: copy.features,
+            features: featuresOf(copy),
             place: asRead,
             fill: 'rgba(180, 180, 180, 0.4)',
             outline: { stroke: '#bbb', width: 1, dash: [4, 3] }
         },
         {
-            features: copy.features,
+            features: featuresOf(copy),
             place: aligned,
             fill: 'rgba(25, 118, 210, 0.6)',
             outline: { stroke: '#1976d2', width: 1.5, dash: [] }
         },
         {
-            features: alignTo.features,
+            features: featuresOf(alignTo),
             place: asRead,
             fill: 'rgba(100, 100, 100, 0.5)',
             outline: { stroke: '#888', width: 1, dash: [] }

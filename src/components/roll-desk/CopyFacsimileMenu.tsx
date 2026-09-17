@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
-import { AnyFeature, addGeneralCondition, alignCopy, assignObject, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, Shift, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { FeatureOrPatch, addGeneralCondition, alignCopy, assignObject, featuresOf, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, Shift, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -16,7 +16,7 @@ import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
 import { whichCopy } from "../../helpers/names"
 import { RollCopyDialog } from "./RollCopyDialog"
 
-export type FacsimileSelection = EventDimension | AnyFeature
+export type FacsimileSelection = EventDimension | FeatureOrPatch
 
 interface MenuProps {
     copyId: string
@@ -95,18 +95,18 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 <Ribbon title='Symbols'>
                     <Button
                         onClick={() => {
-                            if (selection.length === copy.features.length) {
+                            if (selection.length === featuresOf(copy).length) {
                                 setSelection([])
                             }
                             else {
-                                setSelection(copy.features)
+                                setSelection(featuresOf(copy))
                             }
                         }}
-                        startIcon={selection.length === copy.features.length
+                        startIcon={selection.length === featuresOf(copy).length
                             ? <Deselect /> : <SelectAll />}
                         size='small'
                     >
-                        {selection.length === copy.features.length ? 'Deselect' : 'Select'} All
+                        {selection.length === featuresOf(copy).length ? 'Deselect' : 'Select'} All
                     </Button>
                 </Ribbon>
                 {selection.length > 0 && (

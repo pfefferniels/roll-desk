@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControlLabel, MenuItem, Radio, RadioGroup, Select, Stack, Typography } from "@mui/material";
-import { alignFeatures, AlignmentResult, assignObject, barOf, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading } from "linked-rolls";
+import { alignFeatures, AlignmentResult, assignObject, barOf, featuresOf, inMetersPerMinute, Millimeters, PaperStretch, RollCopy, ScaleReading } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { EditionContext } from "../../providers/EditionContext";
 import { dateStatement } from "../../helpers/dateStatement";
@@ -43,7 +43,7 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
     // copy be aligned against a red one: the bars put the notes on
     // different tracks and agree on the pitch each track sounds.
     const alignment = useMemo(
-        () => copyB && barB && alignFeatures(copy.features, copyB.features, bar, barB),
+        () => copyB && barB && alignFeatures(featuresOf(copy), featuresOf(copyB), bar, barB),
         [copy, copyB, bar, barB]
     )
 

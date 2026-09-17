@@ -1,5 +1,6 @@
 import {
-    AnyFeature,
+    featuresOf,
+    FeatureOrPatch,
     GluedOn,
     Path,
     RollCopy,
@@ -21,7 +22,7 @@ import { FacsimileBlend, transcriptionTakesPointer } from "../../helpers/facsimi
 interface CopyFacsimileProps {
     copy: RollCopy;
     active: boolean;
-    onClick: (e: AnyFeature) => void;
+    onClick: (e: FeatureOrPatch) => void;
     color: string;
     onSelectionDone: (dimension?: EventDimension) => void;
     blend: FacsimileBlend;
@@ -35,7 +36,7 @@ export const CopyFacsimile = ({
     onSelectionDone,
     blend,
 }: CopyFacsimileProps) => {
-    const { edition } = useContext(EditionContext);
+    const { edition, view } = useContext(EditionContext);
     const geometry = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
     const drag = useRollDrag(svgRef);
@@ -85,12 +86,13 @@ export const CopyFacsimile = ({
                     />
                 )}
 
-                {copy.features.map((feature, featureIndex) => {
+                {featuresOf(copy).map(feature => {
+                    const path = view?.getPath(feature.id)
                     return (
                         <Feature
                             key={feature.id}
                             feature={feature}
-                            conditionPath={['copies', edition.copies.indexOf(copy), 'features', featureIndex, 'condition']}
+                            conditionPath={path && [...path, 'condition']}
                             onClick={() => onClick(feature)}
                             color={color}
                         />
@@ -140,7 +142,7 @@ const KeyboardDivision = () => {
     );
 };
 
-interface FeatureProps<FeatureType extends AnyFeature = AnyFeature> {
+interface FeatureProps<FeatureType extends FeatureOrPatch = FeatureOrPatch> {
     feature: FeatureType;
     conditionPath?: Path
     onClick: React.MouseEventHandler;

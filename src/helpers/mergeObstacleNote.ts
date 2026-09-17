@@ -5,7 +5,8 @@ const notes: Record<MergeObstacle, string> = {
     'different-types': 'The features are not all of one type.',
     'different-tracks': 'The features do not lie on the same tracks.',
     'differing-conditions': 'The features state conditions that differ.',
-    'unlike-features': 'The features differ in more than their place along the roll.'
+    'unlike-features': 'The features differ in more than their place along the roll.',
+    'different-acts': 'The features were brought about by different acts.'
 }
 
 /** What stands in the way of merging, said in a phrase the desk can show. */

@@ -1,4 +1,4 @@
-import { Edition, max, Millimeters, mm } from "linked-rolls"
+import { Edition, featuresOf, max, Millimeters, mm } from "linked-rolls"
 
 /**
  * An edition whose copies carry no measurements yet still needs a canvas
@@ -13,7 +13,7 @@ const shortestUsefulRoll = mm(5000)
  */
 export const rollLength = (edition: Edition): Millimeters => {
     const measured = edition.copies
-        .flatMap(copy => copy.features)
+        .flatMap(featuresOf)
         .reduce((end, feature) => max(end, feature.horizontal.to), mm(0))
 
     return max(measured, shortestUsefulRoll)

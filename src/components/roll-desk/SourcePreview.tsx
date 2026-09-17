@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { IconButton } from '@mui/material'
 import { InfoOutlined } from '@mui/icons-material'
-import { add, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
+import { add, featuresOf, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
 import { Arguable } from './Arguable'
 import { dateStatement } from '../../helpers/dateStatement'
 import { copyLabel, secondarySourceOf } from '../../helpers/names'
@@ -88,7 +88,7 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, onShowAccount,
         : 'unknown date'
 
     const secondary = secondarySourceOf(copy)
-    const drawn = copy.features.length > 0
+    const drawn = featuresOf(copy).length > 0
     /** A copy known at second hand and with nothing to draw says what it is known from, with no empty box above. */
     const boxed = drawn || !secondary
 
@@ -158,13 +158,14 @@ function drawPreview(
 ) {
     ctx.clearRect(0, 0, w, h)
 
-    if (copy.features.length === 0) return
+    const features = featuresOf(copy)
+    if (features.length === 0) return
 
     const pad = svg(6)
     const drawH = subtract(h, times(pad, 2))
     const drawW = subtract(w, times(pad, 2))
 
-    const collated = spanning(copy.features.map(f => ({ from: f.horizontal.from, to: f.horizontal.to })))
+    const collated = spanning(features.map(f => ({ from: f.horizontal.from, to: f.horizontal.to })))
     if (!collated) return
 
     const place = asRead(copy)
@@ -191,7 +192,7 @@ function drawPreview(
 
     // Features as tiny rects
     ctx.fillStyle = '#777'
-    copy.features.forEach(f => {
+    features.forEach(f => {
         const { x, y, width, height } = atLeastVisible(boxOf(f, translation))
         ctx.fillRect(x, add(pad, y), width, height)
     })

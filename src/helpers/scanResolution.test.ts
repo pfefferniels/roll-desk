@@ -9,7 +9,6 @@ const copyMeasured = (measurements: RollCopy['measurements']): RollCopy => ({
     conditions: [],
     modifications: [],
     keeper: { name: 'Stanford', sameAs: [] },
-    features: [],
     scan: 'https://example.org/iiif/roll',
     measurements
 })

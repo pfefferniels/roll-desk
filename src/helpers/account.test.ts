@@ -13,7 +13,6 @@ const recorded = (): RollCopy => ({
     measurements: {},
     conditions: [],
     modifications: [],
-    features: [],
     readFrom: { kind: 'recording' }
 })
 
@@ -50,7 +49,7 @@ describe('the account of a version', () => {
         const edition = fixtureEdition()
         const copy = edition.copies[0]
         if (!copy) throw new Error('the fixture has changed')
-        copy.features.push(hole('hole-added', 1200, 1210, 51))
+        copy.production?.produced?.push(hole('hole-added', 1200, 1210, 51))
         edition.versions[1]?.edits?.push({ type: 'edit', id: 'edit-added', insert: [note('note-64', 64, 'hole-added')] })
         const account = versionAccount(viewOf(edition), ids.a)
 

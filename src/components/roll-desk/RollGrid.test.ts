@@ -17,7 +17,6 @@ const copyScannedAt = (resolution?: Resolution): RollCopy => ({
     conditions: [],
     modifications: [],
     keeper: { name: 'Stanford', sameAs: [] },
-    features: [],
     scan: 'roll',
     measurements: {
         trackCalibration: { unit: 'px', offset: px(2000), separation: px(25), shift: track(0) },

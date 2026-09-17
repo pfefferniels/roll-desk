@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { WritingMethod, writingMethods } from "linked-rolls"
+import { Writing, WritingMethod, writingMethods } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension, UserSelection } from "./RollDesk"
@@ -91,12 +91,13 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
                 <Button
                     onClick={() => {
                         const dimension = structuredClone(selection).at(0)
-                        if (!dimension) return
+                        if (!dimension || !isEventDimension(dimension)) return
 
-                        const feature = {
-                            type: 'Writing' as const,
+                        const feature: Writing = {
+                            type: 'Writing',
                             id: v4(),
-                            ...dimension,
+                            horizontal: dimension.horizontal,
+                            vertical: dimension.vertical,
                             depiction: iiifUrl,
                             // rotation,
                             method,
@@ -110,8 +111,11 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
                         apply(draft => {
                             const copy = draft.copies.find(c => c.id === copyID)
                             if (!copy) return
-                            
-                            copy.features.push(feature)
+
+                            // Every feature stands in the act that made it. Writing on a
+                            // roll was written after it was punched, and the dialog knows
+                            // no more of that act than the one feature it produced.
+                            copy.modifications.push({ type: 'Alteration', produced: [feature] })
                         })
 
                         onClose()

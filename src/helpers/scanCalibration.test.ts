@@ -16,7 +16,6 @@ const copyWith = (separation: number, keeper = 'Museum'): RollCopy => ({
     conditions: [],
     modifications: [],
     keeper: { name: keeper, sameAs: [] },
-    features: [],
     scan: 'https://example.org/iiif/roll',
     measurements: { trackCalibration: calibrationOfSeparation(separation) }
 })

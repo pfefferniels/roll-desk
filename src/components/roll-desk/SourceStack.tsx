@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { barOf, Edition, mm, RollCopy } from 'linked-rolls'
+import { barOf, Edition, featuresOf, mm, RollCopy } from 'linked-rolls'
 import { EditionContext } from '../../providers/EditionContext'
 import { asRead, SourcePreview } from './SourcePreview'
 import { AccountSection } from './Account'
@@ -18,7 +18,7 @@ const nothingMeasured: Span = { from: mm(0), to: mm(100) }
 /** How far a copy reaches, both where it was collated to and where it was read. */
 const reachOf = (copy: RollCopy): (Span | undefined)[] => {
     const place = asRead(copy)
-    return copy.features.flatMap(feature => [
+    return featuresOf(copy).flatMap(feature => [
         { from: feature.horizontal.from, to: feature.horizontal.to },
         { from: place(feature.horizontal.from), to: place(feature.horizontal.to) }
     ])

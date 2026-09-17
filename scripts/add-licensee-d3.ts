@@ -18,7 +18,7 @@
 
 import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
-import { keyOf, mm, readFromPhillipsEroll, track, welteLicensee } from 'linked-rolls'
+import { featuresOf, keyOf, mm, readFromPhillipsEroll, track, welteLicensee } from 'linked-rolls'
 import type { Millimeters, Seconds } from 'linked-rolls'
 import {
     adopted, argued, believing, changedTexts, dated, decimal, editsOf, finish, inferred, insertionsIn, inWords, Json,
@@ -209,7 +209,7 @@ const readAt = (placeAt: (elapsed: Seconds) => Millimeters) =>
  */
 const placementOnEdition = () => {
     const inSeconds = readAt(elapsed => mm(elapsed))
-    const reading = inSeconds.features.flatMap(feature => {
+    const reading = featuresOf(inSeconds).flatMap(feature => {
         const meaning = welteLicensee.meaningOf(feature.vertical.from)
         return meaning?.type === 'note' ? [{ at: Number(feature.horizontal.from), pitch: meaning.pitch }] : []
     })
@@ -239,7 +239,7 @@ const placementOnEdition = () => {
     const deviations = pairs.map((p, k) => Math.abs(p.y - parabola(p.x) - at(smooth, k)))
     return {
         placeAt: (elapsed: Seconds) => mm(placeAt(elapsed)),
-        covered: { from: placeAt(0), to: placeAt(Math.max(...inSeconds.features.map(f => Number(f.horizontal.to)))) },
+        covered: { from: placeAt(0), to: placeAt(Math.max(...featuresOf(inSeconds).map(f => Number(f.horizontal.to)))) },
         aligned: pairs.length,
         notes: reading.length,
         deviation: { p50: median(deviations), p95: quantile(deviations, 0.95) }
@@ -263,7 +263,7 @@ const phillips: Json = {
     modifications: [],
     keeper: person('Peter Phillips'),
     production: { system: chase.production.system, date: notBefore1916() },
-    features: reading.features.map(asStored)
+    features: featuresOf(reading).map(asStored)
 }
 document.copies.push(phillips)
 phillips.features.forEach((feature: Json) => {

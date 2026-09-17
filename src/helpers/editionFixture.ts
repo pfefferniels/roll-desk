@@ -56,12 +56,14 @@ export const fixtureEdition = (): Edition => {
         conditions: [],
         modifications: [],
         keeper: { name: 'Test', sameAs: [] },
-        features: [
-            hole('hole-note', 1000, 1010, 47),
-            hole('hole-other-note', 1020, 1030, 49),
-            hole('hole-off', 1004, 1006, 96),
-            hole('hole-on', 990, 992, 95)
-        ]
+        production: {
+            produced: [
+                hole('hole-note', 1000, 1010, 47),
+                hole('hole-other-note', 1020, 1030, 49),
+                hole('hole-off', 1004, 1006, 96),
+                hole('hole-on', 990, 992, 95)
+            ]
+        }
     }
     const label: Text = { type: 'text', id: ids.label, text: 'WM 225', carriers: [] }
 

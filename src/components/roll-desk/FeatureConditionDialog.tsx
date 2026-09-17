@@ -1,10 +1,10 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
-import { AnyFeature, conditions, FeatureConditionAssignment } from "linked-rolls";
+import { conditions, FeatureConditionAssignment, FeatureOrPatch } from "linked-rolls";
 
 interface FeatureConditionDialogProps {
     open: boolean
-    feature: AnyFeature
+    feature: FeatureOrPatch
     onClose: () => void
     onDone: (condition: FeatureConditionAssignment) => void
 }

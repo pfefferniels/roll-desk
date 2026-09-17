@@ -199,7 +199,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 measurements: {},
                 conditions: [],
                 modifications: [],
-                features: [],
                 production: { system: systemOf(system), ...(speedOfCopy && { speed: speedOfCopy }) },
                 readFrom: stated,
                 ...(keeperOfCopy && { keeper: keeperOfCopy })
