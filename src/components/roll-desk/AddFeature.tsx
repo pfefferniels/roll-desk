@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, FormControl, FormLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { Writing, WritingMethod, writingMethods } from "linked-rolls"
+import { addFeature, Writing, WritingMethod, writingMethods } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EventDimension, UserSelection } from "./RollDesk"
@@ -108,15 +108,9 @@ export const AddWritingFeature = ({ copyID, open, onClose, iiifUrl }: AddWriting
                             }
                         }
 
-                        apply(draft => {
-                            const copy = draft.copies.find(c => c.id === copyID)
-                            if (!copy) return
-
-                            // Every feature stands in the act that made it. Writing on a
-                            // roll was written after it was punched, and the dialog knows
-                            // no more of that act than the one feature it produced.
-                            copy.modifications.push({ type: 'Alteration', produced: [feature] })
-                        })
+                        // Writing on a roll was written after it was punched, and the
+                        // dialog knows no more of that act than the one feature it made.
+                        apply(addFeature(copyID, feature))
 
                         onClose()
                     }}

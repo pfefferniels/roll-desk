@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AnyFeature, Hole, Mark, assignObject, mergeObstacle, mm, track } from 'linked-rolls'
-import { mergeObstacleNote } from './mergeObstacleNote'
+import { mergeObstacleFor, mergeObstacleNote } from './mergeObstacleNote'
+import { fixtureEdition, viewOf } from './editionFixture'
 
 const hole = (from: number, position: number, rest: Partial<Hole> = {}): Hole => ({
     type: 'Hole',
@@ -44,5 +45,32 @@ describe('what stands in the way of merging features', () => {
             'The features differ in more than their place along the roll.',
             'The features state conditions that differ.'
         ])
+    })
+})
+
+describe('the obstacle the desk asks about before offering a merge', () => {
+    /** The fixture's copy, with one more hole added by an act of its own. */
+    const withAnAlteration = () => {
+        const edition = fixtureEdition()
+        const copy = edition.copies[0]
+        if (!copy) throw new Error('the fixture has changed')
+        copy.modifications.push({ type: 'Alteration', produced: [hole(1100, 47)] })
+        return { punched: copy.production?.produced ?? [], altered: [hole(1100, 47)], view: viewOf(edition) }
+    }
+
+    it('falls through to the features themselves where they stand in one act', () => {
+        const { punched, view } = withAnAlteration()
+        expect(mergeObstacleFor([punched[0]!, punched[1]!], view)).toBe('different-tracks')
+        expect(mergeObstacleFor([punched[0]!], view)).toBe('fewer-than-two')
+    })
+
+    it('is the acts where the features were brought about by different ones', () => {
+        const { punched, altered, view } = withAnAlteration()
+        expect(mergeObstacleFor([punched[0]!, altered[0]!], view)).toBe('different-acts')
+        expect(mergeObstacleNote('different-acts')).toBe('The features were brought about by different acts.')
+    })
+
+    it('falls back to the features alone where no view is given', () => {
+        expect(mergeObstacleFor([hole(1000, 47), hole(1010, 47)])).toBeUndefined()
     })
 })

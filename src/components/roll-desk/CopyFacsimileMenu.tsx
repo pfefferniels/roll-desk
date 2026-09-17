@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
-import { FeatureOrPatch, addGeneralCondition, alignCopy, assignObject, featuresOf, isRollFeature, mergeFeatures, mergeObstacle, removeFeatures, Shift, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { FeatureOrPatch, addGeneralCondition, alignCopy, assignObject, featuresOf, isRollFeature, mergeFeatures, removeFeatures, Shift, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -12,7 +12,7 @@ import { EditString } from "./EditString"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
 import { FeatureConditionDialog } from "./FeatureConditionDialog"
-import { mergeObstacleNote } from "../../helpers/mergeObstacleNote"
+import { mergeObstacleFor, mergeObstacleNote } from "../../helpers/mergeObstacleNote"
 import { whichCopy } from "../../helpers/names"
 import { RollCopyDialog } from "./RollCopyDialog"
 
@@ -27,7 +27,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
     /** What is selected where one thing is, which is what the dialogs act on. */
     const sole = selection.length === 1 ? selection[0] : undefined
-    const { edition, apply } = useContext(EditionContext)
+    const { edition, view, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
@@ -44,7 +44,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
     const carriedAlone = symbolsCarriedOnlyBy(edition, copyId).length
     const features = selection.filter(isRollFeature)
-    const obstacle = mergeObstacle(features)
+    const obstacle = mergeObstacleFor(features, view)
 
     return (
         <>
