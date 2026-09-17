@@ -300,7 +300,9 @@ const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
     const chunks = feature.transcription.text.split("\n");
 
     // The roll is drawn running from left to right, so a writing across it
-    // stands upright, and its rotation turns it from there.
+    // stands upright, and its rotation turns it from there. The angle is
+    // added rather than subtracted because the bar is laid out with the bass
+    // below, which makes a turn towards the end of the roll clockwise here.
     const askew = 90 + Number(feature.rotation?.value ?? 0);
 
     return (
