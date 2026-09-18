@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignReference, Belief, Certainty, Edition, KeeperAssignment, RollCopy, stateCarriage } from 'linked-rolls'
+import { assignReference, Belief, Certainty, connectVersions, Edition, KeeperAssignment, mm, RollCopy, stateCarriage } from 'linked-rolls'
 import { produce } from 'immer'
 import { copyAccount, describeEdit, versionAccount } from './account'
 import { fixtureEdition, hole, ids, note, viewOf } from './editionFixture'
@@ -33,6 +33,17 @@ describe('the account of a version', () => {
 
         expect(versionAccount(viewOf(edition), ids.b)?.derivations.map(({ parent, principal }) => [parent, principal]))
             .toEqual([['C', true], ['A', false]])
+    })
+
+    it('carries the window each derivation states, and none where it states one for another', () => {
+        const edition = fixtureEdition()
+        const tolerance = { toleranceStart: mm(3.5), toleranceEnd: mm(5) }
+        const collated = produce(edition, connectVersions(viewOf(edition), ids.b, ids.a, tolerance))
+
+        const [derivation] = versionAccount(viewOf(collated), ids.b)?.derivations ?? []
+
+        expect(derivation?.collationTolerance).toEqual(tolerance)
+        expect(versionAccount(viewOf(collated), ids.a)?.derivations).toEqual([])
     })
 
     it('gives the witnesses by perforations first, then by statement with their beliefs', () => {

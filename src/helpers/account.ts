@@ -1,12 +1,18 @@
 import {
-    AnySymbol, certainties, derivationsOf, Edit, EditionView, editsOf, idOf, isCommand, principalDerivationOf,
-    Reservation, reservationsAbout, reservationsAboutVersion, RollCopy, Version, VersionReservationType,
-    versionsWitnessedBy, Witness, witnessesOf
+    AnySymbol, certainties, CollationTolerance, derivationsOf, Edit, EditionView, editsOf, idOf, isCommand,
+    ObjectAssumption, principalDerivationOf, Reservation, reservationsAbout, reservationsAboutVersion, RollCopy,
+    Version, VersionReservationType, versionsWitnessedBy, Witness, witnessesOf
 } from "linked-rolls"
 import { describeCommand } from "./constraints"
 
-/** A derivation as a reader is told of it, and whether the version's text is read against it. */
-export type DerivationLine = ReturnType<typeof derivationsOf>[number] & { principal: boolean }
+/**
+ * A derivation as a reader is told of it: whether the version's text is
+ * read against it, and the window it was collated in where it states one.
+ */
+export type DerivationLine = ReturnType<typeof derivationsOf>[number] & {
+    principal: boolean
+    collationTolerance?: ObjectAssumption<CollationTolerance>
+}
 
 /** A witness that reaches its version only through a later one, which it names. */
 export type IndirectWitness = Witness & { through: string }
@@ -35,11 +41,20 @@ export const versionAccount = (view: EditionView, versionId: string): VersionAcc
     const principal = principalDerivationOf(version)
     const readAgainst = principal && idOf(principal)
     const witnesses = witnessesOf(view, versionId)
+    // `derivationsOf` maps over `basedOn` one for one, so the stated
+    // window is the one at the same place.
+    const stated = version.basedOn ?? []
 
     return {
         version,
         derivations: derivationsOf(version)
-            .map(derivation => ({ ...derivation, principal: derivation.parent === readAgainst }))
+            .map((derivation, index) => ({
+                ...derivation,
+                principal: derivation.parent === readAgainst,
+                ...(stated[index]?.collationTolerance && {
+                    collationTolerance: stated[index].collationTolerance
+                })
+            }))
             .sort((a, b) => Number(b.principal) - Number(a.principal)),
         witnesses: witnesses.filter(witness => !isIndirect(witness)),
         indirect: witnesses.filter(isIndirect),
