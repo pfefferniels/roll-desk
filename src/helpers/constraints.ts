@@ -138,7 +138,8 @@ const problemLabels: Record<ProblemKind, string> = {
     'carrier-on-another-track': 'Carried by a hole on a track that says something else',
     'copies-disagree-on-the-paper': 'Its copies disagree about the paper the roll ran on',
     'in-several-pairs': 'In more than one pair',
-    'pair-placed-on-both-sides': 'Both members of the pair are placed'
+    'pair-placed-on-both-sides': 'Both members of the pair are placed',
+    'strike-bites-nothing': 'Strikes a symbol the version it is based on does not have'
 }
 
 export const problemLabel = (kind: ProblemKind): string => problemLabels[kind]
