@@ -1,4 +1,5 @@
 import {
+    admittedAtEnds,
     CollationTolerance,
     defaultCollationTolerance,
     distance,
@@ -143,10 +144,11 @@ export const endsThatMoved = (
 ): readonly End[] => {
     if (!was || !now) return []
 
-    const moved = {
-        onset: distance(was.from, now.from) > tolerance.toleranceStart,
-        offset: distance(was.to, now.to) > tolerance.toleranceEnd
-    }
+    const admitted = admittedAtEnds(tolerance, {
+        from: subtract(now.from, was.from),
+        to: subtract(now.to, was.to)
+    })
+    const moved = { onset: !admitted.from, offset: !admitted.to }
     const keptItsLength =
         distance(subtract(was.to, was.from), subtract(now.to, now.from)) <= tolerance.toleranceEnd
 

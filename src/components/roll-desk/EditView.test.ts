@@ -101,6 +101,27 @@ describe('the ends of an edit that moved', () => {
     it('are none where one of the two has no place', () => {
         expect(endsThatMoved(undefined, stretch(100, 120), tolerance)).toEqual([])
     })
+
+    /**
+     * A window measured from the readings is centred on the displacement
+     * between the two copies, so what it overlooks is not what a window
+     * about zero would overlook.
+     */
+    describe('against a window centred away from zero', () => {
+        const displaced: CollationTolerance = {
+            ...tolerance,
+            offsetStart: mm(-3),
+            offsetEnd: mm(-3)
+        }
+
+        it('are neither where the command sits where the offset puts it', () => {
+            expect(endsThatMoved(stretch(100, 120), stretch(96, 116), displaced)).toEqual([])
+        })
+
+        it('are the onset where a window about zero would have overlooked it', () => {
+            expect(endsThatMoved(stretch(100, 120), stretch(101, 121), displaced)).toEqual(['onset'])
+        })
+    })
 })
 
 describe('the box an arrow about one end joins', () => {
