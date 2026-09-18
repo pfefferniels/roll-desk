@@ -32,8 +32,12 @@ describe('the name under an id', () => {
     const view = viewOf(fixtureEdition())
 
     it('is what the stemma calls a version and the label of a copy', () => {
-        expect(nameOf(view, ids.b)).toBe('R2')
+        expect(nameOf(view, ids.a)).toBe('R1')
         expect(nameOf(view, 'copy')).toBe('Test')
+    })
+
+    it('lowercases a version no copy shows, B striking a command and inserting nothing', () => {
+        expect(nameOf(view, ids.b)).toBe('r2')
     })
 
     it('is none for anything else, and for an id the edition lacks', () => {

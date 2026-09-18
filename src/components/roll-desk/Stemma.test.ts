@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignReference, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
+import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 import { calculatePositions, fitOf, graphOf, linkMarkAt, Node, radiusOf } from './Stemma'
 import { point } from '../../helpers/drawing'
 import { svg } from '../../helpers/units'
@@ -19,6 +19,10 @@ const version = (
     generation
 })
 
+/** The graph of a stemma given on its own, each version named as it stands. */
+const graphFor = (versions: (Version & { generation: number })[]) =>
+    graphOf(versions, [], siglaOf({ versions }))
+
 const captionOf = (nodes: Node[], siglum: string) => {
     const node = nodes.find(n => n.id === siglum)!
     return node.namesSystem ? node.system : undefined
@@ -32,19 +36,19 @@ describe('which version names its system', () => {
     ]
 
     it('names the system of the version everything descends from', () => {
-        expect(captionOf(graphOf(chain, []).nodes, 'A')).toBe('Welte-Mignon T100')
+        expect(captionOf(graphFor(chain).nodes, 'A')).toBe('Welte-Mignon T100')
     })
 
     it('says nothing where a version stays on the system it was based on', () => {
-        expect(captionOf(graphOf(chain, []).nodes, 'B')).toBeUndefined()
+        expect(captionOf(graphFor(chain).nodes, 'B')).toBeUndefined()
     })
 
     it('names the system a transfer arrives in', () => {
-        expect(captionOf(graphOf(chain, []).nodes, 'C')).toBe('Welte-Mignon (Licensee)')
+        expect(captionOf(graphFor(chain).nodes, 'C')).toBe('Welte-Mignon (Licensee)')
     })
 
     it('marks the derivation that crosses systems as a transfer', () => {
-        const links = graphOf(chain, []).links
+        const links = graphFor(chain).links
 
         expect(links.map(link => link.transfer)).toEqual([false, true])
     })
@@ -52,7 +56,7 @@ describe('which version names its system', () => {
     it('leaves a derivation dangling where the version it names is missing', () => {
         const orphan = [version('B', welteT100, 1, 'A')]
 
-        expect(graphOf(orphan, []).links).toHaveLength(0)
+        expect(graphFor(orphan).links).toHaveLength(0)
     })
 })
 
@@ -68,7 +72,7 @@ describe('derivations held as hypotheses', () => {
             { ...version('S', welteT100, 1, 'A'), basedOn: [assignReference('A'), possibly] }
         ]
 
-        expect(graphOf(contaminated, []).links.map(link => [(link.target as Node).id, link.principal, link.certainty, link.derivation, link.believed]))
+        expect(graphFor(contaminated).links.map(link => [(link.target as Node).id, link.principal, link.certainty, link.derivation, link.believed]))
             .toEqual([['A', true, 'true', 0, false], ['B', false, 'possible', 1, true]])
     })
 })
@@ -111,7 +115,7 @@ describe('the room a node takes in its row', () => {
     ]
 
     it('keeps two captioned siblings clear of each other', () => {
-        const { nodes, links } = graphOf(siblings, [])
+        const { nodes, links } = graphFor(siblings)
         const positioned = calculatePositions(nodes, links, 300, 600)
 
         const [d1, d2] = ['D1', 'D2'].map(id => {
@@ -128,7 +132,7 @@ describe('the room a node takes in its row', () => {
     })
 
     it('takes the radius a node was given over the one its type implies', () => {
-        const [node] = graphOf(siblings, []).nodes
+        const [node] = graphFor(siblings).nodes
         if (!node) throw new Error('the graph should have a node')
         expect(radiusOf({ ...node, radius: 17.5 })).toBe(17.5)
     })

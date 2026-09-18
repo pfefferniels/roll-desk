@@ -27,7 +27,7 @@ describe('what a reason cites', () => {
     })
 
     it('names a version or a copy as a reader calls it', () => {
-        expect(citationOf(view, ids.b)).toEqual({ kind: 'entity', id: ids.b, label: 'R2' })
+        expect(citationOf(view, ids.b)).toEqual({ kind: 'entity', id: ids.b, label: 'r2' })
         expect(citationOf(view, 'copy')).toEqual({ kind: 'entity', id: 'copy', label: 'Test' })
     })
 

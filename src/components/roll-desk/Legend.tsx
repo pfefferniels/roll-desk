@@ -92,6 +92,35 @@ export const Legend = () => {
             height={width + shadowMargin}
             className="legend"
           >
+            <NavigationNode
+              node={{
+                generation: 0,
+                id: '',
+                label: 'v',
+                x: width / 2 + shadowMargin / 2,
+                y: width / 2 + shadowMargin / 2,
+                radius: width / 2
+              }}
+              highlight={false}
+            />
+          </svg>
+        }
+        description="Inferred version"
+        help={`
+        A siglum in lowercase marks a version no copy's features carry at
+        first hand, whether it is reached only through the versions derived
+        from it or a copy does no more than state that it carries it. Its
+        text is a reconstruction rather than a reading.
+        `}
+      />
+
+      <LegendRow
+        symbol={
+          <svg
+            width={width + shadowMargin}
+            height={width + shadowMargin}
+            className="legend"
+          >
             <path
               // draw a half-circle that leads down and up again
               d={`

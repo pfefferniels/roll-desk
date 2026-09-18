@@ -34,7 +34,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     const { nodes, links } = useMemo(() => {
         if (!versions || !view) return { nodes: [], links: [] }
 
-        const graph = graphOf(view.withGenerations(), problems)
+        const graph = graphOf(view.withGenerations(), problems, siglaOf(view))
         return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
     }, [versions, view, problems, svgHeight])
 
@@ -169,10 +169,10 @@ const sharesSystem = (a: Version, b: Version) =>
 /** The versions and their derivations, as the graph the stemma draws. */
 export const graphOf = (
     versions: readonly (Version & { generation: number })[],
-    problems: readonly ConstraintProblem[]
+    problems: readonly ConstraintProblem[],
+    sigla: ReadonlyMap<string, string>
 ): { nodes: Node[], links: Link[] } => {
     const versionBy = (id: string) => versions.find(other => other.id === id)
-    const sigla = siglaOf({ versions: [...versions] })
 
     /** The version the text is read against. */
     const parentOf = (version: Version) => {

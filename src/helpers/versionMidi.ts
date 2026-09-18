@@ -21,21 +21,20 @@ export const versionAsMidi = (
     return write(tracks, header.ticksPerBeat)
 }
 
-const fileNameOf = (version: Version, among: Version[]) => {
-    const sigla = siglaOf({ versions: among })
-    const siglum = sigla.get(version.id) ?? version.id
-    return `${siglum.replace(/[^\w.-]+/g, '_')}.mid`
-}
+const fileNameOf = (siglum: string) => `${siglum.replace(/[^\w.-]+/g, '_')}.mid`
 
 /** Every version the desk can perform, each on its own machine. */
 export const versionsAsMidiArchive = (
     versions: Version[],
     view: EditionView,
     options?: EmulationOptions
-): Uint8Array =>
-    zipSync(Object.fromEntries(
+): Uint8Array => {
+    const sigla = siglaOf(view)
+
+    return zipSync(Object.fromEntries(
         versions.flatMap(version => {
             const midi = versionAsMidi(version, view, options)
-            return midi ? [[fileNameOf(version, versions), midi] as const] : []
+            return midi ? [[fileNameOf(sigla.get(version.id) ?? version.id), midi] as const] : []
         })
     ))
+}

@@ -1,7 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Stack, TextField } from "@mui/material";
-import { CollationTolerance, siglaOf, Version } from "linked-rolls";
-import { useState } from "react";
+import { CollationTolerance, Version } from "linked-rolls";
+import { useContext, useState } from "react";
 import { ToleranceFields } from "./ToleranceFields";
+import { EditionContext } from "../../providers/EditionContext";
+import { versionLabel } from "../../helpers/names";
 
 interface AttachToDialogProps {
     /** The version to be declared derivative of another. */
@@ -18,7 +20,7 @@ interface AttachToDialogProps {
  * symbols may lie and still be taken for the same one.
  */
 export const AttachToDialog = ({ currentVersionId, versions, tolerance, onClose, onDone }: AttachToDialogProps) => {
-    const sigla = siglaOf({ versions })
+    const { view } = useContext(EditionContext)
     const candidates = versions.filter(version => version.id !== currentVersionId)
     const [parentVersionId, setParentVersionId] = useState(candidates[0]?.id ?? '')
     const [chosen, setChosen] = useState(tolerance)
@@ -41,7 +43,7 @@ export const AttachToDialog = ({ currentVersionId, versions, tolerance, onClose,
                     >
                         {candidates.map(version => (
                             <MenuItem key={version.id} value={version.id}>
-                                {sigla.get(version.id)}
+                                {view && versionLabel(view, version.id)}
                             </MenuItem>
                         ))}
                     </TextField>

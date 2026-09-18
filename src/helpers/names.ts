@@ -23,10 +23,11 @@ export const whichCopy = (copy: RollCopy): string => copy.siglum || `held by ${h
 
 /**
  * What the stemma calls the version as it stands. The label is read off
- * the stemma rather than stored, so it follows every change to it.
+ * the stemma rather than stored, so it follows every change to it, and
+ * a version no copy shows at first hand comes back in lowercase.
  */
 export const versionLabel = (view: EditionView, versionId: string): string =>
-    siglaOf(view.edition).get(versionId) ?? 'unnamed version'
+    siglaOf(view).get(versionId) ?? 'unnamed version'
 
 /** What a reader calls the version or the copy under the id, or nothing where it names neither. */
 export const nameOf = (view: EditionView, id: string): string | undefined => {
