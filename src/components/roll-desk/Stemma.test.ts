@@ -12,7 +12,6 @@ const version = (
 ): Version & { generation: number } => ({
     type: 'Version',
     id: siglum,
-    siglum,
     system: systemOf(bar),
     ...(basedOn && { basedOn: [assignReference(basedOn)] }),
     edits: [],

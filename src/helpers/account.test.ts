@@ -29,7 +29,7 @@ describe('the account of a version', () => {
         const [a, b] = edition.versions
         if (!a || !b) throw new Error('the fixture has changed')
         b.basedOn = [{ ...assignReference(ids.a), '@annotation': { id: 'doubted', belief: belief('possible') } }, assignReference('C')]
-        edition.versions.push({ ...a, id: 'C', siglum: 'C', edits: [] })
+        edition.versions.push({ ...a, id: 'C', edits: [] })
 
         expect(versionAccount(viewOf(edition), ids.b)?.derivations.map(({ parent, principal }) => [parent, principal]))
             .toEqual([['C', true], ['A', false]])
