@@ -119,7 +119,7 @@ const curved = (start: Point, control: Point, tip: Point): ArrowLine => {
 }
 
 /** Whether the two are drawn in one and the same lane. */
-const inOneLane = (from: Boxed, to: Boxed): boolean =>
+export const inOneLane = (from: Boxed, to: Boxed): boolean =>
     from.y === to.y && from.height === to.height
 
 /**

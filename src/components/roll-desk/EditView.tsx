@@ -1,4 +1,16 @@
-import { Edit, EditType, isCommand, positionOfSameFunction, Track, TrackerBar } from "linked-rolls";
+import {
+    CollationTolerance,
+    distance,
+    Edit,
+    EditType,
+    HorizontalSpan,
+    isCommand,
+    max,
+    min,
+    positionOfSameFunction,
+    Track,
+    TrackerBar
+} from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
 import { MouseEventHandler, useContext, useMemo } from "react";
@@ -10,6 +22,8 @@ import { EditionContext } from "../../providers/EditionContext";
 import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometry";
 import { cornersOf, point, Point } from "../../helpers/drawing";
 import { add, subtract } from "linked-rolls";
+import { inOneLane } from "../../helpers/arrow";
+import { toleranceOf } from "../../helpers/collationTolerance";
 import { svg } from "../../helpers/units";
 
 
@@ -46,6 +60,12 @@ export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, trans
     return boxOf({ horizontal, vertical: { from: position } }, translation)
 }
 
+/** The symbols an edit does away with, those of them the edition still holds. */
+const deletedSymbolsOf = (edit: Edit, editionView: EditionView): AnySymbol[] =>
+    (edit.delete ?? [])
+        .map(symbolId => editionView.get<AnySymbol>(symbolId))
+        .filter(symbol => !!symbol)
+
 interface EditBoxes {
     insertions: Box[]
     deletions: Box[]
@@ -70,9 +90,7 @@ export const editBoxes = (
     insertions: (edit.insert ?? [])
         .map(symbol => getSymbolBBox(symbol, editionView, translation))
         .filter(bbox => !!bbox),
-    deletions: (edit.delete ?? [])
-        .map(symbolId => editionView.get<AnySymbol>(symbolId))
-        .filter(symbol => !!symbol)
+    deletions: deletedSymbolsOf(edit, editionView)
         .map(symbol => getSymbolBBox(symbol, editionView, deletedIn))
         .filter(bbox => !!bbox)
 })
@@ -86,6 +104,64 @@ export const getEditBBoxes = (
     const { insertions, deletions } = editBoxes(edit, editionView, translation, deletedIn)
     return [...insertions, ...deletions]
 }
+
+/** One end of what an edit touches: where it begins on the roll, and where it ends. */
+export type End = 'onset' | 'offset'
+
+const ends: readonly End[] = ['onset', 'offset']
+
+/** The stretch of roll a set of symbols covers, from the first onset to the last offset. */
+export type Stretch = Pick<HorizontalSpan, 'from' | 'to'>
+
+export const stretchOf = (
+    symbols: readonly AnySymbol[],
+    editionView: Pick<EditionView, 'placeOf'>
+): Stretch | undefined => {
+    const places = symbols.map(symbol => editionView.placeOf(symbol)).filter(place => !!place)
+    if (!places.length) return undefined
+
+    return {
+        from: places.map(place => place.from).reduce(min),
+        to: places.map(place => place.to).reduce(max)
+    }
+}
+
+/**
+ * The ends an edit moved further than the collation it came out of would
+ * have overlooked, which are the ends there is anything to say about.
+ *
+ * Where both ends moved and the command kept its length, it was moved as
+ * a whole, and the arrow at its onset says that; a shortening or a
+ * prolonging moves the offset alone. The length is measured against the
+ * tolerance at the end, since it is the end that has to have moved for
+ * the command to have grown or shrunk.
+ */
+export const endsThatMoved = (
+    was: Stretch | undefined,
+    now: Stretch | undefined,
+    tolerance: CollationTolerance
+): readonly End[] => {
+    if (!was || !now) return []
+
+    const moved = {
+        onset: distance(was.from, now.from) > tolerance.toleranceStart,
+        offset: distance(was.to, now.to) > tolerance.toleranceEnd
+    }
+    const keptItsLength =
+        distance(subtract(was.to, was.from), subtract(now.to, now.from)) <= tolerance.toleranceEnd
+
+    if (moved.onset && moved.offset && keptItsLength) return ['onset']
+
+    return ends.filter(end => moved[end])
+}
+
+/** The box taken at one of its ends, which is what an arrow about that end joins. */
+export const endOf = (box: Box, end: End): Box =>
+    ({ ...box, x: end === 'onset' ? box.x : add(box.x, box.width), width: svg(0) })
+
+/** An edit whose two ends both moved draws an arrow at each, so each needs its own id. */
+export const arrowId = (edit: Edit, end: End, drawn: readonly End[]): string =>
+    drawn.length > 1 ? `${edit.id}-${end}` : edit.id
 
 /** How far the mark of an edit's belief is raised above what the edit touches. */
 const beliefMarkRise = svg(20)
@@ -155,10 +231,15 @@ interface EditViewProps {
      * another system's. What the edit deletes is drawn by it.
      */
     deletedOn?: TrackerBar;
+    /**
+     * The tolerance this version was collated at, which decides which of
+     * an edit's ends counts as moved. The edition's own is the fallback.
+     */
+    tolerance?: CollationTolerance;
     onClick?: MouseEventHandler;
 }
 
-export const EditView = ({ edit, deletedOn, onClick }: EditViewProps) => {
+export const EditView = ({ edit, deletedOn, tolerance, onClick }: EditViewProps) => {
     const { view } = useContext(EditionContext)
     const translation = usePinchZoom()
     const { trackHeight, spacing, bar } = translation
@@ -185,15 +266,41 @@ export const EditView = ({ edit, deletedOn, onClick }: EditViewProps) => {
      * of another, and the arrow from the old to the new says that on its
      * own. Hulls and a word as well would say it three times over, which
      * on a transfer between systems is every expression on the roll.
+     *
+     * Which ends the arrows are drawn at is read off the places
+     * themselves rather than off the edit's type: a command that kept its
+     * lane gets one at each end that the collation would have called a
+     * difference, and one that changed lane gets the arrow between the
+     * two boxes, since there it is the lane that moved.
      */
     if (inserted > 0 && deleted > 0) {
+        const was = getBoundingBox(getHull(deletions).points)
+        const now = getBoundingBox(getHull(insertions).points)
+
+        const moved = inOneLane(was, now)
+            ? endsThatMoved(
+                stretchOf(deletedSymbolsOf(edit, view), view),
+                stretchOf(edit.insert ?? [], view),
+                tolerance ?? toleranceOf(view.edition)
+            )
+            : []
+
+        if (!moved.length) {
+            return <Arrow from={was} to={now} onClick={onClick} svgProps={{ id: edit.id }} />
+        }
+
         return (
-            <Arrow
-                from={getBoundingBox(getHull(deletions).points)}
-                to={getBoundingBox(getHull(insertions).points)}
-                onClick={onClick}
-                svgProps={{ id: edit.id }}
-            />
+            <g>
+                {moved.map(end => (
+                    <Arrow
+                        key={end}
+                        from={endOf(was, end)}
+                        to={endOf(now, end)}
+                        onClick={onClick}
+                        svgProps={{ id: arrowId(edit, end, moved) }}
+                    />
+                ))}
+            </g>
         )
     }
 

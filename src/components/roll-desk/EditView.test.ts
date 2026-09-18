@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { Edit, editTypes, Note } from 'linked-rolls'
-import { beliefMarkAt, editTypeLabel, hullId } from './EditView'
+import { AnySymbol, CollationTolerance, Edit, editTypes, mm, Note } from 'linked-rolls'
+import { arrowId, beliefMarkAt, editTypeLabel, endOf, endsThatMoved, hullId, Stretch, stretchOf } from './EditView'
 import { svg } from '../../helpers/units'
 
 const note = (id: string): Note => ({ type: 'note', id, pitch: 60, carriers: [] })
 
 const edit = (parts: Partial<Edit>): Edit => ({ type: 'edit', id: 'edit-1', ...parts })
+
+const stretch = (from: number, to: number): Stretch => ({ from: mm(from), to: mm(to) })
 
 describe('the word written under an edit', () => {
     it('is left out where there is no type to write', () => {
@@ -46,6 +48,80 @@ describe('the id a hull is drawn under', () => {
 
         expect(hullId(replacement, 'insert')).toBe('edit-1-insert')
         expect(hullId(replacement, 'delete')).toBe('edit-1-delete')
+    })
+})
+
+describe('the stretch of roll a set of symbols covers', () => {
+    const placing = (places: Record<string, [number, number]>) => ({
+        placeOf: (symbol: AnySymbol) => {
+            const place = places[symbol.id]
+            return place && { unit: 'mm' as const, from: mm(place[0]), to: mm(place[1]) }
+        }
+    })
+
+    it('runs from the first onset to the last offset', () => {
+        const view = placing({ a: [100, 120], b: [90, 110] })
+
+        expect(stretchOf([note('a'), note('b')], view)).toEqual({ from: 90, to: 120 })
+    })
+
+    it('is nothing where none of them has a place', () => {
+        expect(stretchOf([note('a')], placing({}))).toBeUndefined()
+    })
+})
+
+/**
+ * The tolerance says what the collation would have overlooked, so an end
+ * that differs by more than it is an end the edit has something to say
+ * about. These are the values the edition of WM 225 collates at.
+ */
+const tolerance: CollationTolerance = { toleranceStart: mm(3.5), toleranceEnd: mm(5) }
+
+describe('the ends of an edit that moved', () => {
+    it('are neither where both stayed within the tolerance', () => {
+        expect(endsThatMoved(stretch(100, 120), stretch(103, 124), tolerance)).toEqual([])
+    })
+
+    it('are the onset alone where the command moved and kept its length', () => {
+        expect(endsThatMoved(stretch(100, 120), stretch(115, 135), tolerance)).toEqual(['onset'])
+    })
+
+    it('are the offset alone where the command was prolonged', () => {
+        expect(endsThatMoved(stretch(100, 120), stretch(100, 140), tolerance)).toEqual(['offset'])
+    })
+
+    it('are the onset alone where it begins earlier and ends where it did', () => {
+        expect(endsThatMoved(stretch(100, 120), stretch(80, 120), tolerance)).toEqual(['onset'])
+    })
+
+    it('are both where the command moved and changed its length', () => {
+        expect(endsThatMoved(stretch(100, 120), stretch(115, 160), tolerance)).toEqual(['onset', 'offset'])
+    })
+
+    it('are none where one of the two has no place', () => {
+        expect(endsThatMoved(undefined, stretch(100, 120), tolerance)).toEqual([])
+    })
+})
+
+describe('the box an arrow about one end joins', () => {
+    const command = { x: svg(10), y: svg(40), width: svg(30), height: svg(3) }
+
+    it('sits at the onset, with no width of its own', () => {
+        expect(endOf(command, 'onset')).toEqual({ x: 10, y: 40, width: 0, height: 3 })
+    })
+
+    it('sits at the offset for the other end', () => {
+        expect(endOf(command, 'offset')).toEqual({ x: 40, y: 40, width: 0, height: 3 })
+    })
+})
+
+describe('the id an arrow is drawn under', () => {
+    it('is the edit itself where one end moved', () => {
+        expect(arrowId(edit({}), 'onset', ['onset'])).toBe('edit-1')
+    })
+
+    it('tells the two arrows apart where both ends moved', () => {
+        expect(arrowId(edit({}), 'offset', ['onset', 'offset'])).toBe('edit-1-offset')
     })
 })
 

@@ -14,6 +14,7 @@ import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { isMotivation } from "../../helpers/motivation"
 import { ConstraintView } from "./ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../../helpers/constraints"
+import { derivationToleranceOf } from "../../helpers/collationTolerance"
 
 /** How far the paper reaches past the outermost lane, in SVG units. */
 const groundMargin = 50
@@ -112,6 +113,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
             key={`editView_${e.id}`}
             edit={e}
             deletedOn={deletedOn}
+            tolerance={derivationToleranceOf(version, view.edition)}
             onClick={() => onClick(e)}
         />)
 
