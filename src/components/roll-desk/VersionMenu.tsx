@@ -82,7 +82,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const version = edition.versions.find(v => v.id === versionId)
     if (!version) return null
 
-    const tolerance = derivationToleranceOf(version, edition)
+    const tolerance = derivationToleranceOf(version)
     const principal = principalDerivationOf(version)
     const sigilOf = (id: string) => nameOf(view, id) ?? 'unknown'
 

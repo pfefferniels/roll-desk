@@ -1,5 +1,6 @@
 import {
     CollationTolerance,
+    defaultCollationTolerance,
     distance,
     Edit,
     EditType,
@@ -23,7 +24,6 @@ import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometr
 import { cornersOf, point, Point } from "../../helpers/drawing";
 import { add, subtract } from "linked-rolls";
 import { inOneLane } from "../../helpers/arrow";
-import { toleranceOf } from "../../helpers/collationTolerance";
 import { svg } from "../../helpers/units";
 
 
@@ -281,7 +281,7 @@ export const EditView = ({ edit, deletedOn, tolerance, onClick }: EditViewProps)
             ? endsThatMoved(
                 stretchOf(deletedSymbolsOf(edit, view), view),
                 stretchOf(edit.insert ?? [], view),
-                tolerance ?? toleranceOf(view.edition)
+                tolerance ?? defaultCollationTolerance
             )
             : []
 

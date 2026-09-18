@@ -2,11 +2,9 @@ import { useContext, useEffect, useState } from 'react';
 import { TextField, Button, MenuItem, Dialog, DialogContent, DialogTitle, DialogActions, Stack, IconButton, Typography } from '@mui/material';
 import { Add, DeleteOutline, Save as SaveIcon } from '@mui/icons-material';
 import { EditionContext } from '../../providers/EditionContext';
-import { assignDate, CollationTolerance, DateAssignment, Editor, EditorialRole, editorialRoles } from 'linked-rolls';
-import { toleranceOf } from '../../helpers/collationTolerance';
+import { assignDate, DateAssignment, Editor, EditorialRole, editorialRoles } from 'linked-rolls';
 import { DateField } from './DateField';
 import { DateStatementField } from './DateStatementField';
-import { ToleranceFields } from './ToleranceFields';
 
 /** The two jobs the dialog does: naming a new edition, or revising the metadata of one. */
 export type MetadataJob = 'create' | 'edit'
@@ -38,7 +36,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const [recordingPlace, setRecordingPlace] = useState<string>('');
   const [publisherName, setPublisherName] = useState<string>('');
   const [publicationDate, setPublicationDate] = useState<Date>(new Date());
-  const [tolerance, setTolerance] = useState<CollationTolerance>(toleranceOf(edition));
   const [editors, setEditors] = useState<Editor[]>([]);
 
   const addEditor = () =>
@@ -58,7 +55,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
     setBaseURI(edition.base);
     setPublisherName(edition.creation.publisher.name);
     setPublicationDate(edition.creation.publicationDate);
-    setTolerance(toleranceOf(edition));
     setEditors(edition.creation.editors ?? []);
     setCatalogueNumber(edition.roll.catalogueNumber);
     setRecordingDate(edition.roll.recordingEvent.date);
@@ -74,7 +70,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
       draft.base = baseURI
       draft.creation.publisher.name = publisherName
       draft.creation.publicationDate = publicationDate
-      draft.creation.collationTolerance = tolerance
       draft.creation.editors = editors
       draft.roll.catalogueNumber = catalogueNumber
       draft.roll.recordingEvent.date = recordingDate
@@ -130,7 +125,6 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
               value={publicationDate}
               onChange={setPublicationDate}
             />
-            <ToleranceFields value={tolerance} onChange={setTolerance} />
           </Stack>
           <Stack sx={{ minWidth: 200 }} spacing={2}>
             <TextField

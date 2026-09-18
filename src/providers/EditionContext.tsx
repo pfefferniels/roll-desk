@@ -1,4 +1,4 @@
-import { assignDate, defaultCollationTolerance, Edition, EditionMetadata, EditionOp, EditionView } from "linked-rolls";
+import { assignDate, Edition, EditionMetadata, EditionOp, EditionView } from "linked-rolls";
 import { createContext, useMemo, useReducer } from "react";
 import { editionReducer, editionState } from "./editionReducer";
 
@@ -11,8 +11,7 @@ export const emptyMetadata: EditionMetadata = {
     creation: {
         editors: [],
         publisher: { name: '', sameAs: [] },
-        publicationDate: new Date(),
-        collationTolerance: { ...defaultCollationTolerance }
+        publicationDate: new Date()
     },
     roll: {
         catalogueNumber: '',

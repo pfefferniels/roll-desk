@@ -113,7 +113,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
             key={`editView_${e.id}`}
             edit={e}
             deletedOn={deletedOn}
-            tolerance={derivationToleranceOf(version, view.edition)}
+            tolerance={derivationToleranceOf(version)}
             onClick={() => onClick(e)}
         />)
 

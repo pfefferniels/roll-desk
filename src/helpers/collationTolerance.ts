@@ -1,16 +1,13 @@
-import { CollationTolerance, defaultCollationTolerance, Edition, Millimeters, mm, principalDerivationOf, Version } from "linked-rolls"
-
-/** The tolerance the edition collates with, or the library's default where it names none. */
-export const toleranceOf = (edition: Edition | undefined): CollationTolerance =>
-    edition?.creation.collationTolerance ?? defaultCollationTolerance
+import { CollationTolerance, collationToleranceOf, defaultCollationTolerance, Millimeters, mm, principalDerivationOf, Version } from "linked-rolls"
 
 /**
- * The tolerance the version's principal derivation was collated at. A
- * version that derives from nothing, and one whose derivation states no
- * tolerance as `deriveVersion` leaves it, falls back to the edition's value.
+ * The tolerance the version's principal derivation was collated at, or the
+ * library's default where the version derives from nothing.
  */
-export const derivationToleranceOf = (version: Version, edition: Edition): CollationTolerance =>
-    principalDerivationOf(version)?.collationTolerance ?? toleranceOf(edition)
+export const derivationToleranceOf = (version: Version): CollationTolerance => {
+    const principal = principalDerivationOf(version)
+    return principal ? collationToleranceOf(principal) : defaultCollationTolerance
+}
 
 /** The millimetres the text spells, or nothing where it spells no usable tolerance. */
 export const parseTolerance = (text: string): Millimeters | undefined => {
