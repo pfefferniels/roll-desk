@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { add } from 'linked-rolls'
-import { arrowLine, Boxed, centreOf, LEAST_LENGTH } from './arrow'
-import { Point, point } from './drawing'
+import { arrowLine, ArrowLine, Boxed, centreOf, LEAST_LENGTH } from './arrow'
+import { apart, plus, Point, point, times } from './drawing'
 import { svg } from './units'
 
 const numbersIn = (d: string): number[] =>
@@ -17,6 +17,18 @@ const numberIn = (d: string, nth: number): number => {
 const startOf = (d: string): Point => point(svg(numberIn(d, 0)), svg(numberIn(d, 1)))
 
 const endOf = (d: string): Point => point(svg(numberIn(d, -2)), svg(numberIn(d, -1)))
+
+const controlOf = (d: string): Point => point(svg(numberIn(d, 2)), svg(numberIn(d, 3)))
+
+/** Where the curve passes half way along, which a quadratic reaches half way to its control point. */
+const halfWayOf = ({ d, head }: ArrowLine): Point =>
+    times(plus(times(plus(startOf(d), head), 0.5), controlOf(d)), 0.5)
+
+/** How far an arrow runs along its curve, which is what there is of it to see and to hit. */
+const reachOf = (line: ArrowLine): number => {
+    const halfWay = halfWayOf(line)
+    return apart(startOf(line.d), halfWay) + apart(halfWay, line.head)
+}
 
 const box = (x: number, y: number, width: number, height: number): Boxed =>
     ({ x: svg(x), y: svg(y), width: svg(width), height: svg(height) })
@@ -59,10 +71,7 @@ describe('the arrow between two things on the roll', () => {
 
     it('always reaches far enough to be seen and hit', () => {
         Object.entries(arrangements).forEach(([name, [from, to]]) => {
-            const { d, head } = arrowLine(from, to)
-            const reach = Math.hypot(head.x - startOf(d).x, head.y - startOf(d).y)
-
-            expect(reach, name).toBeGreaterThanOrEqual(LEAST_LENGTH - 1e-6)
+            expect(reachOf(arrowLine(from, to)), name).toBeGreaterThanOrEqual(LEAST_LENGTH - 1e-6)
         })
     })
 
@@ -132,5 +141,48 @@ describe('the arrow between two things on the roll', () => {
 
     it('takes the middle of a box as the place to reckon from', () => {
         expect(centreOf(box(10, 20, 100, 8))).toEqual({ x: 60, y: 24 })
+    })
+})
+
+/**
+ * A command moved along the roll and one repunched for another system
+ * are two different things, and the arrow is read accordingly: the first
+ * joins the onsets, the second the two boxes.
+ */
+describe('the arrow for a command that kept its lane', () => {
+    const before = box(100, 200, 200, 10)
+    const after = box(120, 200, 200, 10)
+
+    it('runs from the old onset to the new one, however far the two overlap', () => {
+        const { d, head } = arrowLine(before, after)
+
+        expect(startOf(d).x).toBeCloseTo(before.x, 6)
+        expect(head.x).toBeCloseTo(after.x, 6)
+    })
+
+    it('runs under the lane, clear of the perforations it speaks about', () => {
+        const line = arrowLine(before, after)
+        const lane = add(after.y, after.height)
+
+        expect(startOf(line.d).y).toBeGreaterThan(lane)
+        expect(line.head.y).toBeGreaterThan(lane)
+        expect(halfWayOf(line).y).toBeGreaterThan(startOf(line.d).y)
+    })
+
+    it('hangs the same way whichever way along the roll the command went', () => {
+        expect(halfWayOf(arrowLine(after, before)).y)
+            .toBeCloseTo(halfWayOf(arrowLine(before, after)).y, 6)
+    })
+
+    it('gives way to the arrow between the two boxes once the lane changes', () => {
+        const repunched = box(120, 300, 200, 10)
+
+        expect(arrowLine(before, repunched).head.y).toBeLessThan(repunched.y)
+    })
+
+    it('gives way to it as well where the command did not move', () => {
+        const shortened = box(100, 200, 60, 10)
+
+        expect(arrowLine(before, shortened).head.y).toBeLessThan(shortened.y)
     })
 })
