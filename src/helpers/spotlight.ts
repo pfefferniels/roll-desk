@@ -50,7 +50,12 @@ const flash = (shape: Element, milliseconds: number) => {
     })
 }
 
-const shapes = 'rect, path, polygon, line, text, image, circle, ellipse'
+/**
+ * What stands for an entity on the drawing. A glow and a line widened to
+ * take the pointer are drawn around a shape rather than in its own right,
+ * so they are passed over.
+ */
+const shapes = ':is(rect, path, polygon, line, text, image, circle, ellipse):not(.decoration)'
 
 /** The shape a spotlight paints: what carries the id, or the first shape where that is a group. */
 const shapeOf = (carrier: Element) => carrier.querySelector(shapes) ?? carrier
@@ -60,11 +65,14 @@ const quoted = (id: string) => `"${id.replace(/["\\]/g, '\\$&')}"`
 
 /**
  * Every shape drawn for an entity. One entity may be drawn in more than
- * one place: an edit within its motivation as well as on the roll, and a
- * motivation as a hull around each group of edits it holds together.
+ * one place: an edit as the hull of what it inserts apart from the hull
+ * of what it deletes, and a motivation as each of the edits it holds
+ * together, since it is drawn nowhere on its own.
  */
 const shapesOf = (id: string) => [...new Set(
-    [...document.querySelectorAll(`[id=${quoted(id)}], [data-id=${quoted(id)}]`)].map(shapeOf)
+    [...document.querySelectorAll(
+        `[id=${quoted(id)}], [data-id=${quoted(id)}], [data-motivation=${quoted(id)}]`
+    )].map(shapeOf)
 )]
 
 /**

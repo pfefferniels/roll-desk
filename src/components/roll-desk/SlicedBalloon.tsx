@@ -169,7 +169,7 @@ export function boundaryCubicPathReversed(a: Pt, b: Pt, offset: number): string 
  * Sliced balloon between A and B. Slice widths are proportional to count.
  * The largest slices are centered via ordering.
  */
-export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps) {
+export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick }: SlicedBalloonProps) {
     const [hovered, setHovered] = React.useState(false);
     const [currentSlice, setCurrentSlice] = useState<Slice>()
     const clickTime = useRef(0)
@@ -241,9 +241,11 @@ export function SlicedBalloon({ a, b, slices, onSliceClick }: SlicedBalloonProps
                         vectorEffect="non-scaling-stroke"
                         onMouseOver={() => {
                             setCurrentSlice(slice)
+                            onSliceHover?.(slice)
                         }}
                         onMouseLeave={() => {
                             setCurrentSlice(undefined)
+                            onSliceHover?.(null)
                         }}
                         onClick={() => {
                             clickTime.current = Date.now()

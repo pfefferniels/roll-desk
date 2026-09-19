@@ -6,8 +6,7 @@ import { Pedals } from "./Pedal"
 import { Command } from "./SymbolView"
 import { EditionContext } from "../../providers/EditionContext"
 import { Ground } from "./Ground"
-import { MotivationView } from "./MotivationView"
-import { EditView } from "./EditView"
+import { EditView, Focus } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../../providers/SelectionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
@@ -67,7 +66,7 @@ interface VersionViewProps {
 export const VersionView = ({ version, problems, emulationOptions, onClick }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(s => isMotivation(s))
     const { playSingleNote } = usePiano()
-    const { view, viewOnly } = useContext(EditionContext)
+    const { view } = useContext(EditionContext)
     const { translateX, rollLength, height: geometryHeight } = usePinchZoom()
 
     // None of what follows depends on the zoom, and emulating a version
@@ -108,25 +107,34 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     // so that is the bar those commands are drawn by.
     const deletedOn = trackerBarOf(view.predecessorOf(version.id)?.system)
 
-    const edits = editsOf(version)
-        .map(e => <EditView
-            key={`editView_${e.id}`}
-            edit={e}
-            deletedOn={deletedOn}
-            tolerance={derivationToleranceOf(version)}
-            onClick={() => onClick(e)}
-        />)
+    // A balloon on another derivation must leave this roll alone, so only
+    // the motivations this version holds count as in focus.
+    const inFocus = version.motivations.filter(own => selection.some(m => m.id === own.id))
 
-    // draw edits of current version, but only
-    // if the version is based on a previous version
-    const motivations = version.motivations
-        .map(m => <MotivationView
-            key={m.id}
-            expanded={selection.includes(m)}
-            motivation={m}
-            onMouseOver={() => setSelection(prev => [...prev, m])}
-            onMouseLeave={() => setSelection([])} />
+    const focusOf = (edit: Edit): Focus | undefined => {
+        if (!inFocus.length) return undefined
+        return inFocus.some(m => m.id === edit.motivation) ? 'lit' : 'dimmed'
+    }
+
+    const edits = editsOf(version).map(edit => {
+        const motivation = version.motivations.find(m => m.id === edit.motivation)
+
+        return (
+            <g
+                key={`editView_${edit.id}`}
+                onMouseEnter={motivation ? () => setSelection([motivation]) : undefined}
+                onMouseLeave={motivation ? () => setSelection([]) : undefined}
+            >
+                <EditView
+                    edit={edit}
+                    deletedOn={deletedOn}
+                    tolerance={derivationToleranceOf(version)}
+                    focus={focusOf(edit)}
+                    onClick={() => onClick(edit)}
+                />
+            </g>
         )
+    })
 
     // draw dynamics of prev version and dynamics of current version (for comparison)
     const dynamics = emulation && (
@@ -172,8 +180,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
                 height={geometryHeight + groundMargin * 2}
             />
 
-            {!viewOnly && edits}
-            {motivations}
+            {edits}
 
             {emulation && <Pedals forEmulation={emulation} />}
 

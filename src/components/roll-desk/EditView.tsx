@@ -25,13 +25,50 @@ import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometr
 import { cornersOf, point, Point } from "../../helpers/drawing";
 import { add, subtract } from "linked-rolls";
 import { inOneLane } from "../../helpers/arrow";
-import { svg } from "../../helpers/units";
+import { Svg, svg } from "../../helpers/units";
+import { glowReach, outlineStrength } from "../../helpers/glow";
+import { Arguable } from "./Arguable";
 
 
 export type { Translation }
 
-const insertionFill = '#aceebb'
-const deletionFill = '#fb7f78ff'
+/** How one side of an edit is drawn: the colour it is filled with, and the deeper one its glow carries. */
+interface EditColours {
+    fill: string
+    glow: string
+}
+
+const insertion: EditColours = { fill: '#aceebb', glow: '#2f9e44' }
+const deletion: EditColours = { fill: '#fb7f78', glow: '#d64545' }
+
+/** A shift puts one thing in the place of another and is drawn as an arrow, which has no fill of its own. */
+const shiftGlow = '#4b5563'
+
+/** How an edit stands while a motivation is in focus: as one of its own, or as the ground around it. */
+export type Focus = 'lit' | 'dimmed'
+
+/** How far an edit's glow reaches, and how plainly the shape itself is drawn. */
+interface EditLook {
+    reach: Svg
+    fillOpacity: number
+    outline: number
+}
+
+/**
+ * The look an edit drawn this wide takes.
+ *
+ * With a motivation in focus its own edits come forward and the rest fall
+ * back to their bare geometry, so that what belongs together is seen at a
+ * glance without an area drawn around it.
+ */
+const lookOf = (width: Svg, focus?: Focus): EditLook => {
+    const reach = glowReach(width)
+
+    if (focus === 'dimmed') return { reach: svg(0), fillOpacity: 0.15, outline: 0.15 }
+    if (focus === 'lit') return { reach: svg(reach * 1.6), fillOpacity: 1, outline: 1 }
+
+    return { reach, fillOpacity: 0.8, outline: outlineStrength(width) }
+}
 
 /**
  * The lane a symbol is drawn in: the one the bar reads it on, and where
@@ -193,22 +230,26 @@ export const hullId = (edit: Edit, part: 'insert' | 'delete'): string =>
 interface EditHullProps {
     id: string
     boxes: Box[]
-    fill: string
+    colours: EditColours
+    focus?: Focus
     label?: string
     onClick?: MouseEventHandler
 }
 
 /** The hull around one side of an edit, the inserted symbols or the deleted ones. */
-const EditHull = ({ id, boxes, fill, label, onClick }: EditHullProps) => {
+const EditHull = ({ id, boxes, colours, focus, label, onClick }: EditHullProps) => {
     const { points, hull } = getHull(boxes)
     const bbox = getBoundingBox(points)
+    const { reach, fillOpacity, outline } = lookOf(bbox.width, focus)
 
     return (
         <Hull
             id={id}
             hull={hull}
-            fillOpacity={0.8}
-            fill={fill}
+            fillOpacity={fillOpacity}
+            fill={colours.fill}
+            glow={{ colour: colours.glow, reach }}
+            outline={outline}
             onClick={e => onClick?.(e)}
             label={label && (
                 <text
@@ -238,10 +279,12 @@ interface EditViewProps {
      * an edit's ends counts as moved. The edition's own is the fallback.
      */
     tolerance?: CollationTolerance;
+    /** Where the edit stands while a motivation is in focus, nowhere in particular when none is. */
+    focus?: Focus;
     onClick?: MouseEventHandler;
 }
 
-export const EditView = ({ edit, deletedOn, tolerance, onClick }: EditViewProps) => {
+export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditViewProps) => {
     const { view } = useContext(EditionContext)
     const translation = usePinchZoom()
     const { trackHeight, spacing, bar } = translation
@@ -262,6 +305,16 @@ export const EditView = ({ edit, deletedOn, tolerance, onClick }: EditViewProps)
     // has no box, and an arrow to or from nothing draws nothing.
     const inserted = insertions.length
     const deleted = deletions.length
+
+    const annotated = edit['@annotation'] && view.getPath(edit.id)
+
+    // The belief an edit is held under is read while its motivation is in
+    // focus; a mark over every edit at once would bury the roll.
+    const belief = focus === 'lit' && annotated && (inserted + deleted) > 0 && (
+        <Arguable asSVG={{ buttonPlacement: beliefMarkAt([...insertions, ...deletions]) }} path={annotated}>
+            {null}
+        </Arguable>
+    )
 
     /**
      * An edit that both inserts and deletes puts one thing in the place
@@ -287,33 +340,49 @@ export const EditView = ({ edit, deletedOn, tolerance, onClick }: EditViewProps)
             )
             : []
 
-        if (!moved.length) {
-            return <Arrow from={was} to={now} onClick={onClick} svgProps={{ id: edit.id }} />
-        }
+        const span = getBoundingBox([...cornersOf(was), ...cornersOf(now)])
+        const { reach, outline } = lookOf(span.width, focus)
+        const glow = { colour: shiftGlow, reach }
 
         return (
-            <g>
+            <g data-motivation={edit.motivation}>
+                {moved.length === 0 && (
+                    <Arrow
+                        from={was}
+                        to={now}
+                        glow={glow}
+                        outline={outline}
+                        onClick={onClick}
+                        svgProps={{ id: edit.id }}
+                    />
+                )}
+
                 {moved.map(end => (
                     <Arrow
                         key={end}
                         from={endOf(was, end)}
                         to={endOf(now, end)}
+                        glow={glow}
+                        outline={outline}
                         onClick={onClick}
                         svgProps={{ id: arrowId(edit, end, moved) }}
                     />
                 ))}
+
+                {belief}
             </g>
         )
     }
 
     return (
-        <g>
+        <g data-motivation={edit.motivation}>
 
             {inserted > 0 && (
                 <EditHull
                     id={hullId(edit, 'insert')}
                     boxes={insertions}
-                    fill={insertionFill}
+                    colours={insertion}
+                    focus={focus}
                     label={editTypeLabel(edit.editType)}
                     onClick={onClick}
                 />
@@ -323,10 +392,13 @@ export const EditView = ({ edit, deletedOn, tolerance, onClick }: EditViewProps)
                 <EditHull
                     id={hullId(edit, 'delete')}
                     boxes={deletions}
-                    fill={deletionFill}
+                    colours={deletion}
+                    focus={focus}
                     onClick={onClick}
                 />
             )}
+
+            {belief}
         </g>
     );
 }

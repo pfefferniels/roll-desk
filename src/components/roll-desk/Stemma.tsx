@@ -549,6 +549,10 @@ export const LinkContainer = ({
                                 }
                                 a={{ x: source.x, y: source.y }}
                                 b={{ x: target.x, y: target.y }}
+                                onSliceHover={(slice) => {
+                                    const m = slice && motivations.find(m => m.id === slice.id)
+                                    setSelection(m ? [m] : [])
+                                }}
                                 onSliceClick={(slice) => {
                                     if (slice) {
                                         const m = motivations.find(m => m.id === slice.id)
