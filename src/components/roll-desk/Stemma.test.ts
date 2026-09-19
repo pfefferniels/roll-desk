@@ -19,9 +19,12 @@ const version = (
     generation
 })
 
-/** The graph of a stemma given on its own, each version named as it stands. */
+/** The graph of a stemma whose versions are all shown by a copy. */
 const graphFor = (versions: (Version & { generation: number })[]) =>
-    graphOf(versions, [], siglaOf({ versions }))
+    graphOf(versions, [], {
+        sigla: siglaOf({ versions }),
+        attested: new Set(versions.map(version => version.id))
+    })
 
 const captionOf = (nodes: Node[], siglum: string) => {
     const node = nodes.find(n => n.id === siglum)!
@@ -57,6 +60,19 @@ describe('which version names its system', () => {
         const orphan = [version('B', welteT100, 1, 'A')]
 
         expect(graphFor(orphan).links).toHaveLength(0)
+    })
+})
+
+describe('which node is drawn open', () => {
+    const chain = [
+        version('A', welteT100, 0),
+        version('B', welteT100, 1, 'A')
+    ]
+
+    it('marks the versions no copy shows at first hand', () => {
+        const { nodes } = graphOf(chain, [], { sigla: siglaOf({ versions: chain }), attested: new Set(['B']) })
+
+        expect(nodes.map(node => node.inferred)).toEqual([true, false])
     })
 })
 

@@ -97,6 +97,7 @@ export const Legend = () => {
                 generation: 0,
                 id: '',
                 label: 'v',
+                inferred: true,
                 x: width / 2 + shadowMargin / 2,
                 y: width / 2 + shadowMargin / 2,
                 radius: width / 2
@@ -107,10 +108,10 @@ export const Legend = () => {
         }
         description="Inferred version"
         help={`
-        A siglum in lowercase marks a version no copy's features carry at
-        first hand, whether it is reached only through the versions derived
-        from it or a copy does no more than state that it carries it. Its
-        text is a reconstruction rather than a reading.
+        An open node and a siglum in lowercase mark a version no copy's
+        features carry at first hand, whether it is reached only through the
+        versions derived from it or a copy does no more than state that it
+        carries it. Its text is a reconstruction rather than a reading.
         `}
       />
 

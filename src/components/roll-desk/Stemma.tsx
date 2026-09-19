@@ -1,4 +1,4 @@
-import { Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useMemo, useRef, useState } from "react"
@@ -34,7 +34,10 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     const { nodes, links } = useMemo(() => {
         if (!versions || !view) return { nodes: [], links: [] }
 
-        const graph = graphOf(view.withGenerations(), problems, siglaOf(view))
+        const graph = graphOf(view.withGenerations(), problems, {
+            sigla: siglaOf(view),
+            attested: attestedVersions(view)
+        })
         return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
     }, [versions, view, problems, svgHeight])
 
@@ -133,6 +136,12 @@ export interface Node extends d3.SimulationNodeDatum {
      * and a version that changes system say which one they are in.
      */
     namesSystem?: boolean
+    /**
+     * Whether no copy's features carry the version at first hand. The
+     * node is then drawn open, as a state read off its descendants
+     * rather than off a copy.
+     */
+    inferred?: boolean
     overlayInfo?: ReactNode
 }
 
@@ -166,11 +175,17 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
 const sharesSystem = (a: Version, b: Version) =>
     systemIdOf(a.system) === systemIdOf(b.system)
 
+/** What the drawing calls each version, and which of them a copy shows at first hand. */
+export interface Naming {
+    sigla: ReadonlyMap<string, string>
+    attested: ReadonlySet<string>
+}
+
 /** The versions and their derivations, as the graph the stemma draws. */
 export const graphOf = (
     versions: readonly (Version & { generation: number })[],
     problems: readonly ConstraintProblem[],
-    sigla: ReadonlyMap<string, string>
+    { sigla, attested }: Naming
 ): { nodes: Node[], links: Link[] } => {
     const versionBy = (id: string) => versions.find(other => other.id === id)
 
@@ -189,6 +204,7 @@ export const graphOf = (
             label: sigla.get(version.id) ?? '?',
             system: trackerBarOf(version.system)?.name,
             namesSystem: parent === undefined || !sharesSystem(parent, version),
+            inferred: !attested.has(version.id),
             generation: version.generation,
             overlayInfo: troubles > 0
                 ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
@@ -324,14 +340,24 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
             >
                 {node.system && <title>{node.system}</title>}
 
+                {highlight && (
+                    <circle
+                        cx={node.x || 10}
+                        cy={node.y || 10}
+                        r={radiusOf(node) + 3}
+                        fill='none'
+                        strokeWidth={2}
+                        stroke='black'
+                        strokeDasharray='3 2'
+                    />
+                )}
                 <circle
                     cx={node.x || 10}
                     cy={node.y || 10}
                     r={radiusOf(node)}
-                    fill='darkslategray'
-                    strokeWidth={highlight ? 3 : 0}
-                    stroke='black'
-                    strokeDasharray={highlight ? '3 2' : undefined}
+                    fill={node.inferred ? 'white' : 'darkslategray'}
+                    strokeWidth={node.inferred ? 2 : 0}
+                    stroke='darkslategray'
                 />
                 <text
                     x={node.x || 10}
@@ -341,7 +367,7 @@ export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeP
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fontSize={14}
-                    fill="white"
+                    fill={node.inferred ? 'darkslategray' : 'white'}
                 >
                     {node.label}
                 </text>
