@@ -47,9 +47,20 @@ export const CertaintyMark = ({ certainty, children, at }: CertaintyMarkProps) =
         return <>{button}{popover}</>
     }
 
+    // The box the button is laid out in reaches well beyond the icon, and
+    // in a drawing it would take the pointer from whatever it is drawn
+    // across. Only the button itself answers to the pointer.
     return (
-        <foreignObject x={at.x} y={at.y} width={svgMarkSize} height={svgMarkSize}>
-            <div style={{ transform: 'scale(0.8)' }}>{button}</div>
+        <foreignObject
+            x={at.x}
+            y={at.y}
+            width={svgMarkSize}
+            height={svgMarkSize}
+            style={{ pointerEvents: 'none' }}
+        >
+            <div style={{ transform: 'scale(0.8)' }}>
+                <span style={{ display: 'inline-flex', pointerEvents: 'auto' }}>{button}</span>
+            </div>
             <Portal>{popover}</Portal>
         </foreignObject>
     )
