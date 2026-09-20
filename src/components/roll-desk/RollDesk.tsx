@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material"
+import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
@@ -13,7 +13,7 @@ import { CopyReference } from "./CopyReference"
 import { svg, svgPerMm } from "../../helpers/units"
 import { announcePlayback } from "../../hooks/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../../helpers/reproducingSystems'
-import { Add, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
+import { Add, ChevronLeft, ChevronRight, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { SourceStack } from "./SourceStack"
@@ -71,6 +71,15 @@ const TabPanel = ({ children, tab, current }: TabPanelProps) => (
         {current === tab && <Box sx={{ p: 0.5 }}>{children}</Box>}
     </div>
 )
+
+/** Where the panel of tabs sits, over the desk at the top right corner. */
+const deskPanel = {
+    position: 'absolute',
+    margin: 1,
+    right: 1,
+    backdropFilter: 'blur(10px)',
+    background: 'rgba(255, 255, 255, 0.6)'
+} as const
 
 const namedEditors = (editors: Editor[] = []) =>
     editors.map(editor => `${editor.name} (${editor.role})`).join(', ')
@@ -143,6 +152,8 @@ export const Desk = ({ show }: DeskProps) => {
     const [emulationOptions, setEmulationOptions] = useState<EmulationOptions>()
 
     const [currentTab, setCurrentTab] = useState<DeskTab>('info')
+    /** The panel folds away where the roll under it is what matters. */
+    const [panelOpen, setPanelOpen] = useState(true)
 
     const troubles = problems.length + carriage.length
     const hasProblems = troubles > 0
@@ -427,143 +438,166 @@ export const Desk = ({ show }: DeskProps) => {
         <OpenContext.Provider value={openFromAccount}>
             {viewOnly ? viewControl : toolbar}
 
-            <Paper
-                sx={{
-                    position: 'absolute',
-                    margin: 1,
-                    right: 1,
-                    backdropFilter: 'blur(10px)',
-                    background: 'rgba(255, 255, 255, 0.6)',
-                    padding: 2
-                }}
-            >
-                <Tabs value={currentTab} onChange={(_, tab: DeskTab) => setCurrentTab(tab)}>
-                    <Tab value='info' label='Info' />
-                    <Tab value='stemma' label='Stemma' />
-                    <Tab value='sources' label='Sources' />
-                    {hasProblems && (
-                        <Tab
-                            value='problems'
-                            label={
-                                <Badge
-                                    badgeContent={troubles}
-                                    color='error'
-                                    sx={{ pr: 1.5 }}
-                                >
-                                    Problems
-                                </Badge>
-                            }
-                        />
-                    )}
-                </Tabs>
-
-                <TabPanel current={currentTab} tab='info'>
-                    <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
-                        <b>{edition.title}</b>
-                        <br />
-                        {edition.roll.catalogueNumber}{' '}
-
-                        <Arguable
-                            path={['roll', 'recordingEvent', 'date'] as const}
+            {!panelOpen && (
+                <Paper sx={{ ...deskPanel, padding: 0.5 }}>
+                    <Tooltip title='Show the panel'>
+                        <IconButton
+                            size='small'
+                            aria-label='Show the panel'
+                            onClick={() => setPanelOpen(true)}
                         >
-                            ({dateStatement(edition.roll.recordingEvent.date)})
-                        </Arguable>
-
-                        {editorLine && (
-                            <>
-                                <br />
-                                ed. {editorLine}
-                            </>
-                        )}
-                    </div>
-                    <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
-                        <IconButton onClick={() => setMetadataJob('edit')}>
-                            <Create />
+                            <ChevronLeft />
                         </IconButton>
-                    </div>
-                </TabPanel>
+                    </Tooltip>
+                </Paper>
+            )}
 
-                <TabPanel current={currentTab} tab='stemma'>
-                    <TabColumn>
-                        <Stemma
-                            currentVersionId={currentVersionId}
-                            problems={problems}
-                            height={currentVersion ? 380 : 600}
-                            onClick={(versionId) => {
-                                setCurrentVersionId(versionId)
-                                setCurrentCopyId(undefined)
-                                setSelection([])
-                            }}
-                        />
-                        {currentVersion && (
-                            <AccountPanel>
-                                <VersionAccount versionId={currentVersion.id} />
-                            </AccountPanel>
-                        )}
-                        {currentCopy && (
-                            <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
-                                A copy is open. What is known of it is under Sources, behind its info button.
-                            </Typography>
-                        )}
-                    </TabColumn>
-                </TabPanel>
-
-                <TabPanel current={currentTab} tab='sources'>
-                    <TabColumn>
-                    <Box sx={{ minHeight: 0, overflow: 'auto' }}>
-                        <SourceStack
-                            activeId={currentCopyId}
-                            onClick={(copyId) => {
-                                setCurrentVersionId(undefined)
-                                setCurrentCopyId(copyId)
-                            }}
-                            onShowAccount={setAccountCopyId}
-                        />
-                    </Box>
-
-                    {currentCopy?.scan && (
-                        <Stack direction='row' spacing={2} alignItems='center' sx={{ px: 1 }}>
-                            <Typography variant='caption' color='text.secondary' noWrap sx={{ flexShrink: 0 }}>
-                                Facsimile
-                            </Typography>
-                            <Slider
-                                size='small'
-                                min={0}
-                                max={1}
-                                step={0.05}
-                                marks={[{ value: workingPosition }]}
-                                value={blendPosition}
-                                onChange={(_, value) => setBlendPosition(value)}
-                                aria-label='facsimile against transcription'
-                                sx={{ minWidth: '6rem' }}
-                            />
-                            <Typography variant='caption' color='text.secondary' noWrap sx={{ flexShrink: 0 }}>
-                                Transcription
-                            </Typography>
-                        </Stack>
-                    )}
-
-                    {!viewOnly && (
-                        <Button
-                            startIcon={<Add />}
-                            onClick={() => setEditCopy(true)}
-                            sx={{ alignSelf: 'flex-start' }}
+            {panelOpen && (
+                <Paper sx={{ ...deskPanel, padding: 2 }}>
+                    <Stack direction='row' alignItems='center'>
+                        <Tabs
+                            value={currentTab}
+                            onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
+                            sx={{ flexGrow: 1 }}
                         >
-                            Add Copy
-                        </Button>
-                    )}
-                    </TabColumn>
-                </TabPanel>
+                            <Tab value='info' label='Info' />
+                            <Tab value='stemma' label='Stemma' />
+                            <Tab value='sources' label='Sources' />
+                            {hasProblems && (
+                                <Tab
+                                    value='problems'
+                                    label={
+                                        <Badge
+                                            badgeContent={troubles}
+                                            color='error'
+                                            sx={{ pr: 1.5 }}
+                                        >
+                                            Problems
+                                        </Badge>
+                                    }
+                                />
+                            )}
+                        </Tabs>
 
-                <TabPanel current={currentTab} tab='problems'>
-                    <ConstraintsPanel
-                        versionId={currentVersionId}
-                        problems={problems}
-                        carriage={carriage}
-                        onShow={showConstraint}
-                    />
-                </TabPanel>
-            </Paper>
+                        <Tooltip title='Fold the panel away'>
+                            <IconButton
+                                size='small'
+                                aria-label='Fold the panel away'
+                                onClick={() => setPanelOpen(false)}
+                            >
+                                <ChevronRight />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+
+                    <TabPanel current={currentTab} tab='info'>
+                        <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
+                            <b>{edition.title}</b>
+                            <br />
+                            {edition.roll.catalogueNumber}{' '}
+
+                            <Arguable
+                                path={['roll', 'recordingEvent', 'date'] as const}
+                            >
+                                ({dateStatement(edition.roll.recordingEvent.date)})
+                            </Arguable>
+
+                            {editorLine && (
+                                <>
+                                    <br />
+                                    ed. {editorLine}
+                                </>
+                            )}
+                        </div>
+                        <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
+                            <IconButton onClick={() => setMetadataJob('edit')}>
+                                <Create />
+                            </IconButton>
+                        </div>
+                    </TabPanel>
+
+                    <TabPanel current={currentTab} tab='stemma'>
+                        <TabColumn>
+                            <Stemma
+                                currentVersionId={currentVersionId}
+                                problems={problems}
+                                height={currentVersion ? 380 : 600}
+                                onClick={(versionId) => {
+                                    setCurrentVersionId(versionId)
+                                    setCurrentCopyId(undefined)
+                                    setSelection([])
+                                }}
+                            />
+                            {currentVersion && (
+                                <AccountPanel>
+                                    <VersionAccount versionId={currentVersion.id} />
+                                </AccountPanel>
+                            )}
+                            {currentCopy && (
+                                <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
+                                    A copy is open. What is known of it is under Sources, behind its info button.
+                                </Typography>
+                            )}
+                        </TabColumn>
+                    </TabPanel>
+
+                    <TabPanel current={currentTab} tab='sources'>
+                        <TabColumn>
+                        <Box sx={{ minHeight: 0, overflow: 'auto' }}>
+                            <SourceStack
+                                activeId={currentCopyId}
+                                onClick={(copyId) => {
+                                    setCurrentVersionId(undefined)
+                                    setCurrentCopyId(copyId)
+                                }}
+                                onShowAccount={setAccountCopyId}
+                            />
+                        </Box>
+
+                        {currentCopy?.scan && (
+                            <Stack direction='row' spacing={2} alignItems='center' sx={{ px: 1 }}>
+                                <Typography variant='caption' color='text.secondary' noWrap sx={{ flexShrink: 0 }}>
+                                    Facsimile
+                                </Typography>
+                                <Slider
+                                    size='small'
+                                    min={0}
+                                    max={1}
+                                    step={0.05}
+                                    marks={[{ value: workingPosition }]}
+                                    value={blendPosition}
+                                    onChange={(_, value) => setBlendPosition(value)}
+                                    aria-label='facsimile against transcription'
+                                    sx={{ minWidth: '6rem' }}
+                                />
+                                <Typography variant='caption' color='text.secondary' noWrap sx={{ flexShrink: 0 }}>
+                                    Transcription
+                                </Typography>
+                            </Stack>
+                        )}
+
+                        {!viewOnly && (
+                            <Button
+                                startIcon={<Add />}
+                                onClick={() => setEditCopy(true)}
+                                sx={{ alignSelf: 'flex-start' }}
+                            >
+                                Add Copy
+                            </Button>
+                        )}
+                        </TabColumn>
+                    </TabPanel>
+
+                    <TabPanel current={currentTab} tab='problems'>
+                        <ConstraintsPanel
+                            versionId={currentVersionId}
+                            problems={problems}
+                            carriage={carriage}
+                            onShow={showConstraint}
+                        />
+                    </TabPanel>
+                </Paper>
+            )}
 
             {!viewOnly && (
                 <Paper
