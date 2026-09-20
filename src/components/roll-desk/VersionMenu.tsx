@@ -15,7 +15,7 @@ import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../../helpers/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
-import { isMotivation } from "../../helpers/motivation"
+import { HeldMotivation, isHeldMotivation } from "../../helpers/motivation"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "./Arguable"
 import { CertaintyMark } from "./CertaintyMark"
@@ -33,14 +33,14 @@ const sharedMotivation = (version: Version, editIds: string[]) => {
     return version.motivations.find(m => m.id === [...referenced][0])
 }
 
-export type VersionSelection = AnySymbol | Edit | Motivation
+export type VersionSelection = AnySymbol | Edit | HeldMotivation
 
 interface MenuProps {
     versionId: string
 }
 
 export const VersionMenu = ({ versionId }: MenuProps) => {
-    const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isMotivation(item))
+    const { selection, setSelection } = useSelection(item => isEdit(item) || isSymbol(item) || isHeldMotivation(item))
 
     /** The one edit selected, where exactly one is, which is what splitting acts on. */
     const soleEdit = selection.length === 1 && selection.every(isEdit) ? selection[0] : undefined

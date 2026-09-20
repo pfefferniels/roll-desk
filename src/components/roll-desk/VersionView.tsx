@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, EditionView, editsOf, Millimeters, trackerBarOf, Version, Edit, Motivation } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, EditionView, editsOf, Millimeters, trackerBarOf, Version, Edit } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -10,7 +10,7 @@ import { EditView, Focus } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../../providers/SelectionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
-import { isMotivation } from "../../helpers/motivation"
+import { isHeldMotivation } from "../../helpers/motivation"
 import { ConstraintView } from "./ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../../helpers/constraints"
 import { derivationToleranceOf } from "../../helpers/collationTolerance"
@@ -60,11 +60,11 @@ interface VersionViewProps {
     problems: readonly ConstraintProblem[]
     /** The emulation settings by system, each system's defaults when none are chosen. */
     emulationOptions?: EmulationOptions
-    onClick: (event: AnySymbol | Motivation | Edit) => void
+    onClick: (event: AnySymbol | Edit) => void
 }
 
 export const VersionView = ({ version, problems, emulationOptions, onClick }: VersionViewProps) => {
-    const { selection, setSelection } = useSelection(s => isMotivation(s))
+    const { selection, setSelection } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
     const { view } = useContext(EditionContext)
     const { translateX, rollLength, height: geometryHeight } = usePinchZoom()
@@ -107,9 +107,12 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     // so that is the bar those commands are drawn by.
     const deletedOn = trackerBarOf(view.predecessorOf(version.id)?.system)
 
-    // A balloon on another derivation must leave this roll alone, so only
-    // the motivations this version holds count as in focus.
-    const inFocus = version.motivations.filter(own => selection.some(m => m.id === own.id))
+    // A balloon on another derivation must leave this roll alone, and two
+    // versions may write one motivation id, so a selection counts as in
+    // focus only where it is this version's.
+    const inFocus = selection
+        .filter(held => held.versionId === version.id)
+        .map(held => held.motivation)
 
     const focusOf = (edit: Edit): Focus | undefined => {
         if (!inFocus.length) return undefined
@@ -122,7 +125,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
         return (
             <g
                 key={`editView_${edit.id}`}
-                onMouseEnter={motivation ? () => setSelection([motivation]) : undefined}
+                onMouseEnter={motivation ? () => setSelection([{ versionId: version.id, motivation }]) : undefined}
                 onMouseLeave={motivation ? () => setSelection([]) : undefined}
             >
                 <EditView

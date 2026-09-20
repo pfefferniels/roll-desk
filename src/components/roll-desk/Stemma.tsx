@@ -1,4 +1,4 @@
-import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useMemo, useRef, useState } from "react"
@@ -10,6 +10,7 @@ import { useSelection } from '../../providers/SelectionContext';
 import { SlicedBalloon } from './SlicedBalloon';
 import { Arguable } from './Arguable';
 import { along, minus, perpendicular, point, Point, unit } from '../../helpers/drawing';
+import { isHeldMotivation, sameMotivation } from '../../helpers/motivation';
 import { Svg, svg } from '../../helpers/units';
 
 interface Stemma {
@@ -452,7 +453,7 @@ export const LinkContainer = ({
     markScale,
     onVersionClick,
 }: LinkContainerProps) => {
-    const { selection, setSelection } = useSelection()
+    const { selection, setSelection } = useSelection(isHeldMotivation)
     const { view } = useContext(EditionContext)
 
     return (
@@ -507,7 +508,11 @@ export const LinkContainer = ({
                     )
                 }
 
-                const motivations = view?.get<Version>(source.id)?.motivations || []
+                const version = view?.get<Version>(source.id)
+                const motivations = version?.motivations ?? []
+                // The version's own edits, since an edit of another version
+                // may name a motivation of the same id.
+                const edits = version ? editsOf(version) : []
 
                 return (
                     <g key={`link_${i}`}>
@@ -540,9 +545,10 @@ export const LinkContainer = ({
                                 slices={
                                     motivations.map(m => {
                                         return {
-                                            count: view?.linksTo(m.id).length || 0,
+                                            count: edits.filter(edit => edit.motivation === m.id).length,
                                             id: m.id,
-                                            selected: selection.some(s => 'id' in s && s.id === m.id),
+                                            selected: selection.some(held =>
+                                                sameMotivation(held, { versionId: source.id, motivation: m })),
                                             description: m.note || 'No description'
                                         }
                                     })
@@ -551,14 +557,15 @@ export const LinkContainer = ({
                                 b={{ x: target.x, y: target.y }}
                                 onSliceHover={(slice) => {
                                     const m = slice && motivations.find(m => m.id === slice.id)
-                                    setSelection(m ? [m] : [])
+                                    setSelection(m ? [{ versionId: source.id, motivation: m }] : [])
                                 }}
                                 onSliceClick={(slice) => {
                                     if (slice) {
                                         const m = motivations.find(m => m.id === slice.id)
                                         if (m) {
                                             onVersionClick(source.id)
-                                            queueMicrotask(() => setSelection([m]))
+                                            queueMicrotask(() =>
+                                                setSelection([{ versionId: source.id, motivation: m }]))
                                         }
                                     } else {
                                         setSelection([])

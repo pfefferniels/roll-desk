@@ -5,7 +5,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
-import { deskPath, entityOfPath, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
+import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
 import { dateStatement } from "../../helpers/dateStatement"
 import { OpenContext } from "../../providers/OpenContext"
 import { useSnackbar } from "../../providers/SnackbarContext"
@@ -51,6 +51,7 @@ import { activatesItsTarget } from "../../helpers/activatesItsTarget"
 import { VersionView } from "./VersionView"
 import { CopyFacsimile } from "./CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "./ConstraintsPanel"
+import { isHeldMotivation } from "../../helpers/motivation"
 
 type DeskTab = 'info' | 'stemma' | 'sources' | 'problems'
 
@@ -193,7 +194,7 @@ export const Desk = ({ show }: DeskProps) => {
         const mark = 'mark' in target ? target.mark : undefined
         if (mark) {
             setSelection([mark])
-            setPendingSpotlight(mark.id)
+            setPendingSpotlight(idOfMark(mark))
         }
         return target
     }, [view, setMessage])
@@ -212,7 +213,7 @@ export const Desk = ({ show }: DeskProps) => {
         if (target?.on === 'copy') setCurrentTab('sources')
     }, [open])
 
-    const shownPath = deskPath({ versionId: currentVersionId, copyId: currentCopyId, selection })
+    const shownPath = view && deskPath(view, { versionId: currentVersionId, copyId: currentCopyId, selection })
 
     // The published desk keeps its address on what is shown, so that a
     // reader can pass on or cite whatever they are looking at. The editor
@@ -585,7 +586,10 @@ export const Desk = ({ show }: DeskProps) => {
                                         <br />
                                         <span style={{ color: 'gray', fontSize: '8pt' }}>
                                             {selection.map(e => {
-                                                if ('id' in e) {
+                                                if (isHeldMotivation(e)) {
+                                                    return e.motivation.id.slice(0, 15)
+                                                }
+                                                else if ('id' in e) {
                                                     return e.id.slice(0, 15)
                                                 }
                                                 else {

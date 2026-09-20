@@ -5,8 +5,8 @@
  * and the link they were given all say the same thing.
  */
 
-import { AnyFeature, AnySymbol, Edit, EditionView, Motivation, Path, isEdit, isRollFeature, isSymbol } from "linked-rolls"
-import { isMotivation } from "./motivation"
+import { AnyFeature, AnySymbol, Edit, Edition, EditionView, Motivation, Path, isEdit, isRollFeature, isSymbol } from "linked-rolls"
+import { HeldMotivation, isHeldMotivation, isMotivation } from "./motivation"
 import type { UserSelection } from "../components/roll-desk/RollDesk"
 
 /** The address of the entity under the id, which a link can carry as its href. */
@@ -30,12 +30,27 @@ export interface DeskAddress {
 }
 
 /**
+ * Whether a link by this id would land on the motivation meant. A
+ * collation writes `unchecked` on what it makes, so several versions
+ * carry a motivation of that name and the id names none of them in
+ * particular.
+ */
+const namesOneMotivation = (edition: Edition, id: string) =>
+    edition.versions.filter(version => version.motivations.some(m => m.id === id)).length === 1
+
+/**
  * The address of what the desk shows: the one entity selected, or else
  * the version or copy it lies on. Nothing where the desk shows nothing,
  * so that an address is never written over with an empty one.
+ *
+ * A motivation whose id other versions write as well falls back to its
+ * version, since the id alone would send a reader to another roll.
  */
-export const deskPath = ({ versionId, copyId, selection }: DeskAddress): string | undefined => {
+export const deskPath = (view: EditionView, { versionId, copyId, selection }: DeskAddress): string | undefined => {
     const [sole] = selection.length === 1 ? selection : []
+    if (isHeldMotivation(sole) && namesOneMotivation(view.edition, sole.motivation.id)) {
+        return pathOf(sole.motivation.id)
+    }
     if (sole && 'id' in sole) return pathOf(sole.id)
     if (versionId) return pathOf(versionId)
     if (copyId) return pathOf(copyId)
@@ -53,10 +68,16 @@ const isDrawn = (entity: unknown): entity is Drawn =>
     typeof entity === 'object' && entity !== null &&
     (isSymbol(entity) || isEdit(entity) || isMotivation(entity) || isRollFeature(entity))
 
+/** What a link marks on the desk: the entity, a motivation as one of the version holding it. */
+export type Mark = AnySymbol | AnyFeature | Edit | HeldMotivation
+
+/** The id the mark is drawn under, which for a motivation is the one its edits carry. */
+export const idOfMark = (mark: Mark) => isHeldMotivation(mark) ? mark.motivation.id : mark.id
+
 /** Where an entity is to be found: on a version, on a copy, or in the edition's own statements. */
 export type LinkTarget =
-    | { on: 'version', versionId: string, mark?: Drawn }
-    | { on: 'copy', copyId: string, mark?: Drawn }
+    | { on: 'version', versionId: string, mark?: Mark }
+    | { on: 'copy', copyId: string, mark?: Mark }
     | { on: 'edition' }
 
 /** The entity's own path and those of everything it belongs to, the entity last. */
@@ -65,6 +86,12 @@ const ancestry = (path: Path): Path[] => path.map((_, depth) => path.slice(0, de
 /** The most particular thing the desk draws around the entity, the entity itself included. */
 const drawnAt = (view: EditionView, path: Path): Drawn | undefined =>
     ancestry(path).map(step => view.atPath<unknown>(step)).findLast(isDrawn)
+
+/** What is marked for what was drawn, a motivation taking the version it belongs to with it. */
+const markOf = (drawn: Drawn | undefined, versionId?: string): Mark | undefined => {
+    if (!isMotivation(drawn)) return drawn
+    return versionId ? { versionId, motivation: drawn } : undefined
+}
 
 /**
  * What a link to an entity opens, or nothing where the edition holds no
@@ -80,14 +107,14 @@ export const linkTarget = (view: EditionView, id: string): LinkTarget | undefine
     if (!path) return undefined
 
     const [collection, index] = path
-    const mark = drawnAt(view, path)
+    const drawn = drawnAt(view, path)
 
     if (typeof index === 'number') {
         const version = collection === 'versions' ? view.edition.versions[index] : undefined
-        if (version) return { on: 'version', versionId: version.id, mark }
+        if (version) return { on: 'version', versionId: version.id, mark: markOf(drawn, version.id) }
 
         const copy = collection === 'copies' ? view.edition.copies[index] : undefined
-        if (copy) return { on: 'copy', copyId: copy.id, mark }
+        if (copy) return { on: 'copy', copyId: copy.id, mark: markOf(drawn) }
     }
 
     return { on: 'edition' }
