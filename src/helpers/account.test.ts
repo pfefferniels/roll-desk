@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, Belief, Certainty, connectVersions, Edition, KeeperAssignment, mm, RollCopy, stateCarriage } from 'linked-rolls'
 import { produce } from 'immer'
-import { copyAccount, describeEdit, versionAccount } from './account'
+import { copyAccount, versionAccount } from './account'
 import { fixtureEdition, hole, ids, note, viewOf } from './editionFixture'
 
 const belief = (certainty: Certainty): Belief => ({ type: 'belief', id: `belief-${certainty}`, certainty, reasons: [] })
@@ -69,16 +69,6 @@ describe('the account of a version', () => {
         expect(versionAccount(viewOf(edition), ids.b)?.witnesses).toEqual([{ copy: 'copy', by: 'carriers' }])
     })
 
-    it('gathers the edits that carry a belief', () => {
-        const edition = fixtureEdition()
-        const edit = edition.versions[1]?.edits?.[0]
-        if (!edit) throw new Error('the fixture has changed')
-        edit['@annotation'] = { id: 'why', belief: belief('likely') }
-
-        expect(versionAccount(viewOf(edition), ids.b)?.arguedEdits.map(argued => argued.id)).toEqual(['edit-b'])
-        expect(versionAccount(viewOf(edition), ids.a)?.arguedEdits).toEqual([])
-    })
-
     it('is none for anything but a version', () => {
         expect(versionAccount(viewOf(fixtureEdition()), 'copy')).toBeUndefined()
         expect(versionAccount(viewOf(fixtureEdition()), 'missing')).toBeUndefined()
@@ -108,15 +98,5 @@ describe('the account of a copy', () => {
         const path = [...(view.getPath('copy') ?? []), 'keeper']
 
         expect(view.atPath<KeeperAssignment>(path)?.name).toBe('Test')
-    })
-})
-
-describe('an edit in a line of text', () => {
-    it('says what it does to the first command it touches, and where', () => {
-        const edition = fixtureEdition()
-        const edit = edition.versions[1]?.edits?.[0]
-        if (!edit) throw new Error('the fixture has changed')
-
-        expect(describeEdit(edit, viewOf(edition))).toMatch(/^Deletes .+ at 990 mm$/)
     })
 })

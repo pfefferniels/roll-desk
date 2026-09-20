@@ -2,7 +2,7 @@ import { Box, Stack, Typography } from "@mui/material"
 import { CollationTolerance, nameOf, ObjectAssumption, trackerBarOf } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
-import { describeEdit, versionAccount } from "../../helpers/account"
+import { versionAccount } from "../../helpers/account"
 import { namesAnOffset, windowAtEnds } from "../../helpers/collationTolerance"
 import { versionLabel } from "../../helpers/names"
 import { dateStatement } from "../../helpers/dateStatement"
@@ -46,7 +46,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
     const account = view && versionAccount(view, versionId)
     if (!view || !account) return null
 
-    const { version, derivations, witnesses, indirect, arguedEdits, reservations } = account
+    const { version, derivations, witnesses, indirect, reservations } = account
     const { creation } = version
 
     return (
@@ -108,16 +108,6 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                     </Typography>
                 ))}
             </AccountSection>
-
-            {arguedEdits.length > 0 && (
-                <AccountSection title='Argued edits'>
-                    {arguedEdits.map(edit => (
-                        <HeldStatement key={edit.id} belief={edit['@annotation']?.belief}>
-                            <EntityLink id={edit.id} label={describeEdit(edit, view)} />
-                        </HeldStatement>
-                    ))}
-                </AccountSection>
-            )}
 
             {reservations.length > 0 && (
                 <AccountSection title='Reservations'>

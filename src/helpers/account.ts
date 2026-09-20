@@ -1,9 +1,8 @@
 import {
-    AnySymbol, certainties, CollationTolerance, derivationsOf, Edit, EditionView, editsOf, idOf, isCommand,
+    certainties, CollationTolerance, derivationsOf, EditionView, idOf,
     ObjectAssumption, principalDerivationOf, Reservation, reservationsAbout, reservationsAboutVersion, RollCopy,
     Version, VersionReservationType, versionsWitnessedBy, Witness, witnessesOf
 } from "linked-rolls"
-import { describeCommand } from "./constraints"
 
 /**
  * A derivation as a reader is told of it: whether the version's text is
@@ -28,8 +27,6 @@ export interface VersionAccount {
     witnesses: Witness[]
     /** The copies reaching it only through a version derived from it. */
     indirect: IndirectWitness[]
-    /** The version's edits that carry a belief. */
-    arguedEdits: Edit[]
     reservations: Reservation<VersionReservationType>[]
 }
 
@@ -58,7 +55,6 @@ export const versionAccount = (view: EditionView, versionId: string): VersionAcc
             .sort((a, b) => Number(b.principal) - Number(a.principal)),
         witnesses: witnesses.filter(witness => !isIndirect(witness)),
         indirect: witnesses.filter(isIndirect),
-        arguedEdits: editsOf(version).filter(edit => edit['@annotation'] !== undefined),
         reservations: reservationsAboutVersion(view, version)
     }
 }
@@ -100,14 +96,3 @@ export const copyAccount = (view: EditionView, copyId: string): CopyAccount | un
     }
 }
 
-/** An edit in a line of text: what it does to the first command it touches, and how many more. */
-export const describeEdit = (edit: Edit, view: EditionView): string => {
-    const inserted = (edit.insert ?? []).filter(isCommand)
-    const deleted = (edit.delete ?? []).map(id => view.get<AnySymbol>(id)).filter(isCommand)
-    const [first, ...others] = [...inserted, ...deleted]
-    if (!first) return 'An edit'
-
-    const verb = inserted.length > 0 && deleted.length > 0 ? 'Replaces' : inserted.length > 0 ? 'Inserts' : 'Deletes'
-    const more = others.length > 0 ? ` and ${others.length} more` : ''
-    return `${verb} ${describeCommand(first, view)}${more}`
-}

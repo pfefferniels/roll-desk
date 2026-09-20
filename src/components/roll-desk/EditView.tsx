@@ -308,9 +308,11 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
 
     const annotated = edit['@annotation'] && view.getPath(edit.id)
 
-    // The belief an edit is held under is read while its motivation is in
-    // focus; a mark over every edit at once would bury the roll.
-    const belief = focus === 'lit' && annotated && (inserted + deleted) > 0 && (
+    // An edit that is argued carries the mark of its belief where it lies,
+    // so that it is read off the roll rather than from a list apart from
+    // it. Only an edit that falls back behind a motivation in focus drops
+    // the mark, along with the rest of its drawing.
+    const belief = focus !== 'dimmed' && annotated && (inserted + deleted) > 0 && (
         <Arguable asSVG={{ buttonPlacement: beliefMarkAt([...insertions, ...deletions]) }} path={annotated}>
             {null}
         </Arguable>
