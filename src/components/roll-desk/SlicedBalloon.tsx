@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useMemo, useRef, useState } from "react";
 import { Popper } from "@mui/material";
 
 /** A 2D point in SVG user space. */
@@ -16,9 +16,20 @@ export type SlicedBalloonProps = {
     a: Pt;
     b: Pt;
     slices: Slice[];
+    /** The slice the pointer is on, and nothing once it has left the balloon. */
     onSliceHover?: (slice: Slice | null) => void;
-    onSliceClick?: (slice: Slice | null) => void;
+    onSliceClick?: (slice: Slice) => void;
+    /**
+     * Drawn over the balloon and part of it as far as the pointer is
+     * concerned, so that a mark lying on the balloon does not read as
+     * having left it.
+     */
+    children?: ReactNode;
 };
+
+/** How far the balloon reaches from the line, as a part of its length: opened, and at rest. */
+const openReach = 0.3;
+const restReach = 0.05;
 
 /**
  * Arrange indices so that the largest weights land in the middle.
@@ -83,27 +94,50 @@ export function orderSlicesCenterWeighted(slices: Slice[]): Slice[] {
     return out.filter(slot => slot !== null);
 }
 
+/** How narrow a slice may be drawn, in the units the balloon is laid out in. */
+const minSliceWidth = 6;
+
+/** The share of the balloon a slice keeps whatever its count, never more than an equal share. */
+const floorShare = (sliceCount: number, totalWidth: number) =>
+    sliceCount > 0 ? Math.min(minSliceWidth / Math.max(totalWidth, 1), 1 / sliceCount) : 0;
+
+/**
+ * How much of the balloon a count claims.
+ *
+ * Taken as the logarithm rather than the count itself. A motivation
+ * behind two hundred edits and one behind three sit in one balloon, and
+ * drawn in proportion the first leaves the second no width at all. The
+ * width therefore puts the motivations in order and says how far apart
+ * they are in order of magnitude, not how many edits each holds.
+ */
+const weightOf = (count: number) =>
+    Number.isFinite(count) && count > 0 ? Math.log1p(count) : 0;
+
 /**
  * Computes signed offsets (along the perpendicular to AB) for all slice boundaries.
  *
  * If there are N slices, there are N+1 boundaries, from left to right.
  * - Offsets are centered around 0.
- * - Slice widths are proportional to count.
+ * - Slice widths follow the weight of their count.
  *
- * Returns:
- *   orderedSlices: Slice[] (left->right)
- *   boundaryOffsets: number[] of length N+1 (left->right)
- *   halfWidth: number (max |offset|)
+ * A slice too narrow to be hit by the pointer is widened to the floor and
+ * the others give up the difference in proportion, so the narrowest slices
+ * state that they are the smallest rather than how small they are.
  */
-export function computeSliceGeometry(slices: Slice[]) {
+export function computeSliceGeometry(slices: Slice[], totalWidth: number) {
     const ordered = orderSlicesCenterWeighted(slices);
-    const weights = ordered.map((s) => Math.max(0, Number.isFinite(s.count) ? s.count : 0));
+    const weights = ordered.map((s) => weightOf(s.count));
     const sum = weights.reduce((a, b) => a + b, 0);
 
     // If all weights are 0, fall back to equal widths.
-    const widths = sum > 0
+    const shares = sum > 0
         ? weights.map((w) => w / sum)
         : ordered.map(() => (ordered.length ? 1 / ordered.length : 0));
+
+    const floor = floorShare(ordered.length, totalWidth);
+    const lifted = shares.map((share) => Math.max(share, floor));
+    const liftedSum = lifted.reduce((a, b) => a + b, 0);
+    const widths = lifted.map((width) => width / liftedSum);
 
     // Boundaries along width axis: from -0.5 to +0.5 in normalized units.
     const boundary = widths.reduce<number[]>(
@@ -111,14 +145,10 @@ export function computeSliceGeometry(slices: Slice[]) {
         [0]
     );
 
-    // Center so that middle is 0: subtract 0.5.
-    const centered = boundary.map((t) => t - 0.5);
-    const halfWidth = Math.max(...centered.map((x) => Math.abs(x)), 0);
-
     return {
         orderedSlices: ordered,
-        boundaryOffsets01: centered, // normalized offsets in [-0.5,+0.5]
-        halfWidth01: halfWidth,
+        // normalized offsets in [-0.5,+0.5], centred on the line
+        boundaryOffsets01: boundary.map((t) => t - 0.5),
     };
 }
 
@@ -166,30 +196,36 @@ export function boundaryCubicPathReversed(a: Pt, b: Pt, offset: number): string 
 }
 
 /**
- * Sliced balloon between A and B. Slice widths are proportional to count.
- * The largest slices are centered via ordering.
+ * Sliced balloon between A and B. Slice widths follow the weight of their
+ * count. The largest slices are centered via ordering.
+ *
+ * The slices are always drawn and only their paint changes, so that the
+ * shape under the pointer is never taken away and put back: nothing the
+ * balloon shows is kept in an effect, and a pointer crossing it neither
+ * makes it flicker nor loses the slice it is on.
  */
-export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick }: SlicedBalloonProps) {
-    const [hovered, setHovered] = React.useState(false);
-    const [currentSlice, setCurrentSlice] = useState<Slice>()
-    const clickTime = useRef(0)
+export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, children }: SlicedBalloonProps) {
+    const [pointerInside, setPointerInside] = useState(false)
+    const [pointerOn, setPointerOn] = useState<string>()
     const groupRef = useRef<SVGGElement>(null)
 
-    const geom = useMemo(() => computeSliceGeometry(slices), [slices]);
+    // The balloon opens under the pointer, and stays open while something
+    // elsewhere holds one of its slices, so that a motivation chosen on the
+    // roll can be read here as well.
+    const selected = slices.find(s => s.selected)
+    const open = pointerInside || Boolean(selected)
+    const current = slices.find(s => s.id === pointerOn) ?? selected
 
     const ab = sub(b, a);
     const L = len(ab);
-    const totalHalfWidth = (hovered ? 0.25 : 0.05) * L; // scale factor; tweak as desired.
+    const totalHalfWidth = (open ? openReach : restReach) * L;
+
+    const geom = useMemo(
+        () => computeSliceGeometry(slices, 2 * totalHalfWidth),
+        [slices, totalHalfWidth]
+    );
 
     const boundaryOffsets = geom.boundaryOffsets01.map((t) => t * 2 * totalHalfWidth); // [-half,+half]
-
-    // Compute bounds for a reasonable viewBox.
-    const abUnit = unit(ab);
-    const n = perp(abUnit);
-    const allPts: Pt[] = [a, b];
-    for (const off of boundaryOffsets) {
-        allPts.push(add(add(a, mul(abUnit, 0.5 * L)), mul(n, off)));
-    }
 
     const slicePaths = geom.orderedSlices.flatMap((s, i) => {
         const left = boundaryOffsets[i];
@@ -204,63 +240,45 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick }: Slic
     const rightmost = boundaryOffsets.at(-1) ?? 0;
     const outlineD = `${boundaryCubicPath(a, b, leftmost)} ${boundaryCubicPathReversed(a, b, rightmost)}`;
 
-    useEffect(() => {
-        if (slices.some(s => s.selected) && !currentSlice) {
-            setCurrentSlice(slices.find(s => s.selected))
-            setHovered(true)
-        }
-        else {
-            setCurrentSlice(undefined)
-            setHovered(false)
-        }
-        // `currentSlice` guards against overwriting the slice the pointer is on.
-        // Listing it would re-run this and clear the slice it has just shown.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [slices])
+    /** The slice the pointer has moved onto, told to the parent once. */
+    const goTo = (slice: Slice) => {
+        if (slice.id === pointerOn) return
+        setPointerOn(slice.id)
+        onSliceHover?.(slice)
+    }
 
     return (
         <g
             ref={groupRef}
-            onMouseEnter={() => setHovered(true)}
+            onMouseEnter={() => setPointerInside(true)}
             onMouseLeave={() => {
-                setHovered(false)
-                if (Date.now() - clickTime.current > 200) {
-                    onSliceClick?.(null)
-                }
+                setPointerInside(false)
+                setPointerOn(undefined)
+                onSliceHover?.(null)
             }}
         >
-            {hovered ?
-                (slicePaths.map(({ slice, d }) => (
-                    <path
-                        key={slice.id}
-                        d={d}
-                        fill={'black'}
-                        fillOpacity={currentSlice?.id === slice.id ? 1 : 0.4}
-                        stroke="white"
-                        strokeWidth={1.5}
-                        vectorEffect="non-scaling-stroke"
-                        onMouseOver={() => {
-                            setCurrentSlice(slice)
-                            onSliceHover?.(slice)
-                        }}
-                        onMouseLeave={() => {
-                            setCurrentSlice(undefined)
-                            onSliceHover?.(null)
-                        }}
-                        onClick={() => {
-                            clickTime.current = Date.now()
-                            onSliceClick?.(slice)
-                        }}
-                    />
-                ))
-                )
-                : (<path
-                    d={outlineD}
-                    fill="gray"
-                    fillOpacity={0.5}
-                />)}
+            <path d={outlineD} fill="gray" fillOpacity={open ? 0 : 0.5} />
+
+            {slicePaths.map(({ slice, d }) => (
+                <path
+                    key={slice.id}
+                    d={d}
+                    fill="black"
+                    fillOpacity={open ? (current?.id === slice.id ? 1 : 0.4) : 0}
+                    stroke={open ? 'white' : 'none'}
+                    strokeWidth={1.5}
+                    vectorEffect="non-scaling-stroke"
+                    // A slice is taken up by the pointer moving over it, not by
+                    // the balloon opening under a pointer that came to a stop.
+                    onMouseMove={() => { if (open) goTo(slice) }}
+                    onClick={() => onSliceClick?.(slice)}
+                />
+            ))}
+
+            {children}
+
             <Popper
-                open={Boolean(currentSlice)}
+                open={Boolean(current)}
                 anchorEl={() => groupRef.current!}
                 placement="left"
                 sx={{ pointerEvents: 'none', zIndex: theme => theme.zIndex.tooltip }}
@@ -274,7 +292,7 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick }: Slic
                     maxWidth: 260,
                     fontSize: 14,
                 }}>
-                    {currentSlice?.description}
+                    {current?.description}
                 </div>
             </Popper>
         </g>

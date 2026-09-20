@@ -540,7 +540,7 @@ export const LinkContainer = ({
                                 strokeWidth={2}
                             />
                         )}
-                        {motivations.length > 0 && (
+                        {motivations.length > 0 ? (
                             <SlicedBalloon
                                 slices={
                                     motivations.map(m => {
@@ -560,20 +560,16 @@ export const LinkContainer = ({
                                     setSelection(m ? [{ versionId: source.id, motivation: m }] : [])
                                 }}
                                 onSliceClick={(slice) => {
-                                    if (slice) {
-                                        const m = motivations.find(m => m.id === slice.id)
-                                        if (m) {
-                                            onVersionClick(source.id)
-                                            queueMicrotask(() =>
-                                                setSelection([{ versionId: source.id, motivation: m }]))
-                                        }
-                                    } else {
-                                        setSelection([])
-                                    }
+                                    const m = motivations.find(m => m.id === slice.id)
+                                    if (!m) return
+                                    onVersionClick(source.id)
+                                    queueMicrotask(() =>
+                                        setSelection([{ versionId: source.id, motivation: m }]))
                                 }}
-                            />
-                        )}
-                        {mark}
+                            >
+                                {mark}
+                            </SlicedBalloon>
+                        ) : mark}
                     </g>
                 )
             })}
