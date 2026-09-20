@@ -39,7 +39,7 @@ const restReach = 0.05;
  * - Place into a target left-to-right array by filling from the center outward,
  *   alternating left/right.
  */
-export function orderSlicesCenterWeighted(slices: Slice[]): Slice[] {
+export function orderSlicesCenterWeighted(slices: readonly Slice[]): Slice[] {
     const withIdx = slices.map((s, i) => ({ ...s, __i: i }));
     withIdx.sort((p, q) => (q.count - p.count) || (p.__i - q.__i));
 
@@ -124,7 +124,7 @@ const weightOf = (count: number) =>
  * the others give up the difference in proportion, so the narrowest slices
  * state that they are the smallest rather than how small they are.
  */
-export function computeSliceGeometry(slices: Slice[], totalWidth: number) {
+export function computeSliceGeometry(slices: readonly Slice[], totalWidth: number) {
     const ordered = orderSlicesCenterWeighted(slices);
     const weights = ordered.map((s) => weightOf(s.count));
     const sum = weights.reduce((a, b) => a + b, 0);
@@ -195,6 +195,35 @@ export function boundaryCubicPathReversed(a: Pt, b: Pt, offset: number): string 
     return `M ${b.x} ${b.y} C ${c2.x} ${c2.y} ${c1.x} ${c1.y} ${a.x} ${a.y}`;
 }
 
+/** How far the balloon reaches from the line to either side. */
+const halfWidthOf = (a: Pt, b: Pt, open: boolean) =>
+    (open ? openReach : restReach) * len(sub(b, a));
+
+/**
+ * A boundary carries its whole offset at its control points, so halfway
+ * along the balloon it stands at three quarters of it.
+ */
+const midwayShare = 0.75;
+
+/**
+ * Where a slice of the opened balloon sits: halfway along it, and across
+ * it in the middle of the slice's own width. Nothing where the balloon
+ * has no such slice.
+ */
+export function sliceCentre(a: Pt, b: Pt, slices: readonly Slice[], sliceId: string): Pt | undefined {
+    const halfWidth = halfWidthOf(a, b, true);
+    const { orderedSlices, boundaryOffsets01 } = computeSliceGeometry(slices, 2 * halfWidth);
+
+    const at = orderedSlices.findIndex((slice) => slice.id === sliceId);
+    const left = boundaryOffsets01[at];
+    const right = boundaryOffsets01[at + 1];
+    if (left === undefined || right === undefined) return undefined;
+
+    const offset = (left + right) / 2 * 2 * halfWidth * midwayShare;
+    const ab = sub(b, a);
+    return add(add(a, mul(ab, 0.5)), mul(perp(unit(ab)), offset));
+}
+
 /**
  * Sliced balloon between A and B. Slice widths follow the weight of their
  * count. The largest slices are centered via ordering.
@@ -216,9 +245,7 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, childr
     const open = pointerInside || Boolean(selected)
     const current = slices.find(s => s.id === pointerOn) ?? selected
 
-    const ab = sub(b, a);
-    const L = len(ab);
-    const totalHalfWidth = (open ? openReach : restReach) * L;
+    const totalHalfWidth = halfWidthOf(a, b, open);
 
     const geom = useMemo(
         () => computeSliceGeometry(slices, 2 * totalHalfWidth),

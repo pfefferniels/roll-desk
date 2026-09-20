@@ -1,4 +1,4 @@
-import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, EditionView, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useMemo, useRef, useState } from "react"
@@ -7,11 +7,17 @@ import { ReactNode, SVGProps, useEffect } from "react";
 import { EditionContext } from '../../providers/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../../providers/SelectionContext';
-import { SlicedBalloon } from './SlicedBalloon';
+import { Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
 import { Arguable } from './Arguable';
 import { along, minus, perpendicular, point, Point, unit } from '../../helpers/drawing';
-import { isHeldMotivation, sameMotivation } from '../../helpers/motivation';
+import { HeldMotivation, isHeldMotivation, sameMotivation } from '../../helpers/motivation';
 import { Svg, svg } from '../../helpers/units';
+
+/** How far inside the drawing's edge a slice is brought when it is moved into view. */
+const revealMargin = svg(40)
+
+/** How long that move takes, short enough to read as the drawing following the pointer. */
+const revealDuration = 300
 
 interface Stemma {
     currentVersionId: string | undefined
@@ -24,9 +30,11 @@ interface Stemma {
 
 export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 }: Stemma) => {
     const { edition, view } = useContext(EditionContext)
+    const { selection } = useSelection(isHeldMotivation)
 
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
+    const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>(null)
     const svgWidth = 300
     const svgHeight = height
     const versions = edition?.versions
@@ -59,6 +67,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
             .on("zoom", zoomed)
 
         svg.call(zoom)
+        zoomRef.current = zoom
 
         const initialTransform = d3.zoomIdentity
             .translate(svgWidth / 2, svgHeight / 2)
@@ -71,8 +80,40 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
 
         return () => {
             svg.on(".zoom", null)
+            zoomRef.current = null
         }
     }, [nodes, fit, svgWidth, svgHeight])
+
+    // The slice of the motivation in focus, which an edit on the roll puts
+    // there by being hovered.
+    const inFocus = useMemo(() => {
+        const [held] = selection
+        return held && view ? sliceAt(held, { nodes, links }, view) : undefined
+    }, [selection, nodes, links, view])
+
+    // A motivation chosen elsewhere is read on its slice, so the drawing
+    // moves to it where the zoom has left it off the edge.
+    useEffect(() => {
+        const zoom = zoomRef.current
+        if (!inFocus || !zoom || !svgRef.current) return
+
+        const transform = d3.zoomTransform(svgRef.current)
+        const [x, y] = transform.apply([inFocus.x, inFocus.y])
+        const shift = shiftIntoView(
+            point(svg(x), svg(y)),
+            { width: svg(svgWidth), height: svg(svgHeight) },
+            revealMargin
+        )
+        if (!shift) return
+
+        // `translateBy` moves the drawing in its own units, which the zoom
+        // has scaled against the screen.
+        zoom.translateBy(
+            d3.select(svgRef.current).transition().duration(revealDuration),
+            shift.x / transform.k,
+            shift.y / transform.k
+        )
+    }, [inFocus, svgWidth, svgHeight])
 
     return (
         <Box sx={{ position: 'relative', width: svgWidth, height: svgHeight, flexShrink: 0 }}>
@@ -234,6 +275,69 @@ export const graphOf = (
     })
 
     return { nodes, links }
+}
+
+/**
+ * The motivations a derivation's balloon is sliced by, each weighed by the
+ * edits held under it and told whether it is one of those in focus.
+ */
+export const slicesOf = (version: Version, inFocus: readonly HeldMotivation[] = []): Slice[] => {
+    const edits = editsOf(version)
+
+    return version.motivations.map(motivation => ({
+        id: motivation.id,
+        count: edits.filter(edit => edit.motivation === motivation.id).length,
+        description: motivation.note || 'No description',
+        selected: inFocus.some(held => sameMotivation(held, { versionId: version.id, motivation }))
+    }))
+}
+
+/** The version a node stands for, where the drawing has placed it. */
+const placed = (nodes: readonly Node[], id: string): Point | undefined => {
+    const node = nodes.find(node => node.id === id)
+    return node?.x !== undefined && node.y !== undefined ? point(svg(node.x), svg(node.y)) : undefined
+}
+
+/**
+ * Where the slice of a motivation is drawn: on the balloon of the
+ * derivation the version holding it is read against. Nothing where that
+ * derivation is not drawn, since a motivation has no place of its own.
+ */
+export const sliceAt = (
+    held: HeldMotivation,
+    { nodes, links }: { nodes: readonly Node[], links: readonly Link[] },
+    view: EditionView
+): Point | undefined => {
+    const link = links.find(link => link.principal && (link.source as Node).id === held.versionId)
+    const version = view.get<Version>(held.versionId)
+    if (!link || !version) return undefined
+
+    const source = placed(nodes, held.versionId)
+    const target = placed(nodes, (link.target as Node).id)
+    if (!source || !target) return undefined
+
+    const centre = sliceCentre(source, target, slicesOf(version), held.motivation.id)
+    return centre && point(svg(centre.x), svg(centre.y))
+}
+
+/** How far a place is moved along one axis to bring it inside, clear of the edge by the margin. */
+const towardsView = (at: Svg, extent: Svg, margin: Svg): Svg => {
+    if (at < margin) return svg(margin - at)
+    if (at > extent - margin) return svg(extent - margin - at)
+    return svg(0)
+}
+
+/** How far the drawing must move for a place on it to come into view, and nothing where it already is. */
+export const shiftIntoView = (
+    at: Point,
+    viewport: { width: Svg, height: Svg },
+    margin: Svg
+): Point | undefined => {
+    const shift = point(
+        towardsView(at.x, viewport.width, margin),
+        towardsView(at.y, viewport.height, margin)
+    )
+    return shift.x === 0 && shift.y === 0 ? undefined : shift
 }
 
 /** The scale and the centre that fit every node into the drawing, with a margin left around them. */
@@ -510,9 +614,6 @@ export const LinkContainer = ({
 
                 const version = view?.get<Version>(source.id)
                 const motivations = version?.motivations ?? []
-                // The version's own edits, since an edit of another version
-                // may name a motivation of the same id.
-                const edits = version ? editsOf(version) : []
 
                 return (
                     <g key={`link_${i}`}>
@@ -540,19 +641,9 @@ export const LinkContainer = ({
                                 strokeWidth={2}
                             />
                         )}
-                        {motivations.length > 0 ? (
+                        {version && motivations.length > 0 ? (
                             <SlicedBalloon
-                                slices={
-                                    motivations.map(m => {
-                                        return {
-                                            count: edits.filter(edit => edit.motivation === m.id).length,
-                                            id: m.id,
-                                            selected: selection.some(held =>
-                                                sameMotivation(held, { versionId: source.id, motivation: m })),
-                                            description: m.note || 'No description'
-                                        }
-                                    })
-                                }
+                                slices={slicesOf(version, selection)}
                                 a={{ x: source.x, y: source.y }}
                                 b={{ x: target.x, y: target.y }}
                                 onSliceHover={(slice) => {

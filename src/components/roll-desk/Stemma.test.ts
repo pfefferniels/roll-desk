@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, fitOf, graphOf, linkMarkAt, Node, radiusOf } from './Stemma'
+import { calculatePositions, fitOf, graphOf, linkMarkAt, Node, radiusOf, shiftIntoView } from './Stemma'
 import { point } from '../../helpers/drawing'
 import { svg } from '../../helpers/units'
 
@@ -120,6 +120,26 @@ describe('where the mark of a derivation sits', () => {
         const at = point(svg(5), svg(5))
 
         expect(linkMarkAt(at, at, svg(20))).toEqual(at)
+    })
+})
+
+describe('moving a place into view', () => {
+    const viewport = { width: svg(300), height: svg(600) }
+
+    it('leaves the drawing alone where the place is already in view', () => {
+        expect(shiftIntoView(point(svg(150), svg(300)), viewport, svg(40))).toBeUndefined()
+    })
+
+    it('leaves it alone where the place is just inside the margin', () => {
+        expect(shiftIntoView(point(svg(40), svg(560)), viewport, svg(40))).toBeUndefined()
+    })
+
+    it('brings a place off the near edge in as far as the margin, and no further', () => {
+        expect(shiftIntoView(point(svg(-10), svg(300)), viewport, svg(40))).toEqual(point(svg(50), svg(0)))
+    })
+
+    it('brings a place off the far edge in the other way', () => {
+        expect(shiftIntoView(point(svg(150), svg(700)), viewport, svg(40))).toEqual(point(svg(0), svg(-140)))
     })
 })
 
