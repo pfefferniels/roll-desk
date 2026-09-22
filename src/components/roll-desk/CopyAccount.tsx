@@ -1,10 +1,11 @@
 import { Link, Stack, Typography } from "@mui/material"
-import { FeatureSource, sourceLabels } from "linked-rolls"
+import { FeatureSource, PerforatorSetting, sourceLabels } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { copyAccount } from "../../helpers/account"
 import { dateStatement } from "../../helpers/dateStatement"
 import { heldBy } from "../../helpers/heldBy"
+import { settingStatements } from "../../helpers/perforatorSetting"
 import { webAddressOf } from "../../helpers/reasons"
 import { AccountSection, HeldStatement } from "./Account"
 import { Arguable } from "./Arguable"
@@ -48,6 +49,27 @@ const SourceAccount = ({ source }: { source: FeatureSource }) => (
     </>
 )
 
+/** How the perforator was set when it punched the copy, as far as the perforations show it. */
+const SettingAccount = ({ setting }: { setting: PerforatorSetting }) => (
+    <>
+        {settingStatements(setting).map(({ statement, detail, belief }) => (
+            <div key={statement}>
+                <HeldStatement belief={belief}>{statement}</HeldStatement>
+                {detail && (
+                    <Typography variant='caption' color='text.secondary' component='div' sx={{ pl: 1.5 }}>
+                        {detail}
+                    </Typography>
+                )}
+            </div>
+        ))}
+        {setting.description && (
+            <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
+                <NoteText note={setting.description} />
+            </Typography>
+        )}
+    </>
+)
+
 /** What the edition states of a copy and why: where its features come from, and which versions it carries. */
 export const CopyAccount = ({ copyId }: { copyId: string }) => {
     const { view } = useContext(EditionContext)
@@ -55,6 +77,8 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
     if (!view || !account) return null
 
     const { copy, carriages, reservations } = account
+    const setting = copy.production?.perforator?.condition
+    const statesSetting = setting && (settingStatements(setting).length > 0 || setting.description)
 
     return (
         <Stack spacing={1}>
@@ -88,6 +112,12 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
                     </HeldStatement>
                 ))}
             </AccountSection>
+
+            {statesSetting && (
+                <AccountSection title='Perforator'>
+                    <SettingAccount setting={setting} />
+                </AccountSection>
+            )}
 
             {reservations.length > 0 && (
                 <AccountSection title='Reservations'>
