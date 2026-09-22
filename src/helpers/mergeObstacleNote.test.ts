@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { AnyFeature, Hole, Mark, assignObject, mergeObstacle, mm, track } from 'linked-rolls'
+import { AnyFeature, HoleChain, Mark, assignObject, mergeObstacle, mm, track } from 'linked-rolls'
 import { mergeObstacleFor, mergeObstacleNote } from './mergeObstacleNote'
 import { fixtureEdition, viewOf } from './editionFixture'
 
-const hole = (from: number, position: number, rest: Partial<Hole> = {}): Hole => ({
-    type: 'Hole',
+const hole = (from: number, position: number, rest: Partial<HoleChain> = {}): HoleChain => ({
+    type: 'HoleChain',
     id: `hole-${from}`,
     horizontal: { unit: 'mm', from: mm(from), to: mm(from + 2) },
     vertical: { unit: 'track', from: track(position) },

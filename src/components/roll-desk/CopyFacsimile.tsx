@@ -156,7 +156,7 @@ const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
         <g className="feature">
             {(feature.type === 'GluedOn') && <GluedOnFeature feature={feature} color={color} onClick={onClick} />}
             {feature.type === 'Writing' && <WritingFeature feature={feature} color={color} onClick={onClick} />}
-            {(feature.type === 'Hole') && <HoleFeature feature={feature} color={color} onClick={onClick} />}
+            {(feature.type === 'HoleChain') && <HoleChainFeature feature={feature} color={color} onClick={onClick} />}
             {(feature.type === 'Mark') && <MarkFeature feature={feature} color={color} onClick={onClick} />}
 
             {(feature.condition && conditionPath) && (
@@ -324,7 +324,7 @@ const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
     );
 };
 
-const HoleFeature = ({ feature, onClick, color }: FeatureProps) => {
+const HoleChainFeature = ({ feature, onClick, color }: FeatureProps) => {
     const geometry = usePinchZoom();
 
     const isExpression = geometry.roleOf(feature.vertical.from)?.includes('expression')

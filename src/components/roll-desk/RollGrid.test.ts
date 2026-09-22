@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Hole, mm, Note, pixelsPerInch, px, Resolution, RollCopy, track } from 'linked-rolls'
+import { HoleChain, mm, Note, pixelsPerInch, px, Resolution, RollCopy, track } from 'linked-rolls'
 import { isBand, selectionAsIIIFLink, selectionOf } from './RollGrid'
 import { EventDimension } from './RollDesk'
 
@@ -53,7 +53,7 @@ describe('the band among the selected items', () => {
     })
 
     it('is not a feature, which carries a span of its own', () => {
-        const hole: Hole = { ...span, id: 'hole', type: 'Hole' }
+        const hole: HoleChain = { ...span, id: 'hole', type: 'HoleChain' }
 
         expect(isBand(hole)).toBe(false)
     })

@@ -59,7 +59,7 @@ const [onAt, leftoverHole, offAt] = [onStanford1(on).horizontal.from, onStanford
 const leftoverAt = leftoverHole.horizontal.from
 const insideTheCrescendo = leftover.expressionType === 'SlowCrescendoOn' && leftover.scope === 'bass' && onAt < leftoverAt && leftoverAt < offAt
 const crescendoLengths = stanford1.features
-    .filter((f: Json) => f['@type'] === 'Hole' && [3, 4].includes(f.vertical.from))
+    .filter((f: Json) => f['@type'] === 'HoleChain' && [3, 4].includes(f.vertical.from))
     .map((f: Json) => f.horizontal.to - f.horizontal.from)
 
 b.edits = editsOf(b)

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { Hole, Millimeters, mm, scale, track } from 'linked-rolls'
+import { HoleChain, Millimeters, mm, scale, track } from 'linked-rolls'
 import { spanOf } from './AlignmentPreview'
 
 /** Notes on twelve neighbouring tracks of the Welte T-100, one every 40 mm. */
-const ascendingNotes = (factor: number): Hole[] =>
+const ascendingNotes = (factor: number): HoleChain[] =>
     Array.from({ length: 12 }, (_, i) => ({
-        type: 'Hole',
+        type: 'HoleChain',
         id: `hole-${i}`,
         horizontal: { unit: 'mm', from: mm((100 + i * 40) * factor), to: mm((104 + i * 40) * factor) },
         vertical: { unit: 'track', from: track(11 + i) }
