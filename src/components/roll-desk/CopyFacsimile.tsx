@@ -1,7 +1,7 @@
 import {
     featuresOf,
     FeatureOrPatch,
-    GluedOn,
+    Patch,
     Path,
     RollCopy,
     Writing,
@@ -154,7 +154,7 @@ const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
 
     return (
         <g className="feature">
-            {(feature.type === 'GluedOn') && <GluedOnFeature feature={feature} color={color} onClick={onClick} />}
+            {(feature.type === 'Patch') && <PatchFeature feature={feature} color={color} onClick={onClick} />}
             {feature.type === 'Writing' && <WritingFeature feature={feature} color={color} onClick={onClick} />}
             {(feature.type === 'HoleChain') && <HoleChainFeature feature={feature} color={color} onClick={onClick} />}
             {(feature.type === 'Mark') && <MarkFeature feature={feature} color={color} onClick={onClick} />}
@@ -179,7 +179,7 @@ const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
     );
 }
 
-const GluedOnFeature = ({ feature, color }: FeatureProps<GluedOn>) => {
+const PatchFeature = ({ feature, color }: FeatureProps<Patch>) => {
     const { x, y, width, height } = boxOf(feature, usePinchZoom());
 
     return (
