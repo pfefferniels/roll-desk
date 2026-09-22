@@ -11,11 +11,12 @@ const hole = (from: number, position: number, rest: Partial<Hole> = {}): Hole =>
     ...rest
 })
 
-const mark = (from: number, position: number): Mark => ({
+const mark = (from: number, position: number, rest: Partial<Mark> = {}): Mark => ({
     type: 'Mark',
     id: `mark-${from}`,
     horizontal: { unit: 'mm', from: mm(from), to: mm(from + 2) },
-    vertical: { unit: 'track', from: track(position) }
+    vertical: { unit: 'track', from: track(position) },
+    ...rest
 })
 
 const torn = assignObject({ type: 'ConditionState', conditionType: 'partially-torn' } as const)
@@ -26,7 +27,7 @@ const selections: AnyFeature[][] = [
     [hole(1000, 47)],
     [hole(1000, 47), mark(1010, 47)],
     [hole(1000, 47), hole(1010, 48)],
-    [hole(1000, 47), hole(1010, 47, { pattern: 'staggering' })],
+    [mark(1000, 47), mark(1010, 47, { technique: 'stamp' })],
     [hole(1000, 47, { condition: torn }), hole(1010, 47, { condition: missing })]
 ]
 
