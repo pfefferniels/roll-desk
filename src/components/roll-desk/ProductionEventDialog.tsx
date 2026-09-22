@@ -41,6 +41,8 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
     const handleDone = () => {
         const paperSpeed = paperSpeedOf(speed)
         onDone({
+            // the punched features and the perforator are not edited here and must survive
+            ...event,
             company: namedOrNone(company, companyAuthority),
             paper: namedOrNone(paper, paperAuthority),
             date,
