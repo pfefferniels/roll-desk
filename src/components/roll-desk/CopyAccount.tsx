@@ -1,11 +1,11 @@
 import { Link, Stack, Typography } from "@mui/material"
-import { FeatureSource, PerforatorSetting, sourceLabels } from "linked-rolls"
+import { FeatureSource, Path, Perforator, sourceLabels } from "linked-rolls"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { copyAccount } from "../../helpers/account"
 import { dateStatement } from "../../helpers/dateStatement"
 import { heldBy } from "../../helpers/heldBy"
-import { settingStatements } from "../../helpers/perforatorSetting"
+import { perforatorStatements } from "../../helpers/perforatorStatements"
 import { webAddressOf } from "../../helpers/reasons"
 import { AccountSection, HeldStatement } from "./Account"
 import { Arguable } from "./Arguable"
@@ -49,12 +49,17 @@ const SourceAccount = ({ source }: { source: FeatureSource }) => (
     </>
 )
 
-/** How the perforator was set when it punched the copy, as far as the perforations show it. */
-const SettingAccount = ({ setting }: { setting: PerforatorSetting }) => (
+/**
+ * How the perforator that punched the copy was driven and set, as far
+ * as the perforations show it, each statement open to a belief.
+ */
+const PerforatorAccount = ({ perforator, path }: { perforator: Perforator, path: Path }) => (
     <>
-        {settingStatements(setting).map(({ statement, detail, belief }) => (
+        {perforatorStatements(perforator).map(({ at, statement, detail }) => (
             <div key={statement}>
-                <HeldStatement belief={belief}>{statement}</HeldStatement>
+                <Typography variant='body2' component='div'>
+                    <Arguable path={[...path, ...at]}>{statement}</Arguable>
+                </Typography>
                 {detail && (
                     <Typography variant='caption' color='text.secondary' component='div' sx={{ pl: 1.5 }}>
                         {detail}
@@ -62,9 +67,9 @@ const SettingAccount = ({ setting }: { setting: PerforatorSetting }) => (
                 )}
             </div>
         ))}
-        {setting.description && (
+        {perforator.condition?.description && (
             <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
-                <NoteText note={setting.description} />
+                <NoteText note={perforator.condition.description} />
             </Typography>
         )}
     </>
@@ -77,15 +82,16 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
     if (!view || !account) return null
 
     const { copy, carriages, reservations } = account
-    const setting = copy.production?.perforator?.condition
-    const statesSetting = setting && (settingStatements(setting).length > 0 || setting.description)
+    const copyPath = view.getPath(copyId) ?? []
+    const perforator = copy.production?.perforator
+    const statesPerforator = perforator && (perforatorStatements(perforator).length > 0 || perforator.condition?.description)
 
     return (
         <Stack spacing={1}>
             <Typography variant='caption' color='text.secondary'>
                 {copy.keeper
                     ? (
-                        <Arguable path={[...(view.getPath(copyId) ?? []), 'keeper']}>
+                        <Arguable path={[...copyPath, 'keeper']}>
                             held by {heldBy(copy)}
                         </Arguable>
                     )
@@ -113,9 +119,9 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
                 ))}
             </AccountSection>
 
-            {statesSetting && (
+            {statesPerforator && (
                 <AccountSection title='Perforator'>
-                    <SettingAccount setting={setting} />
+                    <PerforatorAccount perforator={perforator} path={[...copyPath, 'production', 'perforator']} />
                 </AccountSection>
             )}
 

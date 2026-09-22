@@ -1,8 +1,10 @@
 import { Button, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import { DateAssignment, Named, ProductionEvent, systemOf, TrackerBar, trackerBarOf, welteT100 } from "linked-rolls";
+import { v4 } from "uuid";
+import { noPerforator, PerforatorInput, perforatorInputOf, perforatorOf } from "../../helpers/perforatorInput";
 import { DateStatementField } from "./DateStatementField";
-import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
+import { noSpeed, PaperSpeedFields, paperSpeedOf, PerforatorFields, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
 
 interface ProductionEventDialog {
     open: boolean
@@ -25,6 +27,7 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
     const [date, setDate] = useState<DateAssignment>();
     const [system, setSystem] = useState<TrackerBar>(editionBar)
     const [speed, setSpeed] = useState<SpeedInput>(noSpeed)
+    const [perforator, setPerforator] = useState<PerforatorInput>(noPerforator)
 
     useEffect(() => {
         if (!event) return
@@ -36,19 +39,21 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         setDate(event.date)
         setSystem(trackerBarOf(event.system) ?? editionBar)
         setSpeed(speedInputOf(event.speed))
+        setPerforator(perforatorInputOf(event.perforator))
     }, [event, editionBar])
 
     const handleDone = () => {
         const paperSpeed = paperSpeedOf(speed)
         onDone({
-            // the punched features and the perforator are not edited here and must survive
+            // the punched features are not edited here and must survive
             ...event,
             company: namedOrNone(company, companyAuthority),
             paper: namedOrNone(paper, paperAuthority),
             date,
             system: systemOf(system),
             // the belief held about an earlier statement of the speed stays with the new value
-            speed: paperSpeed && { ...event?.speed, ...paperSpeed }
+            speed: paperSpeed && { ...event?.speed, ...paperSpeed },
+            perforator: perforatorOf(perforator, event?.perforator, () => `perforator_${v4()}`)
         });
     };
 
@@ -97,6 +102,8 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
                     />
                     <SystemSelect value={system} onChange={setSystem} />
                     <PaperSpeedFields value={speed} onChange={setSpeed} />
+                    <Typography>Perforator</Typography>
+                    <PerforatorFields value={perforator} onChange={setPerforator} />
                 </Stack>
             </DialogContent>
             <DialogActions>

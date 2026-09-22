@@ -1,5 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { feetPerMinute, metersPerMinute, PaperSpeed, RollTempo, TrackerBar, trackerBars } from "linked-rolls"
+import { drives, feetPerMinute, metersPerMinute, PaperSpeed, RollTempo, TrackerBar, trackerBars } from "linked-rolls"
+import { driveIdOf, LengthField, PerforatorInput } from "../../helpers/perforatorInput"
 
 /** The speed the edition lets the roll start at, as a paper speed. */
 export const tempoStartOf = (tempo: RollTempo): PaperSpeed =>
@@ -56,6 +57,48 @@ export const paperSpeedOf = ({ value, unit }: SpeedInput): PaperSpeed | undefine
 interface PaperSpeedFieldsProps {
     value: SpeedInput
     onChange: (speed: SpeedInput) => void
+}
+
+interface PerforatorFieldsProps {
+    value: PerforatorInput
+    onChange: (perforator: PerforatorInput) => void
+}
+
+/** The perforator a copy was punched on: how its punches were driven, and the setting its perforations show. */
+export const PerforatorFields = ({ value, onChange }: PerforatorFieldsProps) => {
+    const length = (field: LengthField, label: string) => (
+        <TextField
+            size='small'
+            label={label}
+            value={value[field]}
+            onChange={e => onChange({ ...value, [field]: e.target.value })}
+            fullWidth
+        />
+    )
+
+    return (
+        <Stack spacing={2}>
+            <FormControl size='small' fullWidth>
+                <InputLabel id='perforator-drive-label'>Drive</InputLabel>
+                <Select
+                    labelId='perforator-drive-label'
+                    label='Drive'
+                    value={value.drive}
+                    onChange={e => onChange({ ...value, drive: driveIdOf(e.target.value) })}
+                >
+                    <MenuItem value=''>not stated</MenuItem>
+                    {drives.map(drive => <MenuItem key={drive.id} value={drive.id}>{drive.name}</MenuItem>)}
+                </Select>
+            </FormControl>
+            {length('punchDiameter', 'Punch diameter (mm)')}
+            <Stack direction='row' spacing={1}>
+                {length('chainPitch', 'Chain pitch (mm)')}
+                {length('slot', 'Slot (mm)')}
+                {length('bridge', 'Bridge (mm)')}
+            </Stack>
+            {length('advance', 'Advance (mm)')}
+        </Stack>
+    )
 }
 
 /** The paper speed a copy was cut for, as its label or its format states it. */
