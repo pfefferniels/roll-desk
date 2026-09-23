@@ -287,7 +287,6 @@ const d1 = versionBy(document, 'D1')
 
 const b2: Json = {
     '@context': c['@context'],
-    '@type': 'Version',
     '@id': randomUUID(),
     siglum: 'B2',
     system: c.system,
@@ -658,7 +657,6 @@ const describeAdditions = (checks: readonly { edit: Json }[]): string => {
 const usedMotivations = [...new Set(d3Edits.flatMap(edit => ('motivation' in edit && edit.motivation ? [edit.motivation] : [])))]
 const d3: Json = {
     '@context': d1['@context'],
-    '@type': 'Version',
     '@id': randomUUID(),
     siglum: 'D3',
     system: d1.system,

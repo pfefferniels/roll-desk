@@ -51,7 +51,6 @@ const mergeFeatures = (parts: Json[]): string => {
             to: Math.max(...parts.map(part => part.horizontal.to))
         },
         condition: {
-            '@type': 'ConditionState',
             conditionType: 'missing-perforation',
             description: 'Nach der ersten Stanzung der Kette fehlt vermutlich ein Stanzschritt: die Brücke misst im Scan '
                 + '1,6 mm, die übrigen 0,8 bis 0,9 mm.'

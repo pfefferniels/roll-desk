@@ -35,7 +35,7 @@ export function FeatureConditionDialog({ open, feature, onClose, onDone }: Featu
             return;
         }
 
-        onDone({ type: 'ConditionState', conditionType, description });
+        onDone({ conditionType, description });
     };
 
     return (

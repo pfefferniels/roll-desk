@@ -186,7 +186,6 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 onClose={() => setReportRollCondition(false)}
                 onDone={(value) => {
                     apply(addGeneralCondition(copyId, assignObject({
-                        type: 'ConditionState',
                         conditionType: 'general',
                         description: value
                     })))

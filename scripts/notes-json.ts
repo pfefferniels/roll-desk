@@ -6,7 +6,7 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/notes-json.ts > notes.json
  */
 
-import { AnySymbol, EditionView, importJsonLd, migrate } from 'linked-rolls'
+import { EditionView, importJsonLd, migrate } from 'linked-rolls'
 import { copyLabel, nameOf } from '../src/helpers/names'
 import { Json, readEdition } from './storedEdition'
 
@@ -30,7 +30,7 @@ const aliases: Record<string, string> = {}
 const targets: Record<string, string> = {}
 
 const describe = (id: string) => {
-    const symbol = view.get<AnySymbol>(id)
+    const symbol = view.symbol(id)
     if (!symbol) return 'nicht gefunden'
     const what = 'expressionType' in symbol ? `${symbol.expressionType} ${symbol.scope ?? ''}`.trim()
         : 'pitch' in symbol ? `Ton ${symbol.pitch}` : symbol.type

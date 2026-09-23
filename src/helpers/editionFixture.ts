@@ -24,7 +24,6 @@ const expression = (id: string, expressionType: string, carrier: string): Expres
 })
 
 const version = (id: string, edits: Version['edits'], basedOn?: string): Version => ({
-    type: 'Version',
     id,
     system: systemOf(welteT100),
     edits,

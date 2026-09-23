@@ -22,7 +22,7 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: Comm
 
     const displayDetails = hovered || marked
 
-    const features = useMemo(() => view?.carriersOf(symbol) ?? [], [view, symbol]);
+    const features = useMemo(() => view?.placedCarriersOf(symbol) ?? [], [view, symbol]);
 
     const { onsets, offsets } = useMemo(() => ({
         onsets: features.map(e => e.horizontal.from).sort(),

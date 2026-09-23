@@ -88,7 +88,7 @@ export const displacedEvents = (
     epsilon = 1e-6
 ): Displacement[] =>
     events.flatMap(event => {
-        const symbol = view.get<AnySymbol>(event.id)
+        const symbol = view.symbol(event.id)
         if (!isCommand(symbol)) return []
         const measured = view.placeOf(symbol)
         if (!measured || Math.abs(event.horizontal.from - measured.from) <= epsilon) return []

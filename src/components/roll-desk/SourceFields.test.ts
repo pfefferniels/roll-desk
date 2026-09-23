@@ -58,7 +58,7 @@ describe('reading a source from what was typed', () => {
             instrument: {
                 name: 'a Vorsetzer',
                 sameAs: [],
-                condition: { type: 'ConditionState' as const, conditionType: 'general' as const, description: 'regulated for the recording' }
+                condition: { conditionType: 'general' as const, description: 'regulated for the recording' }
             }
         }
 

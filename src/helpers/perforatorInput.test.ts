@@ -14,7 +14,6 @@ const surveyed = (): Perforator => ({
     id: 'perforator_first',
     drive: { id: asynchronous, ...held },
     condition: {
-        type: 'ConditionState',
         conditionType: 'setting',
         description: 'read off the IIIF images',
         punchDiameter: { value: mm(2.609615237857799), unit: 'mm', ...held },
@@ -53,7 +52,7 @@ describe('editing the perforator a copy was punched on', () => {
         expect(after).toEqual({
             type: 'Perforator',
             id: 'perforator_first',
-            condition: { type: 'ConditionState', conditionType: 'setting', description: 'read off the IIIF images' }
+            condition: { conditionType: 'setting', description: 'read off the IIIF images' }
         })
     })
 
@@ -63,7 +62,7 @@ describe('editing the perforator a copy was punched on', () => {
             type: 'Perforator',
             id: 'perforator_new',
             drive: { id: ramHead },
-            condition: { type: 'ConditionState', conditionType: 'setting', punchDiameter: { value: 2.2, unit: 'mm' } }
+            condition: { conditionType: 'setting', punchDiameter: { value: 2.2, unit: 'mm' } }
         })
     })
 

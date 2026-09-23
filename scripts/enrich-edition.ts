@@ -637,7 +637,6 @@ const splitOffStanfordUnicum = (): string[] => {
     dropDeletions(ids)
 
     document.versions.push({
-        '@type': 'Version',
         '@id': randomUUID(),
         siglum: 'B1',
         system: JSON.parse(JSON.stringify(b.system)),

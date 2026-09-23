@@ -309,7 +309,7 @@ export const sliceAt = (
     view: EditionView
 ): Point | undefined => {
     const link = links.find(link => link.principal && (link.source as Node).id === held.versionId)
-    const version = view.get<Version>(held.versionId)
+    const version = view.version(held.versionId)
     if (!link || !version) return undefined
 
     const source = placed(nodes, held.versionId)
@@ -612,7 +612,7 @@ export const LinkContainer = ({
                     )
                 }
 
-                const version = view?.get<Version>(source.id)
+                const version = view?.version(source.id)
                 const motivations = version?.motivations ?? []
 
                 return (

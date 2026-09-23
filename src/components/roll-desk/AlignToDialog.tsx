@@ -66,7 +66,6 @@ export const AlignToDialog = ({ copy, onDone, onClose, open }: AlignToDialogProp
             return {
                 cause,
                 condition: assignObject<PaperStretch>({
-                    type: 'ConditionState',
                     conditionType: 'paper-stretch',
                     factor,
                     description: 'calculated by alignment'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { AnyCommand, AnySymbol, EditionOp, EditionView, constraintProblems, isCommand, mm, pairCommands, placeCommand } from 'linked-rolls'
+import { AnyCommand, EditionOp, EditionView, constraintProblems, isCommand, mm, pairCommands, placeCommand } from 'linked-rolls'
 import { fixtureEdition, ids, viewOf } from './editionFixture'
 import {
     ProblemKind, constraintsOf, describeCommand, describePlacement, displacedEvents,
@@ -35,7 +35,7 @@ const arranged = (arrange: Arrangement): EditionView => {
 }
 
 const command = (view: EditionView, id: string): AnyCommand => {
-    const symbol = view.get<AnySymbol>(id)
+    const symbol = view.symbol(id)
     if (!isCommand(symbol)) throw new Error(`no command ${id}`)
     return symbol
 }

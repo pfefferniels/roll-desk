@@ -32,8 +32,8 @@ export interface VersionAccount {
 
 /** The account of the version under the id, or nothing where the id names no version. */
 export const versionAccount = (view: EditionView, versionId: string): VersionAccount | undefined => {
-    const version = view.get<Version>(versionId)
-    if (version?.type !== 'Version') return undefined
+    const version = view.version(versionId)
+    if (!version) return undefined
 
     const principal = principalDerivationOf(version)
     const readAgainst = principal && idOf(principal)
@@ -85,8 +85,8 @@ const reachOf = (view: EditionView, carriage: Carriage): number =>
 
 /** The account of the copy under the id, or nothing where the id names no copy. */
 export const copyAccount = (view: EditionView, copyId: string): CopyAccount | undefined => {
-    const copy = view.get<RollCopy>(copyId)
-    if (copy?.type !== 'RollCopy') return undefined
+    const copy = view.copy(copyId)
+    if (!copy) return undefined
 
     return {
         copy,

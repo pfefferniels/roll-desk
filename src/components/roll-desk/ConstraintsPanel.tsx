@@ -1,5 +1,5 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnyCommand, AnySymbol, CarriageProblem, ConstraintProblem, Path, PlacementRelation, RollCopy, isCommand } from "linked-rolls"
+import { AnyCommand, CarriageProblem, ConstraintProblem, Path, PlacementRelation, isCommand } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSnapshot } from "../../hooks/useSnapshot"
@@ -49,7 +49,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
 
     const groups = problemsByVersion(problems, edition.versions)
     const describe = (id: string) => {
-        const symbol = view.get<AnySymbol>(id)
+        const symbol = view.symbol(id)
         return isCommand(symbol) ? describeCommand(symbol, view) : id
     }
 
@@ -87,7 +87,7 @@ const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) =>
     if (!view || problems.length === 0) return null
 
     const copyNamed = (id: string) => {
-        const copy = view.get<RollCopy>(id)
+        const copy = view.copy(id)
         return copy ? whichCopy(copy) : id
     }
 

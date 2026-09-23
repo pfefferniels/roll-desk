@@ -19,8 +19,8 @@ const mark = (from: number, position: number, rest: Partial<Mark> = {}): Mark =>
     ...rest
 })
 
-const torn = assignObject({ type: 'ConditionState', conditionType: 'partially-torn' } as const)
-const missing = assignObject({ type: 'ConditionState', conditionType: 'missing-perforation' } as const)
+const torn = assignObject({ conditionType: 'partially-torn' } as const)
+const missing = assignObject({ conditionType: 'missing-perforation' } as const)
 
 /** A selection per obstacle the library names, so that the notes stay tied to its answers. */
 const selections: AnyFeature[][] = [

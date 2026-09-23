@@ -101,7 +101,7 @@ export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, trans
 /** The symbols an edit does away with, those of them the edition still holds. */
 const deletedSymbolsOf = (edit: Edit, editionView: EditionView): AnySymbol[] =>
     (edit.delete ?? [])
-        .map(symbolId => editionView.get<AnySymbol>(symbolId))
+        .map(symbolId => editionView.symbol(symbolId))
         .filter(symbol => !!symbol)
 
 interface EditBoxes {

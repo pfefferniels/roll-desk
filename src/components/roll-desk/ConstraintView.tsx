@@ -127,7 +127,7 @@ export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewPro
     }
 
     const mark = (id: string) => {
-        const symbol = view.get<AnySymbol>(id)
+        const symbol = view.symbol(id)
         const box = isCommand(symbol) ? boxed(symbol) : undefined
         return box && <rect key={id} {...padded(box, svg(2))} {...problemLook} style={quiet} />
     }

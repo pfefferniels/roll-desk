@@ -1,6 +1,6 @@
 import { Delete } from "@mui/icons-material"
 import { IconButton, Link, List, ListItem, Stack, Typography } from "@mui/material"
-import { AnyArgumentation, AnyFeature, Belief, isSymbol, MeaningComprehension } from "linked-rolls"
+import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension } from "linked-rolls"
 import { ReactNode, useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../../helpers/reasons"
@@ -41,17 +41,11 @@ const Comprehended = ({ reason }: { reason: MeaningComprehension }) => {
     const { view } = useContext(EditionContext)
 
     return reason.comprehends.map((subject: string) => {
-        const target = view?.get(subject)
+        const target = view?.symbol(subject)
         const key = `comprehends-${subject}`
 
         if (!target) {
             return <span key={key}>{subject}</span>
-        }
-
-        if (!isSymbol(target)) {
-            // Meaning Comprehension can only target symbols
-            // (E73 Information Object, to be more precise)
-            return <span key={key}>unknown type</span>
         }
 
         const featurePath = view?.getPath(subject)?.slice(0, -1)

@@ -20,7 +20,7 @@ import {
  * not learn of statements made since, so each item is looked up afresh.
  */
 const current = (view: EditionView) => (item: UserSelection): UserSelection =>
-    'id' in item ? view.get<UserSelection>(item.id) ?? item : item
+    'id' in item ? view.symbol(item.id) ?? item : item
 
 type Candidates = { pair: [AnyCommand, AnyCommand]; relation: PlacementRelation }
 

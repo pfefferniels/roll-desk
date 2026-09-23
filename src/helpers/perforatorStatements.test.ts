@@ -7,7 +7,7 @@ const likely: Belief = { type: 'belief', id: 'belief-likely', certainty: 'likely
 const perforator = (setting: Partial<PerforatorSetting>, rest: Partial<Perforator> = {}): Perforator => ({
     type: 'Perforator',
     id: 'perforator',
-    condition: { type: 'ConditionState', conditionType: 'setting', ...setting },
+    condition: { conditionType: 'setting', ...setting },
     ...rest
 })
 

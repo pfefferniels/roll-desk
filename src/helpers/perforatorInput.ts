@@ -75,7 +75,6 @@ const settingOf = (input: PerforatorInput, before: PerforatorSetting | undefined
     if (!punchDiameter && !chainPitch && !advance && !description) return undefined
 
     return {
-        type: 'ConditionState',
         conditionType: 'setting',
         ...(description && { description }),
         ...(punchDiameter && { punchDiameter }),

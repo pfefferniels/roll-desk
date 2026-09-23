@@ -1,4 +1,4 @@
-import { EditionView, isMeasured, RollCopy, siglaOf, SourceKind, Version } from "linked-rolls"
+import { EditionView, isMeasured, RollCopy, siglaOf, SourceKind } from "linked-rolls"
 import { heldBy } from "./heldBy"
 
 /** Each kind of source as a title, where `sourceLabels` gives the phrase a sentence needs. */
@@ -31,8 +31,7 @@ export const versionLabel = (view: EditionView, versionId: string): string =>
 
 /** What a reader calls the version or the copy under the id, or nothing where it names neither. */
 export const nameOf = (view: EditionView, id: string): string | undefined => {
-    const entity = view.get<Version | RollCopy>(id)
-    if (entity?.type === 'Version') return versionLabel(view, entity.id)
-    if (entity?.type === 'RollCopy') return copyLabel(entity)
-    return undefined
+    if (view.version(id)) return versionLabel(view, id)
+    const copy = view.copy(id)
+    return copy && copyLabel(copy)
 }

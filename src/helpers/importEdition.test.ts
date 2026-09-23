@@ -5,21 +5,31 @@ import { fixtureEdition } from './editionFixture'
 
 /** The stored document has no type of its own, so the test shapes what it edits. */
 type Document = {
-    copies: { keeper: { name: string } }[]
+    copies: { keeper: { name: string }, conditions: { conditionType: string }[] }[]
     versions: object[]
 }
 
-const current = () => asJsonLd(fixtureEdition()) as Document
+const current = () => {
+    const edition = fixtureEdition()
+    const [first, ...rest] = edition.copies
+    if (!first) throw new Error('the fixture holds no copy')
+    const brittle = { ...first, conditions: [{ conditionType: 'general' as const, description: 'brittle' }] }
+    return asJsonLd({ ...edition, copies: [brittle, ...rest] }) as Document
+}
 
 const refusalIn = <T>(reading: Reading<T>): string | undefined =>
     'refusal' in reading ? reading.refusal : undefined
 
-/** The document as the 0.1 format wrote it: the keeper a string, the version typed by its typology. */
+/** The document as the 0.1 format wrote it: the keeper a string, versions and conditions typed by their typology. */
 const inOldFormat = () => {
     const document = current()
     return {
         ...document,
-        copies: document.copies.map(({ keeper, ...copy }) => ({ ...copy, location: keeper.name })),
+        copies: document.copies.map(({ keeper, conditions, ...copy }) => ({
+            ...copy,
+            location: keeper.name,
+            conditions: conditions.map(({ conditionType, ...condition }) => ({ ...condition, '@type': conditionType }))
+        })),
         versions: document.versions.map(version => ({ ...version, '@type': 'edition' }))
     }
 }

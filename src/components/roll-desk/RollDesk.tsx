@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { AnySymbol, Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100 } from 'linked-rolls'
+import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100 } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
@@ -171,7 +171,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [soleSelected] = selection.length === 1 ? selection : []
     const selectedCommand = soleSelected && 'id' in soleSelected
-        ? view?.get<AnySymbol>(soleSelected.id)
+        ? view?.symbol(soleSelected.id)
         : undefined
 
     /** The entity the desk has taken its address from, so that neither side of the address repeats the other's work. */
@@ -302,7 +302,7 @@ export const Desk = ({ show }: DeskProps) => {
     const showConstraint = (versionId: string, symbolIds: string[]) => {
         setCurrentVersionId(versionId)
         setCurrentCopyId(undefined)
-        setSelection(view?.getAll<AnySymbol>(symbolIds) ?? [])
+        setSelection(view?.symbols(symbolIds) ?? [])
         setPendingSpotlight(symbolIds[0])
     }
 
