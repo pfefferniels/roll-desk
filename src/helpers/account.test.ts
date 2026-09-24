@@ -9,7 +9,6 @@ const belief = (certainty: Certainty): Belief => ({ type: 'belief', id: `belief-
 const recorded = (): RollCopy => ({
     type: 'RollCopy',
     id: 'recorded',
-    ops: [],
     measurements: {},
     conditions: [],
     modifications: [],

@@ -76,7 +76,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     </Button>
                 </Ribbon>
                 <Ribbon title='Alignment'>
-                    {copy.ops.includes('shifted') || copy.ops.includes('stretched') ? (
+                    {copy.measurements.shift !== undefined || copy.measurements.scale !== undefined ? (
                         <Button
                             onClick={() => {
                                 apply(unalignCopy(copyId))

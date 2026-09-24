@@ -50,7 +50,6 @@ export const fixtureEdition = (): Edition => {
     const copy: RollCopy = {
         type: 'RollCopy',
         id: 'copy',
-        ops: [],
         measurements: {},
         conditions: [],
         modifications: [],

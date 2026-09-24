@@ -5,7 +5,6 @@ import { inScan, onPaper } from './scanResolution'
 const copyMeasured = (measurements: RollCopy['measurements']): RollCopy => ({
     type: 'RollCopy',
     id: 'copy',
-    ops: [],
     conditions: [],
     modifications: [],
     keeper: { name: 'Stanford', sameAs: [] },

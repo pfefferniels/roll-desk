@@ -12,7 +12,6 @@ const calibrationOfSeparation = (separation: number): TrackCalibration => ({
 const copyWith = (separation: number, keeper = 'Museum'): RollCopy => ({
     type: 'RollCopy',
     id: `copy-${separation}`,
-    ops: [],
     conditions: [],
     modifications: [],
     keeper: { name: keeper, sameAs: [] },

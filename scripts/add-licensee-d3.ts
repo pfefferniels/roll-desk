@@ -257,7 +257,6 @@ const notBefore1916 = () => dated(chase.production.date['@value'], believing('tr
 const phillips: Json = {
     '@type': 'RollCopy',
     '@id': reading.id,
-    ops: [],
     conditions: [],
     measurements: {},
     modifications: [],
@@ -729,7 +728,6 @@ phillips.readFrom = {
 const gourlin: Json = {
     '@type': 'RollCopy',
     '@id': randomUUID(),
-    ops: [],
     measurements: {},
     conditions: [],
     modifications: [],

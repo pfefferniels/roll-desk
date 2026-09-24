@@ -82,7 +82,6 @@ const problems = [
 const copy: Json = {
     '@type': 'RollCopy',
     '@id': randomUUID(),
-    ops: [],
     measurements: {},
     conditions: [],
     modifications: [],

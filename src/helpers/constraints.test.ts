@@ -7,7 +7,7 @@ import {
     pairStatementOf, pairsIn, partnerOf, commandsIn, placementBetween, placementChain,
     placementsIn, problemLabel, problemsByVersion, refusalToPair, refusalToPlace, shiftsIn
 } from './constraints'
-import { welteT100 } from 'linked-rolls'
+import { negotiatedEventOf, welteT100 } from 'linked-rolls'
 
 /** The one item a list should hold, so a wrong count fails here and says which. */
 const only = <T>(items: readonly T[]): T => {
@@ -124,7 +124,7 @@ describe('displaced events', () => {
         const view = viewOf(fixtureEdition())
         const events = commandsIn(view.snapshot(ids.a))
             .flatMap(symbol => {
-                const event = view.simplifySymbol(symbol, welteT100)
+                const event = negotiatedEventOf(view, symbol, welteT100)
                 return event ? [event] : []
             })
         const performed = events.map(event => event.id === ids.forzandoOff

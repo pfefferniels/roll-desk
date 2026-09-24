@@ -60,7 +60,7 @@ const migrated = (json: unknown): unknown =>
  */
 export const checkedDocument = async (json: unknown): Promise<CheckedDocument> => {
     const document = migrated(json)
-    const { validate } = await import('linked-rolls/lib/validate.js')
+    const { validate } = await import('linked-rolls/validate')
     return {
         document,
         errors: validate(document)

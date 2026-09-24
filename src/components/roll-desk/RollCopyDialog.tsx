@@ -195,7 +195,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             const known: RollCopy = {
                 type: 'RollCopy',
                 id: v4(),
-                ops: [],
                 measurements: {},
                 conditions: [],
                 modifications: [],

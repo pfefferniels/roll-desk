@@ -13,7 +13,6 @@ const span: EventDimension = {
 const copyScannedAt = (resolution?: Resolution): RollCopy => ({
     type: 'RollCopy',
     id: 'copy',
-    ops: [],
     conditions: [],
     modifications: [],
     keeper: { name: 'Stanford', sameAs: [] },

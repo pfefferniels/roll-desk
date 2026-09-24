@@ -5,6 +5,7 @@ import { fixtureEdition } from './editionFixture'
 
 /** The stored document has no type of its own, so the test shapes what it edits. */
 type Document = {
+    formatVersion?: number
     copies: { keeper: { name: string }, conditions: { conditionType: string }[] }[]
     versions: object[]
 }
@@ -23,6 +24,8 @@ const refusalIn = <T>(reading: Reading<T>): string | undefined =>
 /** The document as the 0.1 format wrote it: the keeper a string, versions and conditions typed by their typology. */
 const inOldFormat = () => {
     const document = current()
+    // A document of that format states no revision of the format.
+    delete document.formatVersion
     return {
         ...document,
         copies: document.copies.map(({ keeper, conditions, ...copy }) => ({
