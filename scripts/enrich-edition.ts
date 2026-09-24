@@ -2,7 +2,9 @@
  * Prepares the edition of WM 225 for publication: it fills in what the
  * Chase and the Dyer copy do not say about themselves, repairs the
  * collation where it demonstrably went wrong, states the two transfers
- * as acts, and gives every edit of the two transfers a motivation.
+ * as acts, and gives every edit of the two transfers a motivation, or,
+ * where carrying the text into the green coding is all there is to say,
+ * the type `recoding`.
  *
  *     npx vite-node scripts/enrich-edition.ts <edition.jsonld> [--write]
  *
@@ -825,15 +827,18 @@ const finishTheGreenTransfer = (): string[] => {
     const answered = unreadable.filter(heldOver)
     const unanswered = unreadable.filter(symbol => !heldOver(symbol))
 
-    const strike = (symbols: Json[], motivation: string) => {
+    // Both are part of recoding the text for the green bar; only the first
+    // has a reason beyond that, a green hold standing where the latch was.
+    const strike = (symbols: Json[], motivation?: string) => {
         if (symbols.length === 0) return
         editsOf(green).push({
-            '@type': 'edit', '@id': randomUUID(), motivation,
+            '@type': 'edit', '@id': randomUUID(), editType: 'recoding',
+            ...(motivation && { motivation }),
             delete: symbols.map(symbol => symbol['@id'])
         })
     }
     strike(answered, 'latch-to-hold')
-    strike(unanswered, 'expression-recoded')
+    strike(unanswered)
 
     return [`D2: ${unreadable.length} rote Befehle getilgt, die der T-98 nicht lesen kann`
         + ` (${answered.length} von einer grünen Haltung beantwortet, ${unanswered.length} ohne)`]
@@ -870,10 +875,6 @@ const motivationsOfGreen: Json[] = [
         note: 'Absenkung durch den eigenen Sforzando-piano-Befehl des T-98'
     },
     {
-        '@type': 'motivation', '@id': 'expression-recoded',
-        note: 'Dynamik für die grüne Bahn neu gelegt'
-    },
-    {
         '@type': 'motivation', '@id': 'note-text-differs',
         note: 'Abweichender Notentext: ein zusätzliches f′′, ein verschobenes g'
     }
@@ -900,31 +901,41 @@ const licenseeMotivationOf = (edit: Json, symbols: Map<string, Json>): string =>
     return 'bass-mezzoforte-set'
 }
 
-const greenMotivationOf = (edit: Json, symbols: Map<string, Json>): string => {
+/** Why a green edit was made, where there is more to say than that it recodes the text. */
+const greenMotivationOf = (edit: Json, symbols: Map<string, Json>): string | undefined => {
     if ((edit.insert?.length ?? 0) > 0 && (edit.delete?.length ?? 0) > 0) return 'latch-to-hold'
     const kinds = symbolsOf(edit, symbols).map(kindOf)
     if (kinds.every(kind => kind === 'note')) return 'note-text-differs'
     if (kinds.every(kind => kind === 'SforzandoPiano')) return 't98-only-command'
-    return 'expression-recoded'
+    return undefined
 }
+
+/** Every green edit of expression matter carries the text into the green coding. */
+const greenEditTypeOf = (edit: Json, symbols: Map<string, Json>): string | undefined =>
+    symbolsOf(edit, symbols).map(kindOf).every(kind => kind !== 'note') ? 'recoding' : undefined
 
 const explain = (
     siglum: string,
     motivations: Json[],
-    motivationOf: (edit: Json, symbols: Map<string, Json>) => string
+    motivationOf: (edit: Json, symbols: Map<string, Json>) => string | undefined,
+    editTypeOf: (edit: Json, symbols: Map<string, Json>) => string | undefined = () => undefined
 ): string[] => {
     const { symbols } = symbolIndex()
     const version = versionBy(siglum)
     version.motivations.push(...motivations)
-    editsOf(version)
-        .filter((edit: Json) => !edit.motivation)
-        .forEach((edit: Json) => { edit.motivation = motivationOf(edit, symbols) })
+    editsOf(version).forEach((edit: Json) => {
+        const motivation = edit.motivation ?? motivationOf(edit, symbols)
+        if (motivation) edit.motivation = motivation
+        const editType = edit.editType ?? editTypeOf(edit, symbols)
+        if (editType) edit.editType = editType
+    })
 
     const counted = editsOf(version).reduce<Map<string, number>>((tally, edit) => {
-        tally.set(edit.motivation, (tally.get(edit.motivation) ?? 0) + 1)
+        const key = edit.motivation ? `der Begründung „${edit.motivation}"` : `dem Typ „${edit.editType}"`
+        tally.set(key, (tally.get(key) ?? 0) + 1)
         return tally
     }, new Map())
-    return [...counted].map(([id, n]) => `${siglum}: ${n} Edits mit der Begründung „${id}"`)
+    return [...counted].map(([key, n]) => `${siglum}: ${n} Edits mit ${key}`)
 }
 
 // ------------------------------------------------------------------- the run
@@ -946,7 +957,7 @@ const report = [
     ...dropDanglingDeletions(),
     ...finishTheGreenTransfer(),
     ...explain('D1', motivationsOfLicensee, licenseeMotivationOf),
-    ...explain('D2', motivationsOfGreen, greenMotivationOf)
+    ...explain('D2', motivationsOfGreen, greenMotivationOf, greenEditTypeOf)
 ]
 
 report.forEach(line => console.log('  ' + line))

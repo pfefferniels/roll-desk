@@ -221,6 +221,14 @@ export const editTypeLabel = (editType: EditType | undefined): string | undefine
     return editType.replaceAll('-', ' ')
 }
 
+/**
+ * The hull the type's word is written under: the insertions, or what the
+ * edit deletes where it inserts nothing, so that an edit only striking
+ * commands still says what kind of edit it is.
+ */
+export const labelledPart = (edit: Edit): 'insert' | 'delete' =>
+    (edit.insert?.length ?? 0) > 0 ? 'insert' : 'delete'
+
 /** An edit that inserts as well as deletes draws two hulls, so each needs its own id. */
 export const hullId = (edit: Edit, part: 'insert' | 'delete'): string =>
     (edit.insert?.length && edit.delete?.length)
@@ -385,7 +393,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
                     boxes={insertions}
                     colours={insertion}
                     focus={focus}
-                    label={editTypeLabel(edit.editType)}
+                    label={labelledPart(edit) === 'insert' ? editTypeLabel(edit.editType) : undefined}
                     onClick={onClick}
                 />
             )}
@@ -396,6 +404,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
                     boxes={deletions}
                     colours={deletion}
                     focus={focus}
+                    label={labelledPart(edit) === 'delete' ? editTypeLabel(edit.editType) : undefined}
                     onClick={onClick}
                 />
             )}
