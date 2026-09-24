@@ -165,6 +165,26 @@ const carriersOf = (symbol: Json): Feature[] =>
 const witnessesOf = (symbol: Json): string[] =>
     [...new Set(carriersOf(symbol).map(carrier => carrier.copy))].sort()
 
+/**
+ * The items in runs along the roll, a gap of more than `gap` millimetres
+ * starting a new one. An edit states a change at one place: symbols of one
+ * act that lie far apart are stated as an edit per run, grouped by their
+ * motivation rather than by a hull drawn across everything between them.
+ */
+const localRuns = <T,>(items: readonly T[], span: (item: T) => { from: number, to: number } | undefined, gap = 100): T[][] => {
+    const placed = items.flatMap(item => { const at = span(item); return at ? [{ item, at }] : [] })
+    const unplaced = items.filter(item => !span(item)).map(item => [item])
+    const runs: T[][] = []
+    let reach = -Infinity
+    placed.sort((a, b) => a.at.from - b.at.from).forEach(({ item, at }) => {
+        const last = runs.at(-1)
+        if (last && at.from - reach <= gap) last.push(item)
+        else runs.push([item])
+        reach = Math.max(reach, at.to)
+    })
+    return [...runs, ...unplaced]
+}
+
 const spanOf = (symbol: Json): { from: number, to: number } | undefined => {
     const carriers = carriersOf(symbol)
     if (carriers.length === 0) return undefined
@@ -757,18 +777,19 @@ const relocateSharedDeletions = (): string[] => {
         '@type': 'motivation', '@id': 'treble-crescendo-thinned',
         note: 'Ausgedünntes Crescendo im Diskant'
     })
-    editsOf(c).push({
+    const runs = localRuns([...misplaced], id => { const symbol = symbols.get(id); return symbol && spanOf(symbol) })
+    runs.forEach(run => editsOf(c).push({
         '@type': 'edit', '@id': randomUUID(),
         editType: 'remove-redundancy',
         motivation: 'treble-crescendo-thinned',
-        delete: [...misplaced],
+        delete: run,
         '@annotation': believing('likely', [argued(
             'Diese Befehle bei 1691–1775, 2582, 2608 und 7444–8037 mm fehlen in Stanford-2, dem Zeugen dieser '
             + 'Fassung, und ebenso in der Licensee- und in der grünen Umstanzung. Getragen werden sie allein von '
             + 'Stanford-1 und vom Exemplar Widuch. Vier von ihnen werden erst durch Bearbeitungen der Fassung B '
             + 'wirkungslos, zwei sind es schon in A.'
         )])
-    })
+    }))
     return [`C: ${misplaced.size} Tilgungen aus D1 und D2 übernommen, die kein Zeuge unterhalb von C trägt`]
 }
 
@@ -829,14 +850,13 @@ const finishTheGreenTransfer = (): string[] => {
 
     // Both are part of recoding the text for the green bar; only the first
     // has a reason beyond that, a green hold standing where the latch was.
-    const strike = (symbols: Json[], motivation?: string) => {
-        if (symbols.length === 0) return
-        editsOf(green).push({
+    // Each command is struck where it stands, in an edit of its own.
+    const strike = (symbols: Json[], motivation?: string) =>
+        symbols.forEach(symbol => editsOf(green).push({
             '@type': 'edit', '@id': randomUUID(), editType: 'recoding',
             ...(motivation && { motivation }),
-            delete: symbols.map(symbol => symbol['@id'])
-        })
-    }
+            delete: [symbol['@id']]
+        }))
     strike(answered, 'latch-to-hold')
     strike(unanswered)
 

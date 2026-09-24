@@ -447,7 +447,11 @@ const unclaimedMissing = () => missing.filter(symbol => !claimedSymbols.has(symb
 const unclaimedOwn = () => own.filter(feature => !claimedFeatures.has(feature['@id']))
 
 const cancelRow = claim({ pattern: 'cancel-row', removes: [], adds: own.filter(f => f.horizontal.to < firstNoteAt) })
-const unaCorda = claim({ pattern: 'una-corda', removes: missing.filter(s => s.expressionType?.startsWith('SoftPedal')), adds: [] })
+// One edit for each command, where it stands: the dropped soft pedal is one act, and the
+// motivation, not a hull drawn across the piece, is what groups the edits.
+const unaCordas = missing
+    .filter(s => s.expressionType?.startsWith('SoftPedal'))
+    .map(symbol => claim({ pattern: 'una-corda', removes: [symbol], adds: [] }))
 
 const ties = movedNotes.flatMap(p => {
     const covered = unclaimedMissing().filter(s => isNote(s) && s.pitch === p.symbol.pitch
@@ -484,7 +488,7 @@ const placedFeature = (feature: Json): Placed => ({ symbol: newSymbol(feature), 
 const withdrawals = inPairs(unclaimedMissing(), placedSymbol).map(removes => claim({ pattern: 'struck', removes, adds: [] }))
 const additions = inPairs(unclaimedOwn(), placedFeature).map(adds => claim({ pattern: 'added', removes: [], adds }))
 
-const groups = [cancelRow, unaCorda, ...ties, ...restrikes, ...shifts, ...withdrawals, ...additions]
+const groups = [cancelRow, ...unaCordas, ...ties, ...restrikes, ...shifts, ...withdrawals, ...additions]
     .filter(group => group.removes.length + group.adds.length > 0)
     .sort((x, y) => Math.min(...x.removes.map(s => placedSymbol(s).at), ...x.adds.map(f => f.horizontal.from))
         - Math.min(...y.removes.map(s => placedSymbol(s).at), ...y.adds.map(f => f.horizontal.from)))
