@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AnySymbol, CollationTolerance, Edit, editTypes, mm, Note } from 'linked-rolls'
-import { arrowId, beliefMarkAt, editTypeLabel, endOf, endsThatMoved, hullId, labelledPart, Stretch, stretchOf } from './EditView'
+import { arrowId, beliefMarkAt, editTypeLabel, endOf, endsThatMoved, hullId, Stretch, stretchOf } from './EditView'
 import { svg } from '../../helpers/units'
 
 const note = (id: string): Note => ({ type: 'note', id, pitch: 60, carriers: [] })
@@ -27,22 +27,15 @@ describe('the word written under an edit', () => {
         expect(editTypeLabel('add-redundancy')).toBe('add redundancy')
     })
 
-    it('is given for every type the library knows, the shift apart', () => {
+    /** A transfer is made of recodings, so writing the word under each would bury the text. */
+    it('is left out for a recoding, which the transfer already tells', () => {
+        expect(editTypeLabel('recoding')).toBeUndefined()
+    })
+
+    it('is given for every type the library knows, the shift and the recoding apart', () => {
         const unlabelled = editTypes.filter(editType => !editTypeLabel(editType))
 
-        expect(unlabelled).toEqual(['shift'])
-    })
-})
-
-describe('the hull the word is written under', () => {
-    it('is the insertions where the edit inserts anything', () => {
-        expect(labelledPart(edit({ insert: [note('a')] }))).toBe('insert')
-        expect(labelledPart(edit({ insert: [note('a')], delete: ['b'] }))).toBe('insert')
-    })
-
-    /** A recoding that strikes a command the other bar cannot read would otherwise say nothing of its kind. */
-    it('is what the edit deletes where it inserts nothing', () => {
-        expect(labelledPart(edit({ delete: ['a'], editType: 'recoding' }))).toBe('delete')
+        expect(unlabelled).toEqual(['recoding', 'shift'])
     })
 })
 
