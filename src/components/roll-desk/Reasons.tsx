@@ -73,12 +73,8 @@ const Reason = ({ reason }: { reason: AnyArgumentation }) => {
                 </Typography>
             )}
             {reason.type === 'meaningComprehension' && <Comprehended reason={reason} />}
-            {reason.type === 'inference' && (
-                <>
-                    <Cited heading='Used' ids={reason.used ?? []} />
-                    <Cited heading='Premises' ids={reason.premises} />
-                </>
-            )}
+            {(reason.type === 'inference' || reason.type === 'measurement') && <Cited heading='Used' ids={reason.used ?? []} />}
+            {reason.type === 'inference' && <Cited heading='Premises' ids={reason.premises} />}
         </Stack>
     )
 }

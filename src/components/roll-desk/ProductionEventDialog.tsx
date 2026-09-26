@@ -17,6 +17,16 @@ interface ProductionEventDialog {
 const namedOrNone = (name: string, authority: string): Named | undefined =>
     name.trim() ? { name: name.trim(), sameAs: authority.trim() ? [authority.trim()] : [] } : undefined
 
+/**
+ * What was stated before, as it was, where the fields still give its
+ * name and authority: the belief held about it, its id and any further
+ * authority records stay. Else the name and authority now given.
+ */
+const keptOrNamed = <T extends Partial<Named>>(before: T | undefined, name: string, authority: string): T | Named | undefined =>
+    before && (before.name ?? '').trim() === name.trim() && (before.sameAs?.[0] ?? '').trim() === authority.trim()
+        ? before
+        : namedOrNone(name, authority)
+
 export const ProductionEventDialog = ({ open, event, onClose, onDone }: ProductionEventDialog) => {
     // A copy that names no system is read by the T-100, as barOf has it.
     const editionBar = welteT100
@@ -47,8 +57,8 @@ export const ProductionEventDialog = ({ open, event, onClose, onDone }: Producti
         onDone({
             // the punched features are not edited here and must survive
             ...event,
-            company: namedOrNone(company, companyAuthority),
-            paper: namedOrNone(paper, paperAuthority),
+            company: keptOrNamed(event?.company, company, companyAuthority),
+            paper: keptOrNamed(event?.paper, paper, paperAuthority),
             date,
             system: systemOf(system),
             // the belief held about an earlier statement of the speed stays with the new value

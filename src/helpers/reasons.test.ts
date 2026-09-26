@@ -8,6 +8,10 @@ describe('what a reason is introduced as', () => {
         expect(reasonLabels.beliefAdoption).toBe('Adopted from')
         expect(reasonLabels.simpleArgumentation).toBeUndefined()
     })
+
+    it('names a measurement', () => {
+        expect(reasonLabels.measurement).toBe('Measurement')
+    })
 })
 
 describe('who gave a reason', () => {

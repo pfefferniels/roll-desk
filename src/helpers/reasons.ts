@@ -7,7 +7,8 @@ export const reasonLabels: Record<AnyArgumentation['type'], string | undefined> 
     simpleArgumentation: undefined,
     inference: 'Inference',
     beliefAdoption: 'Adopted from',
-    meaningComprehension: 'Meaning comprehension'
+    meaningComprehension: 'Meaning comprehension',
+    measurement: 'Measurement'
 }
 
 /** Who gave the reason, where a name is given. The editor writes an actor nobody named as a blank name. */
