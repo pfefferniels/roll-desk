@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { AnySymbol, CollationTolerance, Edit, editTypes, mm, Note } from 'linked-rolls'
+import { assignReference, CollationTolerance, Edit, Edition, editTypes, mm, Note } from 'linked-rolls'
 import { arrowId, beliefMarkAt, editTypeLabel, endOf, endsThatMoved, hullId, Stretch, stretchOf } from './EditView'
 import { svg } from '../../helpers/units'
+import { fixtureEdition, hole } from '../../helpers/editionFixture'
 
-const note = (id: string): Note => ({ type: 'note', id, pitch: 60, carriers: [] })
+const note = (id: string): Note => ({ type: 'note', id, pitch: 60, carriers: [assignReference(`hole-${id}`)] })
 
 const edit = (parts: Partial<Edit>): Edit => ({ type: 'edit', id: 'edit-1', ...parts })
 
@@ -57,17 +58,18 @@ describe('the id a hull is drawn under', () => {
 })
 
 describe('the stretch of roll a set of symbols covers', () => {
-    const placing = (places: Record<string, [number, number]>) => ({
-        placeOf: (symbol: AnySymbol) => {
-            const place = places[symbol.id]
-            return place && { unit: 'mm' as const, from: mm(place[0]), to: mm(place[1]) }
-        }
-    })
+    /** An edition whose one copy carries each note at the place given. */
+    const placing = (places: Record<string, [number, number]>): Edition => {
+        const edition = fixtureEdition()
+        const [copy] = edition.copies
+        const produced = Object.entries(places).map(([id, [from, to]]) => hole(`hole-${id}`, from, to, 47))
+        return { ...edition, copies: [{ ...copy!, production: { produced } }] }
+    }
 
     it('runs from the first onset to the last offset', () => {
-        const view = placing({ a: [100, 120], b: [90, 110] })
+        const edition = placing({ a: [100, 120], b: [90, 110] })
 
-        expect(stretchOf([note('a'), note('b')], view)).toEqual({ from: 90, to: 120 })
+        expect(stretchOf([note('a'), note('b')], edition)).toEqual({ from: 90, to: 120 })
     })
 
     it('is nothing where none of them has a place', () => {

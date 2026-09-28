@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RollCopy } from 'linked-rolls'
 import { copyLabel, nameOf, secondarySourceOf, whichCopy } from './names'
-import { fixtureEdition, ids, viewOf } from './editionFixture'
+import { fixtureEdition, ids } from './editionFixture'
 
 const copy = (): RollCopy => {
     const [first] = fixtureEdition().copies
@@ -29,20 +29,20 @@ describe('what a reader calls a copy', () => {
 })
 
 describe('the name under an id', () => {
-    const view = viewOf(fixtureEdition())
+    const edition = fixtureEdition()
 
     it('is what the stemma calls a version and the label of a copy', () => {
-        expect(nameOf(view, ids.a)).toBe('R1')
-        expect(nameOf(view, 'copy')).toBe('Test')
+        expect(nameOf(edition, ids.a)).toBe('R1')
+        expect(nameOf(edition, 'copy')).toBe('Test')
     })
 
     it('lowercases a version no copy shows, B striking a command and inserting nothing', () => {
-        expect(nameOf(view, ids.b)).toBe('r2')
+        expect(nameOf(edition, ids.b)).toBe('r2')
     })
 
     it('is none for anything else, and for an id the edition lacks', () => {
-        expect(nameOf(view, ids.note)).toBeUndefined()
-        expect(nameOf(view, 'missing')).toBeUndefined()
+        expect(nameOf(edition, ids.note)).toBeUndefined()
+        expect(nameOf(edition, 'missing')).toBeUndefined()
     })
 })
 

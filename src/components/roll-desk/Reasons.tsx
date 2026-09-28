@@ -1,6 +1,6 @@
 import { Delete } from "@mui/icons-material"
 import { IconButton, Link, List, ListItem, Stack, Typography } from "@mui/material"
-import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension } from "linked-rolls"
+import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension, symbolIn, pathIn, getAt } from "linked-rolls"
 import { ReactNode, useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../../helpers/reasons"
@@ -20,8 +20,8 @@ const CitationLink = ({ citation }: { citation: Citation }) => {
 
 /** What a reason cites, under a heading, or nothing where it cites none. */
 const Cited = ({ heading, ids }: { heading: string, ids: readonly string[] }) => {
-    const { view } = useContext(EditionContext)
-    if (!view || ids.length === 0) return null
+    const { edition } = useContext(EditionContext)
+    if (!edition || ids.length === 0) return null
 
     return (
         <Typography variant='caption' component='div' color='text.secondary' sx={{ overflowWrap: 'anywhere' }}>
@@ -29,7 +29,7 @@ const Cited = ({ heading, ids }: { heading: string, ids: readonly string[] }) =>
             {ids.map((id, index) => (
                 <span key={id}>
                     {index > 0 && ', '}
-                    <CitationLink citation={citationOf(view, id)} />
+                    <CitationLink citation={citationOf(edition, id)} />
                 </span>
             ))}
         </Typography>
@@ -38,18 +38,18 @@ const Cited = ({ heading, ids }: { heading: string, ids: readonly string[] }) =>
 
 /** The symbols a meaning comprehension interprets, each with the feature it was read from. */
 const Comprehended = ({ reason }: { reason: MeaningComprehension }) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
 
     return reason.comprehends.map((subject: string) => {
-        const target = view?.symbol(subject)
+        const target = edition && symbolIn(edition, subject)
         const key = `comprehends-${subject}`
 
         if (!target) {
             return <span key={key}>{subject}</span>
         }
 
-        const featurePath = view?.getPath(subject)?.slice(0, -1)
-        const feature = featurePath && view?.atPath<AnyFeature>(featurePath)
+        const featurePath = (edition && pathIn(edition, subject))?.slice(0, -1)
+        const feature = featurePath && edition && getAt<AnyFeature>(featurePath, edition)
 
         return (
             <div key={key}>

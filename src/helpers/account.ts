@@ -1,7 +1,7 @@
 import {
-    certainties, CollationTolerance, derivationsOf, EditionView, idOf,
-    ObjectAssumption, principalDerivationOf, Reservation, reservationsAbout, reservationsAboutVersion, RollCopy,
-    Version, VersionReservationType, versionsWitnessedBy, Witness, witnessesOf
+    certainties, CollationTolerance, derivationsOf, idOf, ObjectAssumption, principalDerivationOf,
+    Reservation, reservationsAbout, reservationsAboutVersion, RollCopy, Version, VersionReservationType,
+    versionsWitnessedBy, Witness, witnessesOf, versionIn, copyIn, lineageOf, Edition
 } from "linked-rolls"
 
 /**
@@ -31,13 +31,13 @@ export interface VersionAccount {
 }
 
 /** The account of the version under the id, or nothing where the id names no version. */
-export const versionAccount = (view: EditionView, versionId: string): VersionAccount | undefined => {
-    const version = view.version(versionId)
+export const versionAccount = (edition: Edition, versionId: string): VersionAccount | undefined => {
+    const version = versionIn(edition, versionId)
     if (!version) return undefined
 
     const principal = principalDerivationOf(version)
     const readAgainst = principal && idOf(principal)
-    const witnesses = witnessesOf(view, versionId)
+    const witnesses = witnessesOf(edition, versionId)
     // `derivationsOf` maps over `basedOn` one for one, so the stated
     // window is the one at the same place.
     const stated = version.basedOn ?? []
@@ -55,7 +55,7 @@ export const versionAccount = (view: EditionView, versionId: string): VersionAcc
             .sort((a, b) => Number(b.principal) - Number(a.principal)),
         witnesses: witnesses.filter(witness => !isIndirect(witness)),
         indirect: witnesses.filter(isIndirect),
-        reservations: reservationsAboutVersion(view, version)
+        reservations: reservationsAboutVersion(edition, version)
     }
 }
 
@@ -80,18 +80,18 @@ const rankOf = (carriage: Carriage): number =>
         : certainties.indexOf(carriage.certainty ?? 'true')
 
 /** How far back a carriage reaches, so that the indirect ones read up the stemma from the nearest. */
-const reachOf = (view: EditionView, carriage: Carriage): number =>
-    isIndirect(carriage) ? -view.lineageOf(carriage.version).length : 0
+const reachOf = (edition: Edition, carriage: Carriage): number =>
+    isIndirect(carriage) ? -lineageOf(edition, carriage.version).length : 0
 
 /** The account of the copy under the id, or nothing where the id names no copy. */
-export const copyAccount = (view: EditionView, copyId: string): CopyAccount | undefined => {
-    const copy = view.copy(copyId)
+export const copyAccount = (edition: Edition, copyId: string): CopyAccount | undefined => {
+    const copy = copyIn(edition, copyId)
     if (!copy) return undefined
 
     return {
         copy,
-        carriages: versionsWitnessedBy(view, copyId)
-            .sort((a, b) => rankOf(a) - rankOf(b) || reachOf(view, a) - reachOf(view, b)),
+        carriages: versionsWitnessedBy(edition, copyId)
+            .sort((a, b) => rankOf(a) - rankOf(b) || reachOf(edition, a) - reachOf(edition, b)),
         reservations: reservationsAbout(copy)
     }
 }

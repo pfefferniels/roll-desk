@@ -19,7 +19,7 @@ interface HypothesisDialogProps {
  * read against the derivation it has, unless this one is held more certain.
  */
 export const HypothesisDialog = ({ currentVersionId, versions, onClose, onDone }: HypothesisDialogProps) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const candidates = versions.filter(version => version.id !== currentVersionId)
     const [parentVersionId, setParentVersionId] = useState(candidates[0]?.id ?? '')
     const [certainty, setCertainty] = useState<Certainty>('possible')
@@ -41,7 +41,7 @@ export const HypothesisDialog = ({ currentVersionId, versions, onClose, onDone }
                     >
                         {candidates.map(version => (
                             <MenuItem key={version.id} value={version.id}>
-                                {view && versionLabel(view, version.id)}
+                                {edition && versionLabel(edition, version.id)}
                             </MenuItem>
                         ))}
                     </TextField>

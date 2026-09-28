@@ -5,7 +5,7 @@
  * and the link they were given all say the same thing.
  */
 
-import { AnyFeature, AnySymbol, Edit, Edition, EditionView, Motivation, Path, isEdit, isRollFeature, isSymbol } from "linked-rolls"
+import { AnyFeature, AnySymbol, Edit, Edition, Motivation, Path, isEdit, isRollFeature, isSymbol, getAt, pathIn } from "linked-rolls"
 import { HeldMotivation, isHeldMotivation, isMotivation } from "./motivation"
 import type { UserSelection } from "../components/roll-desk/RollDesk"
 
@@ -46,9 +46,9 @@ const namesOneMotivation = (edition: Edition, id: string) =>
  * A motivation whose id other versions write as well falls back to its
  * version, since the id alone would send a reader to another roll.
  */
-export const deskPath = (view: EditionView, { versionId, copyId, selection }: DeskAddress): string | undefined => {
+export const deskPath = (edition: Edition, { versionId, copyId, selection }: DeskAddress): string | undefined => {
     const [sole] = selection.length === 1 ? selection : []
-    if (isHeldMotivation(sole) && namesOneMotivation(view.edition, sole.motivation.id)) {
+    if (isHeldMotivation(sole) && namesOneMotivation(edition, sole.motivation.id)) {
         return pathOf(sole.motivation.id)
     }
     if (sole && 'id' in sole) return pathOf(sole.id)
@@ -84,8 +84,8 @@ export type LinkTarget =
 const ancestry = (path: Path): Path[] => path.map((_, depth) => path.slice(0, depth + 1))
 
 /** The most particular thing the desk draws around the entity, the entity itself included. */
-const drawnAt = (view: EditionView, path: Path): Drawn | undefined =>
-    ancestry(path).map(step => view.atPath<unknown>(step)).findLast(isDrawn)
+const drawnAt = (edition: Edition, path: Path): Drawn | undefined =>
+    ancestry(path).map(step => getAt<unknown>(step, edition)).findLast(isDrawn)
 
 /** What is marked for what was drawn, a motivation taking the version it belongs to with it. */
 const markOf = (drawn: Drawn | undefined, versionId?: string): Mark | undefined => {
@@ -102,18 +102,18 @@ const markOf = (drawn: Drawn | undefined, versionId?: string): Mark | undefined 
  * whatever it is said about, and an entity belonging to no version and no
  * copy is a statement of the edition about itself.
  */
-export const linkTarget = (view: EditionView, id: string): LinkTarget | undefined => {
-    const path = view.getPath(id)
+export const linkTarget = (edition: Edition, id: string): LinkTarget | undefined => {
+    const path = pathIn(edition, id)
     if (!path) return undefined
 
     const [collection, index] = path
-    const drawn = drawnAt(view, path)
+    const drawn = drawnAt(edition, path)
 
     if (typeof index === 'number') {
-        const version = collection === 'versions' ? view.edition.versions[index] : undefined
+        const version = collection === 'versions' ? edition.versions[index] : undefined
         if (version) return { on: 'version', versionId: version.id, mark: markOf(drawn, version.id) }
 
-        const copy = collection === 'copies' ? view.edition.copies[index] : undefined
+        const copy = collection === 'copies' ? edition.copies[index] : undefined
         if (copy) return { on: 'copy', copyId: copy.id, mark: markOf(drawn) }
     }
 

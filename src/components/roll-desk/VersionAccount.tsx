@@ -42,9 +42,9 @@ const CollatedAt = ({ parent, tolerance }: CollatedAtProps) => {
 
 /** What the edition states of a version and why: where it derives from, how it was made, what bears witness to it. */
 export const VersionAccount = ({ versionId }: { versionId: string }) => {
-    const { view } = useContext(EditionContext)
-    const account = view && versionAccount(view, versionId)
-    if (!view || !account) return null
+    const { edition } = useContext(EditionContext)
+    const account = edition && versionAccount(edition, versionId)
+    if (!edition || !account) return null
 
     const { version, derivations, witnesses, indirect, reservations } = account
     const { creation } = version
@@ -52,7 +52,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
     return (
         <Stack spacing={1}>
             <div>
-                <Typography variant='subtitle2'>Version {versionLabel(view, version.id)}</Typography>
+                <Typography variant='subtitle2'>Version {versionLabel(edition, version.id)}</Typography>
                 <Typography variant='caption' color='text.secondary'>
                     {trackerBarOf(version.system)?.name ?? nameOf(version.system)}
                 </Typography>

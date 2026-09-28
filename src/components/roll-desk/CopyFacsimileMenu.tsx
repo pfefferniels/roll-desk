@@ -27,7 +27,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
     /** What is selected where one thing is, which is what the dialogs act on. */
     const sole = selection.length === 1 ? selection[0] : undefined
-    const { edition, view, apply } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
 
     const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
     const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
@@ -45,7 +45,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const isReference = referenceCopyOf(edition)?.id === copyId
     const carriedAlone = symbolsCarriedOnlyBy(edition, copyId).length
     const features = selection.filter(isRollFeature)
-    const obstacle = mergeObstacleFor(features, view)
+    const obstacle = mergeObstacleFor(features, edition)
 
     return (
         <>

@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, EditionView, editsOf, Millimeters, trackerBarOf, Version, Edit } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, editsOf, Millimeters, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../../helpers/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -21,12 +21,12 @@ const groundMargin = 50
 type AgedSymbol = AnySymbol & { age: number }
 
 /** Every symbol in force at a version, each told how many versions back it was inserted. */
-const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
+const snapshotUpTo = (edition: Edition, versionId: string): AgedSymbol[] => {
     const snapshot: AgedSymbol[] = []
     const deletions: string[] = []
     let age = 0
 
-    view.travelUp(versionId, s => {
+    lineageOf(edition, versionId).forEach(s => {
         // collect all inserted symbols and tell them their age
         for (const edit of editsOf(s)) {
             for (const symbol of edit.insert ?? []) {
@@ -51,7 +51,7 @@ const snapshotUpTo = (view: EditionView, versionId: string): AgedSymbol[] => {
         age += 1
     })
 
-    return snapshot.sort((a, b) => (view.onsetOf(a) || 0) - (view.onsetOf(b) || 0))
+    return snapshot.sort((a, b) => (onsetOf(edition, a) || 0) - (onsetOf(edition, b) || 0))
 }
 
 interface VersionViewProps {
@@ -66,46 +66,46 @@ interface VersionViewProps {
 export const VersionView = ({ version, problems, emulationOptions, onClick }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const { translateX, rollLength, height: geometryHeight } = usePinchZoom()
 
     // None of what follows depends on the zoom, and emulating a version
     // costs a few hundred milliseconds, so it must not be redone per frame.
     const emulation = useMemo(() => {
-        if (!view) return undefined
+        if (!edition) return undefined
 
         const emulation = emulationOf(version.system, emulationOptions)
-        emulation?.emulateVersion(version, view)
+        emulation?.emulateVersion(version, edition)
         return emulation
-    }, [version, view, emulationOptions])
+    }, [version, edition, emulationOptions])
 
     // The predecessor is drawn beside the version for comparison, and is
     // performed on its own machine, which a transfer makes another one.
     const prevEmulation = useMemo(() => {
-        const previous = view?.predecessorOf(version.id)
-        if (!view || !previous) return undefined
+        const previous = edition && predecessorOf(edition, version.id)
+        if (!edition || !previous) return undefined
 
         const emulation = emulationOf(previous.system, emulationOptions)
-        emulation?.emulateVersion(previous, view)
+        emulation?.emulateVersion(previous, edition)
         return emulation
-    }, [version, view, emulationOptions])
+    }, [version, edition, emulationOptions])
 
     const snapshot = useMemo(
-        () => view ? snapshotUpTo(view, version.id) : [],
-        [version, view]
+        () => edition ? snapshotUpTo(edition, version.id) : [],
+        [version, edition]
     )
 
     // Where the performance moves a command, it is drawn there.
     const shifts = useMemo(
-        () => (view && emulation) ? shiftsIn(emulation.negotiatedEvents, view) : new Map<string, Millimeters>(),
-        [emulation, view]
+        () => (edition && emulation) ? shiftsIn(emulation.negotiatedEvents, edition) : new Map<string, Millimeters>(),
+        [emulation, edition]
     )
 
-    if (!view) return null
+    if (!edition) return null
 
     // What this version does away with was coded for its parent's system,
     // so that is the bar those commands are drawn by.
-    const deletedOn = trackerBarOf(view.predecessorOf(version.id)?.system)
+    const deletedOn = trackerBarOf(predecessorOf(edition, version.id)?.system)
 
     // A balloon on another derivation must leave this roll alone, and two
     // versions may write one motivation id, so a selection counts as in

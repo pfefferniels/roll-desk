@@ -1,4 +1,4 @@
-import { EditionView, siglaOf, Version } from "linked-rolls"
+import { siglaOf, Version, Edition } from "linked-rolls"
 import { write } from "midifile-ts"
 import { zipSync } from "fflate"
 import { emulationOf, EmulationOptions } from "./reproducingSystems"
@@ -9,13 +9,13 @@ import { emulationOf, EmulationOptions } from "./reproducingSystems"
  */
 export const versionAsMidi = (
     version: Version,
-    view: EditionView,
+    edition: Edition,
     options?: EmulationOptions
 ): Uint8Array | undefined => {
     const emulation = emulationOf(version.system, options)
     if (!emulation) return undefined
 
-    emulation.emulateVersion(version, view)
+    emulation.emulateVersion(version, edition)
 
     const { tracks, header } = emulation.asMIDI()
     return write(tracks, header.ticksPerBeat)
@@ -26,14 +26,14 @@ const fileNameOf = (siglum: string) => `${siglum.replace(/[^\w.-]+/g, '_')}.mid`
 /** Every version the desk can perform, each on its own machine. */
 export const versionsAsMidiArchive = (
     versions: Version[],
-    view: EditionView,
+    edition: Edition,
     options?: EmulationOptions
 ): Uint8Array => {
-    const sigla = siglaOf(view)
+    const sigla = siglaOf(edition)
 
     return zipSync(Object.fromEntries(
         versions.flatMap(version => {
-            const midi = versionAsMidi(version, view, options)
+            const midi = versionAsMidi(version, edition, options)
             return midi ? [[fileNameOf(sigla.get(version.id) ?? version.id), midi] as const] : []
         })
     ))

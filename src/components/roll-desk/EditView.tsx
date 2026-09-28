@@ -1,17 +1,6 @@
 import {
-    admittedAtEnds,
-    CollationTolerance,
-    defaultCollationTolerance,
-    distance,
-    Edit,
-    EditType,
-    HorizontalSpan,
-    isCommand,
-    max,
-    min,
-    positionOfSameFunction,
-    Track,
-    TrackerBar
+    admittedAtEnds, CollationTolerance, defaultCollationTolerance, distance, Edit, EditType, HorizontalSpan,
+    isCommand, max, min, positionOfSameFunction, Track, TrackerBar, symbolIn, pathIn, placeOf, Edition
 } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../../helpers/getBoundingBox";
@@ -19,7 +8,6 @@ import { MouseEventHandler, useContext, useMemo } from "react";
 import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { Arrow } from "./Arrow";
-import { EditionView } from "linked-rolls";
 import { EditionContext } from "../../providers/EditionContext";
 import { Box, boxOf, rollGeometry, Translation } from "../../helpers/rollGeometry";
 import { cornersOf, point, Point } from "../../helpers/drawing";
@@ -90,8 +78,8 @@ const laneOf = (symbol: AnySymbol, bar: TrackerBar): Track | undefined => {
     return symbol.type === 'expression' ? positionOfSameFunction(bar, symbol) : undefined
 }
 
-export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, translation: Translation) => {
-    const horizontal = editionView.placeOf(symbol)
+export const getSymbolBBox = (symbol: AnySymbol, edition: Edition, translation: Translation) => {
+    const horizontal = placeOf(edition, symbol)
     const position = laneOf(symbol, translation.bar)
     if (!horizontal || position === undefined) return undefined
 
@@ -99,9 +87,9 @@ export const getSymbolBBox = (symbol: AnySymbol, editionView: EditionView, trans
 }
 
 /** The symbols an edit does away with, those of them the edition still holds. */
-const deletedSymbolsOf = (edit: Edit, editionView: EditionView): AnySymbol[] =>
+const deletedSymbolsOf = (edit: Edit, edition: Edition): AnySymbol[] =>
     (edit.delete ?? [])
-        .map(symbolId => editionView.symbol(symbolId))
+        .map(symbolId => symbolIn(edition, symbolId))
         .filter(symbol => !!symbol)
 
 interface EditBoxes {
@@ -121,25 +109,25 @@ interface EditBoxes {
  */
 export const editBoxes = (
     edit: Edit,
-    editionView: EditionView,
+    edition: Edition,
     translation: Translation,
     deletedIn: Translation = translation
 ): EditBoxes => ({
     insertions: (edit.insert ?? [])
-        .map(symbol => getSymbolBBox(symbol, editionView, translation))
+        .map(symbol => getSymbolBBox(symbol, edition, translation))
         .filter(bbox => !!bbox),
-    deletions: deletedSymbolsOf(edit, editionView)
-        .map(symbol => getSymbolBBox(symbol, editionView, deletedIn))
+    deletions: deletedSymbolsOf(edit, edition)
+        .map(symbol => getSymbolBBox(symbol, edition, deletedIn))
         .filter(bbox => !!bbox)
 })
 
 export const getEditBBoxes = (
     edit: Edit,
-    editionView: EditionView,
+    edition: Edition,
     translation: Translation,
     deletedIn: Translation = translation
 ) => {
-    const { insertions, deletions } = editBoxes(edit, editionView, translation, deletedIn)
+    const { insertions, deletions } = editBoxes(edit, edition, translation, deletedIn)
     return [...insertions, ...deletions]
 }
 
@@ -153,9 +141,9 @@ export type Stretch = Pick<HorizontalSpan, 'from' | 'to'>
 
 export const stretchOf = (
     symbols: readonly AnySymbol[],
-    editionView: Pick<EditionView, 'placeOf'>
+    edition: Edition
 ): Stretch | undefined => {
-    const places = symbols.map(symbol => editionView.placeOf(symbol)).filter(place => !!place)
+    const places = symbols.map(symbol => placeOf(edition, symbol)).filter(place => !!place)
     if (!places.length) return undefined
 
     return {
@@ -288,7 +276,7 @@ interface EditViewProps {
 }
 
 export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditViewProps) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
     const { trackHeight, spacing, bar } = translation
 
@@ -301,15 +289,15 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
         [deletedOn, bar, translation, trackHeight, spacing]
     )
 
-    if (!view) return null
+    if (!edition) return null
 
-    const { insertions, deletions } = editBoxes(edit, view, translation, deletedIn)
+    const { insertions, deletions } = editBoxes(edit, edition, translation, deletedIn)
     // What is drawn, not what the edit names: a symbol no bar can place
     // has no box, and an arrow to or from nothing draws nothing.
     const inserted = insertions.length
     const deleted = deletions.length
 
-    const annotated = edit['@annotation'] && view.getPath(edit.id)
+    const annotated = edit['@annotation'] && pathIn(edition, edit.id)
 
     // An edit that is argued carries the mark of its belief where it lies,
     // so that it is read off the roll rather than from a list apart from
@@ -339,8 +327,8 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
 
         const moved = inOneLane(was, now)
             ? endsThatMoved(
-                stretchOf(deletedSymbolsOf(edit, view), view),
-                stretchOf(edit.insert ?? [], view),
+                stretchOf(deletedSymbolsOf(edit, edition), edition),
+                stretchOf(edit.insert ?? [], edition),
                 tolerance ?? defaultCollationTolerance
             )
             : []

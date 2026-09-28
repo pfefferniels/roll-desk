@@ -1,6 +1,7 @@
 import {
-    AnyCommand, AnySymbol, ConstraintProblem, EditionView, HorizontalSpan, Millimeters,
-    NegotiatedEvent, PlacementRelation, Version, idOf, isCommand, pairsAmong, placementsOf, subtract
+    AnyCommand, AnySymbol, ConstraintProblem, HorizontalSpan, Millimeters, NegotiatedEvent,
+    PlacementRelation, Version, idOf, isCommand, pairsAmong, placementsOf, subtract, symbolIn, placeOf,
+    Edition
 } from "linked-rolls"
 
 export const commandsIn = (snapshot: readonly AnySymbol[]): AnyCommand[] =>
@@ -84,21 +85,21 @@ export type Displacement = { symbol: AnyCommand; measured: HorizontalSpan; perfo
 /** Where the performance puts a command elsewhere than it was measured. */
 export const displacedEvents = (
     events: readonly NegotiatedEvent[],
-    view: EditionView,
+    edition: Edition,
     epsilon = 1e-6
 ): Displacement[] =>
     events.flatMap(event => {
-        const symbol = view.symbol(event.id)
+        const symbol = symbolIn(edition, event.id)
         if (!isCommand(symbol)) return []
-        const measured = view.placeOf(symbol)
+        const measured = placeOf(edition, symbol)
         if (!measured || Math.abs(event.horizontal.from - measured.from) <= epsilon) return []
         return [{ symbol, measured, performed: event.horizontal }]
     })
 
 /** How far the performance moves each command it moves, by id. */
-export const shiftsIn = (events: readonly NegotiatedEvent[], view: EditionView): ReadonlyMap<string, Millimeters> =>
+export const shiftsIn = (events: readonly NegotiatedEvent[], edition: Edition): ReadonlyMap<string, Millimeters> =>
     new Map(
-        displacedEvents(events, view)
+        displacedEvents(events, edition)
             .map(({ symbol, measured, performed }): [string, Millimeters] =>
                 [symbol.id, subtract(performed.from, measured.from)])
     )
@@ -108,8 +109,8 @@ export const commandLabel = (symbol: AnyCommand): string =>
         ? `Note ${symbol.pitch}`
         : `${symbol.expressionType} (${symbol.scope})`
 
-export const describeCommand = (symbol: AnyCommand, view: EditionView): string => {
-    const place = view.placeOf(symbol)?.from
+export const describeCommand = (symbol: AnyCommand, edition: Edition): string => {
+    const place = placeOf(edition, symbol)?.from
     return place === undefined
         ? commandLabel(symbol)
         : `${commandLabel(symbol)} at ${place.toFixed(0)} mm`
@@ -121,8 +122,8 @@ export const relationLabel: Record<PlacementRelation, string> = {
     after: 'lies after'
 }
 
-export const describePlacement = ({ relation, follower, reference }: Placement, view: EditionView): string =>
-    `${describeCommand(follower, view)} ${relationLabel[relation]} ${describeCommand(reference, view)}`
+export const describePlacement = ({ relation, follower, reference }: Placement, edition: Edition): string =>
+    `${describeCommand(follower, edition)} ${relationLabel[relation]} ${describeCommand(reference, edition)}`
 
 export type ProblemKind = ConstraintProblem['problem']
 

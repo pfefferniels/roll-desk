@@ -1,5 +1,5 @@
 import { Link, Stack, Typography } from "@mui/material"
-import { alignmentProblems, Edition, FeatureSource, paperOf, Path, Perforator, referenceCopyOf, RollCopy, sourceLabels } from "linked-rolls"
+import { alignmentProblems, Edition, FeatureSource, paperOf, Path, Perforator, referenceCopyOf, RollCopy, sourceLabels, pathIn } from "linked-rolls"
 import { alignmentStatement, problemStatement, strainStatement } from "../../helpers/alignment"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
@@ -110,12 +110,12 @@ const AlignmentAccount = ({ copy, edition }: { copy: RollCopy, edition: Edition 
 
 /** What the edition states of a copy and why: where its features come from, and which versions it carries. */
 export const CopyAccount = ({ copyId }: { copyId: string }) => {
-    const { view } = useContext(EditionContext)
-    const account = view && copyAccount(view, copyId)
-    if (!view || !account) return null
+    const { edition } = useContext(EditionContext)
+    const account = edition && copyAccount(edition, copyId)
+    if (!edition || !account) return null
 
     const { copy, carriages, reservations } = account
-    const copyPath = view.getPath(copyId) ?? []
+    const copyPath = pathIn(edition, copyId) ?? []
     const perforator = copy.production?.perforator
     const statesPerforator = perforator && (perforatorStatements(perforator).length > 0 || perforator.condition?.description)
 
@@ -152,7 +152,7 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
                 ))}
             </AccountSection>
 
-            <AlignmentAccount copy={copy} edition={view.edition} />
+            <AlignmentAccount copy={copy} edition={edition} />
 
             {statesPerforator && (
                 <AccountSection title='Perforator'>

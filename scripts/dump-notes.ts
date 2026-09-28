@@ -5,16 +5,16 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/dump-notes.ts [Pfadmuster]
  */
 
-import { EditionView, importJsonLd, migrate, resolveNote } from 'linked-rolls'
+import { importJsonLd, migrate, resolveNote } from 'linked-rolls'
 import { copyLabel, nameOf } from '../src/helpers/names'
 import { Json, readEdition } from './storedEdition'
 
 const document = readEdition()
-const view = new EditionView(importJsonLd(migrate(structuredClone(document))))
+const edition = importJsonLd(migrate(structuredClone(document)))
 
 const label = (id: string) => {
-    const copy = view.edition.copies.find(candidate => candidate.id === id)
-    return copy ? copyLabel(copy) : nameOf(view, id)
+    const copy = edition.copies.find(candidate => candidate.id === id)
+    return copy ? copyLabel(copy) : nameOf(edition, id)
 }
 
 const notes: { path: string, note: string }[] = []

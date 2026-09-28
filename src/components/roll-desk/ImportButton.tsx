@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useState } from 'react';
 import { FileOpen } from "@mui/icons-material";
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { EditionView, constraintProblems } from "linked-rolls";
+import { constraintProblems } from "linked-rolls";
 import { EditionContext } from '../../providers/EditionContext';
 import { useSnackbar } from '../../providers/SnackbarContext';
 import { problemCount } from '../../helpers/constraints';
@@ -33,7 +33,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
         const edition = imported.value
         setEdition(edition)
 
-        const count = constraintProblems(new EditionView(edition)).length
+        const count = constraintProblems(edition).length
         const notices = [
             refusalToDrawScans(edition.copies),
             count > 0 ? `${problemCount(count)}, see the Constraints tab` : undefined

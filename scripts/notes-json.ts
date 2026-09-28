@@ -6,20 +6,20 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/notes-json.ts > notes.json
  */
 
-import { EditionView, importJsonLd, migrate } from 'linked-rolls'
+import { importJsonLd, migrate, symbolIn, placeOf } from 'linked-rolls'
 import { copyLabel, nameOf } from '../src/helpers/names'
 import { Json, readEdition } from './storedEdition'
 
 const document = readEdition()
-const view = new EditionView(importJsonLd(migrate(structuredClone(document))))
+const edition = importJsonLd(migrate(structuredClone(document)))
 
 const label = (id: string) => {
-    const copy = view.edition.copies.find(candidate => candidate.id === id)
-    return copy ? copyLabel(copy) : nameOf(view, id)
+    const copy = edition.copies.find(candidate => candidate.id === id)
+    return copy ? copyLabel(copy) : nameOf(edition, id)
 }
 
 /** Every version a note can refer to, by siglum. */
-const sigla = Object.fromEntries(view.edition.versions.map(version => [label(version.id) ?? version.id, version.id]))
+const sigla = Object.fromEntries(edition.versions.map(version => [label(version.id) ?? version.id, version.id]))
 
 /**
  * A perforation has no name to stand in the editor either, and its id is
@@ -30,11 +30,11 @@ const aliases: Record<string, string> = {}
 const targets: Record<string, string> = {}
 
 const describe = (id: string) => {
-    const symbol = view.symbol(id)
+    const symbol = symbolIn(edition, id)
     if (!symbol) return 'nicht gefunden'
     const what = 'expressionType' in symbol ? `${symbol.expressionType} ${symbol.scope ?? ''}`.trim()
         : 'pitch' in symbol ? `Ton ${symbol.pitch}` : symbol.type
-    const at = view.placeOf(symbol)
+    const at = placeOf(edition, symbol)
     return at === undefined ? what : `${what}, ${at.from.toFixed(1).replace('.', ',')} mm`
 }
 

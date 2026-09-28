@@ -1,6 +1,6 @@
 import { Delete } from "@mui/icons-material"
 import { Button, IconButton, MenuItem, Stack, TextField, Typography } from "@mui/material"
-import { certainties, Certainty, clearCarriage, idOf, stateCarriage } from "linked-rolls"
+import { certainties, Certainty, clearCarriage, idOf, stateCarriage, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
 import { EditionContext } from "../../providers/EditionContext"
@@ -13,17 +13,17 @@ import { nameOf } from "../../helpers/names"
  * the statement is made.
  */
 export const CarriedVersions = ({ copyId }: { copyId: string }) => {
-    const { edition, view, apply } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
     const [versionId, setVersionId] = useState('')
     const [certainty, setCertainty] = useState<Certainty>('likely')
 
     const copy = edition?.copies.find(candidate => candidate.id === copyId)
-    if (!edition || !view || !copy) return null
+    if (!edition || !edition || !copy) return null
 
     const statements = copy.carries ?? []
-    const sigilOf = (id: string) => nameOf(view, id) ?? 'unknown'
+    const sigilOf = (id: string) => nameOf(edition, id) ?? 'unknown'
     const unstated = edition.versions.filter(version => !statements.some(statement => idOf(statement) === version.id))
-    const copyPath = view.getPath(copyId) ?? []
+    const copyPath = pathIn(edition, copyId) ?? []
 
     return (
         <Stack spacing={1}>

@@ -12,15 +12,15 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/check-note-links.ts [Toleranz in mm]
  */
 
-import { AnySymbol, EditionView, importJsonLd, insertedBy, migrate, partsOfNote, siglaOf } from 'linked-rolls'
+import { AnySymbol, importJsonLd, insertedBy, migrate, partsOfNote, siglaOf, placeOf } from 'linked-rolls'
 import { Json, readEdition } from './storedEdition'
 
 /** What rounding to a whole millimetre can account for. Beyond it, a figure wants looking at. */
 const TOLERANCE = Number(process.argv[2] ?? 0.6)
 
 const document = readEdition()
-const view = new EditionView(importJsonLd(migrate(structuredClone(document))))
-const sigla = siglaOf(view.edition)
+const edition = importJsonLd(migrate(structuredClone(document)))
+const sigla = siglaOf({ versions: edition.versions })
 
 const describe = (symbol: AnySymbol) =>
     'expressionType' in symbol ? `${symbol.expressionType} ${symbol.scope ?? ''}`.trim()
@@ -34,9 +34,9 @@ interface Punching {
     versionId: string
 }
 
-const punchings = new Map<string, Punching>(view.edition.versions.flatMap(version =>
+const punchings = new Map<string, Punching>(edition.versions.flatMap(version =>
     insertedBy(version).map(symbol => [symbol.id, {
-        at: view.placeOf(symbol)?.from,
+        at: placeOf(edition, symbol)?.from,
         what: describe(symbol),
         version: sigla.get(version.id) ?? version.id,
         versionId: version.id

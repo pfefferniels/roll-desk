@@ -5,19 +5,19 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/probe-ids.ts 1691 1775 …
  */
 
-import { AnySymbol, EditionView, importJsonLd, insertedBy, migrate, siglaOf } from 'linked-rolls'
+import { AnySymbol, importJsonLd, insertedBy, migrate, siglaOf, placeOf } from 'linked-rolls'
 import { readEdition } from './storedEdition'
 
-const view = new EditionView(importJsonLd(migrate(readEdition())))
-const sigla = siglaOf(view.edition)
+const edition = importJsonLd(migrate(readEdition()))
+const sigla = siglaOf({ versions: edition.versions })
 
 const describe = (symbol: AnySymbol) =>
     'expressionType' in symbol ? `${symbol.expressionType} ${symbol.scope ?? ''}`.trim()
         : 'pitch' in symbol ? `Ton ${symbol.pitch}` : symbol.type
 
-const placed = view.edition.versions.flatMap(version =>
+const placed = edition.versions.flatMap(version =>
     insertedBy(version).flatMap(symbol => {
-        const at = view.placeOf(symbol)
+        const at = placeOf(edition, symbol)
         return at === undefined ? [] : [{ symbol, at: at.from, version: sigla.get(version.id) ?? version.id }]
     }))
 

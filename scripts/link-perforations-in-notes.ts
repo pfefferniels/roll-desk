@@ -12,7 +12,7 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/link-perforations-in-notes.ts [--write]
  */
 
-import { AnySymbol, EditionView, importJsonLd, insertedBy, migrate, NotePart, partsOfNote, siglaOf } from "linked-rolls"
+import { AnySymbol, importJsonLd, insertedBy, migrate, NotePart, partsOfNote, siglaOf, placeOf } from "linked-rolls"
 import { finish, Json, readEdition, structuralProblems } from './storedEdition'
 
 /** How near a symbol has to sit for a figure to name it. The notes give 0,1 mm. */
@@ -22,17 +22,17 @@ const TOLERANCE = 0.6
 const SHORTEST_PLACE = 500
 
 const document = readEdition()
-const view = new EditionView(importJsonLd(migrate(structuredClone(document))))
+const edition = importJsonLd(migrate(structuredClone(document)))
 
 interface Placed {
     symbol: AnySymbol
     at: number
 }
 
-const placed: Placed[] = view.edition.versions
+const placed: Placed[] = edition.versions
     .flatMap(version => insertedBy(version))
     .flatMap(symbol => {
-        const place = view.placeOf(symbol)
+        const place = placeOf(edition, symbol)
         return place === undefined ? [] : [{ symbol, at: place.from }]
     })
 
@@ -65,11 +65,11 @@ const DECIDED: readonly Decision[] = [
     { written: '5582,7 mm', type: 'SlowCrescendoOn', version: 'R1' }
 ]
 
-const sigla = siglaOf(view.edition)
+const sigla = siglaOf({ versions: edition.versions })
 
 /** Which version inserts the symbol, by siglum. */
 const versionOf = (symbol: AnySymbol) => {
-    const holder = view.edition.versions.find(version => insertedBy(version).some(one => one.id === symbol.id))
+    const holder = edition.versions.find(version => insertedBy(version).some(one => one.id === symbol.id))
     return holder && sigla.get(holder.id)
 }
 
