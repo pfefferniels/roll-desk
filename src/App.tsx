@@ -3,13 +3,13 @@ import './App.css';
 import { Snackbar } from '@mui/material';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 
-import { SnackbarContext } from './providers/SnackbarContext';
-import { Desk } from './components/roll-desk/RollDesk';
+import { SnackbarContext } from './desk/SnackbarContext';
+import { Desk } from './desk/RollDesk';
 import { PianoContextProvider } from 'react-pianosound';
-import { EditionProvider } from './providers/EditionContext';
+import { EditionProvider } from './edition/EditionContext';
 import { Edition } from 'linked-rolls';
-import { checkedDocument, importedEdition } from './helpers/importEdition';
-import { entityOfPath } from './helpers/addresses';
+import { checkedDocument, importedEdition } from './edition/importEdition';
+import { entityOfPath } from './edition/addresses';
 
 /**
  * The published edition, opened on whatever entity the address names:

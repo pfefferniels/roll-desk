@@ -6,7 +6,7 @@
  */
 
 import { importJsonLd, migrate, resolveNote } from 'linked-rolls'
-import { copyLabel, nameOf } from '../src/helpers/names'
+import { copyLabel, nameOf } from '../src/edition/names'
 import { Json, readEdition } from './storedEdition'
 
 const document = readEdition()

@@ -1,0 +1,247 @@
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
+import { FeatureOrPatch, addGeneralCondition, assignObject, featuresOf, isRollFeature, mergeFeatures, referenceCopyOf, removeFeatures, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, unalignCopy } from "linked-rolls"
+import { EventDimension } from "../desk/RollDesk"
+import { AddWritingFeature } from "./AddFeature"
+import { useContext, useState } from "react"
+import { selectionAsIIIFLink } from "../facsimile/RollGrid"
+import { ProductionEventDialog } from "./ProductionEventDialog"
+import { Ribbon } from "../desk/Ribbon"
+import { Add, BrokenImage, Delete, Description, Deselect, Edit as EditIcon, GroupAdd, SelectAll } from "@mui/icons-material"
+import { AlignmentDialog } from "./AlignmentDialog"
+import { EditString } from "../fields/EditString"
+import { EditionContext } from "../edition/EditionContext"
+import { useSelection } from "../desk/SelectionContext"
+import { FeatureConditionDialog } from "./FeatureConditionDialog"
+import { mergeObstacleFor, mergeObstacleNote } from "./mergeObstacleNote"
+import { whichCopy } from "../edition/names"
+import { RollCopyDialog } from "./RollCopyDialog"
+
+export type FacsimileSelection = EventDimension | FeatureOrPatch
+
+interface MenuProps {
+    copyId: string
+}
+
+export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
+    const { selection, setSelection } = useSelection((item): item is FacsimileSelection => isRollFeature(item) || ('horizontal' in item && 'vertical' in item))
+
+    /** What is selected where one thing is, which is what the dialogs act on. */
+    const sole = selection.length === 1 ? selection[0] : undefined
+    const { edition, apply } = useContext(EditionContext)
+
+    const [addSymbolDialogOpen, setAddSymbolDialogOpen] = useState(false)
+    const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
+    const [reportRollCondition, setReportRollCondition] = useState(false)
+    const [editProduction, setEditProduction] = useState(false)
+    const [showAlignment, setShowAlignment] = useState(false)
+    const [confirmRemove, setConfirmRemove] = useState(false)
+    const [showDetails, setShowDetails] = useState(false)
+
+    if (!edition) return null
+
+    const copy = edition.copies.find(c => c.id === copyId)
+    if (!copy) return null
+
+    const isReference = referenceCopyOf(edition)?.id === copyId
+    const carriedAlone = symbolsCarriedOnlyBy(edition, copyId).length
+    const features = selection.filter(isRollFeature)
+    const obstacle = mergeObstacleFor(features, edition)
+
+    return (
+        <>
+            <Stack direction='row' spacing={1}>
+                <Ribbon title='Copy'>
+                    <Button
+                        onClick={() => setShowDetails(true)}
+                        startIcon={<Description />}
+                    >
+                        Details
+                    </Button>
+                    <Button
+                        onClick={() => setEditProduction(true)}
+                        startIcon={<EditIcon />}
+                    >
+                        Production
+                    </Button>
+                    <Button
+                        startIcon={<BrokenImage />}
+                        onClick={() => setReportRollCondition(true)}
+                    >
+                        Condition
+                    </Button>
+                    <Button
+                        startIcon={<Delete />}
+                        onClick={() => setConfirmRemove(true)}
+                    >
+                        Remove
+                    </Button>
+                </Ribbon>
+                <Ribbon title='Alignment'>
+                    <Button
+                        onClick={() => setShowAlignment(true)}
+                    >
+                        {isReference ? 'Reference' : copy.measurements.alignment ? 'Aligned' : 'Align...'}
+                    </Button>
+                    {copy.measurements.alignment && (
+                        <Button
+                            onClick={() => {
+                                apply(unalignCopy(copyId))
+                            }}
+                        >
+                            Remove Alignment
+                        </Button>
+                    )}
+                </Ribbon>
+                <Ribbon title='Symbols'>
+                    <Button
+                        onClick={() => {
+                            if (selection.length === featuresOf(copy).length) {
+                                setSelection([])
+                            }
+                            else {
+                                setSelection(featuresOf(copy))
+                            }
+                        }}
+                        startIcon={selection.length === featuresOf(copy).length
+                            ? <Deselect /> : <SelectAll />}
+                        size='small'
+                    >
+                        {selection.length === featuresOf(copy).length ? 'Deselect' : 'Select'} All
+                    </Button>
+                </Ribbon>
+                {selection.length > 0 && (
+                    <>
+                        <Ribbon title='Feature'>
+                            {selection.length > 0 && (
+                                <Button
+                                    onClick={() => setAddSymbolDialogOpen(true)}
+                                    size='small'
+                                    startIcon={<Add />}
+                                >
+                                    Add
+                                </Button>
+                            )}
+
+                            <Button
+                                onClick={() => {
+                                    apply(removeFeatures(copy.id, features.map(f => f.id)))
+                                    setSelection([])
+                                }}
+                                size='small'
+                                startIcon={<Delete />}
+                            >
+                                Remove
+                            </Button>
+                            <Tooltip title={obstacle ? mergeObstacleNote(obstacle) : ''}>
+                                <span>
+                                    <Button
+                                        onClick={() => {
+                                            apply(mergeFeatures(copy.id, features.map(f => f.id)))
+                                            setSelection([])
+                                        }}
+                                        disabled={obstacle !== undefined}
+                                        size='small'
+                                        startIcon={<GroupAdd />}
+                                    >
+                                        Merge
+                                    </Button>
+                                </span>
+                            </Tooltip>
+                            <Button
+                                onClick={() => setReportFeatureCondition(true)}
+                                size='small'
+                                startIcon={<BrokenImage />}
+                            >
+                                Condition
+                            </Button>
+                        </Ribbon>
+                    </>
+                )}
+            </Stack>
+
+            {sole && (
+                <AddWritingFeature
+                    copyID={copy.id}
+                    open={addSymbolDialogOpen}
+                    onClose={() => setAddSymbolDialogOpen(false)}
+                    iiifUrl={selectionAsIIIFLink(sole, copy)}
+                />
+            )}
+
+            {sole && isRollFeature(sole) && (
+                <FeatureConditionDialog
+                    open={reportFeatureCondition}
+                    feature={sole}
+                    onClose={() => setReportFeatureCondition(false)}
+                    onDone={(condition) => {
+                        apply(stateFeatureCondition(copyId, sole.id, condition))
+                        setReportFeatureCondition(false)
+                    }}
+                />
+            )}
+
+            <EditString
+                open={reportRollCondition}
+                value={"Generel condition ..."}
+                onClose={() => setReportRollCondition(false)}
+                onDone={(value) => {
+                    apply(addGeneralCondition(copyId, assignObject({
+                        conditionType: 'general',
+                        description: value
+                    })))
+                    setReportRollCondition(false)
+                }}
+            />
+
+            <ProductionEventDialog
+                open={editProduction}
+                event={copy.production}
+                onClose={() => setEditProduction(false)}
+                onDone={(event) => {
+                    apply(draft => {
+                        const copy = draft.copies.find(c => c.id === copyId)
+                        if (!copy) return
+
+                        copy.production = event
+                    })
+                    setEditProduction(false)
+                }}
+            />
+
+            <Dialog open={confirmRemove} onClose={() => setConfirmRemove(false)}>
+                <DialogTitle>Remove Copy</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {carriedAlone > 0
+                            ? `Removing the copy ${whichCopy(copy)} also removes the ${carriedAlone} symbol(s) only this copy carries from the versions.`
+                            : `No symbol of the versions depends on the copy ${whichCopy(copy)} alone.`}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmRemove(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                        apply(removeCopy(copyId))
+                        setSelection([])
+                        setConfirmRemove(false)
+                    }}>
+                        Remove
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {showDetails && (
+                <RollCopyDialog
+                    open
+                    copy={copy}
+                    onClose={() => setShowDetails(false)}
+                />
+            )}
+
+            <AlignmentDialog
+                copy={copy}
+                open={showAlignment}
+                onClose={() => setShowAlignment(false)}
+            />
+        </>
+    )
+}

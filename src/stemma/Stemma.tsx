@@ -1,0 +1,669 @@
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, pathIn, withGenerations, Edition } from 'linked-rolls'
+import { Box, Popover, Portal } from "@mui/material";
+import { problemCount, problemsOfVersion } from '../constraints/constraints';
+import { useContext, useMemo, useRef, useState } from "react"
+import * as d3 from "d3";
+import { ReactNode, SVGProps, useEffect } from "react";
+import { EditionContext } from '../edition/EditionContext';
+import { Legend } from './Legend';
+import { useSelection } from '../desk/SelectionContext';
+import { Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
+import { Arguable } from '../accounts/Arguable';
+import { along, minus, perpendicular, point, Point, unit } from '../geometry/drawing';
+import { HeldMotivation, isHeldMotivation, sameMotivation } from '../edition/motivation';
+import { Svg, svg } from '../canvas/units';
+
+/** How far inside the drawing's edge a slice is brought when it is moved into view. */
+const revealMargin = svg(40)
+
+/** How long that move takes, short enough to read as the drawing following the pointer. */
+const revealDuration = 300
+
+interface Stemma {
+    currentVersionId: string | undefined
+    /** The constraint problems of the whole edition, counted per node. */
+    problems?: readonly ConstraintProblem[]
+    /** How tall the drawing is, which leaves room beneath it for what is written about a version. */
+    height?: number
+    onClick: (versionId: string) => void
+}
+
+export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 }: Stemma) => {
+    const { edition } = useContext(EditionContext)
+    const { selection } = useSelection(isHeldMotivation)
+
+    const svgRef = useRef<SVGSVGElement>(null)
+    const zoomLayerRef = useRef<SVGGElement>(null)
+    const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>(null)
+    const svgWidth = 300
+    const svgHeight = height
+    const versions = edition?.versions
+
+    // Laid out while rendering, so that no link outlives the derivation its mark addresses.
+    const { nodes, links } = useMemo(() => {
+        if (!versions || !edition) return { nodes: [], links: [] }
+
+        const graph = graphOf(withGenerations(edition), problems, {
+            sigla: siglaOf(edition),
+            attested: attestedVersions(edition)
+        })
+        return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
+    }, [versions, edition, problems, svgHeight])
+
+    const fit = useMemo(() => fitOf(nodes, svgWidth, svgHeight), [nodes, svgWidth, svgHeight])
+
+    useEffect(() => {
+        if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
+
+        const svg = d3.select(svgRef.current)
+        const zoomLayer = d3.select(zoomLayerRef.current)
+
+        const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+            zoomLayer.attr("transform", event.transform.toString())
+        }
+
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.2, 5])
+            .on("zoom", zoomed)
+
+        svg.call(zoom)
+        zoomRef.current = zoom
+
+        const initialTransform = d3.zoomIdentity
+            .translate(svgWidth / 2, svgHeight / 2)
+            .scale(fit.scale)
+            .translate(-fit.midX, -fit.midY)
+
+        // apply initial “fit all nodes” transform
+        // eslint-disable-next-line @typescript-eslint/unbound-method -- d3 means zoom.transform to be passed to `call`
+        svg.call(zoom.transform, initialTransform)
+
+        return () => {
+            svg.on(".zoom", null)
+            zoomRef.current = null
+        }
+    }, [nodes, fit, svgWidth, svgHeight])
+
+    // The slice of the motivation in focus, which an edit on the roll puts
+    // there by being hovered.
+    const inFocus = useMemo(() => {
+        const [held] = selection
+        return held && edition ? sliceAt(held, { nodes, links }, edition) : undefined
+    }, [selection, nodes, links, edition])
+
+    // A motivation chosen elsewhere is read on its slice, so the drawing
+    // moves to it where the zoom has left it off the edge.
+    useEffect(() => {
+        const zoom = zoomRef.current
+        if (!inFocus || !zoom || !svgRef.current) return
+
+        const transform = d3.zoomTransform(svgRef.current)
+        const [x, y] = transform.apply([inFocus.x, inFocus.y])
+        const shift = shiftIntoView(
+            point(svg(x), svg(y)),
+            { width: svg(svgWidth), height: svg(svgHeight) },
+            revealMargin
+        )
+        if (!shift) return
+
+        // `translateBy` moves the drawing in its own units, which the zoom
+        // has scaled against the screen.
+        zoom.translateBy(
+            d3.select(svgRef.current).transition().duration(revealDuration),
+            shift.x / transform.k,
+            shift.y / transform.k
+        )
+    }, [inFocus, svgWidth, svgHeight])
+
+    return (
+        <Box sx={{ position: 'relative', width: svgWidth, height: svgHeight, flexShrink: 0 }}>
+            <div style={{ position: 'absolute', bottom: 0, right: 0, padding: '0.5rem', zIndex: 10 }}>
+                <Legend />
+            </div>
+            <svg
+                width={svgWidth}
+                height={svgHeight}
+                ref={svgRef}
+                style={{ display: 'block' }}
+            >
+                <defs>
+                    <filter id="f1"
+                        x="-100%" y="-100%"
+                        width="300%" height="300%">
+                        <feOffset in="SourceGraphic" dx="3" dy="3" />
+                        <feGaussianBlur stdDeviation="5" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <g ref={zoomLayerRef}>
+                    <LinkContainer
+                        links={links}
+                        positionedNodes={nodes}
+                        markScale={1 / fit.scale}
+                        onVersionClick={onClick}
+                    />
+
+                    {nodes.map((node, i) => (
+                        <NavigationNode
+                            key={`interpretation_${i}`}
+                            node={node}
+                            onClick={() => {
+                                if (!edition) return
+                                onClick(node.id)
+                            }}
+                            highlight={currentVersionId === node.id}
+                        />
+                    ))}
+                </g>
+            </svg>
+        </Box>
+    )
+}
+
+
+export interface Node extends d3.SimulationNodeDatum {
+    id: string;
+    label: string;
+    generation: number
+    radius?: number;
+    /** The reproducing system the version is coded for, named short. */
+    system?: string
+    /**
+     * Whether the version names its system in the drawing. A version
+     * inherits the system of the one it is based on, so only the root
+     * and a version that changes system say which one they are in.
+     */
+    namesSystem?: boolean
+    /**
+     * Whether no copy's features carry the version at first hand. The
+     * node is then drawn open, as a state read off its descendants
+     * rather than off a copy.
+     */
+    inferred?: boolean
+    overlayInfo?: ReactNode
+}
+
+export interface Link extends d3.SimulationLinkDatum<Node> {
+    index?: number;
+    motivationPath?: Path
+    /**
+     * Whether the derivation crosses from one reproducing system to
+     * another. That is a transfer rather than a revision: the whole
+     * expression vocabulary is re-spelled, and the edits carry out a
+     * rule stated on the version's creation.
+     */
+    transfer?: boolean
+
+    /** How certainly the derivation is held. */
+    certainty: Certainty
+
+    /**
+     * Whether the version's text is read against this derivation. The
+     * others stand as hypotheses, drawn apart and carrying no motivations.
+     */
+    principal: boolean
+
+    /** Where the derivation stands in the version's `basedOn`, which is how its belief is addressed. */
+    derivation: number
+
+    /** Whether a belief is stated of the derivation, which is then marked on the link. */
+    believed: boolean
+}
+
+const sharesSystem = (a: Version, b: Version) =>
+    systemIdOf(a.system) === systemIdOf(b.system)
+
+/** What the drawing calls each version, and which of them a copy shows at first hand. */
+export interface Naming {
+    sigla: ReadonlyMap<string, string>
+    attested: ReadonlySet<string>
+}
+
+/** The versions and their derivations, as the graph the stemma draws. */
+export const graphOf = (
+    versions: readonly (Version & { generation: number })[],
+    problems: readonly ConstraintProblem[],
+    { sigla, attested }: Naming
+): { nodes: Node[], links: Link[] } => {
+    const versionBy = (id: string) => versions.find(other => other.id === id)
+
+    /** The version the text is read against. */
+    const parentOf = (version: Version) => {
+        const principal = principalDerivationOf(version)
+        return principal && versionBy(idOf(principal))
+    }
+
+    const nodes: Node[] = versions.map(version => {
+        const troubles = problemsOfVersion(problems, version.id).length
+        const parent = parentOf(version)
+
+        return {
+            id: version.id,
+            label: sigla.get(version.id) ?? '?',
+            system: trackerBarOf(version.system)?.name,
+            namesSystem: parent === undefined || !sharesSystem(parent, version),
+            inferred: !attested.has(version.id),
+            generation: version.generation,
+            overlayInfo: troubles > 0
+                ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
+                : null
+        }
+    })
+
+    const nodeOf = (id: string) => nodes.find(node => node.id === id) || 'unknown'
+
+    const links: Link[] = versions.flatMap(version => {
+        const principal = parentOf(version)
+        return derivationsOf(version).flatMap(({ parent, certainty, belief }, derivation): Link[] => {
+            const target = versionBy(parent)
+            if (!target) return []
+
+            return [{
+                source: nodeOf(version.id),
+                target: nodeOf(target.id),
+                transfer: !sharesSystem(target, version),
+                certainty,
+                principal: target === principal,
+                derivation,
+                believed: belief !== undefined
+            }]
+        })
+    })
+
+    return { nodes, links }
+}
+
+/**
+ * The motivations a derivation's balloon is sliced by, each weighed by the
+ * edits held under it and told whether it is one of those in focus.
+ */
+export const slicesOf = (version: Version, inFocus: readonly HeldMotivation[] = []): Slice[] => {
+    const edits = editsOf(version)
+
+    return version.motivations.map(motivation => ({
+        id: motivation.id,
+        count: edits.filter(edit => edit.motivation === motivation.id).length,
+        description: motivation.note || 'No description',
+        selected: inFocus.some(held => sameMotivation(held, { versionId: version.id, motivation }))
+    }))
+}
+
+/** The version a node stands for, where the drawing has placed it. */
+const placed = (nodes: readonly Node[], id: string): Point | undefined => {
+    const node = nodes.find(node => node.id === id)
+    return node?.x !== undefined && node.y !== undefined ? point(svg(node.x), svg(node.y)) : undefined
+}
+
+/**
+ * Where the slice of a motivation is drawn: on the balloon of the
+ * derivation the version holding it is read against. Nothing where that
+ * derivation is not drawn, since a motivation has no place of its own.
+ */
+export const sliceAt = (
+    held: HeldMotivation,
+    { nodes, links }: { nodes: readonly Node[], links: readonly Link[] },
+    edition: Edition
+): Point | undefined => {
+    const link = links.find(link => link.principal && (link.source as Node).id === held.versionId)
+    const version = versionIn(edition, held.versionId)
+    if (!link || !version) return undefined
+
+    const source = placed(nodes, held.versionId)
+    const target = placed(nodes, (link.target as Node).id)
+    if (!source || !target) return undefined
+
+    const centre = sliceCentre(source, target, slicesOf(version), held.motivation.id)
+    return centre && point(svg(centre.x), svg(centre.y))
+}
+
+/** How far a place is moved along one axis to bring it inside, clear of the edge by the margin. */
+const towardsView = (at: Svg, extent: Svg, margin: Svg): Svg => {
+    if (at < margin) return svg(margin - at)
+    if (at > extent - margin) return svg(extent - margin - at)
+    return svg(0)
+}
+
+/** How far the drawing must move for a place on it to come into view, and nothing where it already is. */
+export const shiftIntoView = (
+    at: Point,
+    viewport: { width: Svg, height: Svg },
+    margin: Svg
+): Point | undefined => {
+    const shift = point(
+        towardsView(at.x, viewport.width, margin),
+        towardsView(at.y, viewport.height, margin)
+    )
+    return shift.x === 0 && shift.y === 0 ? undefined : shift
+}
+
+/** The scale and the centre that fit every node into the drawing, with a margin left around them. */
+export const fitOf = (nodes: readonly Node[], width: number, height: number, margin = 40) => {
+    const xs = nodes.map(node => node.x ?? 0)
+    const ys = nodes.map(node => node.y ?? 0)
+    if (xs.length === 0) return { scale: 1, midX: 0, midY: 0 }
+
+    const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+    return {
+        scale: Math.min((width - 2 * margin) / (maxX - minX || 1), (height - 2 * margin) / (maxY - minY || 1)),
+        midX: (minX + maxX) / 2,
+        midY: (minY + maxY) / 2
+    }
+}
+
+/** Where the mark of a derivation's belief sits: beside the middle of the link, clear of it by the distance given. */
+export const linkMarkAt = (a: Point, b: Point, clearance: Svg): Point => {
+    const middle = along(a, minus(b, a), 0.5)
+    const direction = unit(minus(b, a))
+    return direction ? along(middle, perpendicular(direction), clearance) : middle
+}
+
+export const radiusOf = (node: Node) =>
+    node.radius ?? 32
+
+/**
+ * Half the caption and the gap to the next one. Text cannot be
+ * measured before it is drawn, so the width is estimated at the
+ * 5.8 px a character of 10 px sans-serif takes on average.
+ */
+const captionHalfWidth = (node: Node) =>
+    node.namesSystem && node.system ? node.system.length * 2.9 + 4 : 0
+
+/** What a node claims of its row, caption included. */
+const spaceFor = (node: Node) => Math.max(radiusOf(node), captionHalfWidth(node))
+
+export const calculatePositions = (
+    nodes: Node[],
+    links: Link[],
+    width: number,
+    height: number,
+    n: number = 300
+): Node[] => {
+
+    const rowGap = 200; // vertical distance between generations
+
+    // fix y position based on generation
+    nodes.forEach(node => {
+        const y = 50 + node.generation * rowGap;
+        node.y = y;
+        node.fy = y;               // <- fixed y, D3 won't move it
+    });
+
+    const simulation = d3
+        .forceSimulation(nodes)
+        .force(
+            "link",
+            d3
+                .forceLink<Node, Link>(links.filter(l => l.source !== 'unknown' && l.target !== 'unknown'))
+                .id(d => d.id)
+                .strength(link => link.principal ? 0.6 : 0.1)
+        )
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force(
+            "x",
+            d3.forceX<Node>()
+                .x(width / 2)                  // roughly center each row
+                .strength(0.01)
+        )
+        .force(
+            "collide",
+            d3.forceCollide<Node>(spaceFor)
+                .strength(1)
+        );
+
+    simulation.stop();
+    for (let i = 0; i < n; i++) simulation.tick();
+
+    return nodes;
+};
+
+export interface NavigationNodeProps extends SVGProps<SVGGElement> {
+    node: Node
+    highlight: boolean
+}
+
+export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeProps) => {
+    const [hover, setHover] = useState(false)
+    const elRef = useRef<SVGGElement>(null)
+
+    return (
+        <>
+            <g
+                {...svgProps}
+                style={{
+                    cursor: node.id !== '' ? 'pointer' : 'auto',
+                    pointerEvents: 'auto'
+                }}
+                onClick={(e) => {
+                    setHover(!hover)
+                    svgProps.onClick?.(e)
+                }}
+                ref={elRef}
+            >
+                {node.system && <title>{node.system}</title>}
+
+                {highlight && (
+                    <circle
+                        cx={node.x || 10}
+                        cy={node.y || 10}
+                        r={radiusOf(node) + 3}
+                        fill='none'
+                        strokeWidth={2}
+                        stroke='black'
+                        strokeDasharray='3 2'
+                    />
+                )}
+                <circle
+                    cx={node.x || 10}
+                    cy={node.y || 10}
+                    r={radiusOf(node)}
+                    fill={node.inferred ? 'white' : 'darkslategray'}
+                    strokeWidth={node.inferred ? 2 : 0}
+                    stroke='darkslategray'
+                />
+                <text
+                    x={node.x || 10}
+                    y={node.y || 10}
+                    width={40}
+                    height={40}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={14}
+                    fill={node.inferred ? 'darkslategray' : 'white'}
+                >
+                    {node.label}
+                </text>
+
+                {node.system && node.namesSystem && (
+                    <text
+                        x={node.x || 10}
+                        y={(node.y || 10) + radiusOf(node) + 12}
+                        textAnchor="middle"
+                        fontSize={10}
+                        fill="#555"
+                        stroke="white"
+                        strokeWidth={3}
+                        paintOrder="stroke"
+                    >
+                        {node.system}
+                    </text>
+                )}
+
+                {node.overlayInfo && (
+                    <Portal>
+                        <Popover
+                            open={hover}
+                            anchorEl={() => elRef.current!}
+                            onClose={() => setHover(false)}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'right',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'left',
+                            }}
+                            style={{ pointerEvents: 'none' }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div style={{ pointerEvents: 'auto' }}>
+                                {node.overlayInfo}
+                            </div>
+                        </Popover>
+                    </Portal>
+                )}
+            </g>
+        </>
+    )
+}
+
+interface BeliefMarkProps {
+    at: Point
+    path: Path
+    /** How much the mark is enlarged against the drawing. */
+    scale: number
+}
+
+/** The mark of the belief a derivation is held under, centred on the point given. */
+const BeliefMark = ({ at, path, scale }: BeliefMarkProps) => (
+    <g transform={`translate(${at.x} ${at.y}) scale(${scale})`}>
+        <Arguable asSVG={{ buttonPlacement: { x: -10, y: -10 } }} path={path}>
+            {null}
+        </Arguable>
+    </g>
+)
+
+/** How far on the screen the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
+const markClearance = 16
+
+interface LinkContainerProps {
+    positionedNodes: Node[];
+    links: Link[];
+    /**
+     * How much a mark is enlarged against the drawing: the inverse of the
+     * scale the drawing is fitted at, so that a mark keeps a size one can
+     * click however many generations the stemma has to fit.
+     */
+    markScale: number
+    onVersionClick: (versionId: string) => void
+}
+
+export const LinkContainer = ({
+    positionedNodes,
+    links,
+    markScale,
+    onVersionClick,
+}: LinkContainerProps) => {
+    const { selection, setSelection } = useSelection(isHeldMotivation)
+    const { edition } = useContext(EditionContext)
+
+    return (
+        <>
+            {links.map((link, i) => {
+                const source = positionedNodes.find(
+                    node => node.id === (link.source as Node).id
+                )
+                const target = positionedNodes.find(
+                    node => node.id === (link.target as Node).id
+                )
+
+                if (!source || !source.x || !source.y || !target || !target.x || !target.y) {
+                    return null
+                }
+
+                const versionPath = edition && pathIn(edition, source.id)
+                const mark = link.believed && versionPath && (
+                    <BeliefMark
+                        at={linkMarkAt(point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y)), svg(markClearance * markScale))}
+                        path={[...versionPath, 'basedOn', link.derivation]}
+                        scale={markScale}
+                    />
+                )
+
+                if (!link.principal) {
+                    return (
+                        <g key={`link_${i}`}>
+                            <g style={{ cursor: 'pointer' }} onClick={() => onVersionClick(source.id)}>
+                                <title>{`Also derived from ${target.label}`}</title>
+                                <line
+                                    x1={source.x}
+                                    y1={source.y}
+                                    x2={target.x}
+                                    y2={target.y}
+                                    stroke="#6b7280"
+                                    strokeWidth={1.5}
+                                    strokeDasharray="2 4"
+                                />
+                                <line
+                                    x1={source.x}
+                                    y1={source.y}
+                                    x2={target.x}
+                                    y2={target.y}
+                                    stroke="transparent"
+                                    strokeWidth={12}
+                                    pointerEvents="stroke"
+                                />
+                            </g>
+                            {mark}
+                        </g>
+                    )
+                }
+
+                const version = edition && versionIn(edition, source.id)
+                const motivations = version?.motivations ?? []
+
+                return (
+                    <g key={`link_${i}`}>
+                        {link.transfer && (
+                            <line
+                                x1={source.x}
+                                y1={source.y}
+                                x2={target.x}
+                                y2={target.y}
+                                stroke="#b45309"
+                                strokeWidth={2}
+                                strokeDasharray="6 4"
+                            >
+                                <title>Transferred to another reproducing system</title>
+                            </line>
+                        )}
+                        {motivations.length === 0 && !link.transfer && (
+                            <line
+                                x1={source.x}
+                                y1={source.y}
+                                x2={target.x}
+                                y2={target.y}
+                                stroke="gray"
+                                strokeOpacity={0.5}
+                                strokeWidth={2}
+                            />
+                        )}
+                        {version && motivations.length > 0 ? (
+                            <SlicedBalloon
+                                slices={slicesOf(version, selection)}
+                                a={{ x: source.x, y: source.y }}
+                                b={{ x: target.x, y: target.y }}
+                                onSliceHover={(slice) => {
+                                    const m = slice && motivations.find(m => m.id === slice.id)
+                                    setSelection(m ? [{ versionId: source.id, motivation: m }] : [])
+                                }}
+                                onSliceClick={(slice) => {
+                                    const m = motivations.find(m => m.id === slice.id)
+                                    if (!m) return
+                                    onVersionClick(source.id)
+                                    queueMicrotask(() =>
+                                        setSelection([{ versionId: source.id, motivation: m }]))
+                                }}
+                            >
+                                {mark}
+                            </SlicedBalloon>
+                        ) : mark}
+                    </g>
+                )
+            })}
+        </>
+    )
+}
