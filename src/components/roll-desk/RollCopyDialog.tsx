@@ -1,7 +1,7 @@
 import { MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { addCopy, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
+import { addCopy, alignCopy, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../../providers/EditionContext";
 import { v4 } from "uuid";
@@ -241,7 +241,9 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             // and keeps who read it.
             rollCopy.readFrom = featureSourceOf(source, rollCopy.readFrom) ?? rollCopy.readFrom
 
-            apply(together(createVersion(rollCopy), nameCopy(rollCopy.id, copySiglum)))
+            // Aligned with the reference copy straight away, which leaves it
+            // as it was read where it is the first copy or shares no notes.
+            apply(together(createVersion(rollCopy), nameCopy(rollCopy.id, copySiglum), alignCopy(rollCopy.id)))
             onDone?.(rollCopy.id)
             onClose()
         } catch (e) {

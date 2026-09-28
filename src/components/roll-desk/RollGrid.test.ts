@@ -75,6 +75,13 @@ describe('the crop a selection is taken as', () => {
             .toBe('roll/2112,118,200,354/full/0/default.jpg')
     })
 
+    it('takes them back through the copy\'s alignment onto its own paper', () => {
+        // On its own paper the copy stands at x / 2 + 5, so the 10 to 40 mm selected are 10 to 25 mm of the scan.
+        const aligned = copyScannedAt(pixelsPerInch(600))
+        aligned.measurements.alignment = { shift: { horizontal: mm(-5), vertical: track(0) }, scale: 2 }
+        expect(selectionAsIIIFLink(span, aligned)).toBe('roll/2112,236,200,354/full/0/default.jpg')
+    })
+
     it('has nothing to crop for a copy whose scan cannot be drawn', () => {
         expect(selectionAsIIIFLink(span, { ...copyScannedAt(), measurements: {} })).toBeUndefined()
     })

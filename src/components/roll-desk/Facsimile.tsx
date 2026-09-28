@@ -1,4 +1,4 @@
-import { add, columnsOf, Millimeters, mm, Pixels, px, RollCopy, scale, subtract, TrackArea } from "linked-rolls"
+import { columnsOf, Millimeters, Pixels, px, RollCopy, subtract, toAxis, TrackArea } from "linked-rolls"
 import { useEffect, useRef, useState } from "react"
 import { Svg, svg, svgPerScanPixel } from "../../helpers/units"
 import useIsVisible from "../../hooks/useIsVisible"
@@ -20,9 +20,8 @@ import { fetchImageService, ImageService, scaleFactorFor, Tile, tilesOf } from "
 
 /** Screen x of a scan row, through whatever alignment the copy was given. */
 const rowToXOf = (copy: RollCopy, translateX: (x: Millimeters) => Svg) => {
-    const shift = copy.measurements.shift?.horizontal ?? mm(0)
-    const stretch = copy.measurements.scale ?? 1
-    return (row: Pixels) => translateX(scale(add(onPaper(row, copy), shift), stretch))
+    const onAxis = toAxis(copy.measurements.alignment)
+    return (row: Pixels) => translateX(onAxis(onPaper(row, copy)))
 }
 
 /**

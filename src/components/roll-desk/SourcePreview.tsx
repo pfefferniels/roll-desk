@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { IconButton } from '@mui/material'
 import { InfoOutlined } from '@mui/icons-material'
-import { add, featuresOf, Millimeters, mm, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
+import { add, featuresOf, fromAxis, Millimeters, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
 import { Arguable } from './Arguable'
 import { dateStatement } from '../../helpers/dateStatement'
 import { copyLabel, secondarySourceOf } from '../../helpers/names'
@@ -10,14 +10,10 @@ import { Span, spanning } from '../../helpers/scale'
 import { Svg, svg } from '../../helpers/units'
 
 /**
- * Where a collated place sat on the copy's own paper, undoing the shift
- * and stretch the collation gave it.
+ * Where a collated place sat on the copy's own paper, undoing the
+ * alignment that put it on the edition's axis.
  */
-export const asRead = (copy: RollCopy) => {
-    const shift = copy.measurements.shift?.horizontal ?? mm(0)
-    const stretch = copy.measurements.scale ?? 1
-    return (x: Millimeters): Millimeters => times(subtract(x, shift), 1 / stretch)
-}
+export const asRead = (copy: RollCopy) => fromAxis(copy.measurements.alignment)
 
 interface SourcePreviewProps {
     copy: RollCopy

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { add, featuresOf, FeatureOrPatch, Millimeters, RollCopy, scale as times, subtract, TrackerBar } from "linked-rolls"
+import { add, featuresOf, FeatureOrPatch, Millimeters, ownFeaturesOf, RollCopy, scale as times, subtract, TrackerBar } from "linked-rolls"
 import { atLeastVisible, boxOf, evenGeometry, Translation } from "../../helpers/rollGeometry"
 import { padded, Span, spanning } from "../../helpers/scale"
 import { Svg, svg } from "../../helpers/units"
@@ -26,7 +26,7 @@ interface Layer {
 /** A layer once it is known how far it reaches, which a layer without features does not. */
 type MeasuredLayer = Layer & { span?: Span }
 
-/** What the preview shows: one copy as read and as aligned, over the copy it is aligned to. */
+/** What the preview shows: one copy as read and as aligned, over the reference copy it is aligned to. */
 export interface AlignmentPreviewProps {
     copy: RollCopy
     alignTo: RollCopy
@@ -56,16 +56,18 @@ export const drawAlignmentPreview = (
 
     const asRead: Placement = x => x
     const aligned: Placement = x => times(add(x, shift), scale)
+    // The copy as it was read, whatever alignment it has already.
+    const own = ownFeaturesOf(copy)
 
     const layers: Layer[] = [
         {
-            features: featuresOf(copy),
+            features: own,
             place: asRead,
             fill: 'rgba(180, 180, 180, 0.4)',
             outline: { stroke: '#bbb', width: 1, dash: [4, 3] }
         },
         {
-            features: featuresOf(copy),
+            features: own,
             place: aligned,
             fill: 'rgba(25, 118, 210, 0.6)',
             outline: { stroke: '#1976d2', width: 1.5, dash: [] }
