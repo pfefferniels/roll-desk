@@ -1,4 +1,4 @@
-import { EditionView, isMeasured, RollCopy, siglaOf, SourceKind } from "linked-rolls"
+import { isMeasured, RollCopy, siglaOf, SourceKind, versionIn, copyIn, Edition } from "linked-rolls"
 import { heldBy } from "./heldBy"
 
 /** Each kind of source as a title, where `sourceLabels` gives the phrase a sentence needs. */
@@ -26,12 +26,12 @@ export const whichCopy = (copy: RollCopy): string => copy.siglum || `held by ${h
  * the stemma rather than stored, so it follows every change to it, and
  * a version no copy shows at first hand comes back in lowercase.
  */
-export const versionLabel = (view: EditionView, versionId: string): string =>
-    siglaOf(view).get(versionId) ?? 'unnamed version'
+export const versionLabel = (edition: Edition, versionId: string): string =>
+    siglaOf(edition).get(versionId) ?? 'unnamed version'
 
 /** What a reader calls the version or the copy under the id, or nothing where it names neither. */
-export const nameOf = (view: EditionView, id: string): string | undefined => {
-    if (view.version(id)) return versionLabel(view, id)
-    const copy = view.copy(id)
+export const nameOf = (edition: Edition, id: string): string | undefined => {
+    if (versionIn(edition, id)) return versionLabel(edition, id)
+    const copy = copyIn(edition, id)
     return copy && copyLabel(copy)
 }

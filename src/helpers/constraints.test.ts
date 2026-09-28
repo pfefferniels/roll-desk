@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
-import { AnyCommand, EditionOp, EditionView, constraintProblems, isCommand, mm, pairCommands, placeCommand } from 'linked-rolls'
-import { fixtureEdition, ids, viewOf } from './editionFixture'
+import { AnyCommand, EditionOp, constraintProblems, isCommand, mm, pairCommands, placeCommand, symbolIn, snapshotOf, Edition } from 'linked-rolls'
+import { fixtureEdition, ids } from './editionFixture'
 import {
     ProblemKind, constraintsOf, describeCommand, describePlacement, displacedEvents,
     pairStatementOf, pairsIn, partnerOf, commandsIn, placementBetween, placementChain,
@@ -25,49 +25,46 @@ const first = <T>(items: readonly T[]): T => {
 }
 
 
-type Arrangement = (view: EditionView) => EditionOp[]
+type Arrangement = () => EditionOp[]
 
-/** The fixture with the given statements made, as a view. */
-const arranged = (arrange: Arrangement): EditionView => {
-    const edition = fixtureEdition()
-    const view = viewOf(edition)
-    return viewOf(arrange(view).reduce((state, op) => produce(state, op), edition))
-}
+/** The fixture with the given statements made. */
+const arranged = (arrange: Arrangement): Edition =>
+    arrange().reduce((state, op) => produce(state, op), fixtureEdition())
 
-const command = (view: EditionView, id: string): AnyCommand => {
-    const symbol = view.symbol(id)
+const command = (edition: Edition, id: string): AnyCommand => {
+    const symbol = symbolIn(edition, id)
     if (!isCommand(symbol)) throw new Error(`no command ${id}`)
     return symbol
 }
 
 describe('placements of a version', () => {
     it('list a placement both of whose ends the version has, with its relation', () => {
-        const view = arranged(v => [placeCommand(v, ids.forzandoOff, ids.note, 'alignedWith')])
-        const placement = only(placementsIn(view.snapshot(ids.b)))
+        const edition = arranged(() => [placeCommand(ids.forzandoOff, ids.note, 'alignedWith')])
+        const placement = only(placementsIn(snapshotOf(edition, ids.b)))
         expect(placement.relation).toBe('alignedWith')
         expect(placement.follower.id).toBe(ids.forzandoOff)
         expect(placement.reference.id).toBe(ids.note)
     })
 
     it('list an order the same way', () => {
-        const view = arranged(v => [placeCommand(v, ids.forzandoOn, ids.note, 'before')])
-        expect(placementsIn(view.snapshot(ids.a)).map(p => [p.relation, p.follower.id]))
+        const edition = arranged(() => [placeCommand(ids.forzandoOn, ids.note, 'before')])
+        expect(placementsIn(snapshotOf(edition, ids.a)).map(p => [p.relation, p.follower.id]))
             .toEqual([['before', ids.forzandoOn]])
     })
 
     it('leave out a placement whose reference the version does not have', () => {
-        const view = arranged(v => [placeCommand(v, ids.forzandoOff, ids.forzandoOn, 'after')])
-        expect(placementsIn(view.snapshot(ids.a))).toHaveLength(1)
-        expect(placementsIn(view.snapshot(ids.b))).toEqual([])
+        const edition = arranged(() => [placeCommand(ids.forzandoOff, ids.forzandoOn, 'after')])
+        expect(placementsIn(snapshotOf(edition, ids.a))).toHaveLength(1)
+        expect(placementsIn(snapshotOf(edition, ids.b))).toEqual([])
     })
 })
 
 describe('pairs of a version', () => {
     it('are found from either side', () => {
-        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
-        const snapshot = view.snapshot(ids.a)
-        const off = command(view, ids.forzandoOff)
-        const on = command(view, ids.forzandoOn)
+        const edition = arranged(() => [pairCommands(ids.forzandoOff, ids.forzandoOn)])
+        const snapshot = snapshotOf(edition, ids.a)
+        const off = command(edition, ids.forzandoOff)
+        const on = command(edition, ids.forzandoOn)
 
         expect(pairsIn(snapshot).map(p => [p.stating.id, p.partner.id]))
             .toEqual([[ids.forzandoOff, ids.forzandoOn]])
@@ -77,9 +74,9 @@ describe('pairs of a version', () => {
     })
 
     it('keep the statement but lose the partner where the version lacks it', () => {
-        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
-        const snapshot = view.snapshot(ids.b)
-        const off = command(view, ids.forzandoOff)
+        const edition = arranged(() => [pairCommands(ids.forzandoOff, ids.forzandoOn)])
+        const snapshot = snapshotOf(edition, ids.b)
+        const off = command(edition, ids.forzandoOff)
 
         expect(pairsIn(snapshot)).toEqual([])
         expect(pairStatementOf(off, snapshot)?.id).toBe(ids.forzandoOff)
@@ -89,31 +86,31 @@ describe('pairs of a version', () => {
 
 describe('what binds a command', () => {
     it('names the placement and the partner', () => {
-        const view = arranged(v => [
-            placeCommand(v, ids.forzandoOff, ids.note, 'before'),
-            pairCommands(v, ids.forzandoOn, ids.forzandoOff)
+        const edition = arranged(() => [
+            placeCommand(ids.forzandoOff, ids.note, 'before'),
+            pairCommands(ids.forzandoOn, ids.forzandoOff)
         ])
-        const bound = constraintsOf(command(view, ids.forzandoOff), view.snapshot(ids.a))
+        const bound = constraintsOf(command(edition, ids.forzandoOff), snapshotOf(edition, ids.a))
         expect(bound.placement?.relation).toBe('before')
         expect(bound.placement?.reference.id).toBe(ids.note)
         expect(bound.pairedWith?.id).toBe(ids.forzandoOn)
     })
 
     it('follows a chain of placements to its end', () => {
-        const view = arranged(v => [
-            placeCommand(v, ids.forzandoOn, ids.forzandoOff, 'before'),
-            placeCommand(v, ids.forzandoOff, ids.note, 'alignedWith')
+        const edition = arranged(() => [
+            placeCommand(ids.forzandoOn, ids.forzandoOff, 'before'),
+            placeCommand(ids.forzandoOff, ids.note, 'alignedWith')
         ])
-        expect(placementChain(ids.forzandoOn, view.snapshot(ids.a)))
+        expect(placementChain(ids.forzandoOn, snapshotOf(edition, ids.a)))
             .toEqual([ids.forzandoOff, ids.note])
     })
 
     it('stops where a chain turns back on itself', () => {
-        const view = arranged(v => [
-            placeCommand(v, ids.forzandoOn, ids.forzandoOff, 'alignedWith'),
-            placeCommand(v, ids.forzandoOff, ids.forzandoOn, 'after')
+        const edition = arranged(() => [
+            placeCommand(ids.forzandoOn, ids.forzandoOff, 'alignedWith'),
+            placeCommand(ids.forzandoOff, ids.forzandoOn, 'after')
         ])
-        expect(placementChain(ids.forzandoOn, view.snapshot(ids.a)))
+        expect(placementChain(ids.forzandoOn, snapshotOf(edition, ids.a)))
             .toEqual([ids.forzandoOff, ids.forzandoOn])
     })
 })
@@ -121,44 +118,44 @@ describe('what binds a command', () => {
 describe('displaced events', () => {
     /** The fixture performed with the forzando off moved 4 mm back. */
     const performance = () => {
-        const view = viewOf(fixtureEdition())
-        const events = commandsIn(view.snapshot(ids.a))
+        const edition = fixtureEdition()
+        const events = commandsIn(snapshotOf(edition, ids.a))
             .flatMap(symbol => {
-                const event = negotiatedEventOf(view, symbol, welteT100)
+                const event = negotiatedEventOf(edition, symbol, welteT100)
                 return event ? [event] : []
             })
         const performed = events.map(event => event.id === ids.forzandoOff
             ? { ...event, horizontal: { ...event.horizontal, from: mm(1000), to: mm(1002) } }
             : event
         )
-        return { view, performed }
+        return { edition, performed }
     }
 
     it('are reported with both places', () => {
-        const { view, performed } = performance()
-        const displacement = only(displacedEvents(performed, view))
+        const { edition, performed } = performance()
+        const displacement = only(displacedEvents(performed, edition))
         expect(displacement.symbol.id).toBe(ids.forzandoOff)
         expect(displacement.measured.from).toBe(1004)
         expect(displacement.performed.from).toBe(1000)
     })
 
     it('give the shift of each moved command by id', () => {
-        const { view, performed } = performance()
-        expect(Array.from(shiftsIn(performed, view))).toEqual([[ids.forzandoOff, -4]])
+        const { edition, performed } = performance()
+        expect(Array.from(shiftsIn(performed, edition))).toEqual([[ids.forzandoOff, -4]])
     })
 })
 
 describe('descriptions', () => {
     it('name a command by its kind and place', () => {
-        const view = viewOf(fixtureEdition())
-        expect(describeCommand(command(view, ids.note), view)).toBe('Note 60 at 1000 mm')
-        expect(describeCommand(command(view, ids.forzandoOff), view)).toBe('ForzandoOff (treble) at 1004 mm')
+        const edition = fixtureEdition()
+        expect(describeCommand(command(edition, ids.note), edition)).toBe('Note 60 at 1000 mm')
+        expect(describeCommand(command(edition, ids.forzandoOff), edition)).toBe('ForzandoOff (treble) at 1004 mm')
     })
 
     it('put a placement into words', () => {
-        const view = arranged(v => [placeCommand(v, ids.forzandoOn, ids.note, 'before')])
-        const placement = first(placementsIn(view.snapshot(ids.a)))
-        expect(describePlacement(placement, view)).toBe('ForzandoOn (treble) at 990 mm lies before Note 60 at 1000 mm')
+        const edition = arranged(() => [placeCommand(ids.forzandoOn, ids.note, 'before')])
+        const placement = first(placementsIn(snapshotOf(edition, ids.a)))
+        expect(describePlacement(placement, edition)).toBe('ForzandoOn (treble) at 990 mm lies before Note 60 at 1000 mm')
     })
 
     it('put every kind of problem into different words', () => {
@@ -173,8 +170,8 @@ describe('descriptions', () => {
 
 describe('problems by version', () => {
     it('groups them under the versions they hold in, leaving out the sound ones', () => {
-        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
-        const groups = problemsByVersion(constraintProblems(view), view.edition.versions)
+        const edition = arranged(() => [pairCommands(ids.forzandoOff, ids.forzandoOn)])
+        const groups = problemsByVersion(constraintProblems(edition), edition.versions)
         expect(groups.map(group => group.version.id)).toEqual([ids.b])
         expect(first(groups).problems).toEqual([
             { version: ids.b, symbol: ids.forzandoOff, problem: 'partner-missing' }
@@ -184,9 +181,9 @@ describe('problems by version', () => {
 
 describe('refusals', () => {
     it('refuse to pair a command with itself or into a second pair', () => {
-        const view = arranged(v => [pairCommands(v, ids.forzandoOff, ids.forzandoOn)])
-        const snapshot = view.snapshot(ids.a)
-        const at = (id: string) => command(view, id)
+        const edition = arranged(() => [pairCommands(ids.forzandoOff, ids.forzandoOn)])
+        const snapshot = snapshotOf(edition, ids.a)
+        const at = (id: string) => command(edition, id)
 
         expect(refusalToPair(at(ids.note), at(ids.note), snapshot)).toMatch(/itself/)
         expect(refusalToPair(at(ids.note), at(ids.forzandoOn), snapshot)).toMatch(/already paired with/)
@@ -195,14 +192,14 @@ describe('refusals', () => {
     })
 
     it('refuse a placement relative to itself, in a circle, of a note after an expression, or on both sides of a pair', () => {
-        const view = arranged(v => [
-            placeCommand(v, ids.otherNote, ids.note, 'before'),
-            placeCommand(v, ids.forzandoOff, ids.note, 'alignedWith'),
-            pairCommands(v, ids.forzandoOn, ids.forzandoOff)
+        const edition = arranged(() => [
+            placeCommand(ids.otherNote, ids.note, 'before'),
+            placeCommand(ids.forzandoOff, ids.note, 'alignedWith'),
+            pairCommands(ids.forzandoOn, ids.forzandoOff)
         ])
-        const snapshot = view.snapshot(ids.a)
+        const snapshot = snapshotOf(edition, ids.a)
         const placing = (follower: string, reference: string) => refusalToPlace(
-            { relation: 'after', follower: command(view, follower), reference: command(view, reference) },
+            { relation: 'after', follower: command(edition, follower), reference: command(edition, reference) },
             snapshot
         )
 
@@ -216,17 +213,17 @@ describe('refusals', () => {
 
 describe('the direction of a placement', () => {
     it('is decided between an expression and a note, whichever was picked first', () => {
-        const view = viewOf(fixtureEdition())
-        const note = command(view, ids.note)
-        const off = command(view, ids.forzandoOff)
+        const edition = fixtureEdition()
+        const note = command(edition, ids.note)
+        const off = command(edition, ids.forzandoOff)
 
         expect(placementBetween(off, note, 'before')).toEqual({ relation: 'before', follower: off, reference: note })
         expect(placementBetween(note, off, 'after')).toEqual({ relation: 'after', follower: off, reference: note })
     })
 
     it('is left open between two of a kind', () => {
-        const view = viewOf(fixtureEdition())
-        expect(placementBetween(command(view, ids.note), command(view, ids.otherNote), 'alignedWith')).toBeUndefined()
-        expect(placementBetween(command(view, ids.forzandoOn), command(view, ids.forzandoOff), 'before')).toBeUndefined()
+        const edition = fixtureEdition()
+        expect(placementBetween(command(edition, ids.note), command(edition, ids.otherNote), 'alignedWith')).toBeUndefined()
+        expect(placementBetween(command(edition, ids.forzandoOn), command(edition, ids.forzandoOff), 'before')).toBeUndefined()
     })
 })

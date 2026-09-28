@@ -1,4 +1,4 @@
-import { add, Expression, Millimeters, mm, Note, scale, subtract } from "linked-rolls";
+import { add, Expression, Millimeters, mm, Note, scale, subtract, placedCarriersOf, placeOf } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { usePlaybackMark } from "../../hooks/usePlaybackMark";
@@ -15,21 +15,21 @@ interface CommandProps {
 }
 
 export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: CommandProps) => {
-    const { view, viewOnly } = useContext(EditionContext)
+    const { edition, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
     const { marked, followPlayback } = usePlaybackMark();
     const { translateX, trackToY, laneHeight, height: canvasHeight, zoom, bar } = usePinchZoom();
 
     const displayDetails = hovered || marked
 
-    const features = useMemo(() => view?.placedCarriersOf(symbol) ?? [], [view, symbol]);
+    const features = useMemo(() => edition ? placedCarriersOf(edition, symbol) : [], [edition, symbol]);
 
     const { onsets, offsets } = useMemo(() => ({
         onsets: features.map(e => e.horizontal.from).sort(),
         offsets: features.map(e => e.horizontal.to).sort()
     }), [features]);
 
-    const place = view?.placeOf(symbol)
+    const place = edition && placeOf(edition, symbol)
     const position = bar.positionOf(symbol)
 
     const firstOnset = onsets.at(0)
@@ -37,7 +37,7 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: Comm
     const firstOffset = offsets.at(0)
     const lastOffset = offsets.at(-1)
 
-    if (!view || !place || position === undefined) return null;
+    if (!edition || !place || position === undefined) return null;
     if (!firstOnset || !lastOnset || !firstOffset || !lastOffset) return null;
 
     // The stretch every carrier agrees the symbol covers, and how far the

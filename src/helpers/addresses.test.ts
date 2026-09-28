@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Assumption, Edition, Motivation, Note } from 'linked-rolls'
 import { deskPath, entityOfPath, idOfMark, linkTarget, referenceOf } from './addresses'
-import { fixtureEdition, ids, viewOf } from './editionFixture'
+import { fixtureEdition, ids } from './editionFixture'
 import { HeldMotivation } from './motivation'
 
 const note = (id: string, pitch: number): Note => ({ type: 'note', id, pitch, carriers: [] })
@@ -61,37 +61,37 @@ describe('the entity an address names', () => {
 })
 
 describe('the address of what the desk shows', () => {
-    const view = () => viewOf(fixtureEdition())
+    const edition = () => fixtureEdition()
 
     it('is the one entity selected', () => {
-        expect(deskPath(view(), { versionId: 'A', selection: [note('note-1', 60)] })).toBe('/note-1')
+        expect(deskPath(edition(), { versionId: 'A', selection: [note('note-1', 60)] })).toBe('/note-1')
     })
 
     it('falls back to the version where several things are selected', () => {
         const selection = [note('note-1', 60), note('note-2', 62)]
 
-        expect(deskPath(view(), { versionId: 'A', selection })).toBe('/A')
+        expect(deskPath(edition(), { versionId: 'A', selection })).toBe('/A')
     })
 
     it('names a copy by its id, as every other entity is named', () => {
-        expect(deskPath(view(), { copyId: 'c-1', selection: [] })).toBe('/c-1')
+        expect(deskPath(edition(), { copyId: 'c-1', selection: [] })).toBe('/c-1')
     })
 
     it('is none where the desk has nothing open, so that no address is written over', () => {
-        expect(deskPath(view(), { selection: [] })).toBeUndefined()
+        expect(deskPath(edition(), { selection: [] })).toBeUndefined()
     })
 
     it('names a motivation by its id, no other version writing that id', () => {
         const edition = motivatedEdition()
 
-        expect(deskPath(viewOf(edition), { versionId: ids.b, selection: [motivationOfB(edition)] }))
+        expect(deskPath(edition, { versionId: ids.b, selection: [motivationOfB(edition)] }))
             .toBe('/chord-shading')
     })
 
     it('falls back to the version where another version writes the same motivation id', () => {
         const edition = alsoInA(motivatedEdition())
 
-        expect(deskPath(viewOf(edition), { versionId: ids.b, selection: [motivationOfB(edition)] }))
+        expect(deskPath(edition, { versionId: ids.b, selection: [motivationOfB(edition)] }))
             .toBe(`/${ids.b}`)
     })
 
@@ -103,11 +103,11 @@ describe('the address of what the desk shows', () => {
 
 describe('what a link to an entity opens', () => {
     it('is nothing where the edition holds no such entity', () => {
-        expect(linkTarget(viewOf(fixtureEdition()), 'not-in-here')).toBeUndefined()
+        expect(linkTarget(fixtureEdition(), 'not-in-here')).toBeUndefined()
     })
 
     it('is the version itself, with nothing to mark', () => {
-        expect(linkTarget(viewOf(fixtureEdition()), ids.a))
+        expect(linkTarget(fixtureEdition(), ids.a))
             .toEqual({ on: 'version', versionId: ids.a, mark: undefined })
     })
 
@@ -116,28 +116,28 @@ describe('what a link to an entity opens', () => {
         target && 'mark' in target && target.mark && idOfMark(target.mark)
 
     it('is the version a symbol was inserted in, and the symbol', () => {
-        const target = linkTarget(viewOf(fixtureEdition()), ids.note)
+        const target = linkTarget(fixtureEdition(), ids.note)
 
         expect(target).toMatchObject({ on: 'version', versionId: ids.a })
         expect(marked(target)).toBe(ids.note)
     })
 
     it('is the copy a feature lies on, and the feature', () => {
-        const target = linkTarget(viewOf(fixtureEdition()), 'hole-note')
+        const target = linkTarget(fixtureEdition(), 'hole-note')
 
         expect(target).toMatchObject({ on: 'copy', copyId: 'copy' })
         expect(marked(target)).toBe('hole-note')
     })
 
     it('is the version an edit belongs to, and the edit', () => {
-        const target = linkTarget(viewOf(fixtureEdition()), 'edit-b')
+        const target = linkTarget(fixtureEdition(), 'edit-b')
 
         expect(target).toMatchObject({ on: 'version', versionId: ids.b })
         expect(marked(target)).toBe('edit-b')
     })
 
     it('is the version a motivation belongs to, and the motivation as that version holds it', () => {
-        const target = linkTarget(viewOf(motivatedEdition()), 'chord-shading')
+        const target = linkTarget(motivatedEdition(), 'chord-shading')
 
         expect(target).toMatchObject({
             on: 'version',
@@ -147,7 +147,7 @@ describe('what a link to an entity opens', () => {
     })
 
     it('marks what a belief is held about, the belief being nothing the desk draws', () => {
-        const target = linkTarget(viewOf(motivatedEdition()), 'why-b-belief')
+        const target = linkTarget(motivatedEdition(), 'why-b-belief')
 
         expect(target).toMatchObject({ on: 'version', versionId: ids.b })
         expect(marked(target)).toBe('edit-b')
@@ -157,6 +157,6 @@ describe('what a link to an entity opens', () => {
         const edition = fixtureEdition()
         edition.roll.recordingEvent.date['@annotation'] = assumed('when-recorded')
 
-        expect(linkTarget(viewOf(edition), 'when-recorded')).toEqual({ on: 'edition' })
+        expect(linkTarget(edition, 'when-recorded')).toEqual({ on: 'edition' })
     })
 })

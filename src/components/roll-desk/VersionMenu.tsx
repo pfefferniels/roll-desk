@@ -1,7 +1,7 @@
 import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred } from "@mui/icons-material"
 import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
 import { ReservationNotes } from "./Reservations"
-import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
 import { Ribbon } from "./Ribbon"
 import { v4 } from "uuid"
@@ -44,7 +44,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
     /** The one edit selected, where exactly one is, which is what splitting acts on. */
     const soleEdit = selection.length === 1 && selection.every(isEdit) ? selection[0] : undefined
-    const { edition, apply, view } = useContext(EditionContext)
+    const { edition, apply } = useContext(EditionContext)
 
     const [editCreation, setEditCreation] = useState(false)
     const [attachTo, setAttachTo] = useState(false)
@@ -58,8 +58,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     useHotkeys(['m', 's'], (_, handler) => {
         switch (handler.keys?.join('')) {
             case 'm':
-                if (!view || !selection.every(isEdit)) return
-                apply(mergeEdits(view, versionId, selection))
+                if (!edition || !selection.every(isEdit)) return
+                apply(mergeEdits(versionId, selection))
                 setSelection([])
                 break;
             case 's':
@@ -77,30 +77,30 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
         setEditsToMotivate(about.map(e => e.id))
     }
 
-    if (!edition || !view) return null
+    if (!edition || !edition) return null
 
     const version = edition.versions.find(v => v.id === versionId)
     if (!version) return null
 
     const tolerance = derivationToleranceOf(version)
     const principal = principalDerivationOf(version)
-    const sigilOf = (id: string) => nameOf(view, id) ?? 'unknown'
+    const sigilOf = (id: string) => nameOf(edition, id) ?? 'unknown'
 
     /** Each derivation the version states, with where it stands in the list. */
     const derivations = (version.basedOn ?? []).map((derivation, index) => ({ derivation, index }))
     const principalEntry = derivations.find(({ derivation }) => derivation === principal)
     const hypotheses = derivations.filter(({ derivation }) => derivation !== principal)
-    const versionPath = view.getPath(versionId) ?? []
+    const versionPath = pathIn(edition, versionId) ?? []
 
-    const witnesses = witnessesOf(view, versionId)
-    const reservations = reservationsAboutVersion(view, version)
-    const copyLabelOf = (copyId: string) => nameOf(view, copyId) ?? copyId
+    const witnesses = witnessesOf(edition, versionId)
+    const reservations = reservationsAboutVersion(edition, version)
+    const copyLabelOf = (copyId: string) => nameOf(edition, copyId) ?? copyId
 
     return (
         <>
             <Ribbon title='Version'>
                 <Button
-                    onClick={() => apply(removeVersion(view, versionId))}
+                    onClick={() => apply(removeVersion(versionId))}
                     size='small'
                     startIcon={<Delete />}
                 >
@@ -148,7 +148,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             {selection.length >= 2 && (
                                 <Button
                                     onClick={() => {
-                                        apply(mergeEdits(view, versionId, selection))
+                                        apply(mergeEdits(versionId, selection))
                                         setSelection([])
                                     }}
                                     startIcon={<GroupAdd />}
@@ -181,7 +181,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             size='small'
                             variant={witness.by === 'statement' || witness.through ? 'outlined' : 'filled'}
                             label={witness.through
-                                ? `${copyLabelOf(witness.copy)}, through ${versionLabel(view, witness.through)}`
+                                ? `${copyLabelOf(witness.copy)}, through ${versionLabel(edition, witness.through)}`
                                 : copyLabelOf(witness.copy)}
                         />
                         {witness.belief && (
@@ -269,7 +269,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     tolerance={tolerance}
                     onClose={() => setAttachTo(false)}
                     onDone={(previousVersionId, chosenTolerance) => {
-                        apply(connectVersions(view, versionId, previousVersionId, chosenTolerance))
+                        apply(connectVersions(versionId, previousVersionId, chosenTolerance))
                         setAttachTo(false)
                     }}
                 />
@@ -293,7 +293,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     tolerance={tolerance}
                     onClose={() => setSymbolsToRecollate(undefined)}
                     onDone={(chosenTolerance) => {
-                        apply(collateSymbols(view, versionId, symbolsToRecollate, chosenTolerance))
+                        apply(collateSymbols(versionId, symbolsToRecollate, chosenTolerance))
                         setSymbolsToRecollate(undefined)
                         setSelection([])
                     }}
@@ -312,7 +312,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 <DialogActions>
                     <Button onClick={() => setConfirmDetach(false)}>Cancel</Button>
                     <Button onClick={() => {
-                        apply(detachVersion(view, versionId))
+                        apply(detachVersion(versionId))
                         setConfirmDetach(false)
                     }}>
                         Detach

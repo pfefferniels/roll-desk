@@ -29,10 +29,10 @@ interface PlacementDialogProps {
  * the other. The first picked is taken to be the one that moves.
  */
 export const PlacementDialog = ({ candidates: [first, second], relation, onClose, onDone }: PlacementDialogProps) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const [followerId, setFollowerId] = useState(first.id)
 
-    if (!view) return null
+    if (!edition) return null
 
     const directions: Placement[] = [
         { relation, follower: first, reference: second },
@@ -53,7 +53,7 @@ export const PlacementDialog = ({ candidates: [first, second], relation, onClose
                             key={direction.follower.id}
                             value={direction.follower.id}
                             control={<Radio size='small' />}
-                            label={describePlacement(direction, view)}
+                            label={describePlacement(direction, edition)}
                         />
                     ))}
                 </RadioGroup>

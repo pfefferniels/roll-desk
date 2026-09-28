@@ -1,5 +1,5 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnyCommand, CarriageProblem, ConstraintProblem, Path, PlacementRelation, isCommand } from "linked-rolls"
+import { AnyCommand, CarriageProblem, ConstraintProblem, Path, PlacementRelation, isCommand, copyIn, symbolIn, pathIn } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSnapshot } from "../../hooks/useSnapshot"
@@ -44,13 +44,13 @@ interface ProblemListProps {
 
 /** Every problem of the edition under the version it holds in. */
 const ProblemList = ({ problems, onShow }: ProblemListProps) => {
-    const { edition, view } = useContext(EditionContext)
-    if (!edition || !view) return null
+    const { edition } = useContext(EditionContext)
+    if (!edition || !edition) return null
 
     const groups = problemsByVersion(problems, edition.versions)
     const describe = (id: string) => {
-        const symbol = view.symbol(id)
-        return isCommand(symbol) ? describeCommand(symbol, view) : id
+        const symbol = symbolIn(edition, id)
+        return isCommand(symbol) ? describeCommand(symbol, edition) : id
     }
 
     return (
@@ -59,7 +59,7 @@ const ProblemList = ({ problems, onShow }: ProblemListProps) => {
                 <ListItem><ListItemText secondary='No problems in the versions.' /></ListItem>
             )}
             {groups.flatMap(({ version, problems }) => [
-                <ListSubheader key={version.id} disableSticky sx={{ lineHeight: 2 }}>{nameOf(view, version.id)}</ListSubheader>,
+                <ListSubheader key={version.id} disableSticky sx={{ lineHeight: 2 }}>{nameOf(edition, version.id)}</ListSubheader>,
                 ...problems.map(problem => (
                     <ListItemButton
                         key={`${problem.version}-${problem.symbol}-${problem.problem}`}
@@ -83,11 +83,11 @@ const carriageLabels: Record<CarriageProblem['problem'], string> = {
 
 /** The copies whose statements of the versions they carry cannot stand, or nothing where none is. */
 const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) => {
-    const { view } = useContext(EditionContext)
-    if (!view || problems.length === 0) return null
+    const { edition } = useContext(EditionContext)
+    if (!edition || problems.length === 0) return null
 
     const copyNamed = (id: string) => {
-        const copy = view.copy(id)
+        const copy = copyIn(edition, id)
         return copy ? whichCopy(copy) : id
     }
 
@@ -97,7 +97,7 @@ const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) =>
                 <ListItem key={`${problem.copy}-${problem.version}-${problem.problem}`}>
                     <ListItemText
                         primary={`The copy ${copyNamed(problem.copy)} ${carriageLabels[problem.problem]}`}
-                        secondary={nameOf(view, problem.version) ?? problem.version}
+                        secondary={nameOf(edition, problem.version) ?? problem.version}
                     />
                 </ListItem>
             ))}
@@ -121,17 +121,17 @@ interface ConstraintsPanelProps {
  * marks its symbols.
  */
 export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: ConstraintsPanelProps) => {
-    const { edition, view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const snapshot = useSnapshot(versionId)
     const placements = useMemo(() => placementsIn(snapshot), [snapshot])
     const pairs = useMemo(() => pairsIn(snapshot), [snapshot])
 
-    if (!edition || !view) return null
+    if (!edition || !edition) return null
 
     const version = edition.versions.find(v => v.id === versionId)
-    const describe = (symbol: AnyCommand) => describeCommand(symbol, view)
+    const describe = (symbol: AnyCommand) => describeCommand(symbol, edition)
     const pathTo = (symbol: AnyCommand, key: PlacementRelation | 'pairedWith'): Path | undefined => {
-        const path = view.getPath(symbol.id)
+        const path = pathIn(edition, symbol.id)
         return path && [...path, key]
     }
 
@@ -142,7 +142,7 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
 
             <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ pl: 2 }}>
                 <Typography variant='subtitle2'>
-                    {version ? `Constraints in ${nameOf(view, version.id)}` : 'Constraints'}
+                    {version ? `Constraints in ${nameOf(edition, version.id)}` : 'Constraints'}
                 </Typography>
                 <LegendPopover><ConstraintLegend /></LegendPopover>
             </Stack>
@@ -155,17 +155,17 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
 
             {version && (
                 <>
-                    <Section title='Placements' empty={`No placements in ${nameOf(view, version.id)}.`}>
+                    <Section title='Placements' empty={`No placements in ${nameOf(edition, version.id)}.`}>
                         {placements.map(placement => (
                             <ConstraintItem
                                 key={placement.follower.id}
-                                text={describePlacement(placement, view)}
+                                text={describePlacement(placement, edition)}
                                 path={pathTo(placement.follower, placement.relation)}
                                 onClick={() => onShow(version.id, [placement.follower.id, placement.reference.id])}
                             />
                         ))}
                     </Section>
-                    <Section title='Pairs' empty={`No pairs in ${nameOf(view, version.id)}.`}>
+                    <Section title='Pairs' empty={`No pairs in ${nameOf(edition, version.id)}.`}>
                         {pairs.map(({ stating, partner }) => (
                             <ConstraintItem
                                 key={stating.id}
@@ -188,17 +188,17 @@ interface ConstraintSummaryProps {
 
 /** What binds a selected command, in a line or two. */
 export const ConstraintSummary = ({ symbol, versionId }: ConstraintSummaryProps) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const snapshot = useSnapshot(versionId)
-    if (!view) return null
+    if (!edition) return null
 
     const { placement, pairedWith } = constraintsOf(symbol, snapshot)
     if (!placement && !pairedWith) return null
 
     return (
         <div style={{ color: 'gray', fontSize: '8pt' }}>
-            {placement && <div>{relationLabel[placement.relation]} {describeCommand(placement.reference, view)}</div>}
-            {pairedWith && <div>paired with {describeCommand(pairedWith, view)}</div>}
+            {placement && <div>{relationLabel[placement.relation]} {describeCommand(placement.reference, edition)}</div>}
+            {pairedWith && <div>paired with {describeCommand(pairedWith, edition)}</div>}
         </div>
     )
 }

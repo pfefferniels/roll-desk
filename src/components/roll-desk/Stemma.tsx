@@ -1,4 +1,4 @@
-import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, EditionView, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version } from 'linked-rolls'
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, pathIn, withGenerations, Edition } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../../helpers/constraints';
 import { useContext, useMemo, useRef, useState } from "react"
@@ -29,7 +29,7 @@ interface Stemma {
 }
 
 export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 }: Stemma) => {
-    const { edition, view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const { selection } = useSelection(isHeldMotivation)
 
     const svgRef = useRef<SVGSVGElement>(null)
@@ -41,14 +41,14 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
 
     // Laid out while rendering, so that no link outlives the derivation its mark addresses.
     const { nodes, links } = useMemo(() => {
-        if (!versions || !view) return { nodes: [], links: [] }
+        if (!versions || !edition) return { nodes: [], links: [] }
 
-        const graph = graphOf(view.withGenerations(), problems, {
-            sigla: siglaOf(view),
-            attested: attestedVersions(view)
+        const graph = graphOf(withGenerations(edition), problems, {
+            sigla: siglaOf(edition),
+            attested: attestedVersions(edition)
         })
         return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
-    }, [versions, view, problems, svgHeight])
+    }, [versions, edition, problems, svgHeight])
 
     const fit = useMemo(() => fitOf(nodes, svgWidth, svgHeight), [nodes, svgWidth, svgHeight])
 
@@ -88,8 +88,8 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     // there by being hovered.
     const inFocus = useMemo(() => {
         const [held] = selection
-        return held && view ? sliceAt(held, { nodes, links }, view) : undefined
-    }, [selection, nodes, links, view])
+        return held && edition ? sliceAt(held, { nodes, links }, edition) : undefined
+    }, [selection, nodes, links, edition])
 
     // A motivation chosen elsewhere is read on its slice, so the drawing
     // moves to it where the zoom has left it off the edge.
@@ -306,10 +306,10 @@ const placed = (nodes: readonly Node[], id: string): Point | undefined => {
 export const sliceAt = (
     held: HeldMotivation,
     { nodes, links }: { nodes: readonly Node[], links: readonly Link[] },
-    view: EditionView
+    edition: Edition
 ): Point | undefined => {
     const link = links.find(link => link.principal && (link.source as Node).id === held.versionId)
-    const version = view.version(held.versionId)
+    const version = versionIn(edition, held.versionId)
     if (!link || !version) return undefined
 
     const source = placed(nodes, held.versionId)
@@ -558,7 +558,7 @@ export const LinkContainer = ({
     onVersionClick,
 }: LinkContainerProps) => {
     const { selection, setSelection } = useSelection(isHeldMotivation)
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
 
     return (
         <>
@@ -574,7 +574,7 @@ export const LinkContainer = ({
                     return null
                 }
 
-                const versionPath = view?.getPath(source.id)
+                const versionPath = edition && pathIn(edition, source.id)
                 const mark = link.believed && versionPath && (
                     <BeliefMark
                         at={linkMarkAt(point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y)), svg(markClearance * markScale))}
@@ -612,7 +612,7 @@ export const LinkContainer = ({
                     )
                 }
 
-                const version = view?.version(source.id)
+                const version = edition && versionIn(edition, source.id)
                 const motivations = version?.motivations ?? []
 
                 return (

@@ -1,5 +1,5 @@
 import { ReactNode, useContext, useMemo } from "react"
-import { add, AnyCommand, AnySymbol, ConstraintProblem, max, Millimeters, mm, Path, PlacementRelation, isCommand, scale, subtract } from "linked-rolls"
+import { add, AnyCommand, AnySymbol, ConstraintProblem, max, Millimeters, mm, Path, PlacementRelation, isCommand, scale, subtract, symbolIn, pathIn } from "linked-rolls"
 import { EditionContext } from "../../providers/EditionContext"
 import { usePinchZoom } from "../../hooks/usePinchZoom"
 import { Box } from "../../helpers/rollGeometry"
@@ -101,33 +101,33 @@ interface ConstraintViewProps {
  * hold. Drawn over the symbols, which stay clickable.
  */
 export const ConstraintView = ({ snapshot, shifts, problems }: ConstraintViewProps) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
 
     const placements = useMemo(() => placementsIn(snapshot), [snapshot])
     const pairs = useMemo(() => pairsIn(snapshot), [snapshot])
     const troubled = useMemo(() => Array.from(troubledSymbols(problems)), [problems])
 
-    if (!view) return null
+    if (!edition) return null
 
     const detailed = translation.zoom >= svgPerMm(0.7)
 
     /** Where the command is drawn: its measurement, moved as far as the performance moves it. */
     const boxed = (symbol: AnyCommand) => {
-        const box = getSymbolBBox(symbol, view, translation)
+        const box = getSymbolBBox(symbol, edition, translation)
         return box && shifted(box, translation.translateX(shifts.get(symbol.id) ?? mm(0)))
     }
 
     const connector = (one: AnyCommand, other: AnyCommand, key: PlacementRelation | 'pairedWith'): ConnectorProps | undefined => {
         const from = boxed(one)
         const to = boxed(other)
-        const path = view.getPath(one.id)
+        const path = pathIn(edition, one.id)
         if (!from || !to || !path) return undefined
         return { from: onsetOf(from), to: onsetOf(to), path: [...path, key], detailed }
     }
 
     const mark = (id: string) => {
-        const symbol = view.symbol(id)
+        const symbol = symbolIn(edition, id)
         const box = isCommand(symbol) ? boxed(symbol) : undefined
         return box && <rect key={id} {...padded(box, svg(2))} {...problemLook} style={quiet} />
     }

@@ -1,4 +1,4 @@
-import { FeatureOrPatch, Modification } from "linked-rolls";
+import { FeatureOrPatch, Modification, pathIn } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom";
 import { SVGProps, useContext } from "react";
 import { EditionContext } from "../../providers/EditionContext";
@@ -35,10 +35,10 @@ interface ModificationGroupProps extends SVGProps<SVGGElement> {
 }
 
 const ModificationGroup = ({ features, metadata, ...svgProps }: ModificationGroupProps) => {
-    const { view } = useContext(EditionContext);
+    const { edition } = useContext(EditionContext);
     const translation = usePinchZoom();
 
-    if (!view) return null;
+    if (!edition) return null;
 
     const margin = svg(10);
 
@@ -77,7 +77,7 @@ const ModificationGroup = ({ features, metadata, ...svgProps }: ModificationGrou
                     purpose: <b>{`${metadata.purpose || 'unknown'}`}</b>
                     {metadata.actor && (
                         <div>
-                            <Arguable path={view.getPath(metadata.actor["@annotation"]?.id || '')?.slice(0, -1) || []}>
+                            <Arguable path={pathIn(edition, metadata.actor["@annotation"]?.id || '')?.slice(0, -1) || []}>
                                 actor: <b>{metadata.actor.name}</b>
                             </Arguable>
                         </div>
@@ -96,9 +96,9 @@ export const ModificationView = ({
     modification,
     ...svgProps
 }: ModificationViewProps) => {
-    const { view } = useContext(EditionContext);
+    const { edition } = useContext(EditionContext);
     const translation = usePinchZoom();
-    if (!view) return null;
+    if (!edition) return null;
 
     if (modification.type === 'Removal') return null
 

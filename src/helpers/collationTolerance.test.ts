@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { produce } from 'immer'
 import { connectVersions, defaultCollationTolerance, Edition, mm } from 'linked-rolls'
-import { fixtureEdition, ids, viewOf } from './editionFixture'
+import { fixtureEdition, ids } from './editionFixture'
 import { derivationToleranceOf, namesAnOffset, parseTolerance, windowAtEnds } from './collationTolerance'
 
 const versionIn = (edition: Edition, versionId: string) =>
@@ -60,7 +60,7 @@ describe('the tolerance a version was collated at', () => {
         const edition = fixtureEdition()
         const tolerance = { toleranceStart: mm(1), toleranceEnd: mm(3) }
 
-        const collated = produce(edition, connectVersions(viewOf(edition), ids.b, ids.a, tolerance))
+        const collated = produce(edition, connectVersions(ids.b, ids.a, tolerance))
 
         expect(derivationToleranceOf(versionIn(collated, ids.b))).toEqual(tolerance)
     })

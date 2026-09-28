@@ -6,17 +6,17 @@
  *     npx vite-node --options.deps.inline=linked-rolls scripts/show-figure-contexts.ts
  */
 
-import { AnySymbol, EditionView, importJsonLd, insertedBy, migrate, partsOfNote } from 'linked-rolls'
+import { AnySymbol, importJsonLd, insertedBy, migrate, partsOfNote } from 'linked-rolls'
 import { Json, readEdition } from './storedEdition'
 
 const document = readEdition()
-const view = new EditionView(importJsonLd(migrate(structuredClone(document))))
+const edition = importJsonLd(migrate(structuredClone(document)))
 
 const describe = (symbol: AnySymbol) =>
     'expressionType' in symbol ? `${symbol.expressionType} ${symbol.scope ?? ''}`.trim()
         : 'pitch' in symbol ? `Ton ${symbol.pitch}` : symbol.type
 
-const symbols = new Map(view.edition.versions
+const symbols = new Map(edition.versions
     .flatMap(version => insertedBy(version))
     .map(symbol => [symbol.id, describe(symbol)] as const))
 

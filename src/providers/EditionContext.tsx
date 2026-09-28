@@ -1,5 +1,5 @@
-import { assignDate, Edition, EditionMetadata, EditionOp, EditionView } from "linked-rolls";
-import { createContext, useMemo, useReducer } from "react";
+import { assignDate, Edition, EditionMetadata, EditionOp } from "linked-rolls";
+import { createContext, useReducer } from "react";
 import { editionReducer, editionState } from "./editionReducer";
 
 export type { EditionOp }
@@ -44,7 +44,6 @@ export const EditionContext = createContext<{
     redo: () => void;
     canUndo: boolean;
     canRedo: boolean;
-    view: EditionView | undefined,
     viewOnly: boolean
 }>({
     setEdition: () => { },
@@ -53,14 +52,11 @@ export const EditionContext = createContext<{
     redo: () => { },
     canUndo: false,
     canRedo: false,
-    view: undefined,
     viewOnly: false
 });
 
 export function EditionProvider({ edition: existingEdition, children }: { edition?: Edition, children: React.ReactNode }) {
     const [{ edition, past, future }, dispatch] = useReducer(editionReducer, existingEdition, editionState);
-
-    const view = useMemo(() => edition && new EditionView(edition), [edition]);
 
     return (
         <EditionContext.Provider value={{
@@ -71,7 +67,6 @@ export function EditionProvider({ edition: existingEdition, children }: { editio
             redo: () => dispatch({ type: 'redo' }),
             canUndo: past.length > 0,
             canRedo: future.length > 0,
-            view,
             viewOnly: !!existingEdition
         }}>
             {children}

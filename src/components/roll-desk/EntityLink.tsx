@@ -27,11 +27,11 @@ const opensBeside = (event: MouseEvent) =>
  * address can be copied out of a note.
  */
 export const EntityLink = ({ id, label }: EntityLinkProps) => {
-    const { view } = useContext(EditionContext)
+    const { edition } = useContext(EditionContext)
     const open = useContext(OpenContext)
 
     // Only a published edition has addresses; an edition being edited has none.
-    const href = view?.edition.base ? pathOf(id) : undefined
+    const href = edition?.base ? pathOf(id) : undefined
 
     return (
         <Link
@@ -44,7 +44,7 @@ export const EntityLink = ({ id, label }: EntityLinkProps) => {
             }}
             sx={{ font: 'inherit', verticalAlign: 'baseline', textAlign: 'left' }}
         >
-            {(view && nameOf(view, id)) ?? label ?? id}
+            {(edition && nameOf(edition, id)) ?? label ?? id}
         </Link>
     )
 }

@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100 } from 'linked-rolls'
+import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { spotlight, spotlightWhenDrawn } from "../../helpers/spotlight"
 import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf } from "../../helpers/addresses"
@@ -119,7 +119,7 @@ export const Desk = ({ show }: DeskProps) => {
     const navigate = useNavigate()
     const { pathname } = useLocation()
 
-    const { edition, setEdition, undo, redo, canUndo, canRedo, view, viewOnly } = useContext(EditionContext)
+    const { edition, setEdition, undo, redo, canUndo, canRedo, viewOnly } = useContext(EditionContext)
 
     const initialStretch = svgPerMm(viewOnly ? 0.2 : 1)
     const {
@@ -129,8 +129,8 @@ export const Desk = ({ show }: DeskProps) => {
     usePinchGesture(viewport, { onPinch: scrubBy, onEnd: settle })
 
     const length = useMemo(() => edition ? rollLength(edition) : mm(0), [edition])
-    const problems = useMemo(() => view ? constraintProblems(view) : [], [view])
-    const carriage = useMemo(() => view ? carriageProblems(view) : [], [view])
+    const problems = useMemo(() => edition ? constraintProblems(edition) : [], [edition])
+    const carriage = useMemo(() => edition ? carriageProblems(edition) : [], [edition])
 
     const [metadataJob, setMetadataJob] = useState<MetadataJob>()
     const [editCopy, setEditCopy] = useState(false)
@@ -171,7 +171,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [soleSelected] = selection.length === 1 ? selection : []
     const selectedCommand = soleSelected && 'id' in soleSelected
-        ? view?.symbol(soleSelected.id)
+        ? edition && symbolIn(edition, soleSelected.id)
         : undefined
 
     /** The entity the desk has taken its address from, so that neither side of the address repeats the other's work. */
@@ -180,9 +180,9 @@ export const Desk = ({ show }: DeskProps) => {
 
     /** Opens what the entity lies on and marks it, or says that the edition holds nothing under the id. */
     const open = useCallback((id: string): LinkTarget | undefined => {
-        if (!view) return undefined
+        if (!edition) return undefined
 
-        const target = linkTarget(view, id)
+        const target = linkTarget(edition, id)
         if (!target) {
             setMessage(`The edition of WM 225 holds nothing under the identifier ${id}.`)
             return undefined
@@ -208,14 +208,14 @@ export const Desk = ({ show }: DeskProps) => {
             setPendingSpotlight(idOfMark(mark))
         }
         return target
-    }, [view, setMessage])
+    }, [edition, setMessage])
 
     // A link to an entity opens what it lies on and marks it.
     useEffect(() => {
-        if (!view || shown.current === show) return
+        if (!edition || shown.current === show) return
         shown.current = show
         if (show) open(show)
-    }, [show, view, open])
+    }, [show, edition, open])
 
     /** Opens what an account refers to, and turns to the tab it is read in. */
     const openFromAccount = useCallback((id: string) => {
@@ -224,7 +224,7 @@ export const Desk = ({ show }: DeskProps) => {
         if (target?.on === 'copy') setCurrentTab('sources')
     }, [open])
 
-    const shownPath = view && deskPath(view, { versionId: currentVersionId, copyId: currentCopyId, selection })
+    const shownPath = edition && deskPath(edition, { versionId: currentVersionId, copyId: currentCopyId, selection })
 
     // The published desk keeps its address on what is shown, so that a
     // reader can pass on or cite whatever they are looking at. The editor
@@ -242,7 +242,7 @@ export const Desk = ({ show }: DeskProps) => {
     }, [pendingSpotlight, currentVersionId, currentCopyId])
 
     const playVersion = () => {
-        if (!currentVersion || !view) return
+        if (!currentVersion || !edition) return
 
         if (isPlaying) {
             stop()
@@ -252,7 +252,7 @@ export const Desk = ({ show }: DeskProps) => {
         const emulation = emulationOf(currentVersion.system, emulationOptions)
         if (!emulation) return
 
-        emulation.emulateVersion(currentVersion, view, { range, skipToFirstNote: true })
+        emulation.emulateVersion(currentVersion, edition, { range, skipToFirstNote: true })
 
         const schedule = play(emulation.asMIDI(), (e) => {
             if (e.type !== 'meta' || e.subtype !== 'text') return
@@ -279,30 +279,30 @@ export const Desk = ({ show }: DeskProps) => {
     useHotkeys('escape', () => setSelection([]))
 
     const downloadMIDI = useCallback(() => {
-        if (!currentVersion || !view) return
+        if (!currentVersion || !edition) return
 
-        const midi = versionAsMidi(currentVersion, view, emulationOptions)
+        const midi = versionAsMidi(currentVersion, edition, emulationOptions)
         if (!midi) return
 
-        downloadFile(`${versionLabel(view, currentVersion.id).replace(/[^\w.-]+/g, '_')}.mid`, midi, 'audio/midi')
-    }, [currentVersion, view, emulationOptions])
+        downloadFile(`${versionLabel(edition, currentVersion.id).replace(/[^\w.-]+/g, '_')}.mid`, midi, 'audio/midi')
+    }, [currentVersion, edition, emulationOptions])
 
     const downloadAllMIDI = useCallback(() => {
-        if (!edition || !view || !edition.versions.length) return
+        if (!edition || !edition || !edition.versions.length) return
 
         const archiveName = edition.title.trim().replace(/[^\w.-]+/g, '_') || 'edition'
         downloadFile(
             `${archiveName}_midi.zip`,
-            versionsAsMidiArchive(edition.versions, view, emulationOptions),
+            versionsAsMidiArchive(edition.versions, edition, emulationOptions),
             'application/zip'
         )
-    }, [edition, view, emulationOptions])
+    }, [edition, emulationOptions])
 
     /** Opens the version a constraint holds in and marks the symbols it binds. */
     const showConstraint = (versionId: string, symbolIds: string[]) => {
         setCurrentVersionId(versionId)
         setCurrentCopyId(undefined)
-        setSelection(view?.symbols(symbolIds) ?? [])
+        setSelection(edition ? symbolsIn(edition, symbolIds) : [])
         setPendingSpotlight(symbolIds[0])
     }
 
@@ -710,7 +710,7 @@ export const Desk = ({ show }: DeskProps) => {
                 onClose={() => setDownloadDialogOpen(false)}
                 onDownloadMIDI={downloadMIDI}
                 onDownloadAllMIDI={downloadAllMIDI}
-                versionSiglum={currentVersion && view ? versionLabel(view, currentVersion.id) : undefined}
+                versionSiglum={currentVersion && edition ? versionLabel(edition, currentVersion.id) : undefined}
                 versionCount={edition.versions.length}
             />
 

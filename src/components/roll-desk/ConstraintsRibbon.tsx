@@ -1,7 +1,8 @@
 import { AlignHorizontalLeft, East, JoinInner, LinkOff, RemoveCircleOutline, West } from "@mui/icons-material"
 import { Button } from "@mui/material"
 import {
-    AnyCommand, EditionView, PlacementRelation, isCommand, pairCommands, placeCommand, unpairCommand, unplaceCommand
+    AnyCommand, PlacementRelation, isCommand, pairCommands, placeCommand, unpairCommand, unplaceCommand,
+    symbolIn, Edition
 } from "linked-rolls"
 import { useContext, useState } from "react"
 import type { UserSelection } from "./RollDesk"
@@ -19,8 +20,8 @@ import {
  * The selection holds copies made when the version was drawn, which do
  * not learn of statements made since, so each item is looked up afresh.
  */
-const current = (view: EditionView) => (item: UserSelection): UserSelection =>
-    'id' in item ? view.symbol(item.id) ?? item : item
+const current = (edition: Edition) => (item: UserSelection): UserSelection =>
+    'id' in item ? symbolIn(edition, item.id) ?? item : item
 
 type Candidates = { pair: [AnyCommand, AnyCommand]; relation: PlacementRelation }
 
@@ -34,14 +35,14 @@ interface ConstraintsRibbonProps {
  */
 export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
     const { selection, setSelection } = useSelection()
-    const { apply, view } = useContext(EditionContext)
+    const { apply, edition } = useContext(EditionContext)
     const { setMessage } = useSnackbar()
     const snapshot = useSnapshot(versionId)
     const [candidates, setCandidates] = useState<Candidates>()
 
-    if (!view) return null
+    if (!edition) return null
 
-    const commands = selection.map(current(view)).filter(isCommand)
+    const commands = selection.map(current(edition)).filter(isCommand)
     if (commands.length !== selection.length) return null
 
     const done = () => setSelection([])
@@ -52,7 +53,7 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
             setMessage(refusal)
             return
         }
-        apply(pairCommands(view, one.id, other.id))
+        apply(pairCommands(one.id, other.id))
         done()
     }
 
@@ -63,7 +64,7 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
             setMessage(refusal)
             return
         }
-        apply(placeCommand(view, placement.follower.id, placement.reference.id, placement.relation))
+        apply(placeCommand(placement.follower.id, placement.reference.id, placement.relation))
         done()
     }
 
@@ -134,7 +135,7 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
                         size='small'
                         startIcon={<RemoveCircleOutline />}
                         onClick={() => {
-                            apply(unplaceCommand(view, only.id))
+                            apply(unplaceCommand(only.id))
                             done()
                         }}
                     >
@@ -146,7 +147,7 @@ export const ConstraintsRibbon = ({ versionId }: ConstraintsRibbonProps) => {
                         size='small'
                         startIcon={<LinkOff />}
                         onClick={() => {
-                            apply(unpairCommand(view, statement.id))
+                            apply(unpairCommand(statement.id))
                             done()
                         }}
                     >

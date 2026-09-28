@@ -1,10 +1,5 @@
 import {
-    featuresOf,
-    FeatureOrPatch,
-    Patch,
-    Path,
-    RollCopy,
-    Writing,
+    featuresOf, FeatureOrPatch, Patch, Path, RollCopy, Writing, pathIn
 } from "linked-rolls";
 import { usePinchZoom } from "../../hooks/usePinchZoom.tsx";
 import { boxOf } from "../../helpers/rollGeometry.ts";
@@ -36,7 +31,7 @@ export const CopyFacsimile = ({
     onSelectionDone,
     blend,
 }: CopyFacsimileProps) => {
-    const { edition, view } = useContext(EditionContext);
+    const { edition } = useContext(EditionContext);
     const geometry = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
     const drag = useRollDrag(svgRef);
@@ -87,7 +82,7 @@ export const CopyFacsimile = ({
                 )}
 
                 {featuresOf(copy).map(feature => {
-                    const path = view?.getPath(feature.id)
+                    const path = edition && pathIn(edition, feature.id)
                     return (
                         <Feature
                             key={feature.id}

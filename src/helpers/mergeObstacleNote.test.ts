@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AnyFeature, HoleChain, Mark, assignObject, mergeObstacle, mm, track } from 'linked-rolls'
 import { mergeObstacleFor, mergeObstacleNote } from './mergeObstacleNote'
-import { fixtureEdition, viewOf } from './editionFixture'
+import { fixtureEdition } from './editionFixture'
 
 const hole = (from: number, position: number, rest: Partial<HoleChain> = {}): HoleChain => ({
     type: 'HoleChain',
@@ -56,22 +56,22 @@ describe('the obstacle the desk asks about before offering a merge', () => {
         const copy = edition.copies[0]
         if (!copy) throw new Error('the fixture has changed')
         copy.modifications.push({ type: 'Alteration', produced: [hole(1100, 47)] })
-        return { punched: copy.production?.produced ?? [], altered: [hole(1100, 47)], view: viewOf(edition) }
+        return { punched: copy.production?.produced ?? [], altered: [hole(1100, 47)], edition }
     }
 
     it('falls through to the features themselves where they stand in one act', () => {
-        const { punched, view } = withAnAlteration()
-        expect(mergeObstacleFor([punched[0]!, punched[1]!], view)).toBe('different-tracks')
-        expect(mergeObstacleFor([punched[0]!], view)).toBe('fewer-than-two')
+        const { punched, edition } = withAnAlteration()
+        expect(mergeObstacleFor([punched[0]!, punched[1]!], edition)).toBe('different-tracks')
+        expect(mergeObstacleFor([punched[0]!], edition)).toBe('fewer-than-two')
     })
 
     it('is the acts where the features were brought about by different ones', () => {
-        const { punched, altered, view } = withAnAlteration()
-        expect(mergeObstacleFor([punched[0]!, altered[0]!], view)).toBe('different-acts')
+        const { punched, altered, edition } = withAnAlteration()
+        expect(mergeObstacleFor([punched[0]!, altered[0]!], edition)).toBe('different-acts')
         expect(mergeObstacleNote('different-acts')).toBe('The features were brought about by different acts.')
     })
 
-    it('falls back to the features alone where no view is given', () => {
+    it('falls back to the features alone where no edition is given', () => {
         expect(mergeObstacleFor([hole(1000, 47), hole(1010, 47)])).toBeUndefined()
     })
 })
