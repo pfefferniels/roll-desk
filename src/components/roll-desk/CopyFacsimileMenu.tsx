@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
-import { FeatureOrPatch, addGeneralCondition, alignCopy, assignObject, featuresOf, isRollFeature, mergeFeatures, removeFeatures, Shift, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, track, unalignCopy } from "linked-rolls"
+import { FeatureOrPatch, addGeneralCondition, assignObject, featuresOf, isRollFeature, mergeFeatures, referenceCopyOf, removeFeatures, removeCopy, stateFeatureCondition, symbolsCarriedOnlyBy, unalignCopy } from "linked-rolls"
 import { EventDimension } from "./RollDesk"
 import { AddWritingFeature } from "./AddFeature"
 import { useContext, useState } from "react"
@@ -7,7 +7,7 @@ import { selectionAsIIIFLink } from "./RollGrid"
 import { ProductionEventDialog } from "./ProductionEventDialog"
 import { Ribbon } from "./Ribbon"
 import { Add, BrokenImage, Delete, Description, Deselect, Edit as EditIcon, GroupAdd, SelectAll } from "@mui/icons-material"
-import { AlignToDialog } from "./AlignToDialog"
+import { AlignmentDialog } from "./AlignmentDialog"
 import { EditString } from "./EditString"
 import { EditionContext } from "../../providers/EditionContext"
 import { useSelection } from "../../providers/SelectionContext"
@@ -33,7 +33,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const [reportFeatureCondition, setReportFeatureCondition] = useState(false)
     const [reportRollCondition, setReportRollCondition] = useState(false)
     const [editProduction, setEditProduction] = useState(false)
-    const [alignCopies, setAlignCopies] = useState(false)
+    const [showAlignment, setShowAlignment] = useState(false)
     const [confirmRemove, setConfirmRemove] = useState(false)
     const [showDetails, setShowDetails] = useState(false)
 
@@ -42,6 +42,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
     const copy = edition.copies.find(c => c.id === copyId)
     if (!copy) return null
 
+    const isReference = referenceCopyOf(edition)?.id === copyId
     const carriedAlone = symbolsCarriedOnlyBy(edition, copyId).length
     const features = selection.filter(isRollFeature)
     const obstacle = mergeObstacleFor(features, view)
@@ -76,19 +77,18 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                     </Button>
                 </Ribbon>
                 <Ribbon title='Alignment'>
-                    {copy.measurements.shift !== undefined || copy.measurements.scale !== undefined ? (
+                    <Button
+                        onClick={() => setShowAlignment(true)}
+                    >
+                        {isReference ? 'Reference' : copy.measurements.alignment ? 'Aligned' : 'Align...'}
+                    </Button>
+                    {copy.measurements.alignment && (
                         <Button
                             onClick={() => {
                                 apply(unalignCopy(copyId))
                             }}
                         >
                             Remove Alignment
-                        </Button>
-                    ) : (
-                        <Button
-                            onClick={() => setAlignCopies(true)}
-                        >
-                            Align to...
                         </Button>
                     )}
                 </Ribbon>
@@ -237,19 +237,10 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
                 />
             )}
 
-            <AlignToDialog
+            <AlignmentDialog
                 copy={copy}
-                open={alignCopies}
-                onClose={() => setAlignCopies(false)}
-                onDone={(shiftValue, scale, reading) => {
-                    const shift: Shift = {
-                        horizontal: shiftValue,
-                        vertical: track(0)
-                    }
-
-                    apply(alignCopy(copyId, shift, scale, reading))
-                    setAlignCopies(false)
-                }}
+                open={showAlignment}
+                onClose={() => setShowAlignment(false)}
             />
         </>
     )

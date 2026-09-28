@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { usePinchZoom } from '../../hooks/usePinchZoom.tsx';
 import { v4 } from 'uuid';
 import { EventDimension, UserSelection } from './RollDesk.tsx';
-import { columnsOf, isRollFeature, mm, Millimeters, RollCopy, Track, track, WithId } from 'linked-rolls';
+import { columnsOf, fromAxis, isRollFeature, Millimeters, RollCopy, Track, track, WithId } from 'linked-rolls';
 import { rollPointAt } from '../../helpers/pointer.ts';
 import { boxOf } from '../../helpers/rollGeometry.ts';
 import { Drag, useDrag } from '../../hooks/useDrag.ts';
@@ -125,11 +125,8 @@ export const selectionAsIIIFLink = (selection: EventDimension, copy: RollCopy) =
     const calibration = drawableCalibrationOf(copy)
     if (!calibration) return undefined
 
-    const scale = copy.measurements.scale ?? 1
-    const asScanned = (place: Millimeters) => {
-        const unshifted = place - (copy.measurements.shift?.horizontal || 0)
-        return inScan(mm(unshifted / scale), copy)
-    }
+    const onPaper = fromAxis(copy.measurements.alignment)
+    const asScanned = (place: Millimeters) => inScan(onPaper(place), copy)
 
     const x1 = asScanned(selection.horizontal.from)
     const x2 = asScanned(selection.horizontal.to)

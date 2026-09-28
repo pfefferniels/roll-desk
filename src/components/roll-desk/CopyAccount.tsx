@@ -1,5 +1,6 @@
 import { Link, Stack, Typography } from "@mui/material"
-import { FeatureSource, Path, Perforator, sourceLabels } from "linked-rolls"
+import { alignmentProblems, Edition, FeatureSource, paperOf, Path, Perforator, referenceCopyOf, RollCopy, sourceLabels } from "linked-rolls"
+import { alignmentStatement, problemStatement, strainStatement } from "../../helpers/alignment"
 import { useContext } from "react"
 import { EditionContext } from "../../providers/EditionContext"
 import { copyAccount } from "../../helpers/account"
@@ -75,6 +76,38 @@ const PerforatorAccount = ({ perforator, path }: { perforator: Perforator, path:
     </>
 )
 
+/**
+ * Where the copy stands on the edition's axis, and what the alignments
+ * of all the copies say about its paper.
+ */
+const AlignmentAccount = ({ copy, edition }: { copy: RollCopy, edition: Edition }) => {
+    const isReference = referenceCopyOf(edition)?.id === copy.id
+    const alignment = copy.measurements.alignment
+    const paper = paperOf(edition)?.copies.find(entry => entry.copy === copy.id)
+    const problems = alignmentProblems(edition).filter(entry => entry.copy === copy.id)
+    if (!isReference && !alignment && !paper && problems.length === 0) return null
+
+    return (
+        <AccountSection title='Alignment'>
+            {isReference && (
+                <Typography variant='body2'>The reference copy: its millimetres are the edition&apos;s axis.</Typography>
+            )}
+            {alignment && (
+                <Typography variant='body2'>Aligned with the reference copy: {alignmentStatement(alignment)}.</Typography>
+            )}
+            {paper && (
+                <Typography variant='body2'>
+                    Its paper has stretched by {strainStatement(paper.along)} along the roll
+                    {paper.measured ? ', as measured on it.' : ', as the alignments tell.'}
+                </Typography>
+            )}
+            {problems.map(problem => (
+                <Typography key={problem.problem} variant='body2' color='warning.main'>{problemStatement(problem)}</Typography>
+            ))}
+        </AccountSection>
+    )
+}
+
 /** What the edition states of a copy and why: where its features come from, and which versions it carries. */
 export const CopyAccount = ({ copyId }: { copyId: string }) => {
     const { view } = useContext(EditionContext)
@@ -118,6 +151,8 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
                     </HeldStatement>
                 ))}
             </AccountSection>
+
+            <AlignmentAccount copy={copy} edition={view.edition} />
 
             {statesPerforator && (
                 <AccountSection title='Perforator'>
