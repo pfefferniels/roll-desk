@@ -587,8 +587,6 @@ const recollate = (): string[] => {
         return true
     })
 
-    document.creation.collationTolerance =
-        { toleranceStart: COLLATION_TOLERANCE, toleranceEnd: COLLATION_TOLERANCE }
     document.versions.forEach((version: Json) => {
         const principal = principalOf(version)
         if (principal) principal.collationTolerance =
@@ -598,7 +596,7 @@ const recollate = (): string[] => {
     return [
         `Kollation bei ${COLLATION_TOLERANCE} mm: ${gone.size} Symbole mit dem vereinigt, das dieselbe Lesart trägt`,
         `Kollation: ${moved.length} davon in die Fassung gehoben, die ihre Zeugen tragen`,
-        `Kollationstoleranz der Edition und aller Ableitungen auf ${COLLATION_TOLERANCE} mm gesetzt`
+        `Kollationstoleranz aller Ableitungen auf ${COLLATION_TOLERANCE} mm gesetzt`
     ]
 }
 
