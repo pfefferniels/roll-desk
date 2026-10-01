@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { spotlight } from './spotlight'
+import { onsetToMiddleOf, spotlight } from './spotlight'
 
 /** Just enough of a drawn shape: the attributes a spotlight paints over. */
 const drawing = (attributes: Record<string, string>) => {
@@ -7,7 +7,8 @@ const drawing = (attributes: Record<string, string>) => {
     return {
         worn,
         querySelector: () => null,
-        scrollIntoView: () => { },
+        scrollIntoView: vi.fn(),
+        getBoundingClientRect: () => ({ left: 0 }),
         getAttribute: (name: string) => worn.get(name) ?? null,
         setAttribute: (name: string, value: string) => { worn.set(name, value) },
         removeAttribute: (name: string) => { worn.delete(name) }
@@ -86,5 +87,39 @@ describe('spotlighting an entity', () => {
         vi.advanceTimersByTime(100)
 
         expect(Object.fromEntries(drawn.worn)).toEqual({ fill: 'white' })
+    })
+})
+
+describe('following playback along the roll', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    /** A viewport 800 pixels wide, its left edge 100 pixels into the window. */
+    const viewport = () => ({
+        clientWidth: 800,
+        getBoundingClientRect: () => ({ left: 100 }),
+        scrollBy: vi.fn()
+    })
+
+    /** A note whose drawing begins `left` pixels into the window, however long it is held. */
+    const note = (left: number) => ({ ...drawing(symbol), getBoundingClientRect: () => ({ left }) })
+
+    it('brings where the shape begins to the middle of the view', () => {
+        const view = viewport()
+        showing({ note: [note(1200)] })
+
+        spotlight('note', 100, onsetToMiddleOf(view as unknown as Element))
+
+        expect(view.scrollBy).toHaveBeenCalledWith({ left: 700, behavior: 'smooth' })
+    })
+
+    it('stands still for a note that begins in the middle, however far it runs on', () => {
+        const view = viewport()
+        const held = note(500)
+        showing({ held: [held] })
+
+        spotlight('held', 100, onsetToMiddleOf(view as unknown as Element))
+
+        expect(view.scrollBy).toHaveBeenCalledWith({ left: 0, behavior: 'smooth' })
+        expect(held.scrollIntoView).not.toHaveBeenCalled()
     })
 })

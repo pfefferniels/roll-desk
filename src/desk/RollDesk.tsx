@@ -4,7 +4,7 @@ import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
-import { spotlight, spotlightWhenDrawn } from "./spotlight"
+import { onsetToMiddleOf, spotlight, spotlightWhenDrawn } from "./spotlight"
 import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf } from "../edition/addresses"
 import { dateStatement } from "../edition/dateStatement"
 import { OpenContext } from "./OpenContext"
@@ -274,11 +274,13 @@ export const Desk = ({ show }: DeskProps) => {
 
         emulation.emulateVersion(currentVersion, edition, { range, skipToFirstNote: true })
 
+        // The view follows where the roll is being read, not the middle of what sounds.
+        const follow = viewport ? onsetToMiddleOf(viewport) : undefined
         const schedule = play(emulation.asMIDI(), (e) => {
             if (e.type !== 'meta' || e.subtype !== 'text') return
 
             announcePlayback(e.text, playbackMark)
-            spotlight(e.text, playbackMark)
+            spotlight(e.text, playbackMark, follow)
         })
         started(schedule)
     }

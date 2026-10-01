@@ -75,17 +75,37 @@ const shapesOf = (id: string) => [...new Set(
     )].map(shapeOf)
 )]
 
+/** How the view is brought to a shape a spotlight lights. */
+type Bring = (shape: Element) => void
+
+/** The whole shape into view, centred along the roll. */
+const centred: Bring = shape =>
+    shape.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+
+/**
+ * Where a shape begins, to the middle of the viewport: the tracker bar
+ * reads a perforation where it begins, so this is where playback stands.
+ * Centring the whole shape would put the view half a held note ahead of
+ * what is sounding, and the next short note would pull it back again.
+ * Only the length of the roll is followed, so the view does not jump
+ * between the hands either.
+ */
+export const onsetToMiddleOf = (viewport: Element): Bring => shape => {
+    const middle = viewport.getBoundingClientRect().left + viewport.clientWidth / 2
+    viewport.scrollBy({ left: shape.getBoundingClientRect().left - middle, behavior: 'smooth' })
+}
+
 /**
  * Scrolls what is drawn for an entity into view and flashes it, the way
  * playback marks the symbol being played. False when nothing is drawn
  * for the id yet.
  */
-export const spotlight = (id: string, milliseconds: number): boolean => {
+export const spotlight = (id: string, milliseconds: number, bring: Bring = centred): boolean => {
     const drawn = shapesOf(id)
     const [first] = drawn
     if (!first) return false
 
-    first.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    bring(first)
     drawn.forEach(shape => flash(shape, milliseconds))
 
     return true
