@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { mm } from 'linked-rolls'
 import { ruler, ScaleUnit, spanning } from './scale'
 import { svg, svgPerMm } from './units'
-import { positionOf, zoomAt, zoomMarks, zoomRange } from './zoom'
+import { zoomRange } from './zoom'
 
 const spacing = svg(60)
 const length = mm(5000)
+
+/** Zooms across the desk's range, its ends among them. */
+const zooms = [zoomRange.min, 0.25, 0.5, 1, 2, 4, zoomRange.max].map(svgPerMm)
 
 describe('the scale along the roll', () => {
     it('takes the step the zoom asks for', () => {
@@ -25,7 +28,7 @@ describe('the scale along the roll', () => {
     })
 
     it('keeps two readings a label apart', () => {
-        zoomMarks.forEach(zoom => {
+        zooms.forEach(zoom => {
             expect(ruler({ length, zoom, spacing }).step * zoom).toBeGreaterThanOrEqual(spacing)
         })
     })
@@ -33,7 +36,7 @@ describe('the scale along the roll', () => {
     it('takes the smallest step in ones, twos and fives that does', () => {
         const ladder = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
 
-        zoomMarks.forEach(zoom => {
+        zooms.forEach(zoom => {
             const wide = ladder.filter(size => size * zoom >= spacing)
 
             expect(ruler({ length, zoom, spacing }).step).toEqual(Math.min(...wide))
@@ -60,15 +63,6 @@ describe('the scale along the roll', () => {
         expect(ruler({ length, zoom: svgPerMm(zoomRange.max * 0.99), spacing }).unit).toEqual('cm')
     })
 
-    it('reads in millimetres at the top of the zoom slider', () => {
-        const top = positionOf(zoomRange.max)
-
-        // A whole number of marks, so the step grid of the slider's range input reaches it.
-        expect(Number.isInteger(top)).toBe(true)
-        expect(zoomAt(top)).toEqual(zoomRange.max)
-        expect(ruler({ length, zoom: zoomAt(top), spacing }).unit).toEqual('mm')
-    })
-
     it('goes no finer than the millimetre the roll is measured to', () => {
         expect(ruler({ length, zoom: svgPerMm(1000), spacing }).step).toEqual(1)
     })
@@ -82,7 +76,7 @@ describe('the scale along the roll', () => {
     })
 
     it('stays inside the roll', () => {
-        zoomMarks.forEach(zoom => {
+        zooms.forEach(zoom => {
             const { labelled, plain } = ruler({ length, zoom, spacing })
             const ticks = [...labelled.map(({ at }) => at), ...plain]
 
@@ -142,7 +136,7 @@ describe('the stretch a scale is laid over', () => {
     })
 
     it('steps as the zoom asks whatever stretch it is given', () => {
-        zoomMarks.forEach(zoom => {
+        zooms.forEach(zoom => {
             const part = ruler({ length, zoom, spacing, over: { from: mm(1000), to: mm(1200) } })
 
             expect(part.step).toEqual(ruler({ length, zoom, spacing }).step)

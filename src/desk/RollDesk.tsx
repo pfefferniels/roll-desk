@@ -33,7 +33,6 @@ import { useLiveZoom } from "../canvas/useLiveZoom"
 import { usePinchGesture } from "../canvas/usePinchGesture"
 import { rollLength } from "../canvas/rollLength"
 import { blendAt, workingPosition } from "../facsimile/facsimileBlend"
-import { ZoomSlider } from "../canvas/ZoomSlider"
 import { zoomRange } from "../canvas/zoom"
 import { Welcome } from "./Welcome"
 import { RollCopyDialog } from "../copy/RollCopyDialog"
@@ -145,7 +144,7 @@ export const Desk = ({ show }: DeskProps) => {
     const initialStretch = svgPerMm(viewOnly ? 0.2 : 1)
     const {
         committed: stretchZoom, gesturing, stageRef,
-        viewportRef, viewport, scrub, scrubBy, settle, jump
+        viewportRef, viewport, scrubBy, settle, jump
     } = useLiveZoom(initialStretch, zoomRange)
     usePinchGesture(viewport, { onPinch: scrubBy, onEnd: settle })
 
@@ -713,12 +712,6 @@ export const Desk = ({ show }: DeskProps) => {
                     </Canvas>
                 </PinchZoomProvider>
             </Box>
-
-            <ZoomSlider
-                zoom={stretchZoom}
-                onScrub={scrub}
-                onSettle={settle}
-            />
 
             <EmulationSettingsDialog
                 open={emulationSettingsDialogOpen}

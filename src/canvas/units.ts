@@ -36,13 +36,6 @@ export const svgPerTilePixel = quantity<'svg/tile-px'>
 export const reachOf = <U extends string>(per: Quantity<`svg/${U}`>, pixels: Quantity<NoInfer<U>>): Svg =>
     svg(per * pixels)
 
-/**
- * Where a reading stands on the zoom slider's track, which is measured
- * in marks rather than in zoom, see `zoomAt`.
- */
-export type Mark = Quantity<'mark'>
-export const mark = quantity<'mark'>
-
 /** An angle, as an SVG rotation states it. */
 export type Degrees = Quantity<'deg'>
 export const degrees = quantity<'deg'>
