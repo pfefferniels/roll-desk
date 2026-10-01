@@ -195,8 +195,11 @@ const LicenseePanel = ({ options, onChange }: {
             Nothing here was measured on a Licensee. These are the T-100 constants,
             fitted across six Freiburg instruments, and the spool is Welte&#8217;s own,
             carried over because Licensee rolls play at a range of paper speeds and
-            no one figure belongs here. A Licensee playback is a Freiburg reading of
-            American paper, and its time axis is a construction rather than a reading.
+            no one figure belongs here. It sets no tempo of its own: a version plays
+            at the tempo its copies state, and a re-cut that states none at the speed
+            of the roll it was re-cut from times the length ratio of the papers, so
+            that it sounds at the original&#8217;s tempo. A Licensee playback is a
+            Freiburg reading of American paper.
         </Provenance>
         <PedalPresetField pedals={options.pedals} onChange={pedals => onChange({ ...options, pedals })} />
     </>

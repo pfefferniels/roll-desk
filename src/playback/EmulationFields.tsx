@@ -31,8 +31,9 @@ export const NumberField = ({ label, value, onChange, step = 1 }: {
 
 /**
  * The fields that mean the same on every scale. The spool sets the time
- * axis and the velocity map is shared between the scales on purpose, so
- * that a red reading and a green one can be compared at all.
+ * axis, except that a tempo stated for the version's copies sets where the
+ * paper starts, and the velocity map is shared between the scales on
+ * purpose, so that a red reading and a green one can be compared at all.
  */
 export const CommonFields = <T extends CommonOptions,>({ options, onChange }: {
     options: T
@@ -42,7 +43,7 @@ export const CommonFields = <T extends CommonOptions,>({ options, onChange }: {
 
     return (
         <>
-            <Typography>Take-up spool, which sets the time axis</Typography>
+            <Typography>Take-up spool, which sets the time axis unless the copies state a tempo</Typography>
             <NumberField
                 label='Seconds per revolution'
                 value={spool.revolutionSeconds}

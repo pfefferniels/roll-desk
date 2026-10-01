@@ -1,12 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select, Stack, TextField } from "@mui/material"
-import { drives, feetPerMinute, metersPerMinute, PaperSpeed, RollTempo, TrackerBar, trackerBars } from "linked-rolls"
+import { drives, feetPerMinute, metersPerMinute, PaperSpeed, TrackerBar, trackerBars } from "linked-rolls"
 import { driveIdOf, LengthField, PerforatorInput } from "./perforatorInput"
-
-/** The speed the edition lets the roll start at, as a paper speed. */
-export const tempoStartOf = (tempo: RollTempo): PaperSpeed =>
-    tempo.unit === 'm/min'
-        ? { value: tempo.startsWith, unit: 'm/min' }
-        : { value: tempo.startsWith, unit: 'ft/min' }
 
 interface SystemSelectProps {
     value: TrackerBar
