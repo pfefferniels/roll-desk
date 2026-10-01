@@ -1,11 +1,11 @@
 import { add, Expression, Millimeters, mm, Note, scale, subtract, placedCarriersOf, placeOf, Track } from "linked-rolls";
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { usePlaybackMark } from "../playback/usePlaybackMark";
 import { EditionContext } from "../edition/EditionContext";
 import { shadowLook } from "../constraints/constraintLooks";
 import { halfOf, whiskerReach } from "./whisker";
-import { useLookingAt } from "./LaneLabel";
+import { useLaneLabelling } from "./LaneLabel";
 
 interface CommandProps {
     symbol: Note | Expression;
@@ -21,11 +21,18 @@ interface CommandProps {
 export const Command = ({ symbol, age, highlight, shift = mm(0), division, onClick }: CommandProps) => {
     const { edition, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
-    const lookAt = useLookingAt();
+    const label = useLaneLabelling();
     const { marked, followPlayback } = usePlaybackMark();
     const { translateX, trackToY, laneHeight, height: canvasHeight, room, zoom, bar } = usePinchZoom();
 
     const displayDetails = hovered || marked
+
+    // While playback stands on the command, the label at the left edge names it.
+    useEffect(() => {
+        if (!marked) return
+        label.played(symbol)
+        return () => label.played(current => current?.id === symbol.id ? undefined : current)
+    }, [marked, symbol, label])
 
     const features = useMemo(() => edition ? placedCarriersOf(edition, symbol) : [], [edition, symbol]);
 
@@ -96,11 +103,11 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
             }}
             onMouseEnter={() => {
                 setHovered(true)
-                lookAt(symbol)
+                label.pointedAt(symbol)
             }}
             onMouseLeave={() => {
                 setHovered(false)
-                lookAt(current => current?.id === symbol.id ? undefined : current)
+                label.pointedAt(current => current?.id === symbol.id ? undefined : current)
             }}
         >
             {/* The body sits where the command plays; the measurement stays behind as a shadow. */}
@@ -128,19 +135,6 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
                             ${innerTo},${add(y, height)}
                             ${innerFrom},${add(y, height)}
                         `} />
-                )}
-                {/* Hovered, the lane is named at the left edge of the view instead. */}
-                {detailed && marked && !hovered && (
-                    <text
-                        x={innerFrom}
-                        y={y - 2}
-                        fontSize={12}
-                    >
-                        <tspan>
-                            {symbol.type === 'expression' && symbol.expressionType}
-                            {symbol.type === 'note' && `Note: ${symbol.pitch}`}
-                        </tspan>
-                    </text>
                 )}
             </g>
             {shadow && (

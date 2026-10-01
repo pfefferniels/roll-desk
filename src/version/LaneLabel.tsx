@@ -1,4 +1,4 @@
-import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useState, useSyncExternalStore } from "react"
+import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react"
 import { Expression, Note } from "linked-rolls"
 import { usePinchZoom } from "../canvas/usePinchZoom"
 import { laneMeaning } from "./laneMeaning"
@@ -6,10 +6,18 @@ import { OnTop } from "../canvas/OnTop"
 
 type Command = Note | Expression
 
-const LookingAt = createContext<Dispatch<SetStateAction<Command | undefined>>>(() => { })
+type Tell = Dispatch<SetStateAction<Command | undefined>>
 
-/** Tells the label which command the pointer rests on, or that it has left it. */
-export const useLookingAt = () => useContext(LookingAt)
+/** What the label is told: the command the pointer rests on, and the one playback last reached. */
+interface Telling {
+    pointedAt: Tell
+    played: Tell
+}
+
+const LaneLabelling = createContext<Telling>({ pointedAt: () => { }, played: () => { } })
+
+/** Tells the label which command is pointed at or played, or that it no longer is. */
+export const useLaneLabelling = () => useContext(LaneLabelling)
 
 /** How tall the label is, in drawing units, which are pixels. */
 const labelHeight = 18
@@ -76,20 +84,25 @@ const LaneLabel = ({ command }: { command: Command }) => {
 }
 
 /**
- * The drawing of a version, with what the lane of the command under the
- * pointer means on the version's bar written over it, at the left edge of
- * the view however far the roll is scrolled. The label is drawn in the
- * canvas's top layer, so nothing on the roll covers it, and it is held here
- * rather than by the version, so that pointing at another command redraws
- * only the label.
+ * The drawing of a version, with what the lane of a command means on the
+ * version's bar written over it, at the left edge of the view however far
+ * the roll is scrolled: the command under the pointer, or else the one
+ * playback last reached, a chord's lanes lying too close together to label
+ * each. The label is drawn in the canvas's top layer, so nothing on the roll
+ * covers it, and it is held here rather than by the version, so that moving
+ * from one command to the next redraws only the label.
  */
 export const LabelledLanes = ({ children }: { children: ReactNode }) => {
-    const [command, setCommand] = useState<Command>()
+    const [pointedAt, setPointedAt] = useState<Command>()
+    const [played, setPlayed] = useState<Command>()
+    const telling = useMemo(() => ({ pointedAt: setPointedAt, played: setPlayed }), [])
+
+    const shown = pointedAt ?? played
 
     return (
-        <LookingAt.Provider value={setCommand}>
+        <LaneLabelling.Provider value={telling}>
             {children}
-            {command && <LaneLabel command={command} />}
-        </LookingAt.Provider>
+            {shown && <LaneLabel command={shown} />}
+        </LaneLabelling.Provider>
     )
 }
