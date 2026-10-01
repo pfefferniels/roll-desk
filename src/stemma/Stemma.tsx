@@ -7,9 +7,10 @@ import { ReactNode, SVGProps, useEffect } from "react";
 import { EditionContext } from '../edition/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../desk/SelectionContext';
-import { Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
+import { restingReachOf, Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
+import { End, endAt, fieldOf, halfwayAlong, Obstacle, routeAround } from './routing';
 import { Arguable } from '../accounts/Arguable';
-import { along, minus, perpendicular, point, Point, unit } from '../geometry/drawing';
+import { along, perpendicular, point, Point, unit } from '../geometry/drawing';
 import { HeldMotivation, isHeldMotivation, sameMotivation } from '../edition/motivation';
 import { Svg, svg } from '../canvas/units';
 
@@ -40,17 +41,22 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     const versions = edition?.versions
 
     // Laid out while rendering, so that no link outlives the derivation its mark addresses.
-    const { nodes, links } = useMemo(() => {
-        if (!versions || !edition) return { nodes: [], links: [] }
+    const { nodes, links, routes } = useMemo(() => {
+        if (!versions || !edition) return { nodes: [], links: [], routes: new Map<Link, Point[]>() }
 
         const graph = graphOf(withGenerations(edition), problems, {
             sigla: siglaOf(edition),
             attested: attestedVersions(edition)
         })
-        return { links: graph.links, nodes: calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight) }
+        const nodes = calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight)
+        return { links: graph.links, nodes, routes: routesOf(nodes, graph.links) }
     }, [versions, edition, problems, svgHeight])
 
-    const fit = useMemo(() => fitOf(nodes, svgWidth, svgHeight), [nodes, svgWidth, svgHeight])
+    // A hypothesis may go round the outside of the stemma, and is fitted in with it.
+    const fit = useMemo(
+        () => fitOf([...nodes, ...[...routes.values()].flat()], svgWidth, svgHeight),
+        [nodes, routes, svgWidth, svgHeight]
+    )
 
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
@@ -142,6 +148,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
                 <g ref={zoomLayerRef}>
                     <LinkContainer
                         links={links}
+                        routes={routes}
                         positionedNodes={nodes}
                         markScale={1 / fit.scale}
                         onVersionClick={onClick}
@@ -340,10 +347,10 @@ export const shiftIntoView = (
     return shift.x === 0 && shift.y === 0 ? undefined : shift
 }
 
-/** The scale and the centre that fit every node into the drawing, with a margin left around them. */
-export const fitOf = (nodes: readonly Node[], width: number, height: number, margin = 40) => {
-    const xs = nodes.map(node => node.x ?? 0)
-    const ys = nodes.map(node => node.y ?? 0)
+/** The scale and the centre that fit every place, a node's or a route's, into the drawing, with a margin left around them. */
+export const fitOf = (places: readonly { x?: number, y?: number }[], width: number, height: number, margin = 40) => {
+    const xs = places.map(place => place.x ?? 0)
+    const ys = places.map(place => place.y ?? 0)
     if (xs.length === 0) return { scale: 1, midX: 0, midY: 0 }
 
     const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
@@ -354,11 +361,16 @@ export const fitOf = (nodes: readonly Node[], width: number, height: number, mar
     }
 }
 
-/** Where the mark of a derivation's belief sits: beside the middle of the link, clear of it by the distance given. */
-export const linkMarkAt = (a: Point, b: Point, clearance: Svg): Point => {
-    const middle = along(a, minus(b, a), 0.5)
-    const direction = unit(minus(b, a))
-    return direction ? along(middle, perpendicular(direction), clearance) : middle
+/**
+ * Where the mark of a derivation's belief sits: beside the place halfway
+ * along the link, measured along it where it turns, clear of it by the
+ * distance given.
+ */
+export const routeMarkAt = (route: readonly Point[], clearance: Svg): Point => {
+    const halfway = halfwayAlong(route)
+    if (!halfway) return point(svg(0), svg(0))
+    const direction = unit(halfway.direction)
+    return direction ? along(halfway.at, perpendicular(direction), clearance) : halfway.at
 }
 
 export const radiusOf = (node: Node) =>
@@ -419,6 +431,63 @@ export const calculatePositions = (
 
     return nodes;
 };
+
+/** How far below its node a caption's lettering sits, and how far it reaches above and below that. */
+const captionDrop = 8
+const captionReach = 6
+
+/**
+ * What a hypothesis is routed round: every version and the system it
+ * names, and every derivation a text is read against, as wide as its
+ * balloon at rest. Another hypothesis is no obstacle; two of them may
+ * cross where they must.
+ */
+export const obstaclesOf = (nodes: readonly Node[], links: readonly Link[]): Obstacle[] => [
+    ...nodes.flatMap(node => {
+        const at = placed(nodes, node.id)
+        if (!at) return []
+
+        const disc = { from: at, to: at, radius: radiusOf(node), of: [node.id] }
+        const half = captionHalfWidth(node)
+        if (half === 0) return [disc]
+
+        // Belonging to no version, a caption gives way to no route: a
+        // route reaching its version comes in from another side.
+        const y = svg(at.y + radiusOf(node) + captionDrop)
+        const caption = { from: point(svg(at.x - half), y), to: point(svg(at.x + half), y), radius: captionReach, of: [] }
+        return [disc, caption]
+    }),
+    ...links.filter(link => link.principal).flatMap(link => {
+        const ids = [(link.source as Node).id, (link.target as Node).id]
+        const [from, to] = ids.map(id => placed(nodes, id))
+        return from && to ? [{ from, to, radius: restingReachOf(from, to), of: ids }] : []
+    })
+]
+
+/**
+ * The way each hypothesis takes from the version stating it to the one
+ * it names, round the derivations, versions and captions in between.
+ */
+export const routesOf = (nodes: readonly Node[], links: readonly Link[]): Map<Link, Point[]> => {
+    const obstacles = obstaclesOf(nodes, links)
+    const field = fieldOf(obstacles)
+    const endOf = (node: Node): End | undefined => {
+        const at = placed(nodes, node.id)
+        return at && endAt(node.id, at, radiusOf(node))
+    }
+
+    return new Map(links.filter(link => !link.principal).flatMap(link => {
+        const from = endOf(link.source as Node)
+        const to = endOf(link.target as Node)
+        return from && to ? [[link, routeAround(from, to, obstacles, field)] as const] : []
+    }))
+}
+
+/** The curve a route is drawn as, through every place it turns at. */
+const curveThrough = d3.line<Point>()
+    .x(p => p.x)
+    .y(p => p.y)
+    .curve(d3.curveCatmullRom.alpha(0.5))
 
 export interface NavigationNodeProps extends SVGProps<SVGGElement> {
     node: Node
@@ -553,6 +622,8 @@ const markClearance = 16
 interface LinkContainerProps {
     positionedNodes: Node[];
     links: Link[];
+    /** The way each hypothesis takes round the rest; one without is drawn straight. */
+    routes: ReadonlyMap<Link, readonly Point[]>
     /**
      * How much a mark is enlarged against the drawing: the inverse of the
      * scale the drawing is fitted at, so that a mark keeps a size one can
@@ -565,6 +636,7 @@ interface LinkContainerProps {
 export const LinkContainer = ({
     positionedNodes,
     links,
+    routes,
     markScale,
     onVersionClick,
 }: LinkContainerProps) => {
@@ -585,34 +657,33 @@ export const LinkContainer = ({
                     return null
                 }
 
+                const route = routes.get(link)
+                    ?? [point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y))]
                 const versionPath = edition && pathIn(edition, source.id)
                 const mark = link.believed && versionPath && (
                     <BeliefMark
-                        at={linkMarkAt(point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y)), svg(markClearance * markScale))}
+                        at={routeMarkAt(route, svg(markClearance * markScale))}
                         path={[...versionPath, 'basedOn', link.derivation]}
                         scale={markScale}
                     />
                 )
 
                 if (!link.principal) {
+                    const d = curveThrough([...route]) ?? undefined
                     return (
                         <g key={`link_${i}`}>
                             <g style={{ cursor: 'pointer' }} onClick={() => onVersionClick(source.id)}>
                                 <title>{`Also derived from ${target.label}`}</title>
-                                <line
-                                    x1={source.x}
-                                    y1={source.y}
-                                    x2={target.x}
-                                    y2={target.y}
+                                <path
+                                    d={d}
+                                    fill="none"
                                     stroke="#6b7280"
                                     strokeWidth={1.5}
                                     strokeDasharray="2 4"
                                 />
-                                <line
-                                    x1={source.x}
-                                    y1={source.y}
-                                    x2={target.x}
-                                    y2={target.y}
+                                <path
+                                    d={d}
+                                    fill="none"
                                     stroke="transparent"
                                     strokeWidth={12}
                                     pointerEvents="stroke"

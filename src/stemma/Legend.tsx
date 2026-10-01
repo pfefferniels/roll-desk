@@ -177,11 +177,9 @@ export const Legend = () => {
             height={width + shadowMargin}
             className="legend"
           >
-            <line
-              x1={shadowMargin / 2}
-              y1={width + shadowMargin / 2}
-              x2={width + shadowMargin / 2}
-              y2={shadowMargin / 2}
+            <path
+              d={`M ${shadowMargin / 2} ${width + shadowMargin / 2} Q ${shadowMargin / 2} ${shadowMargin / 2} ${width + shadowMargin / 2} ${shadowMargin / 2}`}
+              fill="none"
               stroke="#6b7280"
               strokeWidth={1.5}
               strokeDasharray="2 4"
@@ -191,7 +189,8 @@ export const Legend = () => {
         description="Hypothesis"
         help={`
           A derivation stated beside the one the version's text is read
-          against, such as a contamination. It carries no motivations.
+          against, such as a contamination. It carries no motivations, and
+          it is drawn round the other derivations rather than across them.
         `}
       />
 

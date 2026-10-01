@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, fitOf, graphOf, inDrawingOrder, linkMarkAt, Node, radiusOf, shiftIntoView } from './Stemma'
+import { calculatePositions, fitOf, graphOf, inDrawingOrder, Node, radiusOf, routeMarkAt, shiftIntoView } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -116,16 +116,23 @@ describe('fitting the stemma into its drawing', () => {
 
 describe('where the mark of a derivation sits', () => {
     it('sits beside the middle of the link, as far off it as asked', () => {
-        const mark = linkMarkAt(point(svg(0), svg(0)), point(svg(0), svg(100)), svg(20))
+        const mark = routeMarkAt([point(svg(0), svg(0)), point(svg(0), svg(100))], svg(20))
 
         expect(mark.y).toBeCloseTo(50)
         expect(Math.abs(mark.x)).toBeCloseTo(20)
     })
 
+    it('sits beside the place halfway along a link that turns', () => {
+        const mark = routeMarkAt([point(svg(0), svg(0)), point(svg(0), svg(60)), point(svg(100), svg(60))], svg(20))
+
+        expect(mark.x).toBeCloseTo(20)
+        expect(Math.abs(mark.y - 60)).toBeCloseTo(20)
+    })
+
     it('sits on a link that has no length', () => {
         const at = point(svg(5), svg(5))
 
-        expect(linkMarkAt(at, at, svg(20))).toEqual(at)
+        expect(routeMarkAt([at, at], svg(20))).toEqual(at)
     })
 })
 

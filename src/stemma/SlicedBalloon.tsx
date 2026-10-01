@@ -205,6 +205,10 @@ const halfWidthOf = (a: Pt, b: Pt, open: boolean) =>
  */
 const midwayShare = 0.75;
 
+/** How far the balloon at rest reaches from its line, halfway along where it is widest. */
+export const restingReachOf = (a: Pt, b: Pt) =>
+    halfWidthOf(a, b, false) * midwayShare;
+
 /**
  * Where a slice of the opened balloon sits: halfway along it, and across
  * it in the middle of the slice's own width. Nothing where the balloon
