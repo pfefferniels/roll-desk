@@ -4,6 +4,7 @@ import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
 import { Command } from "./SymbolView"
+import { LabelledLanes } from "./LaneLabel"
 import { EditionContext } from "../edition/EditionContext"
 import { Ground } from "../canvas/Ground"
 import { Blocks } from "../canvas/Blocks"
@@ -168,64 +169,66 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
 
     return (
         <g className='versionView'>
-            <Blocks />
+            <LabelledLanes>
+                <Blocks />
 
-            {dynamics}
+                {dynamics}
 
-            {!emulation && (
-                <text x={0} y={scale(room.above, -0.5)} fontSize={11} fill='#b45309'>
-                    No emulator for {trackerBarOf(version.system)?.name ?? 'this system'},
-                    so the version is drawn but not performed.
-                </text>
-            )}
+                {!emulation && (
+                    <text x={0} y={scale(room.above, -0.5)} fontSize={11} fill='#b45309'>
+                        No emulator for {trackerBarOf(version.system)?.name ?? 'this system'},
+                        so the version is drawn but not performed.
+                    </text>
+                )}
 
-            {/* The paper the version is laid out on, as far as what is drawn beyond the bar. */}
-            <Ground
-                x={0}
-                y={scale(room.above, -1)}
-                width={translateX(rollLength)}
-                height={room.above + geometryHeight + room.below}
-            />
+                {/* The paper the version is laid out on, as far as what is drawn beyond the bar. */}
+                <Ground
+                    x={0}
+                    y={scale(room.above, -1)}
+                    width={translateX(rollLength)}
+                    height={room.above + geometryHeight + room.below}
+                />
 
-            {edits}
+                {edits}
 
-            {emulation && <Pedals forEmulation={emulation} />}
+                {emulation && <Pedals forEmulation={emulation} />}
 
-            {snapshot
-                .map((symbol, i) => {
-                    if (symbol.type === 'text') return null
+                {snapshot
+                    .map((symbol, i) => {
+                        if (symbol.type === 'text') return null
 
-                    return (
-                        <Command
-                            key={`${symbol.id || i}`}
-                            symbol={symbol}
-                            age={symbol.age}
-                            shift={shifts.get(symbol.id)}
-                            division={emulation?.options.division}
-                            highlight={version ? false : (symbol.carriers?.length !== 0)}
-                            onClick={() => {
-                                const performingEvents = emulation?.findEventsPerforming(symbol.id) ?? []
-                                const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn')
-                                const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff')
-                                if (noteOn && noteOff) {
-                                    playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
-                                }
+                        return (
+                            <Command
+                                key={`${symbol.id || i}`}
+                                symbol={symbol}
+                                age={symbol.age}
+                                shift={shifts.get(symbol.id)}
+                                division={emulation?.options.division}
+                                highlight={version ? false : (symbol.carriers?.length !== 0)}
+                                onClick={() => {
+                                    const performingEvents = emulation?.findEventsPerforming(symbol.id) ?? []
+                                    const noteOn = performingEvents.find(performedEvent => performedEvent.type === 'noteOn')
+                                    const noteOff = performingEvents.find(performedEvent => performedEvent.type === 'noteOff')
+                                    if (noteOn && noteOff) {
+                                        playSingleNote(noteOn.pitch, (noteOff.at - noteOn.at) * 1000, 1 / noteOn.velocity)
+                                    }
 
-                                onClick(symbol)
-                            }}
-                        />
-                    )
-                })
-            }
+                                    onClick(symbol)
+                                }}
+                            />
+                        )
+                    })
+                }
 
-            <ConstraintView
-                snapshot={snapshot}
-                shifts={shifts}
-                problems={problemsOfVersion(problems, version.id)}
-            />
+                <ConstraintView
+                    snapshot={snapshot}
+                    shifts={shifts}
+                    problems={problemsOfVersion(problems, version.id)}
+                />
 
-            {/* Over everything else, so that a hull reaching into the gaps does not cover them. */}
-            <BlockEdges onResize={onResizeLane} />
+                {/* Over everything else, so that a hull reaching into the gaps does not cover them. */}
+                <BlockEdges onResize={onResizeLane} />
+            </LabelledLanes>
         </g>
     )
 }

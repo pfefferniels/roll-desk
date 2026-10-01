@@ -5,6 +5,7 @@ import { usePlaybackMark } from "../playback/usePlaybackMark";
 import { EditionContext } from "../edition/EditionContext";
 import { shadowLook } from "../constraints/constraintLooks";
 import { halfOf, whiskerReach } from "./whisker";
+import { useLookingAt } from "./LaneLabel";
 
 interface CommandProps {
     symbol: Note | Expression;
@@ -20,6 +21,7 @@ interface CommandProps {
 export const Command = ({ symbol, age, highlight, shift = mm(0), division, onClick }: CommandProps) => {
     const { edition, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
+    const lookAt = useLookingAt();
     const { marked, followPlayback } = usePlaybackMark();
     const { translateX, trackToY, laneHeight, height: canvasHeight, room, zoom, bar } = usePinchZoom();
 
@@ -92,8 +94,14 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
             style={{
                 pointerEvents: (viewOnly && !detailed) ? 'none' : 'auto'
             }}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            onMouseEnter={() => {
+                setHovered(true)
+                lookAt(symbol)
+            }}
+            onMouseLeave={() => {
+                setHovered(false)
+                lookAt(current => current?.id === symbol.id ? undefined : current)
+            }}
         >
             {/* The body sits where the command plays; the measurement stays behind as a shadow. */}
             <g transform={`translate(${dx} 0)`}>
