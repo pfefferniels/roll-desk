@@ -1,7 +1,6 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, ReportGmailerrorred } from "@mui/icons-material"
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Tooltip } from "@mui/material"
-import { ReservationNotes } from "../accounts/Reservations"
-import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, witnessesOf, reservationsAboutVersion, pathIn } from "linked-rolls"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb } from "@mui/icons-material"
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
+import { AnySymbol, Edit, Motivation, Version, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
 import { Ribbon } from "../desk/Ribbon"
 import { v4 } from "uuid"
@@ -18,9 +17,7 @@ import { VersionCreationDialog } from "./VersionCreationDialog"
 import { HeldMotivation, isHeldMotivation } from "../edition/motivation"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "../accounts/Arguable"
-import { CertaintyMark } from "../accounts/CertaintyMark"
-import { BeliefAccount } from "../accounts/Reasons"
-import { nameOf, versionLabel } from "../edition/names"
+import { nameOf } from "../edition/names"
 
 /** The motivation all of the given edits already reference, if they agree on one. */
 const sharedMotivation = (version: Version, editIds: string[]) => {
@@ -91,10 +88,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const principalEntry = derivations.find(({ derivation }) => derivation === principal)
     const hypotheses = derivations.filter(({ derivation }) => derivation !== principal)
     const versionPath = pathIn(edition, versionId) ?? []
-
-    const witnesses = witnessesOf(edition, versionId)
-    const reservations = reservationsAboutVersion(edition, version)
-    const copyLabelOf = (copyId: string) => nameOf(edition, copyId) ?? copyId
 
     return (
         <>
@@ -174,31 +167,6 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 </>
             )}
             <ConstraintsRibbon versionId={versionId} />
-            <Ribbon title='Witnesses'>
-                {witnesses.map(witness => (
-                    <Stack key={witness.copy} direction='row' alignItems='center' sx={{ m: 0.25 }}>
-                        <Chip
-                            size='small'
-                            variant={witness.by === 'statement' || witness.through ? 'outlined' : 'filled'}
-                            label={witness.through
-                                ? `${copyLabelOf(witness.copy)}, through ${versionLabel(edition, witness.through)}`
-                                : copyLabelOf(witness.copy)}
-                        />
-                        {witness.belief && (
-                            <CertaintyMark certainty={witness.belief.certainty}>
-                                <BeliefAccount belief={witness.belief} />
-                            </CertaintyMark>
-                        )}
-                    </Stack>
-                ))}
-                {reservations.length > 0 && (
-                    <Tooltip
-                        title={<ReservationNotes reservations={reservations} />}
-                    >
-                        <ReportGmailerrorred fontSize='small' color='warning' sx={{ alignSelf: 'center' }} />
-                    </Tooltip>
-                )}
-            </Ribbon>
             <Ribbon title='Derivation'>
                 {principalEntry ? (
                     <Arguable path={[...versionPath, 'basedOn', principalEntry.index]}>
