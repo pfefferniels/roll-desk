@@ -129,7 +129,8 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
                             ${innerFrom},${add(y, height)}
                         `} />
                 )}
-                {detailed && displayDetails && (
+                {/* Hovered, the lane is named at the left edge of the view instead. */}
+                {detailed && marked && !hovered && (
                     <text
                         x={innerFrom}
                         y={y - 2}

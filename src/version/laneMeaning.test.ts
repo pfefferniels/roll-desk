@@ -13,18 +13,15 @@ describe('what a lane means on the bar', () => {
         expect(laneMeaning(note(54), welteT100)?.meaning).toBe('F♯3')
     })
 
-    it('words a valve and names the half it serves', () => {
-        expect(laneMeaning(expression('MezzoforteOn', 'bass'), welteT100)?.meaning).toBe('Mezzoforte on, bass')
-        expect(laneMeaning(expression('SlowCrescendoOff', 'treble'), welteT100)?.meaning).toBe('Slow crescendo off, treble')
-    })
-
-    it('leaves out the half for what serves the whole keyboard', () => {
+    it('words what a valve does, leaving the half to the block it lies in', () => {
+        expect(laneMeaning(expression('MezzoforteOn', 'bass'), welteT100)?.meaning).toBe('Mezzoforte on')
+        expect(laneMeaning(expression('SlowCrescendoOff', 'treble'), welteT100)?.meaning).toBe('Slow crescendo off')
         expect(laneMeaning(expression('SustainPedalOn', 'treble'), welteT100)?.meaning).toBe('Sustain pedal on')
         expect(laneMeaning(expression('Rewind', 'treble'), welteT100)?.meaning).toBe('Rewind')
     })
 
     it('says where the bar holds a function for as long as it is punched', () => {
-        expect(laneMeaning(expression('Crescendo', 'treble'), welteT98)?.meaning).toBe('Crescendo (held), treble')
+        expect(laneMeaning(expression('Crescendo', 'treble'), welteT98)?.meaning).toBe('Crescendo (held)')
     })
 
     it('reads the track off the bar the command is drawn by', () => {

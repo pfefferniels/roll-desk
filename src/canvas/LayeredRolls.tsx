@@ -1,10 +1,11 @@
-import { RefObject } from "react"
+import { RefObject, useState } from "react"
 import { usePinchZoom } from "./usePinchZoom"
 import { Glow } from "./Glow"
 import { PatchPattern } from "./PatchPattern"
 import { Ruler } from "./Ruler"
 import { SelectionFilter } from "./Selection"
 import { Spray } from "./Spray"
+import { TopLayer } from "./OnTop"
 
 interface CanvasProps {
     /** The group a running zoom gesture scales, see `useLiveZoom`. */
@@ -18,6 +19,7 @@ export const Canvas = ({
 }: CanvasProps
 ) => {
     const { translateX, rollLength, height, room } = usePinchZoom()
+    const [topLayer, setTopLayer] = useState<SVGGElement | null>(null)
 
     const margin = 100
 
@@ -29,11 +31,15 @@ export const Canvas = ({
                 <Spray />
 
                 <g className='zoomStage' ref={stageRef}>
-                    {children}
+                    <TopLayer.Provider value={topLayer}>
+                        {children}
+                    </TopLayer.Provider>
 
                     <Ruler />
 
                     <SelectionFilter />
+
+                    <g className='topLayer' ref={setTopLayer} />
                 </g>
             </g>
         </svg>

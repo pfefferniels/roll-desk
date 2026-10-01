@@ -13,10 +13,9 @@ const noteNameOf = (pitch: number): string =>
 
 /**
  * What a command's lane says on the bar it is drawn by: the note it sounds,
- * or what the valve does. The half is named only where the bar has the
- * function once per half, since the pedals and the motor serve the whole
- * keyboard, and a command the bar holds for as long as it lasts says so.
- * Nothing where the bar does not read the command at all.
+ * or what the valve does, where a command the bar holds for as long as it
+ * lasts says so. The half is left out, the block the lane lies in showing
+ * it already. Nothing where the bar does not read the command at all.
  */
 export const laneMeaning = (command: Note | Expression, bar: TrackerBar): { meaning: string, track: Track } | undefined => {
     const track = bar.positionOf(command)
@@ -24,8 +23,6 @@ export const laneMeaning = (command: Note | Expression, bar: TrackerBar): { mean
 
     if (command.type === 'note') return { meaning: noteNameOf(command.pitch), track }
 
-    const operation = bar.operationOf(command.expressionType)
-    const held = operation?.spelling === 'held' ? ' (held)' : ''
-    const half = operation?.sided ? `, ${command.scope}` : ''
-    return { meaning: `${wordsOf(command.expressionType)}${held}${half}`, track }
+    const held = bar.operationOf(command.expressionType)?.spelling === 'held' ? ' (held)' : ''
+    return { meaning: `${wordsOf(command.expressionType)}${held}`, track }
 }
