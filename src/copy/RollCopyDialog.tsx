@@ -1,11 +1,11 @@
 import { MusicNote } from "@mui/icons-material";
 import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { addCopy, alignCopy, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, RollTempo, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
+import { addCopy, alignCopy, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../edition/EditionContext";
 import { v4 } from "uuid";
-import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect, tempoStartOf } from "./ProductionFields";
+import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
 import { featureSourceOf, noSource, SourceFields, SourceInput, sourceInputOf } from "./SourceFields";
 import { ReservationList } from "../accounts/Reservations";
 import { CarriedVersions } from "./CarriedVersions";
@@ -38,27 +38,18 @@ const isAnnFile = (file: File) => file.name.endsWith('.ann')
 export const placeOnPaper = (elapsed: Seconds): Millimeters => mm(paperAt(WELTE_SPOOL, elapsed) * 10)
 
 /**
- * The speed the upload suggests: the tempo in the .ann beside a
- * Spencer file, or, for a copy of the roll's own system, the tempo the
- * edition states or the speed documented for the system. A copy cut
- * for another system carries a tempo of its own, which nothing but its
- * label can tell.
+ * The speed the upload suggests: the tempo in the .ann beside a Spencer
+ * file, which is the tempo printed on the roll. Nothing else is suggested.
+ * A speed stated for a copy sets where its versions start when they are
+ * played, so the speed the literature documents for a system is not
+ * written onto a copy whose label states none: the red rolls carry no
+ * tempo, and the emulation runs them on a spool calibrated for the system.
  */
-const suggestedSpeed = async (
-    files: File[],
-    system: TrackerBar,
-    editionBar: TrackerBar,
-    tempo?: RollTempo
-): Promise<Suggestion | undefined> => {
+const suggestedSpeed = async (files: File[]): Promise<Suggestion | undefined> => {
     const ann = files.find(isAnnFile)
-    if (ann) {
-        const speed = paperSpeedOfSpencerAnn(readSpencerAnn(await ann.text()))
-        if (speed) return { speed, source: `the roll tempo in ${ann.name}` }
-    }
-    if (system.id !== editionBar.id) return undefined
-    if (tempo) return { speed: tempoStartOf(tempo), source: 'the tempo the edition states for the roll' }
-    if (system.paperSpeed) return { speed: system.paperSpeed, source: `the speed documented for the ${system.name}` }
-    return undefined
+    if (!ann) return undefined
+    const speed = paperSpeedOfSpencerAnn(readSpencerAnn(await ann.text()))
+    return speed && { speed, source: `the roll tempo in ${ann.name}` }
 }
 
 /** A speed taken over from a suggestion, with the suggestion's source as the reason for believing it. */
@@ -82,7 +73,6 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     const { edition, apply } = useContext(EditionContext)
     // A copy is read by the bar it was cut for; naming none, it is read by the T-100.
     const editionBar = welteT100
-    const tempo = edition?.tempoAdjustment
     const [files, setFiles] = useState<File[]>([]);
     const [keeper, setKeeper] = useState('')
     const [keeperAuthority, setKeeperAuthority] = useState('')
@@ -123,7 +113,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
 
     useEffect(() => {
         let stale = false
-        suggestedSpeed(files, system, editionBar, tempo)
+        suggestedSpeed(files)
             .then(found => {
                 if (stale) return
                 setSuggestion(found)
@@ -132,7 +122,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             // A speed that cannot be read leaves the field as the user typed it.
             .catch((error: unknown) => console.warn('No speed could be suggested:', error))
         return () => { stale = true }
-    }, [files, system, editionBar, tempo, speedTyped])
+    }, [files, speedTyped])
 
     const rollFile = files.find(isRollFile)
 
