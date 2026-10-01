@@ -536,6 +536,17 @@ const BeliefMark = ({ at, path, scale }: BeliefMarkProps) => (
     </g>
 )
 
+/**
+ * The links in the order they are drawn, each with where it stands among
+ * them. A derivation held as a hypothesis goes beneath every balloon: its
+ * line crosses the stemma where it will, and drawn over a balloon it
+ * would take the pointer off the slices.
+ */
+export const inDrawingOrder = (links: readonly Link[]) =>
+    links
+        .map((link, i) => ({ link, i }))
+        .sort((a, b) => Number(a.link.principal) - Number(b.link.principal))
+
 /** How far on the screen the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
 const markClearance = 16
 
@@ -562,7 +573,7 @@ export const LinkContainer = ({
 
     return (
         <>
-            {links.map((link, i) => {
+            {inDrawingOrder(links).map(({ link, i }) => {
                 const source = positionedNodes.find(
                     node => node.id === (link.source as Node).id
                 )

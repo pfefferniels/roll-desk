@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, fitOf, graphOf, linkMarkAt, Node, radiusOf, shiftIntoView } from './Stemma'
+import { calculatePositions, fitOf, graphOf, inDrawingOrder, linkMarkAt, Node, radiusOf, shiftIntoView } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -76,19 +76,26 @@ describe('which node is drawn open', () => {
 })
 
 describe('derivations held as hypotheses', () => {
-    it('draws every derivation and tells the one the text is read against apart', () => {
-        const possibly = {
-            ...assignReference('B'),
-            '@annotation': { id: 'annotation', belief: { type: 'belief' as const, id: 'belief', certainty: 'possible' as const, reasons: [] } }
-        }
-        const contaminated = [
-            version('A', welteT100, 0),
-            version('B', welteT100, 0),
-            { ...version('S', welteT100, 1, 'A'), basedOn: [assignReference('A'), possibly] }
-        ]
+    const possibly = {
+        ...assignReference('B'),
+        '@annotation': { id: 'annotation', belief: { type: 'belief' as const, id: 'belief', certainty: 'possible' as const, reasons: [] } }
+    }
+    const contaminated = [
+        version('A', welteT100, 0),
+        version('B', welteT100, 0),
+        { ...version('S', welteT100, 1, 'A'), basedOn: [assignReference('A'), possibly] }
+    ]
 
+    it('draws every derivation and tells the one the text is read against apart', () => {
         expect(graphFor(contaminated).links.map(link => [(link.target as Node).id, link.principal, link.certainty, link.derivation, link.believed]))
             .toEqual([['A', true, 'true', 0, false], ['B', false, 'possible', 1, true]])
+    })
+
+    it('draws a hypothesis beneath every balloon, keeping where each link stands', () => {
+        const links = graphFor([...contaminated, version('T', welteT100, 2, 'S')]).links
+
+        expect(inDrawingOrder(links).map(({ link, i }) => [(link.source as Node).id, (link.target as Node).id, i]))
+            .toEqual([['S', 'B', 1], ['S', 'A', 0], ['T', 'S', 2]])
     })
 })
 
