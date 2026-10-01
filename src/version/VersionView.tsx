@@ -197,6 +197,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
                             symbol={symbol}
                             age={symbol.age}
                             shift={shifts.get(symbol.id)}
+                            division={emulation?.options.division}
                             highlight={version ? false : (symbol.carriers?.length !== 0)}
                             onClick={() => {
                                 const performingEvents = emulation?.findEventsPerforming(symbol.id) ?? []

@@ -84,7 +84,7 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
     )
 }
 
-export const DynamicsGrid = ({ velocity }: SharedOptions) => {
+export const DynamicsGrid = ({ velocity }: Pick<SharedOptions, 'velocity'>) => {
     const { translateX, rollLength, areas, areaBand, height } = usePinchZoom()
     const feet = feetIn({ areas, areaBand, height })
 

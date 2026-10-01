@@ -1,9 +1,10 @@
-import { add, Expression, Millimeters, mm, Note, scale, subtract, placedCarriersOf, placeOf } from "linked-rolls";
+import { add, Expression, Millimeters, mm, Note, scale, subtract, placedCarriersOf, placeOf, Track } from "linked-rolls";
 import { useContext, useMemo, useState } from "react";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { usePlaybackMark } from "../playback/usePlaybackMark";
 import { EditionContext } from "../edition/EditionContext";
 import { shadowLook } from "../constraints/constraintLooks";
+import { halfOf, whiskerReach } from "./whisker";
 
 interface CommandProps {
     symbol: Note | Expression;
@@ -11,14 +12,16 @@ interface CommandProps {
     highlight: boolean;
     /** How far the performance moves the command from where it was measured, in mm. */
     shift?: Millimeters;
+    /** The track the keyboard is divided at, where an emulator says so. */
+    division?: Track;
     onClick: () => void;
 }
 
-export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: CommandProps) => {
+export const Command = ({ symbol, age, highlight, shift = mm(0), division, onClick }: CommandProps) => {
     const { edition, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
     const { marked, followPlayback } = usePlaybackMark();
-    const { translateX, trackToY, laneHeight, height: canvasHeight, zoom, bar } = usePinchZoom();
+    const { translateX, trackToY, laneHeight, height: canvasHeight, room, zoom, bar } = usePinchZoom();
 
     const displayDetails = hovered || marked
 
@@ -63,14 +66,18 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: Comm
     const dx = translateX(shift)
     const shadow = Math.abs(dx) >= 1
 
-    // A whisker reaches a lane above and two below its own, so the
-    // pressed-together keyboard keeps its whiskers among its own lanes.
+    const [top, bottom] = whiskerReach(
+        { y, height },
+        displayDetails,
+        halfOf(symbol, position, division),
+        { height: canvasHeight, room }
+    )
     const whisker = (x: number) => (
         <line
             x1={x}
             x2={x}
-            y1={displayDetails ? 0 : y - height}
-            y2={displayDetails ? canvasHeight : y + 2 * height}
+            y1={top}
+            y2={bottom}
             stroke='black'
             strokeWidth={0.2}
             strokeOpacity={0.7} />

@@ -1,15 +1,15 @@
-import { Concept, Emulation, ReproducingSystem, systemIdOf } from 'linked-rolls'
+import { Concept, Emulation, ReproducingSystem, systemIdOf, Track } from 'linked-rolls'
 import { VelocityMap, welteT100System } from 'linked-rolls/welte-t100'
 import { welteT98System } from 'linked-rolls/welte-t98'
 import { welteLicenseeSystem } from 'linked-rolls/welte-licensee'
 
 /**
- * What the desk needs of any system's settings. The velocity map is
- * shared by both Welte scales on purpose, so that a red reading and a
- * green one can be compared at all, and it is the one part of the
- * settings the drawing reads.
+ * What the desk needs of any system's settings, which is what the drawing
+ * reads of them. The velocity map is shared by both Welte scales on
+ * purpose, so that a red reading and a green one can be compared at all.
+ * The division says which half's dynamics a note is read against.
  */
-export type SharedOptions = { velocity: VelocityMap }
+export type SharedOptions = { velocity: VelocityMap, division: Track }
 
 /**
  * The systems the desk can perform a version on.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { systemOf, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
+import { systemOf, track, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 import { emulationOf, systemFor } from './reproducingSystems'
 
 describe('the machine a version is performed on', () => {
@@ -42,7 +42,7 @@ describe('the machine a version is performed on', () => {
     })
 
     it('keeps each system to its own settings', () => {
-        const options = { [welteT100.id]: { velocity: { piano: 1, mezzoforte: 2, forte: 3 } } }
+        const options = { [welteT100.id]: { velocity: { piano: 1, mezzoforte: 2, forte: 3 }, division: track(54) } }
         expect(emulationOf(systemOf(welteT100), options)?.options.velocity.piano).toBe(1)
     })
 })
