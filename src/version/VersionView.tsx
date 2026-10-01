@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, editsOf, Millimeters, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, editsOf, Millimeters, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -7,6 +7,7 @@ import { Command } from "./SymbolView"
 import { EditionContext } from "../edition/EditionContext"
 import { Ground } from "../canvas/Ground"
 import { Blocks } from "../canvas/Blocks"
+import { BlockEdges } from "../canvas/BlockEdges"
 import { EditView, Focus } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../desk/SelectionContext"
@@ -15,6 +16,7 @@ import { isHeldMotivation } from "../edition/motivation"
 import { ConstraintView } from "../constraints/ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../constraints/constraints"
 import { derivationToleranceOf } from "../edition/collationTolerance"
+import { Svg } from "../canvas/units"
 
 type AgedSymbol = AnySymbol & { age: number }
 
@@ -59,9 +61,11 @@ interface VersionViewProps {
     /** The emulation settings by system, each system's defaults when none are chosen. */
     emulationOptions?: EmulationOptions
     onClick: (event: AnySymbol | Edit) => void
+    /** Gives the lanes of a block of the bar another height, as its edge is dragged. */
+    onResizeLane: (role: TrackRole, lane: Svg) => void
 }
 
-export const VersionView = ({ version, problems, emulationOptions, onClick }: VersionViewProps) => {
+export const VersionView = ({ version, problems, emulationOptions, onClick, onResizeLane }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
     const { edition } = useContext(EditionContext)
@@ -219,6 +223,9 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
                 shifts={shifts}
                 problems={problemsOfVersion(problems, version.id)}
             />
+
+            {/* Over everything else, so that a hull reaching into the gaps does not cover them. */}
+            <BlockEdges onResize={onResizeLane} />
         </g>
     )
 }

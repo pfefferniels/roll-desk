@@ -17,10 +17,15 @@ import { Svg, svg } from './units'
 
 export type { Band, Box }
 
-export interface LaneHeights {
-    note: Svg
-    expression: Svg
-}
+/** How tall a lane is drawn in each block of the bar. */
+export type LaneHeights = Readonly<Record<TrackRole, Svg>>
+
+/** Lanes of one height for the keyboard and another for the expression on either side. */
+export const lanesOf = (note: Svg, expression: Svg): LaneHeights => ({
+    'bass-expression': expression,
+    note,
+    'treble-expression': expression
+})
 
 export interface Dimension {
     horizontal: Pick<HorizontalSpan, 'from' | 'to'>
@@ -38,7 +43,7 @@ export interface RollGeometry {
      */
     trackToY: (position: Track) => Svg
 
-    /** Height of one lane, which differs between notes and expression. */
+    /** Height of one lane, which differs from one block of the bar to the next. */
     laneHeight: (position: Track) => Svg
 
     /** The track whose lane contains y, or 'gap' between the blocks. */
@@ -80,9 +85,6 @@ export const atLeastVisible = (box: Box): Box => ({
     height: max(box.height, visible)
 })
 
-const heightOfRole = (role: TrackRole, lanes: LaneHeights) =>
-    role === 'note' ? lanes.note : lanes.expression
-
 /** One block of the bar, once it is known where it starts and how tall it is. */
 interface Block {
     area: TrackArea
@@ -108,7 +110,7 @@ export const rollGeometry = (
         const top = previous
             ? add(add(previous.top, previous.span), spacing)
             : svg(0)
-        const laneHeight = heightOfRole(area.role, lanes)
+        const laneHeight = lanes[area.role]
         return [...acc, { area, top, laneHeight, span: scale(laneHeight, area.to - area.from + 1) }]
     }, [])
 
@@ -131,7 +133,7 @@ export const rollGeometry = (
 
     const laneHeight = (position: Track) => {
         const role = bar.roleOf(position)
-        return role ? heightOfRole(role, lanes) : lanes.note
+        return role ? lanes[role] : lanes.note
     }
 
     const yToTrack = (y: Svg): Track | 'gap' => {
@@ -175,5 +177,5 @@ export const rollGeometry = (
  */
 export const evenGeometry = (height: Svg, bar: TrackerBar): RollGeometry => {
     const lane = scale(height, 1 / bar.trackCount)
-    return rollGeometry({ note: lane, expression: lane }, svg(0), bar)
+    return rollGeometry(lanesOf(lane, lane), svg(0), bar)
 }

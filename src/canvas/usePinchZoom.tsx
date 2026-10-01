@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useMemo, RefObject } from 'react';
 import { Millimeters, mm, TrackerBar, welteT100 } from 'linked-rolls';
-import { LaneHeights, RollGeometry, rollGeometry } from './rollGeometry';
+import { LaneHeights, lanesOf, RollGeometry, rollGeometry } from './rollGeometry';
 import { drawnAt, Svg, svg, SvgPerMm, svgPerMm } from './units';
 
 export interface PinchZoomContextProps extends RollGeometry {
@@ -37,13 +37,15 @@ export interface Room {
 
 const noRoom: Room = { above: svg(0), below: svg(0) }
 
-const emptyGeometry = rollGeometry({ note: svg(0), expression: svg(0) }, svg(0), welteT100)
+const noLanes = lanesOf(svg(0), svg(0))
+
+const emptyGeometry = rollGeometry(noLanes, svg(0), welteT100)
 
 const atRest: RefObject<boolean> = { current: false }
 
 const PinchZoomContext = createContext<PinchZoomContextProps>({
     ...emptyGeometry,
-    trackHeight: { note: svg(0), expression: svg(0) },
+    trackHeight: noLanes,
     spacing: svg(0),
     room: noRoom,
     translateX: () => svg(0),
@@ -65,8 +67,8 @@ interface PinchZoomProviderProps {
     room?: Room
     zoom: SvgPerMm
     rollLength: Millimeters
-    noteHeight: Svg
-    expressionHeight: Svg
+    /** How tall a lane is drawn in each block of the bar. */
+    lanes: LaneHeights
     setZoom: (zoom: SvgPerMm) => void
     viewport?: HTMLDivElement | null
     gesturing?: RefObject<boolean>
@@ -77,8 +79,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     bar,
     zoom,
     rollLength,
-    noteHeight,
-    expressionHeight,
+    lanes: trackHeight,
     children,
     spacing = svg(40),
     room = noRoom,
@@ -86,11 +87,6 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     viewport = null,
     gesturing = atRest
 }) => {
-    const trackHeight = useMemo(
-        () => ({ note: noteHeight, expression: expressionHeight }),
-        [noteHeight, expressionHeight]
-    )
-
     const geometry = useMemo(
         () => rollGeometry(trackHeight, spacing, bar),
         [trackHeight, spacing, bar]

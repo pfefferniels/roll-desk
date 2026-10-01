@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { atLeastVisible, evenGeometry, rollGeometry } from './rollGeometry'
+import { atLeastVisible, evenGeometry, lanesOf, rollGeometry } from './rollGeometry'
 import { add, scale, subtract, track, welteLicensee, welteT100 } from 'linked-rolls'
 import { svg } from './units'
 
-const lanes = { note: svg(4), expression: svg(7) }
+const lanes = lanesOf(svg(4), svg(7))
 const spacing = svg(40)
 const geometry = rollGeometry(lanes, spacing, welteT100)
 
@@ -11,7 +11,7 @@ const allTracks = Array.from({ length: welteT100.trackCount }, (_, i) => track(i
 
 describe('roll geometry', () => {
     it('fills the drawing with the bar and two gaps', () => {
-        expect(geometry.height).toEqual(20 * lanes.expression + 80 * lanes.note + 2 * spacing)
+        expect(geometry.height).toEqual(20 * lanes['treble-expression'] + 80 * lanes.note + 2 * spacing)
         expect(geometry.trackToY(track(welteT100.trackCount))).toEqual(0)
         expect(geometry.trackToY(track(1)) + geometry.laneHeight(track(1))).toEqual(geometry.height)
     })
@@ -69,7 +69,7 @@ describe('roll geometry', () => {
 
     it('gives a single track the height of its own lane', () => {
         expect(geometry.bandOf({ from: track(40) }).height).toEqual(lanes.note)
-        expect(geometry.bandOf({ from: track(95) }).height).toEqual(lanes.expression)
+        expect(geometry.bandOf({ from: track(95) }).height).toEqual(lanes['treble-expression'])
     })
 
     it('bands a whole block of the bar', () => {
@@ -77,6 +77,16 @@ describe('roll geometry', () => {
         const band = geometry.areaBand(notes)
         expect(band.y).toEqual(geometry.trackToY(track(90)))
         expect(band.height).toEqual(80 * lanes.note)
+    })
+
+    it('lets the expression on either side keep a lane height of its own', () => {
+        const uneven = rollGeometry({ ...lanes, 'bass-expression': svg(12) }, spacing, welteT100)
+        const [bass, , treble] = welteT100.areas
+
+        expect(uneven.areaBand(bass!).height).toEqual(10 * 12)
+        expect(uneven.areaBand(treble!).height).toEqual(10 * lanes['treble-expression'])
+        expect(uneven.laneHeight(track(5))).toEqual(12)
+        expect(uneven.height).toEqual(geometry.height + 10 * (12 - lanes['bass-expression']))
     })
 })
 

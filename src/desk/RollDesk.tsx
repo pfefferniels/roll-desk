@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn } from 'linked-rolls'
+import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { onsetToMiddleOf, spotlight, spotlightWhenDrawn } from "./spotlight"
 import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf } from "../edition/addresses"
@@ -10,7 +10,8 @@ import { dateStatement } from "../edition/dateStatement"
 import { OpenContext } from "./OpenContext"
 import { useSnackbar } from "./SnackbarContext"
 import { CopyReference } from "./CopyReference"
-import { svg, svgPerMm } from "../canvas/units"
+import { Svg, svg, svgPerMm } from "../canvas/units"
+import { LaneHeights, lanesOf } from "../canvas/rollGeometry"
 import { announcePlayback } from "../playback/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../playback/reproducingSystems'
 import { Add, ChevronLeft, ChevronRight, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
@@ -85,19 +86,19 @@ const deskPanel = {
 /**
  * How the bar is laid out for a version: it is read for its expression,
  * so the keyboard is pressed together, and the dynamics it yields stand
- * beyond the bar on either side.
+ * beyond the bar on either side. The reader may drag each block taller
+ * or shorter, starting from these lanes.
  */
 const versionLayout = {
-    noteHeight: svg(1),
-    expressionHeight: svg(10),
     spacing: svg(16),
     room: { above: dynamicsRoom, below: dynamicsRoom }
 }
 
+const versionLanes = lanesOf(svg(1), svg(10))
+
 /** How the bar is laid out for a copy, whose lanes are read against its scan. */
 const copyLayout = {
-    noteHeight: svg(3),
-    expressionHeight: svg(10),
+    lanes: lanesOf(svg(3), svg(10)),
     spacing: svg(60)
 }
 
@@ -165,6 +166,9 @@ export const Desk = ({ show }: DeskProps) => {
     /** The copy whose account is being read, which is shown apart from the desk. */
     const [accountCopyId, setAccountCopyId] = useState<string>()
     const [blendPosition, setBlendPosition] = useState(workingPosition)
+    /** The lanes a version is drawn in, as the reader has dragged its blocks; kept from one version to the next. */
+    const [lanes, setLanes] = useState<LaneHeights>(versionLanes)
+    const resizeLane = useCallback((role: TrackRole, lane: Svg) => setLanes(lanes => ({ ...lanes, [role]: lane })), [])
 
     // The desk shows a version or a copy, never both.
     const { isPlaying, started, stop } = usePlayback(currentVersionId ?? currentCopyId)
@@ -682,7 +686,7 @@ export const Desk = ({ show }: DeskProps) => {
                     setZoom={jump}
                     viewport={viewport}
                     gesturing={gesturing}
-                    {...(currentVersion ? versionLayout : copyLayout)}
+                    {...(currentVersion ? { ...versionLayout, lanes } : copyLayout)}
                 >
                     <Canvas stageRef={stageRef}>
                         {currentVersion
@@ -692,6 +696,7 @@ export const Desk = ({ show }: DeskProps) => {
                                     version={currentVersion}
                                     problems={problems}
                                     emulationOptions={emulationOptions}
+                                    onResizeLane={resizeLane}
                                 />)
                             : currentCopy && (
                                 <CopyFacsimile

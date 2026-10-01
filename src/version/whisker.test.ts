@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { track, welteT100 } from 'linked-rolls'
 import type { Expression, Note } from 'linked-rolls'
-import { rollGeometry } from '../canvas/rollGeometry'
+import { lanesOf, rollGeometry } from '../canvas/rollGeometry'
 import { svg } from '../canvas/units'
 import { dynamicsRoom, feetIn, heightOf } from './Dynamics'
 import { halfOf, whiskerReach } from './whisker'
 
-const geometry = rollGeometry({ note: svg(1), expression: svg(10) }, svg(16), welteT100)
+const geometry = rollGeometry(lanesOf(svg(1), svg(10)), svg(16), welteT100)
 const room = { above: dynamicsRoom, below: dynamicsRoom }
 const drawing = { height: geometry.height, room }
 const velocity = { piano: 35, mezzoforte: 60, forte: 90 }
