@@ -1,10 +1,12 @@
 import { useMemo } from "react"
-import { usePinchZoom } from "./usePinchZoom"
+import { subtract } from "linked-rolls"
+import { Room, usePinchZoom } from "./usePinchZoom"
 import { useVisibleSpan } from "./useVisibleSpan"
 import { LabelledTick, ruler } from "./scale"
+import { Svg, svg } from "./units"
 
-/** Where the scale's baseline runs, in the clear above the tracker bar. */
-export const rulerBaseline = -40
+/** Where the scale's baseline runs, in the clear above the tracker bar and whatever the view draws over it. */
+export const rulerBaselineOf = (room: Room): Svg => subtract(svg(-40), room.above)
 
 const look = { stroke: '#9ca3af', strokeWidth: 0.5 }
 
@@ -12,9 +14,10 @@ const labelledTick = 7
 const plainTick = 3
 
 const Reading = ({ at, label }: LabelledTick) => {
-    const { translateX } = usePinchZoom()
+    const { translateX, room } = usePinchZoom()
 
     const x = translateX(at)
+    const rulerBaseline = rulerBaselineOf(room)
 
     return (
         <>
@@ -38,8 +41,9 @@ const Reading = ({ at, label }: LabelledTick) => {
  * viewport rather than the length of the roll.
  */
 export const Ruler = () => {
-    const { translateX, rollLength, zoom } = usePinchZoom()
+    const { translateX, rollLength, zoom, room } = usePinchZoom()
     const over = useVisibleSpan()
+    const rulerBaseline = rulerBaselineOf(room)
 
     const { labelled, plain } = useMemo(
         () => ruler({ length: rollLength, zoom, over }),

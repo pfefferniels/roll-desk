@@ -1,36 +1,50 @@
-import { add, DynamicsCurve, Emulation, mm, TrackRole } from "linked-rolls"
+import { add, DynamicsCurve, Emulation, mm, subtract, TrackRole } from "linked-rolls"
+import { VelocityMap } from "linked-rolls/welte-t100"
 import { RollGeometry } from "../canvas/rollGeometry"
 import { SharedOptions } from "../playback/reproducingSystems"
 import { usePinchZoom } from "../canvas/usePinchZoom.tsx"
 import { samplesOnRoll } from "./samplesOnRoll"
 import { Svg, svg } from "../canvas/units"
 
+/** How tall a curve's band is, from piano at its foot to forte at its head. */
+const BAND = svg(80)
+
+/** The air left between a band and the block of valves beside it. */
+const GAP = svg(10)
+
+/** What a band takes beyond the bar, above it for the treble and below it for the bass. */
+export const dynamicsRoom = add(BAND, GAP)
+
+type Scope = 'bass' | 'treble'
+
 /**
- * Where each curve is drawn from: the top of the block of valves it
- * belongs to, so a curve sits with the commands that shape it and the
- * two do not overlap. Taken off the bar rather than named as tracks,
- * the blocks being different sizes on every scale.
+ * Where each curve's band has its foot: beyond the bar, the treble's
+ * above the block of treble valves and the bass's below the bass valves,
+ * so that a curve stands beside the commands that shape it rather than
+ * over them. Taken off the bar rather than named as tracks, the blocks
+ * being different sizes on every scale.
  */
-const anchorsIn = (geometry: Pick<RollGeometry, 'areas' | 'areaBand'>) => {
-    const topOf = (role: TrackRole) => {
-        const area = geometry.areas.find(band => band.role === role)
-        return area ? geometry.areaBand(area).y : svg(0)
+export const feetIn = ({ areas, areaBand, height }: Pick<RollGeometry, 'areas' | 'areaBand' | 'height'>): Record<Scope, Svg> => {
+    const blockOf = (role: TrackRole) => {
+        const area = areas.find(area => area.role === role)
+        return area && areaBand(area)
     }
 
-    return { bass: topOf('bass-expression'), treble: topOf('treble-expression') }
+    const treble = blockOf('treble-expression')
+    const bass = blockOf('bass-expression')
+
+    return {
+        treble: subtract(treble?.y ?? svg(0), GAP),
+        bass: add(bass ? add(bass.y, bass.height) : height, dynamicsRoom)
+    }
 }
+
+/** Where a velocity is drawn: as a height above its band's foot, piano on the foot and forte at the head. */
+export const heightOf = (velocity: number, foot: Svg, { piano, forte }: VelocityMap): Svg =>
+    svg(foot - (velocity - piano) / (forte - piano) * BAND)
 
 /** Every so many samples of the curve, which has about twelve per millimetre. */
 const SAMPLE_STRIDE = 25
-
-/** The loudest a MIDI velocity reads, which is also how tall a curve's band is. */
-const LOUDEST = 127
-
-/**
- * Where a velocity is drawn: as a depth below the anchor its curve hangs
- * from, one drawing unit to the step, so the loudest sits on the anchor.
- */
-const belowAnchor = (velocity: number, anchor: Svg): Svg => add(anchor, svg(LOUDEST - velocity))
 
 type DynamicsProps = {
     forEmulation: Emulation<SharedOptions>
@@ -38,20 +52,21 @@ type DynamicsProps = {
 }
 
 export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) => {
-    const { translateX, rollLength, areas, areaBand } = usePinchZoom()
-    const anchor = anchorsIn({ areas, areaBand })
+    const { translateX, rollLength, areas, areaBand, height } = usePinchZoom()
+    const feet = feetIn({ areas, areaBand, height })
+    const { velocity } = emulation.options
 
-    const curveNamed = (name: string) =>
-        emulation.curves.find((curve): curve is DynamicsCurve => curve.kind === 'dynamics' && curve.name === name)
-
-    const pathOf = (curve: DynamicsCurve | undefined, anchor: Svg) => {
+    const pathOf = (scope: Scope) => {
+        const curve = emulation.curves.find((curve): curve is DynamicsCurve =>
+            curve.kind === 'dynamics' && curve.name === scope)
         if (!curve) return ""
+
         return samplesOnRoll(curve.place, rollLength, SAMPLE_STRIDE)
             .flatMap(index => {
                 const along = curve.place[index]
                 const loudness = curve.velocity[index]
                 if (along === undefined || loudness === undefined) return []
-                return [[translateX(mm(along)), belowAnchor(loudness, anchor)] as const]
+                return [[translateX(mm(along)), heightOf(loudness, feet[scope], velocity)] as const]
             })
             .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
             .join(" ")
@@ -60,27 +75,18 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
     return (
         <>
             <g className="trebleVelocities">
-                <path
-                    d={pathOf(curveNamed('treble'), anchor.treble)}
-                    fill="none"
-                    {...pathProps}
-                />
+                <path d={pathOf('treble')} fill="none" {...pathProps} />
             </g>
             <g className="bassVelocities">
-                <path
-                    d={pathOf(curveNamed('bass'), anchor.bass)}
-                    fill="none"
-                    {...pathProps}
-                />
+                <path d={pathOf('bass')} fill="none" {...pathProps} />
             </g>
         </>
     )
 }
 
 export const DynamicsGrid = ({ velocity }: SharedOptions) => {
-    const { translateX, rollLength, areas, areaBand } = usePinchZoom()
-
-    const { bass: bassShift, treble: trebleShift } = anchorsIn({ areas, areaBand })
+    const { translateX, rollLength, areas, areaBand, height } = usePinchZoom()
+    const feet = feetIn({ areas, areaBand, height })
 
     const lineAt = (y: Svg, dashed = false) => (
         <line
@@ -94,16 +100,13 @@ export const DynamicsGrid = ({ velocity }: SharedOptions) => {
         />
     )
 
-    const forScope = (scope: 'bass' | 'treble') => {
-        const anchor = scope === 'bass' ? bassShift : trebleShift
-        return (
-            <g className='dynamicsGrid'>
-                {lineAt(belowAnchor(velocity.piano, anchor))}
-                {lineAt(belowAnchor(velocity.mezzoforte, anchor), true)}
-                {lineAt(belowAnchor(velocity.forte, anchor))}
-            </g>
-        )
-    }
+    const forScope = (scope: Scope) => (
+        <g className='dynamicsGrid'>
+            {lineAt(heightOf(velocity.piano, feet[scope], velocity))}
+            {lineAt(heightOf(velocity.mezzoforte, feet[scope], velocity), true)}
+            {lineAt(heightOf(velocity.forte, feet[scope], velocity))}
+        </g>
+    )
 
     return (
         <>

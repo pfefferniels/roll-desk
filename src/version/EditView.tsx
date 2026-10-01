@@ -4,7 +4,7 @@ import {
 } from "linked-rolls";
 import { getHull, Hull } from "./Hull";
 import { getBoundingBox } from "../geometry/getBoundingBox";
-import { MouseEventHandler, useContext, useMemo } from "react";
+import { MouseEventHandler, SVGProps, useContext, useMemo } from "react";
 import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { Arrow } from "./Arrow";
@@ -14,7 +14,7 @@ import { cornersOf, point, Point } from "../geometry/drawing";
 import { add, subtract } from "linked-rolls";
 import { inOneLane } from "../geometry/arrow";
 import { Svg, svg } from "../canvas/units";
-import { glowReach, outlineStrength } from "../geometry/glow";
+import { glowReach, outlineStrength, settling } from "../geometry/glow";
 import { Arguable } from "../accounts/Arguable";
 
 
@@ -31,6 +31,16 @@ const deletion: EditColours = { fill: '#fb7f78', glow: '#d64545' }
 
 /** A shift puts one thing in the place of another and is drawn as an arrow, which has no fill of its own. */
 const shiftGlow = '#4b5563'
+
+/** Where a command put out of its place stood: an outline, the command itself being off the roll. */
+const formerPlace: SVGProps<SVGRectElement> = {
+    fill: 'none',
+    stroke: '#666',
+    strokeWidth: 0.8,
+    strokeDasharray: '2 1.5',
+    pointerEvents: 'none',
+    style: { transition: settling }
+}
 
 /** How an edit stands while a motivation is in focus: as one of its own, or as the ground around it. */
 export type Focus = 'lit' | 'dimmed'
@@ -311,9 +321,10 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
 
     /**
      * An edit that both inserts and deletes puts one thing in the place
-     * of another, and the arrow from the old to the new says that on its
-     * own. Hulls and a word as well would say it three times over, which
-     * on a transfer between systems is every expression on the roll.
+     * of another, and the arrow from the outline of the old to the new
+     * says that on its own. Hulls and a word as well would say it three
+     * times over, which on a transfer between systems is every
+     * expression on the roll.
      *
      * Which ends the arrows are drawn at is read off the places
      * themselves rather than off the edit's type: a command that kept its
@@ -339,6 +350,10 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
 
         return (
             <g data-motivation={edit.motivation}>
+                {deletions.map(box => (
+                    <rect key={`${box.x} ${box.y}`} {...box} {...formerPlace} opacity={outline} />
+                ))}
+
                 {moved.length === 0 && (
                     <Arrow
                         from={was}

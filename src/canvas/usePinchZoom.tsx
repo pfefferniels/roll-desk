@@ -13,6 +13,10 @@ export interface PinchZoomContextProps extends RollGeometry {
 
     /** The gap left between the blocks of the bar, so a second bar can be laid out the same way. */
     spacing: Svg
+
+    /** What the view draws beyond the bar, above and below it. */
+    room: Room
+
     zoom: SvgPerMm
     setZoom: (zoom: SvgPerMm) => void
 
@@ -25,6 +29,14 @@ export interface PinchZoomContextProps extends RollGeometry {
     gesturing: RefObject<boolean>
 }
 
+/** Space taken beyond the bar, above it and below it. */
+export interface Room {
+    above: Svg
+    below: Svg
+}
+
+const noRoom: Room = { above: svg(0), below: svg(0) }
+
 const emptyGeometry = rollGeometry({ note: svg(0), expression: svg(0) }, svg(0), welteT100)
 
 const atRest: RefObject<boolean> = { current: false }
@@ -33,6 +45,7 @@ const PinchZoomContext = createContext<PinchZoomContextProps>({
     ...emptyGeometry,
     trackHeight: { note: svg(0), expression: svg(0) },
     spacing: svg(0),
+    room: noRoom,
     translateX: () => svg(0),
     rollLength: mm(0),
     zoom: svgPerMm(0),
@@ -49,6 +62,7 @@ interface PinchZoomProviderProps {
      */
     bar: TrackerBar
     spacing?: Svg
+    room?: Room
     zoom: SvgPerMm
     rollLength: Millimeters
     noteHeight: Svg
@@ -67,6 +81,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     expressionHeight,
     children,
     spacing = svg(40),
+    room = noRoom,
     setZoom,
     viewport = null,
     gesturing = atRest
@@ -85,13 +100,14 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         ...geometry,
         trackHeight,
         spacing,
+        room,
         translateX: (x: Millimeters) => drawnAt(x, zoom),
         rollLength,
         zoom,
         setZoom,
         viewport,
         gesturing
-    }), [geometry, trackHeight, spacing, rollLength, zoom, setZoom, viewport, gesturing])
+    }), [geometry, trackHeight, spacing, room, rollLength, zoom, setZoom, viewport, gesturing])
 
     return (
         <PinchZoomContext.Provider value={value}>

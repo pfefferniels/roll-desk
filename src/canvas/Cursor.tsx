@@ -1,6 +1,6 @@
 import { Millimeters } from "linked-rolls"
 import { usePinchZoom } from "./usePinchZoom"
-import { rulerBaseline } from "./Ruler"
+import { rulerBaselineOf } from "./Ruler"
 
 interface CursorProps {
     /** Where the pointer sits on the roll. */
@@ -9,7 +9,7 @@ interface CursorProps {
 
 /** The reading the pointer stands at, drawn for as long as a drag runs. */
 export const Cursor = ({ at }: CursorProps) => {
-    const { translateX, height } = usePinchZoom()
+    const { translateX, height, room } = usePinchZoom()
 
     const x = translateX(at)
 
@@ -17,7 +17,7 @@ export const Cursor = ({ at }: CursorProps) => {
         <g className='cursor' pointerEvents='none'>
             <line
                 x1={x}
-                y1={rulerBaseline}
+                y1={rulerBaselineOf(room)}
                 x2={x}
                 y2={height}
                 strokeWidth={2}

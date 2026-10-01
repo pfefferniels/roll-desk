@@ -63,12 +63,14 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), onClick }: Comm
     const dx = translateX(shift)
     const shadow = Math.abs(dx) >= 1
 
+    // A whisker reaches a lane above and two below its own, so the
+    // pressed-together keyboard keeps its whiskers among its own lanes.
     const whisker = (x: number) => (
         <line
             x1={x}
             x2={x}
-            y1={displayDetails ? 0 : y - 10}
-            y2={displayDetails ? canvasHeight : y + 20}
+            y1={displayDetails ? 0 : y - height}
+            y2={displayDetails ? canvasHeight : y + 2 * height}
             stroke='black'
             strokeWidth={0.2}
             strokeOpacity={0.7} />

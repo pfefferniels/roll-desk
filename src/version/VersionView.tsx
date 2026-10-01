@@ -1,11 +1,12 @@
 import { useContext, useMemo } from "react"
-import { AnySymbol, ConstraintProblem, editsOf, Millimeters, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf } from "linked-rolls"
+import { AnySymbol, ConstraintProblem, editsOf, Millimeters, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
 import { Dynamics, DynamicsGrid } from "./Dynamics"
 import { Pedals } from "./Pedal"
 import { Command } from "./SymbolView"
 import { EditionContext } from "../edition/EditionContext"
 import { Ground } from "../canvas/Ground"
+import { Blocks } from "../canvas/Blocks"
 import { EditView, Focus } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../desk/SelectionContext"
@@ -14,9 +15,6 @@ import { isHeldMotivation } from "../edition/motivation"
 import { ConstraintView } from "../constraints/ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../constraints/constraints"
 import { derivationToleranceOf } from "../edition/collationTolerance"
-
-/** How far the paper reaches past the outermost lane, in SVG units. */
-const groundMargin = 50
 
 type AgedSymbol = AnySymbol & { age: number }
 
@@ -67,7 +65,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
     const { selection, setSelection } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
     const { edition } = useContext(EditionContext)
-    const { translateX, rollLength, height: geometryHeight } = usePinchZoom()
+    const { translateX, rollLength, height: geometryHeight, room } = usePinchZoom()
 
     // None of what follows depends on the zoom, and emulating a version
     // costs a few hundred milliseconds, so it must not be redone per frame.
@@ -166,21 +164,23 @@ export const VersionView = ({ version, problems, emulationOptions, onClick }: Ve
 
     return (
         <g className='versionView'>
+            <Blocks />
+
             {dynamics}
 
             {!emulation && (
-                <text x={0} y={-groundMargin - 8} fontSize={11} fill='#b45309'>
+                <text x={0} y={scale(room.above, -0.5)} fontSize={11} fill='#b45309'>
                     No emulator for {trackerBarOf(version.system)?.name ?? 'this system'},
                     so the version is drawn but not performed.
                 </text>
             )}
 
-            {/* The paper the version is laid out on, a little clear of the bar at either edge. */}
+            {/* The paper the version is laid out on, as far as what is drawn beyond the bar. */}
             <Ground
                 x={0}
-                y={-groundMargin}
+                y={scale(room.above, -1)}
                 width={translateX(rollLength)}
-                height={geometryHeight + groundMargin * 2}
+                height={room.above + geometryHeight + room.below}
             />
 
             {edits}

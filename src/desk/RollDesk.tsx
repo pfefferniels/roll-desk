@@ -49,6 +49,7 @@ import { useHotkeys } from "react-hotkeys-hook"
 import { goesToAnOverlay } from "./goesToAnOverlay"
 import { activatesItsTarget } from "./activatesItsTarget"
 import { VersionView } from "../version/VersionView"
+import { dynamicsRoom } from "../version/Dynamics"
 import { CopyFacsimile } from "../facsimile/CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "../constraints/ConstraintsPanel"
 import { isHeldMotivation } from "../edition/motivation"
@@ -80,6 +81,25 @@ const deskPanel = {
     backdropFilter: 'blur(10px)',
     background: 'rgba(255, 255, 255, 0.6)'
 } as const
+
+/**
+ * How the bar is laid out for a version: it is read for its expression,
+ * so the keyboard is pressed together, and the dynamics it yields stand
+ * beyond the bar on either side.
+ */
+const versionLayout = {
+    noteHeight: svg(1),
+    expressionHeight: svg(10),
+    spacing: svg(16),
+    room: { above: dynamicsRoom, below: dynamicsRoom }
+}
+
+/** How the bar is laid out for a copy, whose lanes are read against its scan. */
+const copyLayout = {
+    noteHeight: svg(3),
+    expressionHeight: svg(10),
+    spacing: svg(60)
+}
 
 const namedEditors = (editors: Editor[] = []) =>
     editors.map(editor => `${editor.name} (${editor.role})`).join(', ')
@@ -660,9 +680,7 @@ export const Desk = ({ show }: DeskProps) => {
                     setZoom={jump}
                     viewport={viewport}
                     gesturing={gesturing}
-                    noteHeight={svg(3)}
-                    expressionHeight={svg(10)}
-                    spacing={svg(60)}
+                    {...(currentVersion ? versionLayout : copyLayout)}
                 >
                     <Canvas stageRef={stageRef}>
                         {currentVersion
