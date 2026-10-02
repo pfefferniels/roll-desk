@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { Assumption, Edition, Motivation, Note } from 'linked-rolls'
-import { deskPath, entityOfPath, idOfMark, linkTarget, referenceOf } from './addresses'
-import { fixtureEdition, ids } from './editionFixture'
+import { Assumption, Edition, Motivation, Note, systemOf, welteT100 } from 'linked-rolls'
+import { deskPath, entityOfPath, idNamed, idOfMark, linkTarget, referenceOf, shortPathOf } from './addresses'
+import { fixtureEdition, ids, note as carriedNote } from './editionFixture'
 import { HeldMotivation } from './motivation'
 
 const note = (id: string, pitch: number): Note => ({ type: 'note', id, pitch, carriers: [] })
@@ -158,5 +158,76 @@ describe('what a link to an entity opens', () => {
         edition.roll.recordingEvent.date['@annotation'] = assumed('when-recorded')
 
         expect(linkTarget(edition, 'when-recorded')).toEqual({ on: 'edition' })
+    })
+})
+
+const uuids = {
+    alone: '19fd4209-81cc-4d03-b2c3-fc7518dbba14',
+    twin: 'c15745fc-3df2-4d51-9d46-6cf3e1c456a8',
+    otherTwin: 'c15745fc-9a0b-4c1d-8e2f-3a4b5c6d7e8f',
+    symbol: 'symbol_05589b14-529e-4296-b513-207f7d065a79'
+}
+
+/** The fixture with versions named by UUIDs, two of them starting alike, and a symbol named by a word and a UUID. */
+const uuidEdition = () => {
+    const edition = fixtureEdition()
+    const named = (id: string, edits: Edition['versions'][number]['edits'] = []) =>
+        ({ id, system: systemOf(welteT100), edits, motivations: [] })
+    edition.versions.push(
+        named(uuids.alone, [{ type: 'edit', id: 'edit-alone', insert: [carriedNote(uuids.symbol, 64, 'hole-note')] }]),
+        named(uuids.twin),
+        named(uuids.otherTwin)
+    )
+    return edition
+}
+
+describe('the shortest address of an entity', () => {
+    it('keeps the first eight characters of a UUID', () => {
+        expect(shortPathOf(uuidEdition(), uuids.alone)).toBe('/19fd4209')
+    })
+
+    it('keeps as many more as tell it from an id starting alike', () => {
+        expect(shortPathOf(uuidEdition(), uuids.twin)).toBe('/c15745fc-3')
+        expect(shortPathOf(uuidEdition(), uuids.otherTwin)).toBe('/c15745fc-9')
+    })
+
+    it('keeps the word before a UUID', () => {
+        expect(shortPathOf(uuidEdition(), uuids.symbol)).toBe('/symbol_05589b14')
+    })
+
+    it('does not cut an id that is a word', () => {
+        expect(shortPathOf(uuidEdition(), ids.b)).toBe('/B')
+        expect(shortPathOf(uuidEdition(), 'forzando-off')).toBe('/forzando-off')
+    })
+})
+
+describe('the id an address names', () => {
+    it('is the id itself', () => {
+        expect(idNamed(uuidEdition(), uuids.alone)).toBe(uuids.alone)
+        expect(idNamed(uuidEdition(), ids.b)).toBe(ids.b)
+    })
+
+    it('is the one id the address is the start of', () => {
+        expect(idNamed(uuidEdition(), '19fd4209')).toBe(uuids.alone)
+        expect(idNamed(uuidEdition(), 'symbol_05589b14')).toBe(uuids.symbol)
+        expect(idNamed(uuidEdition(), 'c15745fc-3')).toBe(uuids.twin)
+    })
+
+    it('is none where two ids start so', () => {
+        expect(idNamed(uuidEdition(), 'c15745fc')).toBeUndefined()
+    })
+
+    it('is none for a start shorter than eight characters', () => {
+        expect(idNamed(uuidEdition(), '19fd420')).toBeUndefined()
+    })
+
+    it('is none where nothing starts so', () => {
+        expect(idNamed(uuidEdition(), 'ffffffff')).toBeUndefined()
+    })
+
+    it('leads back from every shortest address to its entity', () => {
+        const edition = uuidEdition()
+        Object.values(uuids).forEach(id =>
+            expect(idNamed(edition, entityOfPath(shortPathOf(edition, id))!)).toBe(id))
     })
 })

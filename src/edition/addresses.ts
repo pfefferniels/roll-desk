@@ -5,7 +5,7 @@
  * and the link they were given all say the same thing.
  */
 
-import { AnyFeature, AnySymbol, Edit, Edition, Motivation, Path, isEdit, isRollFeature, isSymbol, getAt, pathIn } from "linked-rolls"
+import { AnyFeature, AnySymbol, Edit, Edition, Motivation, Path, isEdit, isRollFeature, isSymbol, getAt, idsIn, pathIn } from "linked-rolls"
 import { HeldMotivation, isHeldMotivation, isMotivation } from "./motivation"
 import type { UserSelection } from "../desk/RollDesk"
 
@@ -55,6 +55,41 @@ export const deskPath = (edition: Edition, { versionId, copyId, selection }: Des
     if (versionId) return pathOf(versionId)
     if (copyId) return pathOf(copyId)
     return undefined
+}
+
+/** How many characters of a UUID an address keeps at the least. */
+const shortest = 8
+
+const uuid = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * The shortest address of the entity: its id cut after the first eight
+ * characters of the UUID it carries, or after as many more as tell it
+ * from every other id of the edition. An id that is a word is not cut.
+ */
+export const shortPathOf = (edition: Edition, id: string): string => {
+    const at = uuid.exec(id)?.index
+    if (at === undefined) return pathOf(id)
+
+    const others = [...idsIn(edition)].filter(other => other !== id)
+    for (let length = at + shortest; length < id.length; length++) {
+        const start = id.slice(0, length)
+        if (!others.some(other => other.startsWith(start))) return pathOf(start)
+    }
+    return pathOf(id)
+}
+
+/**
+ * The id an address names: the id itself, or the one id it is the start
+ * of, where that start runs to eight characters at least. Nothing where
+ * the edition holds no such id, or more than one.
+ */
+export const idNamed = (edition: Edition, named: string): string | undefined => {
+    if (pathIn(edition, named)) return named
+    if (named.length < shortest) return undefined
+
+    const [only, ...more] = [...idsIn(edition)].filter(id => id.startsWith(named))
+    return more.length === 0 ? only : undefined
 }
 
 /** The IRI an entity is cited by: its address under the edition's base. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Edition } from 'linked-rolls'
-import { asBibLaTeX, asRis, asText, Citation, partNamed } from './citation'
+import { Citation, citationIn, partNamed } from './citation'
 import { fixtureEdition, ids } from './editionFixture'
 import { versionLabel } from './names'
 import { Commit } from './publication'
@@ -27,7 +27,7 @@ const commit: Commit = {
 const ofVersionB = (edition = published()): Citation => ({
     edition,
     part: partNamed(edition, ids.b),
-    iri: 'https://welte225.org/B',
+    url: 'https://welte225.org/B',
     commit,
     accessed: new Date(2026, 9, 3)
 })
@@ -35,20 +35,27 @@ const ofVersionB = (edition = published()): Citation => ({
 describe('what a citation names', () => {
     it('names a version by its siglum', () => {
         const edition = published()
-        expect(partNamed(edition, ids.b)).toBe(`Version ${versionLabel(edition, ids.b)}`)
+        const siglum = versionLabel(edition, ids.b)
+        expect(citationIn('en', ofVersionB(edition))).toMatch(new RegExp(`^Version ${siglum}, in: `))
+        expect(citationIn('de', ofVersionB(edition))).toMatch(new RegExp(`^Version ${siglum}, in: `))
     })
 
     it('names a copy by its siglum, or else by who holds it', () => {
-        expect(partNamed(published(), 'copy')).toBe('Copy Test')
-    })
-
-    it('names anything else by its kind and the version it stands on', () => {
         const edition = published()
-        expect(partNamed(edition, ids.note)).toMatch(/^Note on version /)
+        const ofCopy = { ...ofVersionB(edition), part: partNamed(edition, 'copy') }
+        expect(citationIn('en', ofCopy)).toMatch(/^Copy Test, in: /)
+        expect(citationIn('de', ofCopy)).toMatch(/^Rollenkopie Test, in: /)
     })
 
-    it('names a hole chain as two words', () => {
-        expect(partNamed(published(), 'hole-note')).toBe('Hole chain on copy Test')
+    it('names anything else by its kind and where it stands', () => {
+        const edition = published()
+        const ofHole = { ...ofVersionB(edition), part: partNamed(edition, 'hole-note') }
+        expect(citationIn('en', ofHole)).toMatch(/^Hole chain on copy Test, in: /)
+        expect(citationIn('de', ofHole)).toMatch(/^Stanzung auf Rollenkopie Test, in: /)
+
+        const ofNote = { ...ofVersionB(edition), part: partNamed(edition, ids.note) }
+        expect(citationIn('en', ofNote)).toMatch(/^Note on version \S+, in: /)
+        expect(citationIn('de', ofNote)).toMatch(/^Note in Version \S+, in: /)
     })
 
     it('names nothing the edition does not hold', () => {
@@ -56,73 +63,48 @@ describe('what a citation names', () => {
     })
 })
 
-describe('a citation as text', () => {
-    it('gives the part, the edition, its version, the commit and the day it was read', () => {
-        const citation = ofVersionB()
-        expect(asText(citation)).toBe(
-            `${citation.part}, in: Niels Pfeffer: Alfred Grünfeld spielt Robert Schumann, Träumerei. ` +
-            'Roll edition of WM 225, version 1.0 of 2 October 2026 (commit fc71626), ' +
-            'https://welte225.org/B, accessed 3 October 2026.'
-        )
+describe('the suggested citation', () => {
+    it('gives the edition, who edited it, its version, the commit and the day it was read', () => {
+        expect(citationIn('en', ofVersionB())).toMatch(new RegExp(
+            ', in: Alfred Grünfeld spielt Robert Schumann, Träumerei. ' +
+            'Roll edition of WM 225, edited by Niels Pfeffer, version 1.0 of 2 October 2026 \\(commit fc71626\\), ' +
+            'https://welte225.org/B \\(accessed 3 October 2026\\)\\.$'
+        ))
     })
 
-    it('names the editors as editors, and the publisher only where there are none', () => {
+    it('says the same in German', () => {
+        expect(citationIn('de', ofVersionB())).toMatch(new RegExp(
+            ', in: Alfred Grünfeld spielt Robert Schumann, Träumerei. ' +
+            'Rollenedition von WM 225, hrsg. von Niels Pfeffer, Version 1.0 vom 2.10.2026 \\(Commit fc71626\\), ' +
+            'https://welte225.org/B \\(zuletzt abgerufen am 3.10.2026\\)\\.$'
+        ))
+    })
+
+    it('names the editors rather than the publisher where the edition names any', () => {
         const edition = published()
         edition.creation.editors = [
             { name: 'Niels Pfeffer', sameAs: [], role: 'editor' },
+            { name: 'Ann Other', sameAs: [], role: 'editor' },
             { name: 'Someone Else', sameAs: [], role: 'proofreading' }
         ]
-        expect(asText(ofVersionB(edition))).toContain('in: Niels Pfeffer (ed.): Alfred')
+        edition.creation.publisher = { name: 'A Publisher', sameAs: [] }
+        expect(citationIn('en', ofVersionB(edition))).toContain('edited by Niels Pfeffer and Ann Other,')
+        expect(citationIn('de', ofVersionB(edition))).toContain('hrsg. von Niels Pfeffer und Ann Other,')
     })
 
     it('gives the day of publication where the edition states no version', () => {
         const edition = published()
         delete edition.version
-        expect(asText(ofVersionB(edition))).toContain('Roll edition of WM 225, published 2 October 2026 (commit fc71626)')
+        expect(citationIn('en', ofVersionB(edition))).toContain('Niels Pfeffer, published 2 October 2026 (commit fc71626)')
+        expect(citationIn('de', ofVersionB(edition))).toContain('Niels Pfeffer, veröffentlicht am 2.10.2026 (Commit fc71626)')
     })
 
     it('leaves out the commit where it is not known', () => {
-        expect(asText({ ...ofVersionB(), commit: undefined })).not.toContain('commit')
+        expect(citationIn('en', { ...ofVersionB(), commit: undefined })).toContain('version 1.0 of 2 October 2026, https://')
     })
 
     it('cites the edition as a whole without a part', () => {
-        expect(asText({ ...ofVersionB(), part: undefined, iri: 'https://welte225.org/' }))
-            .toMatch(/^Niels Pfeffer: Alfred Grünfeld/)
-    })
-})
-
-describe('a citation as BibLaTeX', () => {
-    it('is a dataset with the version, the dates and the commit', () => {
-        const bib = asBibLaTeX(ofVersionB())
-        expect(bib).toMatch(/^@dataset\{WM225-B,\n/)
-        expect(bib).toContain('  author = {Niels Pfeffer},\n')
-        expect(bib).toContain('  version = {1.0},\n')
-        expect(bib).toContain('  date = {2026-10-02},\n')
-        expect(bib).toContain('  url = {https://welte225.org/B},\n')
-        expect(bib).toContain('  urldate = {2026-10-03},\n')
-        expect(bib).toContain('  note = {Commit fc71626 of github.com/pfefferniels/welte225.org},\n')
-        expect(bib.endsWith('\n}')).toBe(true)
-    })
-
-    it('escapes what TeX would read as markup', () => {
-        const edition = published()
-        edition.title = 'Rolls & Holes: 100% #1_a'
-        expect(asBibLaTeX(ofVersionB(edition))).toContain('title = {Rolls \\& Holes: 100\\% \\#1\\_a}')
-    })
-})
-
-describe('a citation as RIS', () => {
-    it('is a dataset record standing in the edition', () => {
-        const citation = ofVersionB()
-        const ris = asRis(citation).split('\n')
-        expect(ris[0]).toBe('TY  - DATA')
-        expect(ris).toContain('AU  - Niels Pfeffer')
-        expect(ris).toContain(`TI  - ${citation.part}`)
-        expect(ris).toContain('T2  - Alfred Grünfeld spielt Robert Schumann, Träumerei: Roll edition of WM 225')
-        expect(ris).toContain('ET  - 1.0')
-        expect(ris).toContain('DA  - 2026/10/02')
-        expect(ris).toContain('Y2  - 2026/10/03')
-        expect(ris).toContain('N1  - Commit fc71626 of github.com/pfefferniels/welte225.org')
-        expect(ris.at(-2)).toBe('ER  - ')
+        expect(citationIn('de', { ...ofVersionB(), part: undefined, url: 'https://welte225.org/' }))
+            .toMatch(/^Alfred Grünfeld spielt Robert Schumann, Träumerei\. Rollenedition/)
     })
 })

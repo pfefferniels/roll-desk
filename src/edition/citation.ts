@@ -1,9 +1,9 @@
 /**
- * How the edition, or something in it, is cited: by its IRI, under the
- * version the edition states of itself and the commit whose file the
- * reader saw. The version is what a reader names, the commit what
- * gives back exactly what they saw, since the edition goes on changing
- * between versions.
+ * The suggested citation of the edition, or of something in it, in
+ * English and in German: by its shortest address, under the version the
+ * edition states of itself and the commit whose file the reader saw.
+ * The version is what a reader names, the commit what gives back exactly
+ * what they saw, since the edition goes on changing between versions.
  */
 
 import { copyIn, Edition, getAt, pathIn, versionIn } from "linked-rolls"
@@ -12,182 +12,150 @@ import { isMotivation } from "./motivation"
 import { copyLabel, versionLabel } from "./names"
 import type { Commit } from "./publication"
 
+export type Language = 'en' | 'de'
+
+/** What is cited within the edition: a version, a copy, or an entity on one of them. */
+export interface Part {
+    /** `version`, `copy`, or the type the entity states, such as `note` or `HoleChain`. */
+    kind: string
+    /** What a version or a copy is called. */
+    siglum?: string
+    /** The version or copy the entity stands on. */
+    on?: { kind: 'version' | 'copy', siglum: string }
+}
+
 export interface Citation {
     edition: Edition
     /** What is cited within the edition, or nothing where it is the edition as a whole. */
-    part?: string
-    /** The IRI of what is cited. */
-    iri: string
+    part?: Part
+    /** Where what is cited opens. */
+    url: string
     /** The commit holding what the reader saw, where it is known. */
     commit?: Commit
     /** The day the reader saw it. */
     accessed: Date
 }
 
-/** The kind of an entity, as its type names it: `HoleChain` is a hole chain. */
-const kindOf = (entity: unknown): string => {
-    if (isMotivation(entity)) return 'Motivation'
-    const type = typeof entity === 'object' && entity !== null && 'type' in entity && typeof entity.type === 'string'
+/** The type an entity states, a motivation being known by its shape. */
+const typeOf = (entity: unknown): string => {
+    if (isMotivation(entity)) return 'motivation'
+    return typeof entity === 'object' && entity !== null && 'type' in entity && typeof entity.type === 'string'
         ? entity.type
-        : undefined
-    if (!type) return 'Entity'
-    const words = type.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
-    return words.charAt(0).toUpperCase() + words.slice(1)
+        : 'entity'
 }
 
-/**
- * What a citation calls the entity under the id: a version or a copy by
- * its siglum, anything else by its kind and where it stands.
- */
-export const partNamed = (edition: Edition, id: string): string | undefined => {
-    if (versionIn(edition, id)) return `Version ${versionLabel(edition, id)}`
+/** What is cited under the id, or nothing where the edition holds nothing under it. */
+export const partNamed = (edition: Edition, id: string): Part | undefined => {
+    if (versionIn(edition, id)) return { kind: 'version', siglum: versionLabel(edition, id) }
 
     const copy = copyIn(edition, id)
-    if (copy) return `Copy ${copyLabel(copy)}`
+    if (copy) return { kind: 'copy', siglum: copyLabel(copy) }
 
     const path = pathIn(edition, id)
     const target = linkTarget(edition, id)
     if (!path || !target) return undefined
 
-    const kind = kindOf(getAt<unknown>(path, edition))
-    if (target.on === 'version') return `${kind} on version ${versionLabel(edition, target.versionId)}`
+    const kind = typeOf(getAt<unknown>(path, edition))
+    if (target.on === 'version') return { kind, on: { kind: 'version', siglum: versionLabel(edition, target.versionId) } }
     if (target.on === 'copy') {
         const on = copyIn(edition, target.copyId)
-        return on ? `${kind} on copy ${copyLabel(on)}` : kind
+        return on ? { kind, on: { kind: 'copy', siglum: copyLabel(on) } } : { kind }
     }
-    return kind
+    return { kind }
+}
+
+/** `HoleChain` is a hole chain. */
+const inWords = (type: string) => {
+    const words = type.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
+    return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/** The words the dissertation uses, where they differ from the type's. */
+const germanKinds: Record<string, string> = {
+    version: 'Version',
+    copy: 'Rollenkopie',
+    HoleChain: 'Stanzung',
+    belief: 'Annahme'
+}
+
+const kindIn = (language: Language, kind: string) =>
+    language === 'de' ? germanKinds[kind] ?? inWords(kind) : inWords(kind)
+
+/** "Version R2", "Note on version R4"; "Stanzung auf Rollenkopie St1". */
+const partIn = (language: Language, { kind, siglum, on }: Part): string => {
+    const named = siglum ? `${kindIn(language, kind)} ${siglum}` : kindIn(language, kind)
+    if (!on) return named
+    if (language === 'en') return `${named} on ${on.kind} ${on.siglum}`
+    return `${named} ${on.kind === 'version' ? 'in' : 'auf'} ${kindIn(language, on.kind)} ${on.siglum}`
 }
 
 /** Who answers for the edition: its editors, or where it names none, its publisher. */
-const responsible = (edition: Edition): { names: string[], asEditors: boolean } => {
+const editorsOf = (edition: Edition): string[] => {
     const editors = (edition.creation.editors ?? [])
         .filter(editor => editor.role === 'editor' && editor.name.trim())
         .map(editor => editor.name.trim())
-    if (editors.length > 0) return { names: editors, asEditors: true }
+    if (editors.length > 0) return editors
 
     const publisher = edition.creation.publisher.name.trim()
-    return { names: publisher ? [publisher] : [], asEditors: false }
+    return publisher ? [publisher] : []
 }
 
-/** What the edition is, beside its title. */
-const subtitleOf = (edition: Edition) => {
-    const catalogueNumber = edition.roll.catalogueNumber.trim()
-    return catalogueNumber ? `Roll edition of ${catalogueNumber}` : 'Roll edition'
-}
-
-/** The commit as a reader can look it up. */
-const shortSha = (commit: Commit) => commit.sha.slice(0, 7)
+/** "A", "A and B", "A, B and C". */
+const listed = (names: string[], and: string) =>
+    names.length > 1 ? `${names.slice(0, -1).join(', ')} ${and} ${names.at(-1)}` : names.join('')
 
 /** "2 October 2026" */
-export const longDate = (date: Date) =>
+const englishDate = (date: Date) =>
     date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
-const pad = (n: number) => String(n).padStart(2, '0')
+/** "2.10.2026" */
+const germanDate = (date: Date) => `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`
 
-/** "2026-10-02", of the day as the edition holds it. */
-const isoDate = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+const phrases = {
+    en: {
+        edition: 'Roll edition',
+        of: (catalogueNumber: string) => `of ${catalogueNumber}`,
+        editedBy: (names: string[]) => `edited by ${listed(names, 'and')}`,
+        version: (version: string, date: Date) => `version ${version} of ${englishDate(date)}`,
+        published: (date: Date) => `published ${englishDate(date)}`,
+        commit: (sha: string) => `commit ${sha}`,
+        accessed: (date: Date) => `accessed ${englishDate(date)}`
+    },
+    de: {
+        edition: 'Rollenedition',
+        of: (catalogueNumber: string) => `von ${catalogueNumber}`,
+        editedBy: (names: string[]) => `hrsg. von ${listed(names, 'und')}`,
+        version: (version: string, date: Date) => `Version ${version} vom ${germanDate(date)}`,
+        published: (date: Date) => `veröffentlicht am ${germanDate(date)}`,
+        commit: (sha: string) => `Commit ${sha}`,
+        accessed: (date: Date) => `zuletzt abgerufen am ${germanDate(date)}`
+    }
+} satisfies Record<Language, unknown>
 
 /** The sentence ends, unless the text ends a sentence already. */
 const closed = (text: string) => /[.!?]$/.test(text) ? text : `${text}.`
 
 /**
- * "Version L1, in: Niels Pfeffer (ed.): Alfred Grünfeld spielt Robert
- * Schumann, Träumerei. Roll edition of WM 225, version 1.0 of 2 October
- * 2026 (commit fc71626), https://welte225.org/…, accessed 2 October 2026."
+ * "Version R2, in: Alfred Grünfeld spielt Robert Schumann, Träumerei.
+ * Rollenedition von WM 225, hrsg. von Niels Pfeffer, Version 1.0 vom
+ * 2.10.2026 (Commit 3e1c9a4), https://welte225.org/19fd4209 (zuletzt
+ * abgerufen am 2.10.2026)."
  */
-export const asText = ({ edition, part, iri, commit, accessed }: Citation): string => {
-    const { names, asEditors } = responsible(edition)
-    const by = names.length > 0
-        ? `${names.join(', ')}${asEditors ? (names.length > 1 ? ' (eds.)' : ' (ed.)') : ''}: `
-        : ''
+export const citationIn = (language: Language, { edition, part, url, commit, accessed }: Citation): string => {
+    const say = phrases[language]
+    const catalogueNumber = edition.roll.catalogueNumber.trim()
+    const editors = editorsOf(edition)
+    const date = edition.creation.publicationDate
 
-    const published = longDate(edition.creation.publicationDate)
-    const state = [
-        subtitleOf(edition),
-        edition.version ? `version ${edition.version} of ${published}` : `published ${published}`
-    ].join(', ') + (commit ? ` (commit ${shortSha(commit)})` : '')
+    const state = (edition.version ? say.version(edition.version, date) : say.published(date))
+        + (commit ? ` (${say.commit(commit.sha.slice(0, 7))})` : '')
 
-    return [
-        part ? `${part}, in: ` : '',
-        by,
-        closed(edition.title.trim()),
-        ' ',
-        `${state}, ${iri}, accessed ${longDate(accessed)}.`
-    ].join('')
-}
+    const details = [
+        catalogueNumber ? `${say.edition} ${say.of(catalogueNumber)}` : say.edition,
+        editors.length > 0 ? say.editedBy(editors) : undefined,
+        state,
+        url
+    ].filter(Boolean).join(', ')
 
-/** A key for the entry: the catalogue number, and the start of the id of the part cited. */
-const keyOf = ({ edition, iri }: Citation) => {
-    const id = iri.startsWith(edition.base) ? iri.slice(edition.base.length) : ''
-    return [edition.roll.catalogueNumber || 'edition', id.slice(0, 8)]
-        .filter(Boolean)
-        .join('-')
-        .replace(/[^A-Za-z0-9_:-]/g, '')
-}
-
-/** Text as BibTeX reads it, its special characters escaped. */
-const bibEscaped = (text: string) =>
-    text
-        .replace(/\\/g, '\\textbackslash{}')
-        .replace(/([{}&%$#_])/g, '\\$1')
-        .replace(/~/g, '\\textasciitilde{}')
-        .replace(/\^/g, '\\textasciicircum{}')
-
-/** The commit as a note says where to find it. */
-const commitNote = (commit: Commit) => `Commit ${shortSha(commit)} of github.com/${commit.repository}`
-
-/** A BibLaTeX entry of type `@dataset`, the part cited as its title addon. */
-export const asBibLaTeX = (citation: Citation): string => {
-    const { edition, part, iri, commit, accessed } = citation
-    const { names, asEditors } = responsible(edition)
-    const publisher = edition.creation.publisher.name.trim()
-
-    const fields: [string, string | undefined][] = [
-        [asEditors ? 'editor' : 'author', names.length > 0 ? names.map(bibEscaped).join(' and ') : undefined],
-        ['title', bibEscaped(edition.title.trim())],
-        ['subtitle', bibEscaped(subtitleOf(edition))],
-        ['titleaddon', part && bibEscaped(part)],
-        ['version', edition.version && bibEscaped(edition.version)],
-        ['date', isoDate(edition.creation.publicationDate)],
-        ['publisher', publisher ? bibEscaped(publisher) : undefined],
-        ['url', iri],
-        ['urldate', isoDate(accessed)],
-        ['note', commit && bibEscaped(commitNote(commit))]
-    ]
-
-    const lines = fields
-        .filter((field): field is [string, string] => !!field[1])
-        .map(([name, value]) => `  ${name} = {${value}},`)
-
-    return [`@dataset{${keyOf(citation)},`, ...lines, '}'].join('\n')
-}
-
-/** "2026/10/02", as RIS writes a date. */
-const risDate = (date: Date) => isoDate(date).replace(/-/g, '/')
-
-/** An RIS record of type DATA: the part cited as its title and the edition as the work it stands in. */
-export const asRis = ({ edition, part, iri, commit, accessed }: Citation): string => {
-    const { names, asEditors } = responsible(edition)
-    const publisher = edition.creation.publisher.name.trim()
-    const title = `${edition.title.trim()}: ${subtitleOf(edition)}`
-
-    const tags: [string, string | undefined][] = [
-        ['TY', 'DATA'],
-        ...names.map((name): [string, string] => [asEditors ? 'ED' : 'AU', name]),
-        ['TI', part ?? title],
-        ['T2', part ? title : undefined],
-        ['ET', edition.version],
-        ['PY', String(edition.creation.publicationDate.getFullYear())],
-        ['DA', risDate(edition.creation.publicationDate)],
-        ['PB', publisher || undefined],
-        ['UR', iri],
-        ['Y2', risDate(accessed)],
-        ['N1', commit && commitNote(commit)],
-        ['ER', '']
-    ]
-
-    return tags
-        .filter((tag): tag is [string, string] => tag[1] !== undefined)
-        .map(([tag, value]) => `${tag}  - ${value}`)
-        .join('\n') + '\n'
+    return `${part ? `${partIn(language, part)}, in: ` : ''}${closed(edition.title.trim())} ${details} (${say.accessed(accessed)}).`
 }

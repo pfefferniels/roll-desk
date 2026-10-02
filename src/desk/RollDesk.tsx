@@ -5,7 +5,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { onsetToMiddleOf, spotlight, spotlightWhenDrawn } from "./spotlight"
-import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf } from "../edition/addresses"
+import { deskPath, entityOfPath, idNamed, idOfMark, linkTarget, LinkTarget } from "../edition/addresses"
 import { dateStatement } from "../edition/dateStatement"
 import { OpenContext } from "./OpenContext"
 import { useSnackbar } from "./SnackbarContext"
@@ -240,7 +240,8 @@ export const Desk = ({ show }: DeskProps) => {
     useEffect(() => {
         if (!edition || shown.current === show) return
         shown.current = show
-        if (show) open(show)
+        // A short address names the entity by the start of its id.
+        if (show) open(idNamed(edition, show) ?? show)
     }, [show, edition, open])
 
     /** Opens what an account refers to, and turns to the tab it is read in. */
@@ -357,10 +358,6 @@ export const Desk = ({ show }: DeskProps) => {
 
     const editorLine = namedEditors(edition.creation.editors)
 
-    // Only an edition with a base has IRIs; one being written has none yet.
-    const reference = (shownPath && edition.base)
-        ? referenceOf(shownPath, edition.base)
-        : undefined
     const shownEntity = shownPath && entityOfPath(shownPath)
 
     const viewControl = (
@@ -373,7 +370,7 @@ export const Desk = ({ show }: DeskProps) => {
             padding: 1
         }}>
             <Stack direction='row' spacing={1}>
-                <Cite reference={reference} entity={shownEntity} />
+                <Cite entity={shownEntity} />
                 <IconButton
                     size='small'
                     onClick={() => setEmulationSettingsDialogOpen(true)}
@@ -671,7 +668,7 @@ export const Desk = ({ show }: DeskProps) => {
                                 )}
                             </div>
                             <div style={{ float: 'right' }}>
-                                <Cite reference={reference} entity={shownEntity} />
+                                <Cite entity={shownEntity} />
                                 <IconButton onClick={() => setSelection([])}>
                                     <Clear />
                                 </IconButton>
