@@ -59,7 +59,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             </div>
 
             {derivations.length > 0 && (
-                <AccountSection title='Derived from'>
+                <AccountSection title='Derived from' folded>
                     {derivations.map(({ parent, principal, belief, collationTolerance }) => (
                         <div key={parent}>
                             <HeldStatement belief={belief}>

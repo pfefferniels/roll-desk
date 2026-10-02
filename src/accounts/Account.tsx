@@ -1,6 +1,7 @@
-import { Box, Stack, Typography } from "@mui/material"
+import { ExpandMore } from "@mui/icons-material"
+import { Box, ButtonBase, Collapse, Stack, Typography } from "@mui/material"
 import { Belief } from "linked-rolls"
-import { ReactNode } from "react"
+import { ReactNode, useState } from "react"
 import { CertaintyMark } from "./CertaintyMark"
 import { BeliefAccount } from "./Reasons"
 
@@ -31,15 +32,58 @@ export const AccountPanel = ({ children }: { children: ReactNode }) => (
     </Box>
 )
 
+interface AccountSectionProps {
+    title: string
+    /**
+     * Where given, the section folds under its title, a click on which opens
+     * and shuts it; true starts it shut, for what a reader seldom needs to see.
+     */
+    folded?: boolean
+    children: ReactNode
+}
+
+const sectionSx = { pt: 1, borderTop: '1px solid #f3f4f6' }
+
 /** One part of an account, under its title. */
-export const AccountSection = ({ title, children }: { title: string, children: ReactNode }) => (
-    <Stack spacing={0.75} sx={{ pt: 1, borderTop: '1px solid #f3f4f6' }}>
+export const AccountSection = ({ title, folded, children }: AccountSectionProps) => {
+    const [open, setOpen] = useState(!folded)
+
+    const heading = (
         <Typography variant='overline' color='text.secondary' sx={{ lineHeight: 1.5 }}>
             {title}
         </Typography>
-        {children}
-    </Stack>
-)
+    )
+
+    if (folded === undefined) {
+        return (
+            <Stack spacing={0.75} sx={sectionSx}>
+                {heading}
+                {children}
+            </Stack>
+        )
+    }
+
+    return (
+        <Stack sx={sectionSx}>
+            <ButtonBase onClick={() => setOpen(!open)} aria-expanded={open} sx={{ alignSelf: 'flex-start', borderRadius: 0.5 }}>
+                {heading}
+                <ExpandMore
+                    fontSize='small'
+                    sx={{
+                        color: 'text.secondary',
+                        transform: open ? 'none' : 'rotate(-90deg)',
+                        transition: 'transform 150ms'
+                    }}
+                />
+            </ButtonBase>
+            <Collapse in={open}>
+                <Stack spacing={0.75} sx={{ pt: 0.75 }}>
+                    {children}
+                </Stack>
+            </Collapse>
+        </Stack>
+    )
+}
 
 interface HeldStatementProps {
     /** Left out where the statement is made without a belief, and so held true. */
