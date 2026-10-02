@@ -106,8 +106,8 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         [emulation, edition]
     )
 
-    // The curves drawn, as a command's whiskers read them where they cross,
-    // the predecessor's in a darker blue than the light one it is drawn in.
+    // The curves drawn, as a command reads them where it sets in, the
+    // predecessor's in a darker blue than the light one it is drawn in.
     const readDynamics = useMemo((): ReadDynamics[] => {
         if (!emulation) return []
         const own = { emulation, ink: 'darkblue' }

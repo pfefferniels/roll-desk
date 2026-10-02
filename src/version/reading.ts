@@ -2,13 +2,18 @@ import { DynamicsCurve, Millimeters } from "linked-rolls"
 import { Svg, svg } from "../canvas/units"
 
 /**
- * The velocity a curve stands at in a place on the paper, taken between
- * the samples either side of it, or nothing off either end of the curve.
+ * The velocity a curve stands at in a place on the paper: that of the
+ * sample nearest to it, which is the one the emulator strikes a note
+ * with whose onset lies there. Nothing off either end of the curve.
  */
 export const velocityAt = (
     { place, velocity }: Pick<DynamicsCurve, 'place' | 'velocity'>,
     at: Millimeters
 ): number | undefined => {
+    const first = place[0]
+    const last = place.at(-1)
+    if (first === undefined || last === undefined || at < first || at > last) return undefined
+
     // The first sample not before the place, the samples running along the paper.
     let low = 0
     let high = place.length
@@ -18,22 +23,15 @@ export const velocityAt = (
         else high = middle
     }
 
-    const after = place[low]
-    const later = velocity[low]
-    if (after === undefined || later === undefined) return undefined
-    if (after === at) return later
-
-    const before = place[low - 1]
-    const earlier = velocity[low - 1]
-    if (before === undefined || earlier === undefined) return undefined
-
-    return earlier + (later - earlier) * (at - before) / (after - before)
+    const after = place[low] ?? Infinity
+    const before = place[low - 1] ?? -Infinity
+    return velocity[at - before < after - at ? low - 1 : low]
 }
 
 /**
  * Where readings are written beside one whisker, each level with the
  * curve it reads unless that brings two closer than a line apart. Those
- * are pushed apart in the order the curves stand, the later above, and
+ * are pushed apart in the order the curves stand, the louder above, and
  * lifted back by half as far, so that a pair stays centred on the curves.
  */
 export const keptApart = (ys: readonly Svg[], line: Svg): Svg[] => {

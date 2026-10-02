@@ -16,9 +16,14 @@ describe('the velocity a curve stands at in a place', () => {
         expect(velocityAt(swell, mm(4))).toBe(44)
     })
 
-    it('lies between the samples either side of it, in proportion to how near each is', () => {
-        expect(velocityAt(swell, mm(2.5))).toBeCloseTo(42.5)
-        expect(velocityAt(swell, mm(0.2))).toBeCloseTo(40.2)
+    it('is the nearest sample between two, as the emulator strikes a note there', () => {
+        expect(velocityAt(swell, mm(2.4))).toBe(42)
+        expect(velocityAt(swell, mm(2.6))).toBe(43)
+        expect(velocityAt(swell, mm(0.2))).toBe(40)
+    })
+
+    it('is the later sample halfway between two, as a row is rounded', () => {
+        expect(velocityAt(swell, mm(2.5))).toBe(43)
     })
 
     it('is nothing off either end of the curve', () => {

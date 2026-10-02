@@ -99,65 +99,59 @@ export interface ReadDynamics {
 /** How tall a reading is written, and so how close two may come. */
 const READING_SIZE = svg(9)
 
-/** The air between a whisker and what is written beside it. */
+/** The air between the whisker and what is written beside it. */
 const READING_GAP = svg(3)
 
 type ReadingsProps = {
-    /** Where the whiskers stand on the paper, the earlier first. */
-    at: readonly [Millimeters, Millimeters]
-    /** The half whose curves the whiskers run through. */
+    /** Where the command sets in, as it is performed. */
+    at: Millimeters
+    /** The half whose curves the whisker runs through. */
     scope: Scope
     dynamics: readonly ReadDynamics[]
 }
 
 /**
- * The velocity each curve stands at where a whisker crosses it, marked on
- * the curve and written beside the whisker, before the earlier one and
- * after the later one, so that the numbers stay clear of the command and
- * of each other however short it is. Changes too small to be seen in the
- * curves can be read off one command against the next, and one version
- * against the one it derives from.
+ * The velocity each curve stands at where a command sets in, which for a
+ * note is the velocity it is struck with: marked where the onset's whisker
+ * crosses the curve and written before it, clear of the command. Changes
+ * too small to be seen in the curves can be read off one command against
+ * the next, and one version against the one it derives from.
  */
 export const Readings = ({ at, scope, dynamics }: ReadingsProps) => {
     const { translateX, areas, areaBand, height } = usePinchZoom()
     const feet = feetIn({ areas, areaBand, height })
 
-    const besideWhisker = (place: Millimeters, side: 'before' | 'after') => {
-        const readings = dynamics.flatMap(({ emulation, ink }) => {
-            const curve = curveOf(emulation, scope)
-            const velocity = curve && velocityAt(curve, place)
-            if (velocity === undefined) return []
-            return [{ velocity, y: heightOf(velocity, feet[scope], emulation.options.velocity), ink }]
-        })
-        const written = keptApart(readings.map(reading => reading.y), READING_SIZE)
-        const x = translateX(place)
-
-        return readings.map(({ velocity, y, ink }, i) => (
-            <g key={i}>
-                <circle cx={x} cy={y} r={1.5} fill={ink} />
-                <text
-                    x={side === 'before' ? x - READING_GAP : x + READING_GAP}
-                    y={written[i]}
-                    textAnchor={side === 'before' ? 'end' : 'start'}
-                    dominantBaseline='central'
-                    fontSize={READING_SIZE}
-                    fill={ink}
-                    stroke='white'
-                    strokeWidth={3}
-                    strokeLinejoin='round'
-                    paintOrder='stroke'
-                    style={{ fontVariantNumeric: 'tabular-nums' }}
-                >
-                    {velocity.toFixed(1)}
-                </text>
-            </g>
-        ))
-    }
+    const readings = dynamics.flatMap(({ emulation, ink }) => {
+        const curve = curveOf(emulation, scope)
+        const velocity = curve && velocityAt(curve, at)
+        if (velocity === undefined) return []
+        return [{ velocity, y: heightOf(velocity, feet[scope], emulation.options.velocity), ink }]
+    })
+    const written = keptApart(readings.map(reading => reading.y), READING_SIZE)
+    const x = translateX(at)
 
     return (
         <g className='readings' style={{ pointerEvents: 'none' }}>
-            {besideWhisker(at[0], 'before')}
-            {besideWhisker(at[1], 'after')}
+            {readings.map(({ velocity, y, ink }, i) => (
+                <g key={i}>
+                    <circle cx={x} cy={y} r={1.5} fill={ink} />
+                    <text
+                        x={x - READING_GAP}
+                        y={written[i]}
+                        textAnchor='end'
+                        dominantBaseline='central'
+                        fontSize={READING_SIZE}
+                        fill={ink}
+                        stroke='white'
+                        strokeWidth={3}
+                        strokeLinejoin='round'
+                        paintOrder='stroke'
+                        style={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                        {velocity.toFixed(1)}
+                    </text>
+                </g>
+            ))}
         </g>
     )
 }

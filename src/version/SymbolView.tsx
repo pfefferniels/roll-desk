@@ -16,7 +16,7 @@ interface CommandProps {
     shift?: Millimeters;
     /** The track the keyboard is divided at, where an emulator says so. */
     division?: Track;
-    /** The dynamics drawn for the version, to be read where the whiskers cross them. */
+    /** The dynamics drawn for the version, to be read where the command sets in. */
     dynamics?: readonly ReadDynamics[];
     onClick: () => void;
 }
@@ -156,7 +156,7 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
             {/* Only under the pointer: playback marks a chord's notes at once, whose readings would be written over each other. */}
             {hovered && half && (
                 <Readings
-                    at={[add(place.from, shift), add(place.to, shift)]}
+                    at={add(place.from, shift)}
                     scope={half}
                     dynamics={dynamics} />
             )}
