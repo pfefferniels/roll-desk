@@ -31,6 +31,7 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const [title, setTitle] = useState<string>('');
   const [license, setLicense] = useState<string>('');
   const [baseURI, setBaseURI] = useState<string>('');
+  const [version, setVersion] = useState<string>('');
   const [catalogueNumber, setCatalogueNumber] = useState<string>('');
   const [recordingDate, setRecordingDate] = useState<DateAssignment>(assignDate(new Date()));
   const [recordingPlace, setRecordingPlace] = useState<string>('');
@@ -47,12 +48,21 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const removeEditor = (index: number) =>
     setEditors(editors.filter((_, at) => at !== index))
 
+  // A new version is published on the day it is stated, unless another day was chosen for it.
+  const changeVersion = (next: string) => {
+    setVersion(next)
+    if (edition && next.trim() !== (edition.version ?? '') && publicationDate === edition.creation.publicationDate) {
+      setPublicationDate(new Date())
+    }
+  }
+
   useEffect(() => {
     if (!edition) return
 
     setTitle(edition.title);
     setLicense(edition.license);
     setBaseURI(edition.base);
+    setVersion(edition.version ?? '');
     setPublisherName(edition.creation.publisher.name);
     setPublicationDate(edition.creation.publicationDate);
     setEditors(edition.creation.editors ?? []);
@@ -68,6 +78,8 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
       draft.title = title
       draft.license = selectedLicense?.url || license
       draft.base = baseURI
+      if (version.trim()) draft.version = version.trim()
+      else delete draft.version
       draft.creation.publisher.name = publisherName
       draft.creation.publicationDate = publicationDate
       draft.creation.editors = editors
@@ -119,6 +131,14 @@ const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
               fullWidth
               value={publisherName}
               onChange={(e) => setPublisherName(e.target.value)}
+            />
+            <TextField
+              label="Version"
+              fullWidth
+              value={version}
+              placeholder="1.0"
+              helperText="Raised for each release, which a citation names"
+              onChange={(e) => changeVersion(e.target.value)}
             />
             <DateField
               label="Publication Date"

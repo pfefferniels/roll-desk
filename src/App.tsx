@@ -10,6 +10,7 @@ import { EditionProvider } from './edition/EditionContext';
 import { Edition } from 'linked-rolls';
 import { checkedDocument, importedEdition } from './edition/importEdition';
 import { entityOfPath } from './edition/addresses';
+import { blobIdOf, publishedEdition, PublicationContext, ReadPublication } from './edition/publication';
 
 /**
  * The published edition, opened on whatever entity the address names:
@@ -24,6 +25,7 @@ const PublishedDesk = () => {
 const App = () => {
   const [message, setMessage] = useState<string>();
   const [existingEdition, setExistingEdition] = useState<Edition>();
+  const [publication, setPublication] = useState<ReadPublication>();
   const [isLoadingEdition, setIsLoadingEdition] = useState<boolean>(true);
 
   // warn before leaving page
@@ -43,14 +45,17 @@ const App = () => {
   useEffect(() => {
     const loadEdition = async () => {
       try {
-        const res = await fetch('https://welte225.org/edition.jsonld');
+        const res = await fetch(publishedEdition.url);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
 
+        // The bytes as they came, so that a citation can name the commit holding them.
+        const bytes = new Uint8Array(await res.arrayBuffer());
+
         // Read as an opened file is: brought up to the current format and
         // held against the schema, rather than believed as it arrives.
-        const { document, errors } = await checkedDocument(await res.json());
+        const { document, errors } = await checkedDocument(JSON.parse(new TextDecoder().decode(bytes)));
         if (errors.length > 0) {
           console.warn('The published edition does not satisfy the schema:', errors);
         }
@@ -61,6 +66,7 @@ const App = () => {
         }
 
         setExistingEdition(reading.value);
+        setPublication({ ...publishedEdition, blob: await blobIdOf(bytes).catch(() => undefined) });
       } catch (err) {
         console.error(err);
         setMessage('Could not load the edition of WM 225.');
@@ -99,9 +105,11 @@ const App = () => {
                   isLoadingEdition ? (
                     <div>Loading…</div>
                   ) : (
-                    <EditionProvider edition={existingEdition}>
-                      <PublishedDesk />
-                    </EditionProvider>
+                    <PublicationContext.Provider value={publication}>
+                      <EditionProvider edition={existingEdition}>
+                        <PublishedDesk />
+                      </EditionProvider>
+                    </PublicationContext.Provider>
                   )
                 }
               />

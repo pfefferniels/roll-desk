@@ -9,7 +9,7 @@ import { deskPath, entityOfPath, idOfMark, linkTarget, LinkTarget, referenceOf }
 import { dateStatement } from "../edition/dateStatement"
 import { OpenContext } from "./OpenContext"
 import { useSnackbar } from "./SnackbarContext"
-import { CopyReference } from "./CopyReference"
+import { Cite } from "./Cite"
 import { Svg, svg, svgPerMm } from "../canvas/units"
 import { LaneHeights, lanesOf } from "../canvas/rollGeometry"
 import { announcePlayback } from "../playback/usePlaybackMark"
@@ -361,6 +361,7 @@ export const Desk = ({ show }: DeskProps) => {
     const reference = (shownPath && edition.base)
         ? referenceOf(shownPath, edition.base)
         : undefined
+    const shownEntity = shownPath && entityOfPath(shownPath)
 
     const viewControl = (
         <Paper sx={{
@@ -372,7 +373,7 @@ export const Desk = ({ show }: DeskProps) => {
             padding: 1
         }}>
             <Stack direction='row' spacing={1}>
-                <CopyReference reference={reference} />
+                <Cite reference={reference} entity={shownEntity} />
                 <IconButton
                     size='small'
                     onClick={() => setEmulationSettingsDialogOpen(true)}
@@ -670,7 +671,7 @@ export const Desk = ({ show }: DeskProps) => {
                                 )}
                             </div>
                             <div style={{ float: 'right' }}>
-                                <CopyReference reference={reference} />
+                                <Cite reference={reference} entity={shownEntity} />
                                 <IconButton onClick={() => setSelection([])}>
                                     <Clear />
                                 </IconButton>
