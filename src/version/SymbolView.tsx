@@ -6,6 +6,7 @@ import { EditionContext } from "../edition/EditionContext";
 import { shadowLook } from "../constraints/constraintLooks";
 import { halfOf, whiskerReach } from "./whisker";
 import { useLaneLabelling } from "./LaneLabel";
+import { ReadDynamics, Readings } from "./Dynamics";
 
 interface CommandProps {
     symbol: Note | Expression;
@@ -15,10 +16,12 @@ interface CommandProps {
     shift?: Millimeters;
     /** The track the keyboard is divided at, where an emulator says so. */
     division?: Track;
+    /** The dynamics drawn for the version, to be read where the whiskers cross them. */
+    dynamics?: readonly ReadDynamics[];
     onClick: () => void;
 }
 
-export const Command = ({ symbol, age, highlight, shift = mm(0), division, onClick }: CommandProps) => {
+export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynamics = [], onClick }: CommandProps) => {
     const { edition, viewOnly } = useContext(EditionContext)
     const [hovered, setHovered] = useState(false);
     const label = useLaneLabelling();
@@ -77,9 +80,10 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
     const dx = translateX(shift)
     const shadow = Math.abs(dx) >= 1
 
+    const half = halfOf(symbol, position, division)
     const [top, bottom] = whiskerReach(
         { y, height },
-        halfOf(symbol, position, division),
+        half,
         { height: canvasHeight, room }
     )
     const whisker = (x: number) => (
@@ -149,6 +153,13 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
                 {whiskers && whisker(from)}
                 {whiskers && whisker(to)}
             </g>
+            {/* Only under the pointer: playback marks a chord's notes at once, whose readings would be written over each other. */}
+            {hovered && half && (
+                <Readings
+                    at={[add(place.from, shift), add(place.to, shift)]}
+                    scope={half}
+                    dynamics={dynamics} />
+            )}
             {shadow && (
                 <g style={{ pointerEvents: 'none' }} opacity={opacity}>
                     <line

@@ -1,10 +1,11 @@
-import { add, DynamicsCurve, Emulation, mm, subtract, TrackRole } from "linked-rolls"
+import { add, DynamicsCurve, Emulation, Millimeters, mm, subtract, TrackRole } from "linked-rolls"
 import { VelocityMap } from "linked-rolls/welte-t100"
 import { RollGeometry } from "../canvas/rollGeometry"
 import { SharedOptions } from "../playback/reproducingSystems"
 import { usePinchZoom } from "../canvas/usePinchZoom.tsx"
 import { samplesOnRoll } from "./samplesOnRoll"
 import { Svg, svg } from "../canvas/units"
+import { keptApart, velocityAt } from "./reading"
 
 /** How tall a curve's band is, from piano at its foot to forte at its head. */
 const BAND = svg(80)
@@ -43,6 +44,11 @@ export const feetIn = ({ areas, areaBand, height }: Pick<RollGeometry, 'areas' |
 export const heightOf = (velocity: number, foot: Svg, { piano, forte }: VelocityMap): Svg =>
     svg(foot - (velocity - piano) / (forte - piano) * BAND)
 
+/** The curve of one half of the keyboard as a performance shapes it, where it has one. */
+const curveOf = (emulation: Emulation<SharedOptions>, scope: Scope): DynamicsCurve | undefined =>
+    emulation.curves.find((curve): curve is DynamicsCurve =>
+        curve.kind === 'dynamics' && curve.name === scope)
+
 /** Every so many samples of the curve, which has about twelve per millimetre. */
 const SAMPLE_STRIDE = 25
 
@@ -57,8 +63,7 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
     const { velocity } = emulation.options
 
     const pathOf = (scope: Scope) => {
-        const curve = emulation.curves.find((curve): curve is DynamicsCurve =>
-            curve.kind === 'dynamics' && curve.name === scope)
+        const curve = curveOf(emulation, scope)
         if (!curve) return ""
 
         return samplesOnRoll(curve.place, rollLength, SAMPLE_STRIDE)
@@ -81,6 +86,79 @@ export const Dynamics = ({ forEmulation: emulation, pathProps }: DynamicsProps) 
                 <path d={pathOf('bass')} fill="none" {...pathProps} />
             </g>
         </>
+    )
+}
+
+/** A performance whose dynamics are drawn, and the ink its readings are written in. */
+export interface ReadDynamics {
+    emulation: Emulation<SharedOptions>
+    /** Dark enough to be read at a small size, where the curve itself is drawn light. */
+    ink: string
+}
+
+/** How tall a reading is written, and so how close two may come. */
+const READING_SIZE = svg(9)
+
+/** The air between a whisker and what is written beside it. */
+const READING_GAP = svg(3)
+
+type ReadingsProps = {
+    /** Where the whiskers stand on the paper, the earlier first. */
+    at: readonly [Millimeters, Millimeters]
+    /** The half whose curves the whiskers run through. */
+    scope: Scope
+    dynamics: readonly ReadDynamics[]
+}
+
+/**
+ * The velocity each curve stands at where a whisker crosses it, marked on
+ * the curve and written beside the whisker, before the earlier one and
+ * after the later one, so that the numbers stay clear of the command and
+ * of each other however short it is. Changes too small to be seen in the
+ * curves can be read off one command against the next, and one version
+ * against the one it derives from.
+ */
+export const Readings = ({ at, scope, dynamics }: ReadingsProps) => {
+    const { translateX, areas, areaBand, height } = usePinchZoom()
+    const feet = feetIn({ areas, areaBand, height })
+
+    const besideWhisker = (place: Millimeters, side: 'before' | 'after') => {
+        const readings = dynamics.flatMap(({ emulation, ink }) => {
+            const curve = curveOf(emulation, scope)
+            const velocity = curve && velocityAt(curve, place)
+            if (velocity === undefined) return []
+            return [{ velocity, y: heightOf(velocity, feet[scope], emulation.options.velocity), ink }]
+        })
+        const written = keptApart(readings.map(reading => reading.y), READING_SIZE)
+        const x = translateX(place)
+
+        return readings.map(({ velocity, y, ink }, i) => (
+            <g key={i}>
+                <circle cx={x} cy={y} r={1.5} fill={ink} />
+                <text
+                    x={side === 'before' ? x - READING_GAP : x + READING_GAP}
+                    y={written[i]}
+                    textAnchor={side === 'before' ? 'end' : 'start'}
+                    dominantBaseline='central'
+                    fontSize={READING_SIZE}
+                    fill={ink}
+                    stroke='white'
+                    strokeWidth={3}
+                    strokeLinejoin='round'
+                    paintOrder='stroke'
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                >
+                    {velocity.toFixed(1)}
+                </text>
+            </g>
+        ))
+    }
+
+    return (
+        <g className='readings' style={{ pointerEvents: 'none' }}>
+            {besideWhisker(at[0], 'before')}
+            {besideWhisker(at[1], 'after')}
+        </g>
     )
 }
 

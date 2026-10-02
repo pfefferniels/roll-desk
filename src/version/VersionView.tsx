@@ -1,7 +1,7 @@
 import { useContext, useMemo } from "react"
 import { AnySymbol, ConstraintProblem, editsOf, Millimeters, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
-import { Dynamics, DynamicsGrid } from "./Dynamics"
+import { Dynamics, DynamicsGrid, ReadDynamics } from "./Dynamics"
 import { Pedals } from "./Pedal"
 import { Command } from "./SymbolView"
 import { LabelledLanes } from "./LaneLabel"
@@ -106,6 +106,14 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         [emulation, edition]
     )
 
+    // The curves drawn, as a command's whiskers read them where they cross,
+    // the predecessor's in a darker blue than the light one it is drawn in.
+    const readDynamics = useMemo((): ReadDynamics[] => {
+        if (!emulation) return []
+        const own = { emulation, ink: 'darkblue' }
+        return prevEmulation ? [{ emulation: prevEmulation, ink: 'steelblue' }, own] : [own]
+    }, [emulation, prevEmulation])
+
     if (!edition) return null
 
     // What this version does away with was coded for its parent's system,
@@ -208,6 +216,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
                                 age={symbol.age}
                                 shift={shifts.get(symbol.id)}
                                 division={emulation?.options.division}
+                                dynamics={readDynamics}
                                 highlight={version ? false : (symbol.carriers?.length !== 0)}
                                 onClick={() => {
                                     const performingEvents = emulation?.findEventsPerforming(symbol.id) ?? []
