@@ -1,7 +1,8 @@
 import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react"
-import { Expression, Note } from "linked-rolls"
+import { Expression, NegotiatedEvent, Note } from "linked-rolls"
 import { usePinchZoom } from "../canvas/usePinchZoom"
 import { laneMeaning } from "./laneMeaning"
+import { latchedAt, latchesOf } from "./latches"
 import { OnTop } from "../canvas/OnTop"
 
 type Command = Note | Expression
@@ -83,25 +84,52 @@ const LaneLabel = ({ command }: { command: Command }) => {
     )
 }
 
+interface LabelledLanesProps {
+    children: ReactNode
+    /** The commands as the version is performed, where it is. */
+    performed?: readonly NegotiatedEvent[]
+    /** Whether playback is running. */
+    playing: boolean
+}
+
 /**
  * The drawing of a version, with what the lane of a command means on the
  * version's bar written over it, at the left edge of the view however far
  * the roll is scrolled: the command under the pointer, or else the one
  * playback last reached, a chord's lanes lying too close together to label
- * each. The label is drawn in the canvas's top layer, so nothing on the roll
- * covers it, and it is held here rather than by the version, so that moving
- * from one command to the next redraws only the label.
+ * each. While playback runs, a function the bar latches on stays labelled
+ * on the lane of the command that latched it until it is cancelled, as far
+ * as playback has read the roll. The labels are drawn in the canvas's top
+ * layer, so nothing on the roll covers them, and they are held here rather
+ * than by the version, so that moving from one command to the next redraws
+ * only the labels.
  */
-export const LabelledLanes = ({ children }: { children: ReactNode }) => {
+export const LabelledLanes = ({ children, performed, playing }: LabelledLanesProps) => {
+    const { bar } = usePinchZoom()
     const [pointedAt, setPointedAt] = useState<Command>()
     const [played, setPlayed] = useState<Command>()
     const telling = useMemo(() => ({ pointedAt: setPointedAt, played: setPlayed }), [])
 
+    // The command playback reached last outlasts its mark, as far as
+    // playback has read the roll, and is forgotten once it stops.
+    const [reached, setReached] = useState<Command>()
+    if (playing && played && played !== reached) setReached(played)
+    if (!playing && reached) setReached(undefined)
+
+    const latches = useMemo(() => latchesOf(performed ?? [], bar), [performed, bar])
+    const places = useMemo(() => new Map(performed?.map(event => [event.id, event.horizontal.from])), [performed])
+
     const shown = pointedAt ?? played
+    const at = reached && places.get(reached.id)
+    const latched = at === undefined
+        ? []
+        // Where the lane is labelled already, the latched command gives way.
+        : latchedAt(latches, at).filter(on => !shown || bar.positionOf(on) !== bar.positionOf(shown))
 
     return (
         <LaneLabelling.Provider value={telling}>
             {children}
+            {latched.map(on => <LaneLabel key={on.id} command={on} />)}
             {shown && <LaneLabel command={shown} />}
         </LaneLabelling.Provider>
     )

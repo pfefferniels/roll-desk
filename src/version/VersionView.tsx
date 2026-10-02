@@ -64,9 +64,11 @@ interface VersionViewProps {
     onClick: (event: AnySymbol | Edit) => void
     /** Gives the lanes of a block of the bar another height, as its edge is dragged. */
     onResizeLane: (role: TrackRole, lane: Svg) => void
+    /** Whether the version is being played. */
+    playing: boolean
 }
 
-export const VersionView = ({ version, problems, emulationOptions, onClick, onResizeLane }: VersionViewProps) => {
+export const VersionView = ({ version, problems, emulationOptions, onClick, onResizeLane, playing }: VersionViewProps) => {
     const { selection, setSelection } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
     const { edition } = useContext(EditionContext)
@@ -171,7 +173,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
 
     return (
         <g className='versionView'>
-            <LabelledLanes>
+            <LabelledLanes performed={emulation?.negotiatedEvents} playing={playing}>
                 <Blocks />
 
                 {dynamics}

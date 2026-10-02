@@ -697,6 +697,7 @@ export const Desk = ({ show }: DeskProps) => {
                                     problems={problems}
                                     emulationOptions={emulationOptions}
                                     onResizeLane={resizeLane}
+                                    playing={isPlaying}
                                 />)
                             : currentCopy && (
                                 <CopyFacsimile
