@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { atLeastVisible, evenGeometry, lanesOf, rollGeometry } from './rollGeometry'
-import { add, scale, subtract, track, welteLicensee, welteT100 } from 'linked-rolls'
+import { atLeastVisible, evenGeometry, lanesOf, RollGeometry, rollGeometry } from './rollGeometry'
+import { add, scale, subtract, track, TrackerBar, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 import { svg } from './units'
 
 const lanes = lanesOf(svg(4), svg(7))
@@ -87,6 +87,55 @@ describe('roll geometry', () => {
         expect(uneven.areaBand(treble!).height).toEqual(10 * lanes['treble-expression'])
         expect(uneven.laneHeight(track(5))).toEqual(12)
         expect(uneven.height).toEqual(geometry.height + 10 * (12 - lanes['bass-expression']))
+    })
+})
+
+describe('the keyboard cut to a compass', () => {
+    const compass = { lowest: 36, highest: 96 }
+    const cut = rollGeometry(lanes, spacing, welteT100, compass)
+
+    const keyOf = (bar: TrackerBar, pitch: number) => bar.positionOf({ type: 'note', pitch })!
+    const keyboardOf = (geometry: RollGeometry) => geometry.areas.find(area => area.role === 'note')!
+
+    it('reaches from the lowest note played to the highest', () => {
+        expect(keyboardOf(cut)).toEqual({ role: 'note', from: keyOf(welteT100, 36), to: keyOf(welteT100, 96) })
+        expect(cut.height).toEqual(geometry.height - (80 - 61) * lanes.note)
+    })
+
+    it('leaves the expression on either side whole', () => {
+        const [bass, , treble] = welteT100.areas
+        expect(cut.areaBand(bass!).height).toEqual(geometry.areaBand(bass!).height)
+        expect(cut.areaBand(treble!).height).toEqual(geometry.areaBand(treble!).height)
+    })
+
+    it('puts the highest note at the top of the keyboard and the lowest at its foot', () => {
+        const { y, height } = cut.areaBand(keyboardOf(cut))
+        expect(cut.trackToY(keyOf(welteT100, 96))).toEqual(y)
+        const lowest = cut.bandOf({ from: keyOf(welteT100, 36) })
+        expect(lowest.y + lowest.height).toEqual(y + height)
+    })
+
+    it('still picks the track a key is drawn in', () => {
+        const middleC = keyOf(welteT100, 60)
+        const middle = add(cut.trackToY(middleC), scale(cut.laneHeight(middleC), 0.5))
+        expect(cut.yToTrack(middle)).toEqual(middleC)
+    })
+
+    /** A green version's deletions are laid out on the red bar, and have to meet its keys. */
+    it('cuts two bars numbering their keyboards differently to the same notes', () => {
+        const other = rollGeometry(lanes, spacing, welteT98, compass)
+        expect(keyOf(welteT98, 96)).not.toEqual(keyOf(welteT100, 96))
+        expect(other.areaBand(keyboardOf(other)).height).toEqual(cut.areaBand(keyboardOf(cut)).height)
+        expect(other.trackToY(keyOf(welteT98, 96))).toEqual(other.areaBand(keyboardOf(other)).y)
+    })
+
+    it('keeps an end the bar has no key for where the bar has it', () => {
+        const beyond = rollGeometry(lanes, spacing, welteT100, { lowest: 10, highest: 60 })
+        expect(keyboardOf(beyond)).toEqual({ role: 'note', from: track(11), to: keyOf(welteT100, 60) })
+    })
+
+    it('lays the whole keyboard out where no compass is given', () => {
+        expect(geometry.areas).toEqual(welteT100.areas)
     })
 })
 

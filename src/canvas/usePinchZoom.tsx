@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useMemo, RefObject } from 'react';
 import { Millimeters, mm, TrackerBar, welteT100 } from 'linked-rolls';
-import { LaneHeights, lanesOf, RollGeometry, rollGeometry } from './rollGeometry';
+import { Compass, LaneHeights, lanesOf, RollGeometry, rollGeometry } from './rollGeometry';
 import { drawnAt, Svg, svg, SvgPerMm, svgPerMm } from './units';
 
 export interface PinchZoomContextProps extends RollGeometry {
@@ -13,6 +13,9 @@ export interface PinchZoomContextProps extends RollGeometry {
 
     /** The gap left between the blocks of the bar, so a second bar can be laid out the same way. */
     spacing: Svg
+
+    /** The notes the keyboard is cut to, if any, so a second bar can be cut to the same keys. */
+    compass?: Compass
 
     /** What the view draws beyond the bar, above and below it. */
     room: Room
@@ -64,6 +67,8 @@ interface PinchZoomProviderProps {
      */
     bar: TrackerBar
     spacing?: Svg
+    /** The notes the keyboard is cut to; the whole keyboard where left out. */
+    compass?: Compass
     room?: Room
     zoom: SvgPerMm
     rollLength: Millimeters
@@ -82,20 +87,22 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
     lanes: trackHeight,
     children,
     spacing = svg(40),
+    compass,
     room = noRoom,
     setZoom,
     viewport = null,
     gesturing = atRest
 }) => {
     const geometry = useMemo(
-        () => rollGeometry(trackHeight, spacing, bar),
-        [trackHeight, spacing, bar]
+        () => rollGeometry(trackHeight, spacing, bar, compass),
+        [trackHeight, spacing, bar, compass]
     )
 
     const value = useMemo(() => ({
         ...geometry,
         trackHeight,
         spacing,
+        compass,
         room,
         translateX: (x: Millimeters) => drawnAt(x, zoom),
         rollLength,
@@ -103,7 +110,7 @@ export const PinchZoomProvider: React.FC<PinchZoomProviderProps> = ({
         setZoom,
         viewport,
         gesturing
-    }), [geometry, trackHeight, spacing, room, rollLength, zoom, setZoom, viewport, gesturing])
+    }), [geometry, trackHeight, spacing, compass, room, rollLength, zoom, setZoom, viewport, gesturing])
 
     return (
         <PinchZoomContext.Provider value={value}>

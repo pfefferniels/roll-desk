@@ -27,6 +27,32 @@ export const lanesOf = (note: Svg, expression: Svg): LaneHeights => ({
     'treble-expression': expression
 })
 
+/** The lowest and the highest note a piece plays, as MIDI pitches. */
+export interface Compass {
+    lowest: number
+    highest: number
+}
+
+/**
+ * The bar's blocks with the keyboard cut down to the keys within the
+ * compass, so that what the piece never plays takes no room. It is cut by
+ * pitch rather than by track, so that two bars numbering their keyboards
+ * differently are cut to the same notes. An end the bar has no key for
+ * stays where the bar has it.
+ */
+export const areasWithin = (bar: TrackerBar, compass?: Compass): readonly TrackArea[] => {
+    if (!compass) return bar.areas
+
+    const keyOf = (pitch: number) => bar.positionOf({ type: 'note', pitch })
+
+    return bar.areas.map(area => {
+        if (area.role !== 'note') return area
+
+        const ends = [keyOf(compass.lowest) ?? area.from, keyOf(compass.highest) ?? area.to]
+        return { ...area, from: track(Math.min(...ends)), to: track(Math.max(...ends)) }
+    })
+}
+
 export interface Dimension {
     horizontal: Pick<HorizontalSpan, 'from' | 'to'>
     vertical: Pick<VerticalSpan, 'from' | 'to'>
@@ -57,6 +83,7 @@ export interface RollGeometry {
 
     roleOf: (position: Track) => TrackRole | undefined
 
+    /** The blocks as they are drawn, the keyboard cut to the compass where one is given. */
     areas: readonly TrackArea[]
 
     /** The bar the drawing is laid out on, which decides what every lane means. */
@@ -96,14 +123,17 @@ interface Block {
 /**
  * Lays the tracker bar out top to bottom, treble first, with a gap
  * between the blocks. Track numbers count upwards from the bass edge,
- * so a higher track sits higher on the screen.
+ * so a higher track sits higher on the screen. Given a compass, the
+ * keyboard reaches only as far as it, see `areasWithin`.
  */
 export const rollGeometry = (
     lanes: LaneHeights,
     spacing: Svg,
-    bar: TrackerBar
+    bar: TrackerBar,
+    compass?: Compass
 ): RollGeometry => {
-    const blocks = [...bar.areas].reverse()
+    const areas = areasWithin(bar, compass)
+    const blocks = [...areas].reverse()
 
     const tops = blocks.reduce<Block[]>((acc, area) => {
         const previous = acc[acc.length - 1]
@@ -123,7 +153,9 @@ export const rollGeometry = (
     /**
      * A track the bar does not read is drawn at the top rather than
      * left out, so a miscalibrated copy shows itself instead of
-     * disappearing. `unreadTracks` names the offending tracks.
+     * disappearing. `unreadTracks` names the offending tracks. So is
+     * a key beyond the compass, which a compass taken from the piece
+     * leaves none of.
      */
     const trackToY = (position: Track) => {
         const block = blockOf(position)
@@ -165,7 +197,7 @@ export const rollGeometry = (
         bandOf,
         areaBand,
         roleOf: (position: Track) => bar.roleOf(position),
-        areas: bar.areas,
+        areas,
         bar
     }
 }

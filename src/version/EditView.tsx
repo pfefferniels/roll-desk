@@ -293,15 +293,15 @@ interface EditViewProps {
 export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, onClick }: EditViewProps) => {
     const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
-    const { trackHeight, spacing, bar } = translation
+    const { trackHeight, spacing, compass, bar } = translation
 
     // Laying the other bar out the same way puts a deleted command where
     // its own scale had it, which is what the arrow should start from.
     const deletedIn = useMemo(
         () => deletedOn && deletedOn.id !== bar.id
-            ? { ...translation, ...rollGeometry(trackHeight, spacing, deletedOn) }
+            ? { ...translation, ...rollGeometry(trackHeight, spacing, deletedOn, compass) }
             : translation,
-        [deletedOn, bar, translation, trackHeight, spacing]
+        [deletedOn, bar, translation, trackHeight, spacing, compass]
     )
 
     if (!edition) return null

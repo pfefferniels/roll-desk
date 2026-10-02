@@ -50,6 +50,7 @@ import { goesToAnOverlay } from "./goesToAnOverlay"
 import { activatesItsTarget } from "./activatesItsTarget"
 import { VersionView } from "../version/VersionView"
 import { dynamicsRoom } from "../version/Dynamics"
+import { compassOf } from "../version/compass"
 import { CopyFacsimile } from "../facsimile/CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "../constraints/ConstraintsPanel"
 import { isHeldMotivation } from "../edition/motivation"
@@ -84,16 +85,17 @@ const deskPanel = {
 
 /**
  * How the bar is laid out for a version: it is read for its expression,
- * so the keyboard is pressed together, and the dynamics it yields stand
- * beyond the bar on either side. The reader may drag each block taller
- * or shorter, starting from these lanes.
+ * so the keyboard is pressed together and cut to the notes the piece
+ * plays, and the dynamics it yields stand beyond the bar on either side.
+ * The reader may drag each block taller or shorter, starting from these
+ * lanes.
  */
 const versionLayout = {
     spacing: svg(16),
     room: { above: dynamicsRoom, below: dynamicsRoom }
 }
 
-const versionLanes = lanesOf(svg(1), svg(10))
+const versionLanes = lanesOf(svg(2), svg(10))
 
 /** How the bar is laid out for a copy, whose lanes are read against its scan. */
 const copyLayout = {
@@ -149,6 +151,7 @@ export const Desk = ({ show }: DeskProps) => {
     usePinchGesture(viewport, { onPinch: scrubBy, onEnd: settle })
 
     const length = useMemo(() => edition ? rollLength(edition) : mm(0), [edition])
+    const compass = useMemo(() => edition ? compassOf(edition) : undefined, [edition])
     const problems = useMemo(() => edition ? constraintProblems(edition) : [], [edition])
     const carriage = useMemo(() => edition ? carriageProblems(edition) : [], [edition])
 
@@ -685,7 +688,7 @@ export const Desk = ({ show }: DeskProps) => {
                     setZoom={jump}
                     viewport={viewport}
                     gesturing={gesturing}
-                    {...(currentVersion ? { ...versionLayout, lanes } : copyLayout)}
+                    {...(currentVersion ? { ...versionLayout, lanes, compass } : copyLayout)}
                 >
                     <Canvas stageRef={stageRef}>
                         {currentVersion
