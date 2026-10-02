@@ -30,10 +30,6 @@ export const windowAtEnds = (tolerance: CollationTolerance): BothEnds<string> =>
     to: windowText(offsetEndOf(tolerance), tolerance.toleranceEnd)
 })
 
-/** Whether the window is centred away from zero at either end, which the sign alone does not explain. */
-export const namesAnOffset = (tolerance: CollationTolerance): boolean =>
-    offsetStartOf(tolerance) !== 0 || offsetEndOf(tolerance) !== 0
-
 /** The millimetres the text spells, or nothing where it spells no usable tolerance. */
 export const parseTolerance = (text: string): Millimeters | undefined => {
     const millimetres = Number(text)

@@ -3,7 +3,7 @@ import { CollationTolerance, nameOf, ObjectAssumption, trackerBarOf } from "link
 import { useContext } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { versionAccount } from "../edition/account"
-import { namesAnOffset, windowAtEnds } from "../edition/collationTolerance"
+import { windowAtEnds } from "../edition/collationTolerance"
 import { versionLabel } from "../edition/names"
 import { dateStatement } from "../edition/dateStatement"
 import { DerivationScatter } from "./DerivationScatter"
@@ -11,17 +11,11 @@ import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
 import { ReservationNotes } from "./Reservations"
 
-interface CollatedAtProps {
-    /** The version the text was read against, which the centre is measured from. */
-    parent: string
-    tolerance: ObjectAssumption<CollationTolerance>
-}
-
 /**
  * The window the two texts were collated in. It decides what counts as one
  * reading rather than two, so a reader weighing a difference should see it.
  */
-const CollatedAt = ({ parent, tolerance }: CollatedAtProps) => {
+const CollatedAt = ({ tolerance }: { tolerance: ObjectAssumption<CollationTolerance> }) => {
     const ends = windowAtEnds(tolerance)
 
     return (
@@ -31,12 +25,6 @@ const CollatedAt = ({ parent, tolerance }: CollatedAtProps) => {
                     collated at onset {ends.from}, end {ends.to}
                 </Typography>
             </HeldStatement>
-            {namesAnOffset(tolerance) && (
-                <Typography variant='caption' color='text.secondary' component='div'>
-                    The centre says how much later this version puts a feature
-                    than <EntityLink id={parent} />. A negative one puts it earlier.
-                </Typography>
-            )}
         </Box>
     )
 }
@@ -69,7 +57,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                                     : <>also <EntityLink id={parent} />, as a hypothesis</>}
                             </HeldStatement>
                             {collationTolerance && (
-                                <CollatedAt parent={parent} tolerance={collationTolerance} />
+                                <CollatedAt tolerance={collationTolerance} />
                             )}
                             {principal && <DerivationScatter versionId={version.id} />}
                         </div>
