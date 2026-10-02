@@ -64,6 +64,17 @@ describe('spotlighting an entity', () => {
         expect(hulls.map(hull => hull.worn.get('fill'))).toEqual(['gray', 'gray'])
     })
 
+    it('brings into view the shape that begins earliest along the roll', () => {
+        const at = (left: number) => ({ ...drawing({ fill: 'gray' }), getBoundingClientRect: () => ({ left }) })
+        const [later, earlier] = [at(900), at(300)]
+        showing({ 'shift-to-metrical-accent': [later, earlier] })
+
+        spotlight('shift-to-metrical-accent', 100)
+
+        expect(earlier.scrollIntoView).toHaveBeenCalled()
+        expect(later.scrollIntoView).not.toHaveBeenCalled()
+    })
+
     it('keeps the first reading when a second spotlight overlaps it', () => {
         const drawn = drawing(symbol)
         showing({ note: [drawn] })

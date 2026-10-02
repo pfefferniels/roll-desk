@@ -75,6 +75,18 @@ const shapesOf = (id: string) => [...new Set(
     )].map(shapeOf)
 )]
 
+/** Where a shape begins along the roll, as the window measures it. */
+const beginning = (shape: Element) => shape.getBoundingClientRect().left
+
+/**
+ * The shape that begins earliest along the roll, which is where a reader
+ * brought to the entity starts reading it. A motivation is drawn as its
+ * edits in the order the version keeps them, and that need not be the
+ * order in which they come along the roll.
+ */
+const earliest = (drawn: readonly Element[]) =>
+    drawn.reduce((one, other) => beginning(other) < beginning(one) ? other : one)
+
 /** How the view is brought to a shape a spotlight lights. */
 type Bring = (shape: Element) => void
 
@@ -96,16 +108,15 @@ export const onsetToMiddleOf = (viewport: Element): Bring => shape => {
 }
 
 /**
- * Scrolls what is drawn for an entity into view and flashes it, the way
- * playback marks the symbol being played. False when nothing is drawn
- * for the id yet.
+ * Scrolls to where an entity is drawn first along the roll and flashes
+ * every shape drawn for it, the way playback marks the symbol being
+ * played. False when nothing is drawn for the id yet.
  */
 export const spotlight = (id: string, milliseconds: number, bring: Bring = centred): boolean => {
     const drawn = shapesOf(id)
-    const [first] = drawn
-    if (!first) return false
+    if (drawn.length === 0) return false
 
-    bring(first)
+    bring(earliest(drawn))
     drawn.forEach(shape => flash(shape, milliseconds))
 
     return true
