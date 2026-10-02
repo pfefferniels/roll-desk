@@ -95,7 +95,7 @@ const versionLayout = {
     room: { above: dynamicsRoom, below: dynamicsRoom }
 }
 
-const versionLanes = lanesOf(svg(2), svg(10))
+const versionLanes = lanesOf(svg(3), svg(10))
 
 /** How the bar is laid out for a copy, whose lanes are read against its scan. */
 const copyLayout = {
