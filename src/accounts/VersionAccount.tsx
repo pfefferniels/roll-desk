@@ -6,6 +6,7 @@ import { versionAccount } from "../edition/account"
 import { namesAnOffset, windowAtEnds } from "../edition/collationTolerance"
 import { versionLabel } from "../edition/names"
 import { dateStatement } from "../edition/dateStatement"
+import { DerivationScatter } from "./DerivationScatter"
 import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
 import { ReservationNotes } from "./Reservations"
@@ -70,6 +71,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                             {collationTolerance && (
                                 <CollatedAt parent={parent} tolerance={collationTolerance} />
                             )}
+                            {principal && <DerivationScatter versionId={version.id} />}
                         </div>
                     ))}
                 </AccountSection>
