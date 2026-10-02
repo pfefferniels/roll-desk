@@ -108,7 +108,8 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
 
     // What this version does away with was coded for its parent's system,
     // so that is the bar those commands are drawn by.
-    const deletedOn = trackerBarOf(predecessorOf(edition, version.id)?.system)
+    const parent = predecessorOf(edition, version.id)
+    const deletedOn = trackerBarOf(parent?.system)
 
     // A balloon on another derivation must leave this roll alone, and two
     // versions may write one motivation id, so a selection counts as in
@@ -136,6 +137,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
                     deletedOn={deletedOn}
                     tolerance={derivationToleranceOf(version)}
                     focus={focusOf(edit)}
+                    atRoot={!parent}
                     onClick={() => onClick(edit)}
                 />
             </g>

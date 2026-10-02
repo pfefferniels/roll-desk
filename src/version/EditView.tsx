@@ -282,10 +282,15 @@ interface EditViewProps {
     tolerance?: CollationTolerance;
     /** Where the edit stands while a motivation is in focus, nowhere in particular when none is. */
     focus?: Focus;
+    /**
+     * The version has no parent, so there is nothing its edits differ
+     * from: they set down the text rather than change it.
+     */
+    atRoot?: boolean;
     onClick?: MouseEventHandler;
 }
 
-export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditViewProps) => {
+export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, onClick }: EditViewProps) => {
     const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
     const { trackHeight, spacing, bar } = translation
@@ -318,6 +323,11 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, onClick }: EditVie
             {null}
         </Arguable>
     )
+
+    // A root's every symbol is an insertion, and a hull round each would
+    // mark out the whole roll, which is to mark out nothing. What an edit
+    // there is argued under is still worth seeing where it lies.
+    if (atRoot) return belief ? <g data-motivation={edit.motivation}>{belief}</g> : null
 
     /**
      * An edit that both inserts and deletes puts one thing in the place
