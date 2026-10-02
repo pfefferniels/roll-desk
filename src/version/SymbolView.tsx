@@ -25,7 +25,9 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
     const { marked, followPlayback } = usePlaybackMark();
     const { translateX, trackToY, laneHeight, height: canvasHeight, room, zoom, bar } = usePinchZoom();
 
-    const displayDetails = hovered || marked
+    // Whiskers follow playback too, so a sounding command is read against
+    // its dynamics; how far its carriers disagree only the pointer asks.
+    const whiskers = hovered || marked
 
     // While playback stands on the command, the label at the left edge names it.
     useEffect(() => {
@@ -37,8 +39,8 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
     const features = useMemo(() => edition ? placedCarriersOf(edition, symbol) : [], [edition, symbol]);
 
     const { onsets, offsets } = useMemo(() => ({
-        onsets: features.map(e => e.horizontal.from).sort(),
-        offsets: features.map(e => e.horizontal.to).sort()
+        onsets: features.map(e => e.horizontal.from).sort((a, b) => a - b),
+        offsets: features.map(e => e.horizontal.to).sort((a, b) => a - b)
     }), [features]);
 
     const place = edition && placeOf(edition, symbol)
@@ -50,7 +52,11 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
     const lastOffset = offsets.at(-1)
 
     if (!edition || !place || position === undefined) return null;
-    if (!firstOnset || !lastOnset || !firstOffset || !lastOffset) return null;
+    if (firstOnset === undefined || lastOnset === undefined || firstOffset === undefined || lastOffset === undefined) return null;
+
+    // Where the carriers put the symbol, as the edition takes it from them.
+    const from = translateX(place.from)
+    const to = translateX(place.to)
 
     // The stretch every carrier agrees the symbol covers, and how far the
     // carriers disagree at either end.
@@ -58,9 +64,6 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
     const innerTo = translateX(firstOffset)
     const onsetFrom = translateX(firstOnset)
     const offsetTo = translateX(lastOffset)
-
-    const meanOnset = place.from
-    const meanOffset = place.to
 
     // The lane is the bar's answer, not the carriers': copies of two
     // systems number their tracks differently and both may carry this.
@@ -71,13 +74,11 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
     const color = (age || 0) >= 1 ? 'gray' : 'black';
 
     const detailed = zoom >= 0.7
-    const whiskers = zoom >= 0.3
     const dx = translateX(shift)
     const shadow = Math.abs(dx) >= 1
 
     const [top, bottom] = whiskerReach(
         { y, height },
-        displayDetails,
         halfOf(symbol, position, division),
         { height: canvasHeight, room }
     )
@@ -112,43 +113,54 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, onCli
         >
             {/* The body sits where the command plays; the measurement stays behind as a shadow. */}
             <g transform={`translate(${dx} 0)`}>
+                {/* Under the pointer it gives way to the spread, but stays to be pointed at and clicked. */}
                 <rect
-                    x={innerFrom}
-                    width={subtract(innerTo, innerFrom)}
+                    x={from}
+                    width={subtract(to, from)}
                     y={y}
                     height={height}
                     fill={highlight ? 'red' : color}
-                    fillOpacity={opacity}
+                    fillOpacity={hovered ? 0 : opacity}
                     onClick={onClick} />
-                {whiskers && whisker(translateX(meanOnset))}
-                {whiskers && whisker(translateX(meanOffset))}
-                {detailed && (
-                    <polygon
-                        onClick={onClick}
-                        fill={color}
-                        fillOpacity={opacity}
-                        points={`
-                            ${onsetFrom},${add(y, scale(height, 0.5))}
-                            ${innerFrom},${y}
-                            ${innerTo},${y}
-                            ${offsetTo},${add(y, scale(height, 0.5))}
-                            ${innerTo},${add(y, height)}
-                            ${innerFrom},${add(y, height)}
-                        `} />
+                {hovered && (
+                    <>
+                        <rect
+                            x={innerFrom}
+                            width={subtract(innerTo, innerFrom)}
+                            y={y}
+                            height={height}
+                            fill={highlight ? 'red' : color}
+                            fillOpacity={opacity}
+                            onClick={onClick} />
+                        <polygon
+                            onClick={onClick}
+                            fill={color}
+                            fillOpacity={opacity}
+                            points={`
+                                ${onsetFrom},${add(y, scale(height, 0.5))}
+                                ${innerFrom},${y}
+                                ${innerTo},${y}
+                                ${offsetTo},${add(y, scale(height, 0.5))}
+                                ${innerTo},${add(y, height)}
+                                ${innerFrom},${add(y, height)}
+                            `} />
+                    </>
                 )}
+                {whiskers && whisker(from)}
+                {whiskers && whisker(to)}
             </g>
             {shadow && (
                 <g style={{ pointerEvents: 'none' }} opacity={opacity}>
                     <line
-                        x1={innerFrom}
-                        x2={add(innerFrom, dx)}
+                        x1={from}
+                        x2={add(from, dx)}
                         y1={y + height / 2}
                         y2={y + height / 2}
                         stroke={shadowLook.stroke}
                         strokeWidth={0.4} />
                     <rect
-                        x={innerFrom}
-                        width={subtract(innerTo, innerFrom)}
+                        x={from}
+                        width={subtract(to, from)}
                         y={y}
                         height={height}
                         {...shadowLook} />

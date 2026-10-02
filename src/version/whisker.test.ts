@@ -36,15 +36,9 @@ describe('the half of the keyboard a command answers to', () => {
 })
 
 describe('how far a whisker reaches', () => {
-    it('keeps among its own lanes while the command is not looked at', () => {
-        const lane = laneOf(60)
-        expect(whiskerReach(lane, false, 'treble', drawing))
-            .toEqual([lane.y - lane.height, lane.y + 2 * lane.height])
-    })
-
     it('runs up through the treble expression to the head of the treble dynamics', () => {
         const lane = laneOf(60)
-        const [top, bottom] = whiskerReach(lane, true, 'treble', drawing)
+        const [top, bottom] = whiskerReach(lane, 'treble', drawing)
 
         expect(top).toBe(heightOf(velocity.forte, feet.treble, velocity))
         expect(bottom).toBe(lane.y + 2 * lane.height)
@@ -52,13 +46,13 @@ describe('how far a whisker reaches', () => {
 
     it('runs down through the bass expression to the foot of the bass dynamics', () => {
         const lane = laneOf(40)
-        const [top, bottom] = whiskerReach(lane, true, 'bass', drawing)
+        const [top, bottom] = whiskerReach(lane, 'bass', drawing)
 
         expect(top).toBe(lane.y - lane.height)
         expect(bottom).toBe(feet.bass)
     })
 
     it('spans the bar where the half is not known', () => {
-        expect(whiskerReach(laneOf(40), true, undefined, drawing)).toEqual([0, geometry.height])
+        expect(whiskerReach(laneOf(40), undefined, drawing)).toEqual([0, geometry.height])
     })
 })
