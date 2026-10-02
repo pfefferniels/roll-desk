@@ -1,5 +1,5 @@
 import {
-    admits, admittedAtEnds, BothEnds, CollationTolerance, collationToleranceOf, Edition, Millimeters, mm,
+    admittedAtEnds, BothEnds, CollationTolerance, collationToleranceOf, Edition, Millimeters, mm,
     offsetEndOf, offsetStartOf, principalDerivationOf, readingsOf, Scatter, scatterOf, sidesOf, snapshotOf, versionIn
 } from "linked-rolls"
 
@@ -21,9 +21,6 @@ export interface DerivationScatter {
 
     /** One sample per kind of symbol, the notes first. */
     samples: Sample[]
-
-    /** How many readings the window does not admit at one end or both, which a collation at it would have taken apart. */
-    outside: number
 }
 
 const ORDER = ['note', 'expression', 'text']
@@ -74,12 +71,7 @@ export const derivationScatterOf = (edition: Edition, versionId: string): Deriva
         })
     if (samples.length === 0) return undefined
 
-    return {
-        window,
-        copies,
-        samples,
-        outside: readings.filter(reading => !admits(window, reading.displacement)).length
-    }
+    return { window, copies, samples }
 }
 
 /** Where the window at one end is centred and how far it reaches. */

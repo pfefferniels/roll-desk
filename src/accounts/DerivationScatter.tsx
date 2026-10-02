@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from "@mui/material"
-import { BothEnds, FittedHistogram, idOf, principalDerivationOf, versionIn } from "linked-rolls"
+import { BothEnds, FittedHistogram } from "linked-rolls"
 import { Fragment, useContext, useMemo } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { curveAt, derivationScatterOf, extentOf, Sample, ticksAcross, windowAt } from "../edition/derivationScatter"
@@ -242,8 +242,6 @@ export const DerivationScatter = ({ versionId }: { versionId: string }) => {
     const scatter = useMemo(() => edition && derivationScatterOf(edition, versionId), [edition, versionId])
     if (!edition || !scatter) return null
 
-    const version = versionIn(edition, versionId)
-    const principal = version && principalDerivationOf(version)
     const extent = extentOf(scatter)
     const x: Across = displacement => GUTTER + (displacement - extent[0]) / (extent[1] - extent[0]) * (WIDTH - GUTTER)
     const window = { from: windowAt(scatter.window, 'from'), to: windowAt(scatter.window, 'to') }
@@ -257,21 +255,12 @@ export const DerivationScatter = ({ versionId }: { versionId: string }) => {
                 <Axis extent={extent} x={x} />
             </div>
             <Typography variant='caption' color='text.secondary' component='div'>
-                How far {scatter.copies.map((copy, i) => (
+                {scatter.copies.map((copy, i) => (
                     <Fragment key={copy}>
-                        {i > 0 && (i === scatter.copies.length - 1 ? ' and ' : ', ')}
+                        {i > 0 && ', '}
                         <EntityLink id={copy} />
                     </Fragment>
-                ))} {scatter.copies.length === 1 ? 'puts each symbol it shares' : 'put each symbol they share'}
-                {principal && <> with <EntityLink id={idOf(principal)} /></>} from where the other copies
-                put it, the onset above and the end below. Shaded is the window it was collated in, the line
-                the normal curve fitted to the scatter.
-                {scatter.outside > 0 && (
-                    <> {scatter.outside === 1
-                        ? 'One reading, marked by a dot, lies outside the window and still counts'
-                        : `${scatter.outside} readings, marked by dots, lie outside the window and still count`} as
-                    one symbol with the other side.</>
-                )}
+                ))} against the other copies
             </Typography>
         </Stack>
     )

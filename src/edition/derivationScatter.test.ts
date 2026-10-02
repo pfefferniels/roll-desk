@@ -101,7 +101,6 @@ describe('the scatter of a derivation', () => {
         expect(scatter.samples[0]!.outside.from).toHaveLength(1)
         expect(scatter.samples[0]!.outside.from[0]).toBeCloseTo(4.5, 6)
         expect(scatter.samples[0]!.outside.to).toEqual([])
-        expect(scatter.outside).toBe(1)
     })
 
     it('is nothing for a version that derives from nothing', () => {
