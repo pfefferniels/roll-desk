@@ -164,19 +164,25 @@ function unit(v: Pt): Pt {
 function perp(v: Pt): Pt { return { x: -v.y, y: v.x }; }
 
 /**
- * Build a cubic Bezier boundary from A to B with a constant perpendicular offset.
- *
- * The curve is controlled by points at t=0.25 and t=0.75 along AB,
- * shifted by offset along the perpendicular normal.
+ * The control points of a boundary from A to B with a constant
+ * perpendicular offset: at t=0.25 and t=0.75 along AB, shifted by the
+ * offset along the perpendicular normal.
  */
-export function boundaryCubicPath(a: Pt, b: Pt, offset: number): string {
+function controlsOf(a: Pt, b: Pt, offset: number): [Pt, Pt] {
     const ab = sub(b, a);
     const L = len(ab);
     const v = unit(ab);
     const n = perp(v);
 
-    const c1 = add(add(a, mul(v, 0.25 * L)), mul(n, offset));
-    const c2 = add(add(a, mul(v, 0.75 * L)), mul(n, offset));
+    return [
+        add(add(a, mul(v, 0.25 * L)), mul(n, offset)),
+        add(add(a, mul(v, 0.75 * L)), mul(n, offset))
+    ];
+}
+
+/** Build a cubic Bezier boundary from A to B with a constant perpendicular offset. */
+export function boundaryCubicPath(a: Pt, b: Pt, offset: number): string {
+    const [c1, c2] = controlsOf(a, b, offset);
 
     // M A C c1 c2 B
     return `M ${a.x} ${a.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${b.x} ${b.y}`;
@@ -184,15 +190,21 @@ export function boundaryCubicPath(a: Pt, b: Pt, offset: number): string {
 
 export function boundaryCubicPathReversed(a: Pt, b: Pt, offset: number): string {
     // Reverse direction: M B C c2 c1 A
-    const ab = sub(b, a);
-    const L = len(ab);
-    const v = unit(ab);
-    const n = perp(v);
-
-    const c1 = add(add(a, mul(v, 0.25 * L)), mul(n, offset));
-    const c2 = add(add(a, mul(v, 0.75 * L)), mul(n, offset));
+    const [c1, c2] = controlsOf(a, b, offset);
 
     return `M ${b.x} ${b.y} C ${c2.x} ${c2.y} ${c1.x} ${c1.y} ${a.x} ${a.y}`;
+}
+
+/** The points at the shares of the way given along a boundary from A to B. */
+function alongBoundary(a: Pt, b: Pt, offset: number, shares: readonly number[]): Pt[] {
+    const [c1, c2] = controlsOf(a, b, offset);
+    return shares.map(t => {
+        const s = 1 - t;
+        return add(
+            add(mul(a, s * s * s), mul(c1, 3 * s * s * t)),
+            add(mul(c2, 3 * s * t * t), mul(b, t * t * t))
+        );
+    });
 }
 
 /** How far the balloon reaches from the line to either side. */
@@ -208,6 +220,19 @@ const midwayShare = 0.75;
 /** How far the balloon at rest reaches from its line, halfway along where it is widest. */
 export const restingReachOf = (a: Pt, b: Pt) =>
     halfWidthOf(a, b, false) * midwayShare;
+
+/**
+ * The outline of the balloon between A and B, opened or at rest, as a
+ * polygon with the number of points given along each side.
+ */
+export function outlineOf(a: Pt, b: Pt, open: boolean, samples = 24): Pt[] {
+    const half = halfWidthOf(a, b, open);
+    const shares = Array.from({ length: samples + 1 }, (_, i) => i / samples);
+    return [
+        ...alongBoundary(a, b, -half, shares),
+        ...alongBoundary(a, b, half, shares.slice(1, -1).reverse())
+    ];
+}
 
 /**
  * Where a slice of the opened balloon sits: halfway along it, and across

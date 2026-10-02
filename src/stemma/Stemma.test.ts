@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, fitOf, graphOf, inDrawingOrder, Node, radiusOf, routeMarkAt, shiftIntoView } from './Stemma'
+import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, Node, radiusOf, routeMarkAt, shiftIntoView, spreadVersions } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -184,5 +184,48 @@ describe('the room a node takes in its row', () => {
         const [node] = graphFor(siblings).nodes
         if (!node) throw new Error('the graph should have a node')
         expect(radiusOf({ ...node, radius: 17.5 })).toBe(17.5)
+    })
+})
+
+describe('keeping an opened balloon clear', () => {
+    const motivated = (siglum: string, generation: number, basedOn?: string) => ({
+        ...version(siglum, welteT100, generation, basedOn),
+        motivations: [{ type: 'motivation' as const, id: `${siglum}-m` }]
+    })
+    const siblings = [version('A', welteT100, 0), motivated('B', 1, 'A'), motivated('C', 1, 'A')]
+
+    /** The siblings drawn close beneath their parent, as the force layout may leave them. */
+    const crowded = () => {
+        const { nodes, links } = graphFor(siblings)
+        const place = (id: string, x: number, y: number) => Object.assign(nodes.find(n => n.id === id) ?? {}, { x, y })
+        place('A', 0, 50)
+        place('B', -40, 250)
+        place('C', 40, 250)
+        return { nodes, links }
+    }
+
+    it('finds the balloon of one sibling opened across the other', () => {
+        const { nodes, links } = crowded()
+
+        expect(clashesOf(nodes, links, 1).map(clash => clash.movers)).toContainEqual(['B', 'C'])
+    })
+
+    it('spreads the siblings apart until neither opened balloon reaches the other, keeping their order', () => {
+        const { nodes, links } = crowded()
+
+        expect(spreadVersions(nodes, links, 1)).toBe(true)
+        expect(clashesOf(nodes, links, 1)).toEqual([])
+
+        const [, b, c] = nodes
+        expect(b?.x).toBeLessThan(c?.x ?? 0)
+    })
+
+    it('leaves them where they are once they are clear', () => {
+        const { nodes, links } = crowded()
+        spreadVersions(nodes, links, 1)
+        const spread = nodes.map(node => node.x)
+
+        expect(spreadVersions(nodes, links, 1)).toBe(false)
+        expect(nodes.map(node => node.x)).toEqual(spread)
     })
 })

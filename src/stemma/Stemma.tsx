@@ -7,7 +7,8 @@ import { ReactNode, SVGProps, useEffect } from "react";
 import { EditionContext } from '../edition/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../desk/SelectionContext';
-import { restingReachOf, Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
+import { outlineOf, restingReachOf, Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
+import { Clash, overlap, Shape, spreadApart, Thickened } from './spreading';
 import { End, endAt, fieldOf, halfwayAlong, Obstacle, routeAround } from './routing';
 import { Arguable } from '../accounts/Arguable';
 import { along, perpendicular, point, Point, unit } from '../geometry/drawing';
@@ -41,22 +42,18 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     const versions = edition?.versions
 
     // Laid out while rendering, so that no link outlives the derivation its mark addresses.
-    const { nodes, links, routes } = useMemo(() => {
-        if (!versions || !edition) return { nodes: [], links: [], routes: new Map<Link, Point[]>() }
+    const { nodes, links, routes, fit } = useMemo(() => {
+        if (!versions || !edition) {
+            return { nodes: [], links: [], routes: new Map<Link, Point[]>(), fit: fitOf([], svgWidth, svgHeight) }
+        }
 
         const graph = graphOf(withGenerations(edition), problems, {
             sigla: siglaOf(edition),
             attested: attestedVersions(edition)
         })
         const nodes = calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight)
-        return { links: graph.links, nodes, routes: routesOf(nodes, graph.links) }
+        return { links: graph.links, nodes, ...laidOut(nodes, graph.links, svgWidth, svgHeight) }
     }, [versions, edition, problems, svgHeight])
-
-    // A hypothesis may go round the outside of the stemma, and is fitted in with it.
-    const fit = useMemo(
-        () => fitOf([...nodes, ...[...routes.values()].flat()], svgWidth, svgHeight),
-        [nodes, routes, svgWidth, svgHeight]
-    )
 
     useEffect(() => {
         if (!svgRef.current || !zoomLayerRef.current || nodes.length === 0) return
@@ -219,6 +216,9 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
 
     /** Whether a belief is stated of the derivation, which is then marked on the link. */
     believed: boolean
+
+    /** Whether the derivation is drawn as a balloon sliced by its version's motivations, which a principal one with motivations is. */
+    sliced: boolean
 }
 
 const sharesSystem = (a: Version, b: Version) =>
@@ -276,7 +276,8 @@ export const graphOf = (
                 certainty,
                 principal: target === principal,
                 derivation,
-                believed: belief !== undefined
+                believed: belief !== undefined,
+                sliced: target === principal && version.motivations.length > 0
             }]
         })
     })
@@ -436,6 +437,15 @@ export const calculatePositions = (
 const captionDrop = 8
 const captionReach = 6
 
+/** Where a node's caption is drawn, as a line thickened to the height of its lettering, and nothing where it has none. */
+const captionOf = (node: Node, at: Point): Thickened | undefined => {
+    const half = captionHalfWidth(node)
+    if (half === 0) return undefined
+
+    const y = at.y + radiusOf(node) + captionDrop
+    return { from: { x: at.x - half, y }, to: { x: at.x + half, y }, radius: captionReach }
+}
+
 /**
  * What a hypothesis is routed round: every version and the system it
  * names, and every derivation a text is read against, as wide as its
@@ -448,14 +458,13 @@ export const obstaclesOf = (nodes: readonly Node[], links: readonly Link[]): Obs
         if (!at) return []
 
         const disc = { from: at, to: at, radius: radiusOf(node), of: [node.id] }
-        const half = captionHalfWidth(node)
-        if (half === 0) return [disc]
+        const caption = captionOf(node, at)
+        if (!caption) return [disc]
 
         // Belonging to no version, a caption gives way to no route: a
         // route reaching its version comes in from another side.
-        const y = svg(at.y + radiusOf(node) + captionDrop)
-        const caption = { from: point(svg(at.x - half), y), to: point(svg(at.x + half), y), radius: captionReach, of: [] }
-        return [disc, caption]
+        const { from, to, radius } = caption
+        return [disc, { from: point(svg(from.x), svg(from.y)), to: point(svg(to.x), svg(to.y)), radius, of: [] }]
     }),
     ...links.filter(link => link.principal).flatMap(link => {
         const ids = [(link.source as Node).id, (link.target as Node).id]
@@ -481,6 +490,120 @@ export const routesOf = (nodes: readonly Node[], links: readonly Link[]): Map<Li
         const to = endOf(link.target as Node)
         return from && to ? [[link, routeAround(from, to, obstacles, field)] as const] : []
     }))
+}
+
+/** How far on the screen the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
+const markClearance = 16
+
+/** How far on the screen the button of a belief's mark reaches from where the mark is placed. */
+const markReach = 10
+
+/** How far a derivation drawn as a line rather than a balloon reaches to either side. */
+const lineReach = 2
+
+/** How many points along each side a balloon's outline is tested at, opened and at rest. */
+const openedSamples = 16
+const restingSamples = 12
+
+/** Something an opened balloon must keep off, the version heading the part of the stemma that moves with it, and how far across it lies. */
+interface Piece {
+    shape: Shape
+    root: string
+    x: number
+    /** The derivation it belongs to, whose own balloon may cover it. */
+    of?: Link
+    /** The version it belongs to, whose own circle covers it where they meet. */
+    node?: string
+}
+
+/**
+ * What the opened balloon of each derivation runs into: another
+ * derivation, the mark of another's belief, a version or its caption.
+ * Balloons open one at a time, so the others are met at rest. Where a
+ * version is drawn over both, the pointer lands on the version, so the
+ * derivations meeting at it do not clash there. A mark keeps its size on
+ * the screen, and is enlarged against the drawing by the scale given.
+ */
+export const clashesOf = (nodes: readonly Node[], links: readonly Link[], markScale: number): Clash[] => {
+    const discs = nodes.flatMap(node => {
+        const at = placed(nodes, node.id)
+        return at ? [{ node, at }] : []
+    })
+    const coveredBesides = (id?: string) => (p: { x: number, y: number }) =>
+        discs.some(({ node, at }) => node.id !== id && Math.hypot(p.x - at.x, p.y - at.y) < radiusOf(node))
+
+    const derivations = links.filter(link => link.principal).flatMap(link => {
+        const child = (link.source as Node).id
+        const parent = (link.target as Node).id
+        const a = placed(nodes, child)
+        const b = placed(nodes, parent)
+        return a && b ? [{ link, child, parent, a, b }] : []
+    })
+
+    const pieces: Piece[] = [
+        ...derivations.map(({ link, child, a, b }) => ({
+            shape: link.sliced ? { points: outlineOf(a, b, false, restingSamples) } : { from: a, to: b, radius: lineReach },
+            root: child,
+            x: (a.x + b.x) / 2,
+            of: link
+        })),
+        ...derivations.filter(({ link }) => link.believed).map(({ link, child, a, b }) => {
+            const at = routeMarkAt([a, b], svg(markClearance * markScale))
+            return { shape: { from: at, to: at, radius: markReach * markScale }, root: child, x: at.x, of: link }
+        }),
+        ...discs.flatMap(({ node, at }) => {
+            const caption = captionOf(node, at)
+            return [{ from: at, to: at, radius: radiusOf(node) }, ...(caption ? [caption] : [])]
+                .map(shape => ({ shape, root: node.id, x: at.x, node: node.id }))
+        })
+    ]
+
+    return derivations.filter(({ link }) => link.sliced).flatMap(({ link, child, parent, a, b }) => {
+        const opened = { points: outlineOf(a, b, true, openedSamples) }
+        const x = (a.x + b.x) / 2
+        return pieces
+            .filter(piece => piece.of !== link && piece.node !== child && piece.node !== parent)
+            .filter(piece => overlap(opened, piece.shape, coveredBesides(piece.node)))
+            .map((piece): Clash => ({ movers: [child, piece.root], side: piece.x >= x ? 1 : -1 }))
+    })
+}
+
+/**
+ * Moves the versions apart sideways until no opened balloon runs into
+ * anything, each with the versions descending from it. Says whether
+ * anything moved.
+ */
+export const spreadVersions = (nodes: readonly Node[], links: readonly Link[], markScale: number): boolean => {
+    const children = new Map<string, string[]>()
+    for (const link of links.filter(link => link.principal)) {
+        const parent = (link.target as Node).id
+        children.set(parent, [...children.get(parent) ?? [], (link.source as Node).id])
+    }
+    return spreadApart(nodes, id => children.get(id) ?? [], () => clashesOf(nodes, links, markScale))
+}
+
+/** How many times spreading the versions and fitting the drawing are settled against each other at most. */
+const settlings = 3
+
+/**
+ * The versions spread apart, the hypotheses routed round them, and the
+ * scale and centre the drawing is fitted at. A mark keeps its size on the
+ * screen, so how much room it takes on the drawing depends on the fit,
+ * which spreading changes; the two are therefore settled in turn.
+ */
+export const laidOut = (nodes: readonly Node[], links: readonly Link[], width: number, height: number) => {
+    let fit = fitOf(nodes, width, height)
+    let routes = new Map<Link, Point[]>()
+    for (let round = 0; round < settlings; round++) {
+        const moved = spreadVersions(nodes, links, 1 / fit.scale)
+        routes = routesOf(nodes, links)
+        // A hypothesis may go round the outside of the stemma, and is fitted in with it.
+        const next = fitOf([...nodes, ...[...routes.values()].flat()], width, height)
+        const settled = !moved || next.scale >= fit.scale
+        fit = next
+        if (settled) break
+    }
+    return { routes, fit }
 }
 
 /** The curve a route is drawn as, through every place it turns at. */
@@ -615,9 +738,6 @@ export const inDrawingOrder = (links: readonly Link[]) =>
     links
         .map((link, i) => ({ link, i }))
         .sort((a, b) => Number(a.link.principal) - Number(b.link.principal))
-
-/** How far on the screen the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
-const markClearance = 16
 
 interface LinkContainerProps {
     positionedNodes: Node[];
