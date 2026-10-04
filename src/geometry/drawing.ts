@@ -67,7 +67,7 @@ export const middleOf = (box: Box): Point =>
     point(add(box.x, scale(box.width, 0.5)), add(box.y, scale(box.height, 0.5)))
 
 /** Which way the turn goes at `a` on the way from `o` to `b`. */
-const cross = (o: Point, a: Point, b: Point): number =>
+export const cross = (o: Point, a: Point, b: Point): number =>
     (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
 
 /** Whether the chain's last turn bends back on itself at `p`, so its end should go. */

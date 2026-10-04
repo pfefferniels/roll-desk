@@ -9,7 +9,7 @@ import { EditionContext } from "../edition/EditionContext"
 import { Ground } from "../canvas/Ground"
 import { Blocks } from "../canvas/Blocks"
 import { BlockEdges } from "../canvas/BlockEdges"
-import { EditView, Focus } from "./EditView"
+import { EditView, Focus, hullBoxesOf, useDeletedIn } from "./EditView"
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../desk/SelectionContext"
 import { usePinchZoom } from "../canvas/usePinchZoom"
@@ -18,6 +18,8 @@ import { ConstraintView } from "../constraints/ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../constraints/constraints"
 import { derivationToleranceOf } from "../edition/collationTolerance"
 import { Svg } from "../canvas/units"
+import { cornersOf } from "../geometry/drawing"
+import { stacked } from "./stacking"
 
 type AgedSymbol = AnySymbol & { age: number }
 
@@ -72,7 +74,8 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     const { selection, setSelection } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
     const { edition } = useContext(EditionContext)
-    const { translateX, rollLength, height: geometryHeight, room } = usePinchZoom()
+    const translation = usePinchZoom()
+    const { translateX, rollLength, height: geometryHeight, room } = translation
 
     // None of what follows depends on the zoom, and emulating a version
     // costs a few hundred milliseconds, so it must not be redone per frame.
@@ -114,12 +117,26 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         return prevEmulation ? [{ emulation: prevEmulation, ink: 'steelblue' }, own] : [own]
     }, [emulation, prevEmulation])
 
-    if (!edition) return null
-
     // What this version does away with was coded for its parent's system,
     // so that is the bar those commands are drawn by.
-    const parent = predecessorOf(edition, version.id)
+    const parent = edition && predecessorOf(edition, version.id)
     const deletedOn = trackerBarOf(parent?.system)
+    const deletedIn = useDeletedIn(deletedOn)
+
+    // Two edits touching the same stretch of a lane lie over each other,
+    // and each must still show somewhere to be clicked. A root's edits
+    // have no hulls, see `EditView`, so there nothing lies over anything.
+    const layers = useMemo(
+        () => stacked(editsOf(version).map(edit => ({
+            of: edit,
+            corners: (edition && parent)
+                ? hullBoxesOf(edit, edition, translation, deletedIn).flatMap(cornersOf)
+                : []
+        }))),
+        [version, edition, parent, translation, deletedIn]
+    )
+
+    if (!edition) return null
 
     // A balloon on another derivation must leave this roll alone, and two
     // versions may write one motivation id, so a selection counts as in
@@ -133,7 +150,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         return inFocus.some(m => m.id === edit.motivation) ? 'lit' : 'dimmed'
     }
 
-    const edits = editsOf(version).map(edit => {
+    const edits = layers.map(({ of: edit, rings }) => {
         const motivation = version.motivations.find(m => m.id === edit.motivation)
 
         return (
@@ -148,6 +165,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
                     tolerance={derivationToleranceOf(version)}
                     focus={focusOf(edit)}
                     atRoot={!parent}
+                    rings={rings}
                     onClick={() => onClick(edit)}
                 />
             </g>

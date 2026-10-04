@@ -2,7 +2,7 @@ import {
     admittedAtEnds, CollationTolerance, defaultCollationTolerance, distance, Edit, EditType, HorizontalSpan,
     isCommand, max, min, positionOfSameFunction, Track, TrackerBar, symbolIn, pathIn, placeOf, Edition
 } from "linked-rolls";
-import { getHull, Hull } from "./Hull";
+import { getHull, Hull, hullPadding } from "./Hull";
 import { getBoundingBox } from "../geometry/getBoundingBox";
 import { MouseEventHandler, SVGProps, useContext, useMemo } from "react";
 import { AnySymbol } from "linked-rolls";
@@ -11,11 +11,12 @@ import { Arrow } from "./Arrow";
 import { EditionContext } from "../edition/EditionContext";
 import { Box, boxOf, rollGeometry, Translation } from "../canvas/rollGeometry";
 import { cornersOf, point, Point } from "../geometry/drawing";
-import { add, subtract } from "linked-rolls";
+import { add, scale, subtract } from "linked-rolls";
 import { inOneLane } from "../geometry/arrow";
 import { Svg, svg } from "../canvas/units";
 import { glowReach, outlineStrength, settling } from "../geometry/glow";
 import { Arguable } from "../accounts/Arguable";
+import { ring } from "./stacking";
 
 
 export type { Translation }
@@ -131,6 +132,38 @@ export const editBoxes = (
         .filter(bbox => !!bbox)
 })
 
+/**
+ * The boxes an edit's hull is drawn round: what it inserts, or what it
+ * deletes. An edit that does both is drawn as an arrow, and has none.
+ */
+export const hullBoxesOf = (
+    edit: Edit,
+    edition: Edition,
+    translation: Translation,
+    deletedIn: Translation = translation
+): Box[] => {
+    const { insertions, deletions } = editBoxes(edit, edition, translation, deletedIn)
+    return (insertions.length && deletions.length) ? [] : [...insertions, ...deletions]
+}
+
+/**
+ * The layout what a version does away with is drawn in: the bar its
+ * parent was coded for, where that is another system's, laid out the
+ * same way as the version's own. That puts a deleted command where its
+ * own scale had it, which is what the arrow should start from.
+ */
+export const useDeletedIn = (deletedOn?: TrackerBar) => {
+    const translation = usePinchZoom()
+    const { trackHeight, spacing, compass, bar } = translation
+
+    return useMemo(
+        () => deletedOn && deletedOn.id !== bar.id
+            ? { ...translation, ...rollGeometry(trackHeight, spacing, deletedOn, compass) }
+            : translation,
+        [deletedOn, bar, translation, trackHeight, spacing, compass]
+    )
+}
+
 export const getEditBBoxes = (
     edit: Edit,
     edition: Edition,
@@ -232,14 +265,16 @@ interface EditHullProps {
     id: string
     boxes: Box[]
     colours: EditColours
+    /** How far the hull keeps from the boxes. */
+    padding: Svg
     focus?: Focus
     label?: string
     onClick?: MouseEventHandler
 }
 
 /** The hull around one side of an edit, the inserted symbols or the deleted ones. */
-const EditHull = ({ id, boxes, colours, focus, label, onClick }: EditHullProps) => {
-    const { points, hull } = getHull(boxes)
+const EditHull = ({ id, boxes, colours, padding, focus, label, onClick }: EditHullProps) => {
+    const { points, hull } = getHull(boxes, padding)
     const bbox = getBoundingBox(points)
     const { reach, fillOpacity, outline } = lookOf(bbox.width, focus)
 
@@ -287,22 +322,18 @@ interface EditViewProps {
      * from: they set down the text rather than change it.
      */
     atRoot?: boolean;
+    /**
+     * By how many rings the hull is drawn wider than its own margin, so
+     * that it shows round the edits lying over it, see `stacked`.
+     */
+    rings?: number;
     onClick?: MouseEventHandler;
 }
 
-export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, onClick }: EditViewProps) => {
+export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, rings = 0, onClick }: EditViewProps) => {
     const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
-    const { trackHeight, spacing, compass, bar } = translation
-
-    // Laying the other bar out the same way puts a deleted command where
-    // its own scale had it, which is what the arrow should start from.
-    const deletedIn = useMemo(
-        () => deletedOn && deletedOn.id !== bar.id
-            ? { ...translation, ...rollGeometry(trackHeight, spacing, deletedOn, compass) }
-            : translation,
-        [deletedOn, bar, translation, trackHeight, spacing, compass]
-    )
+    const deletedIn = useDeletedIn(deletedOn)
 
     if (!edition) return null
 
@@ -392,6 +423,8 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, onClick }:
         )
     }
 
+    const padding = add(hullPadding, scale(ring, rings))
+
     return (
         <g data-motivation={edit.motivation}>
 
@@ -400,6 +433,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, onClick }:
                     id={hullId(edit, 'insert')}
                     boxes={insertions}
                     colours={insertion}
+                    padding={padding}
                     focus={focus}
                     label={editTypeLabel(edit.editType)}
                     onClick={onClick}
@@ -411,6 +445,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, onClick }:
                     id={hullId(edit, 'delete')}
                     boxes={deletions}
                     colours={deletion}
+                    padding={padding}
                     focus={focus}
                     onClick={onClick}
                 />

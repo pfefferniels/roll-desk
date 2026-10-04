@@ -4,15 +4,18 @@ import { Box, cornersOf } from "../geometry/drawing";
 import { Svg, svg } from "../canvas/units";
 import { Glow, glowRings, settling } from "../geometry/glow";
 
+/** How far a hull keeps from the boxes it is drawn round. */
+export const hullPadding = svg(3);
+
 /**
  *
  * @param ids SVG must contain elements with matching data-id attributes
  * @param svg SVG to search for elements in
  * @returns points and hull of the convex hull of the elements
  */
-export const getHull = (boxes: Box[], hullPadding: Svg = svg(3)) => {
+export const getHull = (boxes: Box[], padding: Svg = hullPadding) => {
     const points = boxes.flatMap(cornersOf);
-    return { points, hull: roundedHull(points, hullPadding) };
+    return { points, hull: roundedHull(points, padding) };
 };
 
 interface HullProps {
