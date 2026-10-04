@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
 import { Ribbon } from "../desk/Ribbon"
 import { v4 } from "uuid"
@@ -14,7 +14,7 @@ import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../desk/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
-import { HeldMotivation, isHeldMotivation } from "../edition/motivation"
+import { HeldMotivation, isHeldMotivation, motivationIdFor } from "../edition/motivation"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "../accounts/Arguable"
 import { nameOf } from "../edition/names"
@@ -285,7 +285,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     onClose={() => setEditsToMotivate(undefined)}
                     onDone={(chosen) => {
                         const motivation: Motivation = typeof chosen === 'string'
-                            ? { type: 'motivation', id: v4(), note: chosen }
+                            ? { type: 'motivation', id: motivationIdFor(chosen, idsIn(edition)), note: chosen }
                             : chosen
 
                         apply((d) => {
