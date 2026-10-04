@@ -497,7 +497,7 @@ export const Desk = ({ show }: DeskProps) => {
 
             {panelOpen && (
                 <Paper sx={{ ...deskPanel, padding: 2 }}>
-                    <Stack direction='row' alignItems='center' justifyContent='space-between'>
+                    <Stack direction='row' alignItems='center'>
                         <Tooltip title={onTitlePage ? 'On the title page' : 'Back to the title page'}>
                             <span>
                                 <IconButton
@@ -511,6 +511,29 @@ export const Desk = ({ show }: DeskProps) => {
                             </span>
                         </Tooltip>
 
+                        <Tabs
+                            value={currentTab}
+                            onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
+                            sx={{ flexGrow: 1 }}
+                        >
+                            <Tab value='stemma' label='Stemma' />
+                            <Tab value='sources' label='Sources' />
+                            {hasProblems && (
+                                <Tab
+                                    value='problems'
+                                    label={
+                                        <Badge
+                                            badgeContent={troubles}
+                                            color='error'
+                                            sx={{ pr: 1.5 }}
+                                        >
+                                            Problems
+                                        </Badge>
+                                    }
+                                />
+                            )}
+                        </Tabs>
+
                         <Tooltip title='Fold the panel away'>
                             <IconButton
                                 size='small'
@@ -521,28 +544,6 @@ export const Desk = ({ show }: DeskProps) => {
                             </IconButton>
                         </Tooltip>
                     </Stack>
-
-                    <Tabs
-                        value={currentTab}
-                        onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
-                    >
-                        <Tab value='stemma' label='Stemma' />
-                        <Tab value='sources' label='Sources' />
-                        {hasProblems && (
-                            <Tab
-                                value='problems'
-                                label={
-                                    <Badge
-                                        badgeContent={troubles}
-                                        color='error'
-                                        sx={{ pr: 1.5 }}
-                                    >
-                                        Problems
-                                    </Badge>
-                                }
-                            />
-                        )}
-                    </Tabs>
 
                     <TabPanel current={currentTab} tab='stemma'>
                         <TabColumn>
