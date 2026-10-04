@@ -58,8 +58,7 @@ export const About = () => {
                         <Typography variant='body2'>
                             The piano sounds with the Salamander Grand Piano samples by
                             Alexander Holm (CC BY 3.0), loaded from tambien.github.io.
-                            Scans are loaded from where the edition names them, Stanford&#8217;s
-                            among them.
+                            Scans are loaded from where the edition names them.
                         </Typography>
                         <Typography variant='body2'>
                             <Link href={repository} target='_blank' rel='noopener'>Source</Link>
