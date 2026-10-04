@@ -82,7 +82,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                 </AccountSection>
             )}
 
-            <AccountSection title='Witnesses'>
+            <AccountSection title='Witnesses' folded>
                 {/* Where only indirect witnesses are left, the reservation says so. */}
                 {witnesses.length === 0 && indirect.length === 0 && (
                     <Typography variant='body2' color='text.secondary'>No copy bears witness to it.</Typography>
