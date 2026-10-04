@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Badge, Box, Button, IconButton, Link, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
+import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
@@ -14,7 +14,7 @@ import { Svg, svg, svgPerMm } from "../canvas/units"
 import { LaneHeights, lanesOf } from "../canvas/rollGeometry"
 import { announcePlayback } from "../playback/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../playback/reproducingSystems'
-import { Add, ChevronLeft, ChevronRight, Clear, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
+import { Add, ChevronLeft, ChevronRight, Clear, Download, Home, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { SourceStack } from "../sources/SourceStack"
@@ -497,30 +497,19 @@ export const Desk = ({ show }: DeskProps) => {
 
             {panelOpen && (
                 <Paper sx={{ ...deskPanel, padding: 2 }}>
-                    <Stack direction='row' alignItems='center' spacing={1}>
-                        {/* The title wraps within the panel rather than widening it. */}
-                        <Box sx={{ flexGrow: 1, minWidth: 0, contain: 'inline-size' }}>
-                            {onTitlePage
-                                ? (
-                                    <Typography variant='subtitle2'>
-                                        {edition.title}
-                                    </Typography>
-                                )
-                                : (
-                                    <Tooltip title='Back to the title page' describeChild>
-                                        <Link
-                                            component='button'
-                                            variant='subtitle2'
-                                            color='inherit'
-                                            underline='hover'
-                                            onClick={showTitlePage}
-                                            sx={{ textAlign: 'left' }}
-                                        >
-                                            {edition.title}
-                                        </Link>
-                                    </Tooltip>
-                                )}
-                        </Box>
+                    <Stack direction='row' alignItems='center' justifyContent='space-between'>
+                        <Tooltip title={onTitlePage ? 'On the title page' : 'Back to the title page'}>
+                            <span>
+                                <IconButton
+                                    size='small'
+                                    disabled={onTitlePage}
+                                    aria-label='Back to the title page'
+                                    onClick={showTitlePage}
+                                >
+                                    <Home />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
 
                         <Tooltip title='Fold the panel away'>
                             <IconButton
