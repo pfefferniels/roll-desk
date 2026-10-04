@@ -1,6 +1,7 @@
 import { DateAssignment, dateOf, earliestOf, latestOf } from 'linked-rolls'
 
-const day = (date: Date) => new Intl.DateTimeFormat().format(date)
+/** The day the date falls on, as the reader's locale writes it. */
+export const day = (date: Date) => new Intl.DateTimeFormat().format(date)
 
 /**
  * What a date states, as a line: the day it falls within, or the bounds

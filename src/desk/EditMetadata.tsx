@@ -5,6 +5,7 @@ import { EditionContext } from '../edition/EditionContext';
 import { assignDate, DateAssignment, Editor, EditorialRole, editorialRoles } from 'linked-rolls';
 import { DateField } from '../fields/DateField';
 import { DateStatementField } from '../fields/DateStatementField';
+import { licenses } from '../edition/licenses';
 
 /** The two jobs the dialog does: naming a new edition, or revising the metadata of one. */
 export type MetadataJob = 'create' | 'edit'
@@ -15,15 +16,6 @@ interface EditMetadataProps {
 }
 
 const capitalized = (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
-
-const licenses = [
-  { name: 'Creative Commons Attribution 4.0', url: 'https://creativecommons.org/licenses/by/4.0/' },
-  { name: 'Creative Commons Attribution-ShareAlike 4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0/' },
-  { name: 'Creative Commons Attribution-NoDerivatives 4.0', url: 'https://creativecommons.org/licenses/by-nd/4.0/' },
-  { name: 'Creative Commons Attribution-NonCommercial 4.0', url: 'https://creativecommons.org/licenses/by-nc/4.0/' },
-  { name: 'Creative Commons Attribution-NonCommercial-ShareAlike 4.0', url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/' },
-  { name: 'Creative Commons Attribution-NonCommercial-NoDerivatives 4.0', url: 'https://creativecommons.org/licenses/by-nc-nd/4.0/' },
-];
 
 const EditMetadata = ({ job, onClose }: EditMetadataProps) => {
   const { apply, edition } = useContext(EditionContext)
