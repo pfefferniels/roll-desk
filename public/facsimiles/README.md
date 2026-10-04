@@ -8,7 +8,7 @@ the scans of its copies.
 | Directory | Copy | Roll | Scanned by |
 |---|---|---|---|
 | `WR0225_02` | Wi1 | red T-100, collection of Marc Widuch | Marc Widuch, 12 April 2023 |
-| `WelteLicensee_225` | Ch1 | Licensee, collection unknown | Spencer Chase, 6 March 2004; the file was passed on by Bill Luecht |
+| `WelteLicensee_225` | Ch1 | Licensee, collection unknown | Spencer Chase, 6 March 2004; the file was passed on by Bill Luecht on 12 September 2026 |
 | `WelteT98_225` | Bo1 | green T-98, collection of Peter Both | Julian Dyer, May 2015 |
 
 The scans are not covered by the MIT licence of this repository. The
