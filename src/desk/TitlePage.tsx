@@ -17,6 +17,24 @@ const OutLink = ({ href, children }: { href: string, children: ReactNode }) => (
     </Link>
 )
 
+/** The authorities a record may come from, by the shape of its URI. */
+const authorities = [
+    { name: 'GND', uri: /^https?:\/\/d-nb\.info\/gnd\/([^/]+)$/ },
+    { name: 'Wikidata', uri: /^https?:\/\/www\.wikidata\.org\/(?:entity|wiki)\/(Q\d+)$/ },
+    { name: 'GeoNames', uri: /^https?:\/\/sws\.geonames\.org\/(\d+)\/?$/ },
+    { name: 'LCNAF', uri: /^https?:\/\/id\.loc\.gov\/authorities\/names\/([^/]+)$/ },
+    { name: 'ORCID', uri: /^https?:\/\/orcid\.org\/([\dX-]+)$/ }
+]
+
+/** An authority record named by its authority and number, "GND 300145322", or else by its URI. */
+const recordLabel = (uri: string) => {
+    for (const { name, uri: shape } of authorities) {
+        const [, id] = shape.exec(uri) ?? []
+        if (id) return `${name} ${id}`
+    }
+    return uri
+}
+
 /** The name, leading to its authority record where the edition gives one. */
 const NameOf = ({ named }: { named: Named }) => {
     const [record] = named.sameAs.filter(uri => uri.trim())
@@ -108,7 +126,7 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
                 </Field>
                 {recorded.playing.trim() && (
                     <Field label='Work'>
-                        <OutLink href={recorded.playing}>{recorded.playing}</OutLink>
+                        <OutLink href={recorded.playing}>{recordLabel(recorded.playing)}</OutLink>
                     </Field>
                 )}
                 <Field label='Recorded'>
