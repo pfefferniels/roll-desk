@@ -12,6 +12,9 @@ import type { UserSelection } from "../desk/RollDesk"
 /** The address of the entity under the id, which a link can carry as its href. */
 export const pathOf = (id: string) => `/${encodeURIComponent(id)}`
 
+/** The address of the edition's title page, which the desk shows with nothing open. */
+export const titlePath = '/'
+
 /** The entity an address names, or nothing where it names none. */
 export const entityOfPath = (pathname: string): string | undefined => {
     const [first, second, ...rest] = pathname.split('/').filter(segment => segment.length > 0)
@@ -41,7 +44,8 @@ const namesOneMotivation = (edition: Edition, id: string) =>
 /**
  * The address of what the desk shows: the one entity selected, or else
  * the version or copy it lies on. Nothing where the desk shows nothing,
- * so that an address is never written over with an empty one.
+ * so that an address is never written over with an empty one; the title
+ * page is gone to by its own address instead.
  *
  * A motivation whose id other versions write as well falls back to its
  * version, since the id alone would send a reader to another roll.

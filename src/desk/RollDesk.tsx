@@ -1,12 +1,11 @@
 'use client'
 
-import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
+import { AppBar, Badge, Box, Button, IconButton, Link, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { Editor, HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
+import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { onsetToMiddleOf, spotlight, spotlightWhenDrawn } from "./spotlight"
-import { deskPath, entityOfPath, idNamed, idOfMark, linkTarget, LinkTarget } from "../edition/addresses"
-import { dateStatement } from "../edition/dateStatement"
+import { deskPath, entityOfPath, idNamed, idOfMark, linkTarget, LinkTarget, titlePath } from "../edition/addresses"
 import { OpenContext } from "./OpenContext"
 import { useSnackbar } from "./SnackbarContext"
 import { Cite } from "./Cite"
@@ -15,7 +14,7 @@ import { Svg, svg, svgPerMm } from "../canvas/units"
 import { LaneHeights, lanesOf } from "../canvas/rollGeometry"
 import { announcePlayback } from "../playback/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../playback/reproducingSystems'
-import { Add, ChevronLeft, ChevronRight, Clear, Create, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
+import { Add, ChevronLeft, ChevronRight, Clear, Download, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { SourceStack } from "../sources/SourceStack"
@@ -36,12 +35,12 @@ import { rollLength } from "../canvas/rollLength"
 import { blendAt, workingPosition } from "../facsimile/facsimileBlend"
 import { zoomRange } from "../canvas/zoom"
 import { Welcome } from "./Welcome"
+import { TitlePage } from "./TitlePage"
 import { RollCopyDialog } from "../copy/RollCopyDialog"
 import { Stemma } from "../stemma/Stemma"
 import { AccountPanel, TabColumn } from "../accounts/Account"
 import { VersionAccount } from "../accounts/VersionAccount"
 import { CopyAccountDialog } from "../accounts/CopyAccountDialog"
-import { Arguable } from "../accounts/Arguable"
 import { RollRange, SelectionContext } from "./SelectionContext"
 import { EditionContext, emptyEdition } from "../edition/EditionContext"
 import { usePiano } from "react-pianosound"
@@ -56,7 +55,7 @@ import { CopyFacsimile } from "../facsimile/CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "../constraints/ConstraintsPanel"
 import { isHeldMotivation } from "../edition/motivation"
 
-type DeskTab = 'info' | 'stemma' | 'sources' | 'problems'
+type DeskTab = 'stemma' | 'sources' | 'problems'
 
 interface TabPanelProps {
     children?: React.ReactNode
@@ -103,9 +102,6 @@ const copyLayout = {
     lanes: lanesOf(svg(3), svg(10)),
     spacing: svg(60)
 }
-
-const namedEditors = (editors: Editor[] = []) =>
-    editors.map(editor => `${editor.name} (${editor.role})`).join(', ')
 
 export type EventDimension = {
     vertical: VerticalSpan,
@@ -178,7 +174,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [emulationOptions, setEmulationOptions] = useState<EmulationOptions>()
 
-    const [currentTab, setCurrentTab] = useState<DeskTab>('info')
+    const [currentTab, setCurrentTab] = useState<DeskTab>('stemma')
     /** The panel folds away where the roll under it is what matters. */
     const [panelOpen, setPanelOpen] = useState(true)
 
@@ -186,7 +182,7 @@ export const Desk = ({ show }: DeskProps) => {
     const hasProblems = troubles > 0
 
     // The problems tab goes with the last problem, taking the choice of it along.
-    if (!hasProblems && currentTab === 'problems') setCurrentTab('info')
+    if (!hasProblems && currentTab === 'problems') setCurrentTab('stemma')
 
     const currentVersion = edition?.versions.find(v => v.id === currentVersionId)
     const currentCopy = edition?.copies.find(c => c.id === currentCopyId)
@@ -204,6 +200,13 @@ export const Desk = ({ show }: DeskProps) => {
     /** The entity the desk has taken its address from, so that neither side of the address repeats the other's work. */
     const shown = useRef<string | undefined>(undefined)
     const [pendingSpotlight, setPendingSpotlight] = useState<string>()
+
+    /** Takes what lies on the desk off it, which leaves the title page. */
+    const clearDesk = useCallback(() => {
+        setCurrentVersionId(undefined)
+        setCurrentCopyId(undefined)
+        setSelection([])
+    }, [])
 
     /** Opens what the entity lies on and marks it, or says that the edition holds nothing under the id. */
     const open = useCallback((id: string): LinkTarget | undefined => {
@@ -225,8 +228,8 @@ export const Desk = ({ show }: DeskProps) => {
         }
         else {
             // Nothing that lies on the roll: a statement of the edition
-            // about itself, which the info tab is where to read.
-            setCurrentTab('info')
+            // about itself, which is read on its title page.
+            clearDesk()
         }
 
         const mark = 'mark' in target ? target.mark : undefined
@@ -235,7 +238,7 @@ export const Desk = ({ show }: DeskProps) => {
             setPendingSpotlight(idOfMark(mark))
         }
         return target
-    }, [edition, setMessage])
+    }, [edition, setMessage, clearDesk])
 
     // A link to an entity opens what it lies on and marks it.
     useEffect(() => {
@@ -251,6 +254,15 @@ export const Desk = ({ show }: DeskProps) => {
         if (target?.on === 'version') setCurrentTab('stemma')
         if (target?.on === 'copy') setCurrentTab('sources')
     }, [open])
+
+    /**
+     * Turns to the title page. The published desk gives it its own address,
+     * since an empty desk leaves the address as it was.
+     */
+    const showTitlePage = () => {
+        clearDesk()
+        if (viewOnly) void navigate(titlePath, { replace: true })
+    }
 
     const shownPath = edition && deskPath(edition, { versionId: currentVersionId, copyId: currentCopyId, selection })
 
@@ -357,9 +369,9 @@ export const Desk = ({ show }: DeskProps) => {
         )
     }
 
-    const editorLine = namedEditors(edition.creation.editors)
-
     const shownEntity = shownPath && entityOfPath(shownPath)
+
+    const onTitlePage = !currentVersion && !currentCopy
 
     const viewControl = (
         <Paper sx={{
@@ -485,30 +497,30 @@ export const Desk = ({ show }: DeskProps) => {
 
             {panelOpen && (
                 <Paper sx={{ ...deskPanel, padding: 2 }}>
-                    <Stack direction='row' alignItems='center'>
-                        <Tabs
-                            value={currentTab}
-                            onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
-                            sx={{ flexGrow: 1 }}
-                        >
-                            <Tab value='info' label='Info' />
-                            <Tab value='stemma' label='Stemma' />
-                            <Tab value='sources' label='Sources' />
-                            {hasProblems && (
-                                <Tab
-                                    value='problems'
-                                    label={
-                                        <Badge
-                                            badgeContent={troubles}
-                                            color='error'
-                                            sx={{ pr: 1.5 }}
+                    <Stack direction='row' alignItems='center' spacing={1}>
+                        {/* The title wraps within the panel rather than widening it. */}
+                        <Box sx={{ flexGrow: 1, minWidth: 0, contain: 'inline-size' }}>
+                            {onTitlePage
+                                ? (
+                                    <Typography variant='subtitle2'>
+                                        {edition.title}
+                                    </Typography>
+                                )
+                                : (
+                                    <Tooltip title='Back to the title page' describeChild>
+                                        <Link
+                                            component='button'
+                                            variant='subtitle2'
+                                            color='inherit'
+                                            underline='hover'
+                                            onClick={showTitlePage}
+                                            sx={{ textAlign: 'left' }}
                                         >
-                                            Problems
-                                        </Badge>
-                                    }
-                                />
-                            )}
-                        </Tabs>
+                                            {edition.title}
+                                        </Link>
+                                    </Tooltip>
+                                )}
+                        </Box>
 
                         <Tooltip title='Fold the panel away'>
                             <IconButton
@@ -521,31 +533,27 @@ export const Desk = ({ show }: DeskProps) => {
                         </Tooltip>
                     </Stack>
 
-                    <TabPanel current={currentTab} tab='info'>
-                        <div style={{ float: 'left', padding: 8, width: 'fit-content' }}>
-                            <b>{edition.title}</b>
-                            <br />
-                            {edition.roll.catalogueNumber}{' '}
-
-                            <Arguable
-                                path={['roll', 'recordingEvent', 'date'] as const}
-                            >
-                                ({dateStatement(edition.roll.recordingEvent.date)})
-                            </Arguable>
-
-                            {editorLine && (
-                                <>
-                                    <br />
-                                    ed. {editorLine}
-                                </>
-                            )}
-                        </div>
-                        <div style={{ float: 'right', display: viewOnly ? 'none' : 'block' }}>
-                            <IconButton onClick={() => setMetadataJob('edit')}>
-                                <Create />
-                            </IconButton>
-                        </div>
-                    </TabPanel>
+                    <Tabs
+                        value={currentTab}
+                        onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
+                    >
+                        <Tab value='stemma' label='Stemma' />
+                        <Tab value='sources' label='Sources' />
+                        {hasProblems && (
+                            <Tab
+                                value='problems'
+                                label={
+                                    <Badge
+                                        badgeContent={troubles}
+                                        color='error'
+                                        sx={{ pr: 1.5 }}
+                                    >
+                                        Problems
+                                    </Badge>
+                                }
+                            />
+                        )}
+                    </Tabs>
 
                     <TabPanel current={currentTab} tab='stemma'>
                         <TabColumn>
@@ -683,42 +691,48 @@ export const Desk = ({ show }: DeskProps) => {
                 </Paper>
             )}
 
-            <Box overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
-                <PinchZoomProvider
-                    bar={deskBar}
-                    zoom={stretchZoom}
-                    rollLength={length}
-                    setZoom={jump}
-                    viewport={viewport}
-                    gesturing={gesturing}
-                    {...(currentVersion ? { ...versionLayout, lanes, compass } : copyLayout)}
-                >
-                    <Canvas stageRef={stageRef}>
-                        {currentVersion
-                            ? (
-                                <VersionView
-                                    onClick={e => setSelection(prev => [...prev, e])}
-                                    version={currentVersion}
-                                    problems={problems}
-                                    emulationOptions={emulationOptions}
-                                    onResizeLane={resizeLane}
-                                    playing={isPlaying}
-                                />)
-                            : currentCopy && (
-                                <CopyFacsimile
-                                    key={`copy_${currentCopyId}`}
-                                    copy={currentCopy}
-                                    active={true}
-                                    color="#444"
-                                    blend={blendAt(blendPosition)}
-                                    onClick={e => setSelection(prev => [...prev, e])}
-                                    onSelectionDone={dimension => setSelection(dimension ? [dimension] : [])}
-                                />
-                            )
-                        }
-                    </Canvas>
-                </PinchZoomProvider>
-            </Box>
+            {onTitlePage && (
+                <TitlePage onEdit={viewOnly ? undefined : () => setMetadataJob('edit')} />
+            )}
+
+            {!onTitlePage && (
+                <Box overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
+                    <PinchZoomProvider
+                        bar={deskBar}
+                        zoom={stretchZoom}
+                        rollLength={length}
+                        setZoom={jump}
+                        viewport={viewport}
+                        gesturing={gesturing}
+                        {...(currentVersion ? { ...versionLayout, lanes, compass } : copyLayout)}
+                    >
+                        <Canvas stageRef={stageRef}>
+                            {currentVersion
+                                ? (
+                                    <VersionView
+                                        onClick={e => setSelection(prev => [...prev, e])}
+                                        version={currentVersion}
+                                        problems={problems}
+                                        emulationOptions={emulationOptions}
+                                        onResizeLane={resizeLane}
+                                        playing={isPlaying}
+                                    />)
+                                : currentCopy && (
+                                    <CopyFacsimile
+                                        key={`copy_${currentCopyId}`}
+                                        copy={currentCopy}
+                                        active={true}
+                                        color="#444"
+                                        blend={blendAt(blendPosition)}
+                                        onClick={e => setSelection(prev => [...prev, e])}
+                                        onSelectionDone={dimension => setSelection(dimension ? [dimension] : [])}
+                                    />
+                                )
+                            }
+                        </Canvas>
+                    </PinchZoomProvider>
+                </Box>
+            )}
 
             <EmulationSettingsDialog
                 open={emulationSettingsDialogOpen}

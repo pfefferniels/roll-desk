@@ -15,7 +15,7 @@ import { blobIdOf, publishedEdition, PublicationContext, ReadPublication } from 
 /**
  * The published edition, opened on whatever entity the address names:
  * the path of an entity's IRI, its id, shows that entity, and the bare
- * `/` the roll.
+ * `/` the edition's title page.
  */
 const PublishedDesk = () => {
   const { pathname } = useLocation()
