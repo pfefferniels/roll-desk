@@ -10,6 +10,7 @@ import { dateStatement } from "../edition/dateStatement"
 import { OpenContext } from "./OpenContext"
 import { useSnackbar } from "./SnackbarContext"
 import { Cite } from "./Cite"
+import { About } from "./About"
 import { Svg, svg, svgPerMm } from "../canvas/units"
 import { LaneHeights, lanesOf } from "../canvas/rollGeometry"
 import { announcePlayback } from "../playback/usePlaybackMark"
@@ -389,6 +390,7 @@ export const Desk = ({ show }: DeskProps) => {
                     onClick={playVersion}>
                     {isPlaying ? <Stop /> : <PlayArrow />}
                 </IconButton>
+                <About />
             </Stack>
         </Paper>
     )
@@ -456,6 +458,9 @@ export const Desk = ({ show }: DeskProps) => {
                         </IconButton>
                     </Ribbon>
                 </RibbonGroup>
+                <Box sx={{ ml: 'auto' }}>
+                    <About />
+                </Box>
             </Toolbar>
         </AppBar>)
 

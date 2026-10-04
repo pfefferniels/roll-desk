@@ -1,5 +1,25 @@
+import { execFileSync } from 'node:child_process';
 import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+
+/**
+ * The commit the desk is built from and when it was made, for the About
+ * dialog (`src/desk/build.ts`). Read off git rather than the clock, so
+ * that two builds of one commit stay the same build. Null outside a git
+ * checkout.
+ */
+const buildOfCheckout = () => {
+    try {
+        const [commit, date] = execFileSync('git', ['log', '-1', '--format=%H %cI'], {
+            encoding: 'utf-8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim().split(' ');
+        return commit && date ? { commit, date } : null;
+    }
+    catch {
+        return null;
+    }
+};
 
 /**
  * `/editor` as a file GitHub Pages can find.
@@ -118,6 +138,9 @@ export default defineConfig(() => {
     return {
         resolve: {
             dedupe: ['react', 'react-dom'],
+        },
+        define: {
+            __BUILD__: JSON.stringify(buildOfCheckout()),
         },
         build: {
             outDir: 'build',

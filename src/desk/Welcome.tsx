@@ -1,6 +1,7 @@
 import { Box, Button, Stack } from "@mui/material";
 import { ImportButton } from "./ImportButton";
 import { Create } from "@mui/icons-material";
+import { About } from "./About";
 
 interface WelcomeProps {
     onCreate: () => void
@@ -46,6 +47,9 @@ export const Welcome = ({ onCreate }: WelcomeProps) => {
                         Create
                     </Button>
                 </Stack>
+                <Box sx={{ mt: 2 }}>
+                    <About />
+                </Box>
             </Box>
         </Box>
     );
