@@ -58,6 +58,22 @@ describe('what a citation names', () => {
         expect(citationIn('de', ofNote)).toMatch(/^Note in Version \S+, in: /)
     })
 
+    it('names an edit by what it does and where it begins', () => {
+        const edition = published()
+        // Edit b takes away the forzando on at 990 mm that edit a put in, as a redundancy.
+        const editB = edition.versions[1]?.edits?.[0]
+        if (editB) editB.editType = 'remove-redundancy'
+        const ofEdit = (id: string) => ({ ...ofVersionB(edition), part: partNamed(edition, id) })
+
+        // That forzando on is also the first thing edit a touches.
+        expect(citationIn('en', ofEdit('edit-a'))).toMatch(/^Edit at 99\.0 cm on version \S+, in: /)
+        expect(citationIn('de', ofEdit('edit-a'))).toMatch(/^Bearbeitungsschritt bei 99,0 cm in Version \S+, in: /)
+
+        const siglum = versionLabel(edition, ids.b)
+        expect(citationIn('en', ofEdit('edit-b'))).toMatch(new RegExp(`^Removed redundancy at 99\\.0 cm on version ${siglum}, in: `))
+        expect(citationIn('de', ofEdit('edit-b'))).toMatch(new RegExp(`^Entfernen einer Redundanz bei 99,0 cm in Version ${siglum}, in: `))
+    })
+
     it('names nothing the edition does not hold', () => {
         expect(partNamed(published(), 'nowhere')).toBeUndefined()
     })

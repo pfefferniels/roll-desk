@@ -6,7 +6,7 @@
  * what they saw, since the edition goes on changing between versions.
  */
 
-import { copyIn, Edition, getAt, pathIn, versionIn } from "linked-rolls"
+import { copyIn, Edit, EditType, Edition, getAt, isEdit, Millimeters, onsetOf, pathIn, symbolsIn, versionIn } from "linked-rolls"
 import { linkTarget } from "./addresses"
 import { isMotivation } from "./motivation"
 import { copyLabel, versionLabel } from "./names"
@@ -20,6 +20,10 @@ export interface Part {
     kind: string
     /** What a version or a copy is called. */
     siglum?: string
+    /** What an edit does, where it is classified. */
+    editType?: EditType
+    /** Where an edit begins on the roll: the first onset among what it inserts and deletes. */
+    at?: Millimeters
     /** The version or copy the entity stands on. */
     on?: { kind: 'version' | 'copy', siglum: string }
 }
@@ -44,6 +48,19 @@ const typeOf = (entity: unknown): string => {
         : 'entity'
 }
 
+/**
+ * What tells an edit from the others on its version: what it does and
+ * where it begins, since "Edit on version R2" names none of them.
+ */
+const editDetailsOf = (edition: Edition, edit: Edit): Pick<Part, 'editType' | 'at'> => {
+    const onsets = [...(edit.insert ?? []), ...symbolsIn(edition, edit.delete ?? [])]
+        .flatMap(symbol => onsetOf(edition, symbol) ?? [])
+    return {
+        ...(edit.editType ? { editType: edit.editType } : {}),
+        ...(onsets.length > 0 ? { at: Math.min(...onsets) as Millimeters } : {})
+    }
+}
+
 /** What is cited under the id, or nothing where the edition holds nothing under it. */
 export const partNamed = (edition: Edition, id: string): Part | undefined => {
     if (versionIn(edition, id)) return { kind: 'version', siglum: versionLabel(edition, id) }
@@ -55,8 +72,10 @@ export const partNamed = (edition: Edition, id: string): Part | undefined => {
     const target = linkTarget(edition, id)
     if (!path || !target) return undefined
 
-    const kind = typeOf(getAt<unknown>(path, edition))
-    if (target.on === 'version') return { kind, on: { kind: 'version', siglum: versionLabel(edition, target.versionId) } }
+    const entity = getAt<unknown>(path, edition)
+    const kind = typeOf(entity)
+    const details = isEdit(entity) ? editDetailsOf(edition, entity) : {}
+    if (target.on === 'version') return { kind, ...details, on: { kind: 'version', siglum: versionLabel(edition, target.versionId) } }
     if (target.on === 'copy') {
         const on = copyIn(edition, target.copyId)
         return on ? { kind, on: { kind: 'copy', siglum: copyLabel(on) } } : { kind }
@@ -75,15 +94,48 @@ const germanKinds: Record<string, string> = {
     version: 'Version',
     copy: 'Rollenkopie',
     HoleChain: 'Stanzung',
-    belief: 'Annahme'
+    belief: 'Annahme',
+    edit: 'Bearbeitungsschritt'
+}
+
+/** An edit by what it does, in the words of the dissertation's classification for German. */
+const editTypes: Record<Language, Record<EditType, string>> = {
+    en: {
+        'additional-accent': 'Additional accent',
+        'add-redundancy': 'Added redundancy',
+        'remove-redundancy': 'Removed redundancy',
+        recoding: 'Recoding',
+        shift: 'Shift',
+        'correct-error': 'Correction',
+        shorten: 'Shortening',
+        prolong: 'Prolongation'
+    },
+    de: {
+        'additional-accent': 'Hinzufügung eines Akzents',
+        'add-redundancy': 'Hinzufügung einer Redundanz',
+        'remove-redundancy': 'Entfernen einer Redundanz',
+        recoding: 'Umstanzung',
+        shift: 'Versatz',
+        'correct-error': 'Korrektur eines Fehlers',
+        shorten: 'Kürzung',
+        prolong: 'Verlängerung'
+    }
+}
+
+/** "214.9 cm"; "214,9 cm". */
+const centimetresIn = (language: Language, at: Millimeters) => {
+    const cm = (Math.round(at) / 10).toFixed(1)
+    return `${language === 'de' ? cm.replace('.', ',') : cm} cm`
 }
 
 const kindIn = (language: Language, kind: string) =>
     language === 'de' ? germanKinds[kind] ?? inWords(kind) : inWords(kind)
 
-/** "Version R2", "Note on version R4"; "Stanzung auf Rollenkopie St1". */
-const partIn = (language: Language, { kind, siglum, on }: Part): string => {
-    const named = siglum ? `${kindIn(language, kind)} ${siglum}` : kindIn(language, kind)
+/** "Version R2", "Shift at 214.9 cm on version R2"; "Stanzung auf Rollenkopie St1", "Versatz bei 214,9 cm in Version R2". */
+const partIn = (language: Language, { kind, siglum, editType, at, on }: Part): string => {
+    const what = editType ? editTypes[language][editType] : kindIn(language, kind)
+    const called = siglum ? `${what} ${siglum}` : what
+    const named = at === undefined ? called : `${called} ${language === 'en' ? 'at' : 'bei'} ${centimetresIn(language, at)}`
     if (!on) return named
     if (language === 'en') return `${named} on ${on.kind} ${on.siglum}`
     return `${named} ${on.kind === 'version' ? 'in' : 'auf'} ${kindIn(language, on.kind)} ${on.siglum}`
