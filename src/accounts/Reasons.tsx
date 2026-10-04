@@ -6,6 +6,7 @@ import { EditionContext } from "../edition/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../edition/reasons"
 import { CertaintyIcon } from "./CertaintyIcon"
 import { EntityLink } from "./EntityLink"
+import { Name } from "./Name"
 import { NoteText } from "./NoteText"
 
 const CitationLink = ({ citation }: { citation: Citation }) => {
@@ -61,12 +62,20 @@ const Comprehended = ({ reason }: { reason: MeaningComprehension }) => {
 }
 
 const Reason = ({ reason }: { reason: AnyArgumentation }) => {
-    const actor = actorOf(reason)
-    const heading = [reasonLabels[reason.type], actor && `by ${actor}`].filter(Boolean).join(' ')
+    const label = reasonLabels[reason.type]
+    // The editor writes an actor nobody named as a blank name.
+    const actor = actorOf(reason) ? reason.actor : undefined
 
     return (
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-            {heading && <Typography variant='caption' color='text.secondary'>{heading}</Typography>}
+            {(label || actor) && (
+                <Typography variant='caption' color='text.secondary'>
+                    {label}
+                    {label && actor && ' '}
+                    {/* A belief is adopted from whoever held it, which says who already. */}
+                    {actor && <>{reason.type !== 'beliefAdoption' && 'by '}<Name named={actor} /></>}
+                </Typography>
+            )}
             {reason.note && (
                 <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
                     <NoteText note={reason.note} />

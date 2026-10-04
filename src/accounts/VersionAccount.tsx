@@ -9,6 +9,7 @@ import { dateStatement } from "../edition/dateStatement"
 import { DerivationScatter } from "./DerivationScatter"
 import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
+import { Name } from "./Name"
 import { ReservationNotes } from "./Reservations"
 
 /**
@@ -70,7 +71,7 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                     {creation.procedure && <HeldStatement>{nameOf(creation.procedure)}</HeldStatement>}
                     {creation.actor && (
                         <HeldStatement belief={creation.actor['@annotation']?.belief}>
-                            by {creation.actor.name}
+                            by <Name named={creation.actor} />
                         </HeldStatement>
                     )}
                     {creation.date && (

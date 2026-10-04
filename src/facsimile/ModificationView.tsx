@@ -6,6 +6,7 @@ import { chaikin } from "../geometry/concaveHull";
 import { apart, convexHull, cornersOf, hullToSvgPath, middleOf, minus, along, padded, Point } from "../geometry/drawing";
 import { Svg, svg } from "../canvas/units";
 import { Arguable } from "../accounts/Arguable";
+import { Name } from "../accounts/Name";
 import { boxOf, Translation } from "../canvas/rollGeometry";
 
 /** A feature once it is known where on the drawing it was drawn, and how big. */
@@ -78,7 +79,7 @@ const ModificationGroup = ({ features, metadata, ...svgProps }: ModificationGrou
                     {metadata.actor && (
                         <div>
                             <Arguable path={pathIn(edition, metadata.actor["@annotation"]?.id || '')?.slice(0, -1) || []}>
-                                actor: <b>{metadata.actor.name}</b>
+                                actor: <b><Name named={metadata.actor} /></b>
                             </Arguable>
                         </div>
                     )}

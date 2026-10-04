@@ -1,8 +1,10 @@
 import { Create } from "@mui/icons-material"
 import { Box, IconButton, Link, Stack, Typography } from "@mui/material"
-import { Editor, Named } from "linked-rolls"
+import { Editor } from "linked-rolls"
 import { Fragment, ReactNode, useContext } from "react"
 import { Arguable } from "../accounts/Arguable"
+import { Name } from "../accounts/Name"
+import { recordLabel } from "../edition/authorities"
 import { EditionContext } from "../edition/EditionContext"
 import { dateStatement, day } from "../edition/dateStatement"
 import { licenseName } from "../edition/licenses"
@@ -17,37 +19,13 @@ const OutLink = ({ href, children }: { href: string, children: ReactNode }) => (
     </Link>
 )
 
-/** The authorities a record may come from, by the shape of its URI. */
-const authorities = [
-    { name: 'GND', uri: /^https?:\/\/d-nb\.info\/gnd\/([^/]+)$/ },
-    { name: 'Wikidata', uri: /^https?:\/\/www\.wikidata\.org\/(?:entity|wiki)\/(Q\d+)$/ },
-    { name: 'GeoNames', uri: /^https?:\/\/sws\.geonames\.org\/(\d+)\/?$/ },
-    { name: 'LCNAF', uri: /^https?:\/\/id\.loc\.gov\/authorities\/names\/([^/]+)$/ },
-    { name: 'ORCID', uri: /^https?:\/\/orcid\.org\/([\dX-]+)$/ }
-]
-
-/** An authority record named by its authority and number, "GND 300145322", or else by its URI. */
-const recordLabel = (uri: string) => {
-    for (const { name, uri: shape } of authorities) {
-        const [, id] = shape.exec(uri) ?? []
-        if (id) return `${name} ${id}`
-    }
-    return uri
-}
-
-/** The name, leading to its authority record where the edition gives one. */
-const NameOf = ({ named }: { named: Named }) => {
-    const [record] = named.sameAs.filter(uri => uri.trim())
-    return record ? <OutLink href={record}>{named.name}</OutLink> : <>{named.name}</>
-}
-
 /** The editors, each with the part they took where it is more than editing as such. */
 const Editors = ({ editors }: { editors: Editor[] }) => (
     <>
         {editors.map((editor, at) => (
             <Fragment key={at}>
                 {at > 0 && ', '}
-                <NameOf named={editor} />
+                <Name named={editor} />
                 {editor.role !== 'editor' && ` (${editor.role})`}
             </Fragment>
         ))}
@@ -122,15 +100,17 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
             <Section title='Roll'>
                 <Field label='Catalogue number'>{roll.catalogueNumber.trim() || undefined}</Field>
                 <Field label='Pianist'>
-                    {recorded.pianist.name.trim() ? <NameOf named={recorded.pianist} /> : undefined}
+                    {recorded.pianist.name.trim() ? <Name named={recorded.pianist} /> : undefined}
                 </Field>
                 {recorded.playing.trim() && (
                     <Field label='Work'>
                         <OutLink href={recorded.playing}>{recordLabel(recorded.playing)}</OutLink>
                     </Field>
                 )}
-                <Field label='Recorded'>
-                    {place.name.trim() && <><NameOf named={place} />, </>}
+                <Field label='Recorded in'>
+                    {place.name.trim() ? <Name named={place} /> : undefined}
+                </Field>
+                <Field label='Recorded on'>
                     <Arguable path={['roll', 'recordingEvent', 'date'] as const}>
                         {dateStatement(date)}
                     </Arguable>
@@ -142,7 +122,7 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
                     {editors.length > 0 ? <Editors editors={editors} /> : undefined}
                 </Field>
                 <Field label='Publisher'>
-                    {creation.publisher.name.trim() ? <NameOf named={creation.publisher} /> : undefined}
+                    {creation.publisher.name.trim() ? <Name named={creation.publisher} /> : undefined}
                 </Field>
                 <Field label='Version'>{edition.version?.trim() || undefined}</Field>
                 <Field label='Published'>{day(creation.publicationDate)}</Field>

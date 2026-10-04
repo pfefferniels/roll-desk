@@ -11,6 +11,7 @@ import { webAddressOf } from "../edition/reasons"
 import { AccountSection, HeldStatement } from "./Account"
 import { Arguable } from "./Arguable"
 import { EntityLink } from "./EntityLink"
+import { Name } from "./Name"
 import { NoteText } from "./NoteText"
 import { ReservationNotes } from "./Reservations"
 
@@ -19,11 +20,11 @@ const SourceAccount = ({ source }: { source: FeatureSource }) => (
     <>
         <HeldStatement>{sourceLabels[source.kind]}</HeldStatement>
         {source.actor && (
-            <HeldStatement belief={source.actor['@annotation']?.belief}>by {source.actor.name}</HeldStatement>
+            <HeldStatement belief={source.actor['@annotation']?.belief}>by <Name named={source.actor} /></HeldStatement>
         )}
         {source.device && <HeldStatement>with {source.device.name}</HeldStatement>}
         {source.instrument && (
-            <HeldStatement belief={source.instrument['@annotation']?.belief}>on {source.instrument.name}</HeldStatement>
+            <HeldStatement belief={source.instrument['@annotation']?.belief}>on <Name named={source.instrument} /></HeldStatement>
         )}
         {(source.software ?? []).map(software => (
             <HeldStatement key={`${software.name}-${software.version}`}>
@@ -125,7 +126,7 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
                 {copy.keeper
                     ? (
                         <Arguable path={[...copyPath, 'keeper']}>
-                            held by {heldBy(copy)}
+                            held by {copy.keeper.name.trim() ? <Name named={copy.keeper} /> : heldBy(copy)}
                         </Arguable>
                     )
                     : 'keeper unknown'}
