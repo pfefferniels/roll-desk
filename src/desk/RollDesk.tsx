@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
+import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, scale, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { onsetToMiddleOf, spotlight, spotlightWhenDrawn } from "./spotlight"
 import { deskPath, entityOfPath, idNamed, idOfMark, linkTarget, LinkTarget, titlePath } from "../edition/addresses"
@@ -36,7 +36,7 @@ import { useLiveZoom } from "../canvas/useLiveZoom"
 import { usePinchGesture } from "../canvas/usePinchGesture"
 import { rollLength } from "../canvas/rollLength"
 import { blendAt, workingPosition } from "../facsimile/facsimileBlend"
-import { zoomRange } from "../canvas/zoom"
+import { keyZoomFactor, zoomRange } from "../canvas/zoom"
 import { Welcome } from "./Welcome"
 import { TitlePage } from "./TitlePage"
 import { RollCopyDialog } from "../copy/RollCopyDialog"
@@ -352,12 +352,22 @@ export const Desk = ({ show }: DeskProps) => {
             }
         }
     }, {
-        ignoreEventWhen: event => goesToAnOverlay(event) || activatesItsTarget(event)
+        ignoreEventWhen: event => goesToAnOverlay(event) || activatesItsTarget(event),
+        // The roll can hold the focus, and would scroll down a page as well.
+        preventDefault: true
     })
 
     // Dialogs, menus and popovers swallow Escape themselves, so this only
     // reaches the desk when nothing is open over it.
     useHotkeys('escape', () => setSelection([]))
+
+    /** Stretches or shrinks the roll by + and -, which the gestures do without a keyboard. */
+    const zoomByKey = (event: React.KeyboardEvent) => {
+        const factor = keyZoomFactor(event)
+        if (factor === undefined) return
+        event.preventDefault()
+        jump(scale(stretchZoom, factor))
+    }
 
     const downloadMIDI = useCallback(() => {
         if (!currentVersion || !edition) return
@@ -748,8 +758,26 @@ export const Desk = ({ show }: DeskProps) => {
             )}
 
             {!onTitlePage && (
-                <Box component='main' overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
-                    <Box component='h1' sx={unseen}>{heading}</Box>
+                // The roll takes the focus, so that the arrow keys move along
+                // it and + and - stretch and shrink it.
+                <Box
+                    component='main'
+                    overflow='scroll'
+                    ref={viewportRef}
+                    tabIndex={0}
+                    aria-labelledby='desk-heading'
+                    aria-describedby='desk-roll-keys'
+                    aria-keyshortcuts='Plus Minus'
+                    onKeyDown={zoomByKey}
+                    sx={{
+                        touchAction: 'pan-x pan-y',
+                        '&:focus-visible': { outline: '2px solid #1976d2', outlineOffset: '-2px' }
+                    }}
+                >
+                    <Box component='h1' id='desk-heading' sx={unseen}>{heading}</Box>
+                    <Box id='desk-roll-keys' sx={unseen}>
+                        The arrow keys move along the roll, plus and minus stretch and shrink it.
+                    </Box>
                     <PinchZoomProvider
                         bar={deskBar}
                         zoom={stretchZoom}

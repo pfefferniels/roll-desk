@@ -33,6 +33,12 @@ export const About = () => {
                             edition rests on, each with its certainty and reasons.
                         </Typography>
                         <Typography variant='body2'>
+                            Space plays the version on the desk and stops it. Tab goes
+                            through the versions in the stemma and Enter opens one; on
+                            the roll, the arrow keys move along it and + and − stretch
+                            and shrink it. Escape clears the selection.
+                        </Typography>
+                        <Typography variant='body2'>
                             By Niels Pfeffer. Released under the{' '}
                             <Link href={`${repository}/blob/main/LICENSE`} target='_blank' rel='noopener'>
                                 MIT licence
