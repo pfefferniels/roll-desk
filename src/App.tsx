@@ -103,7 +103,7 @@ const App = () => {
                 path="*"
                 element={
                   isLoadingEdition ? (
-                    <div>Loading…</div>
+                    <div role='status'>Loading…</div>
                   ) : (
                     <PublicationContext.Provider value={publication}>
                       <EditionProvider edition={existingEdition}>

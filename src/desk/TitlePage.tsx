@@ -87,7 +87,8 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
     return (
         <Box sx={{ px: { xs: 2, sm: 6 }, pt: '15vh', pb: 6, maxWidth: '38rem' }}>
             <Stack direction='row' alignItems='flex-start' spacing={1}>
-                <Typography variant='h4' component='h1' sx={{ flexGrow: 1 }}>
+                {/* Takes the focus where the reader comes back to the title page, see `RollDesk`. */}
+                <Typography variant='h4' component='h1' tabIndex={-1} sx={{ flexGrow: 1 }}>
                     {edition.title}
                 </Typography>
                 {onEdit && (

@@ -18,6 +18,8 @@ import { Add, ChevronLeft, ChevronRight, Clear, Download, Home, PlayArrow, Redo,
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { ToolButton } from "./ToolButton"
+import { headingOf, pageTitleOf } from "./pageTitle"
+import { unseen } from "./unseen"
 import { SourceStack } from "../sources/SourceStack"
 import { Canvas } from "../canvas/LayeredRolls"
 import { downloadFile } from "./downloadFile"
@@ -74,6 +76,12 @@ const TabPanel = ({ children, tab, current }: TabPanelProps) => (
         {current === tab && <Box sx={{ p: 0.5 }}>{children}</Box>}
     </div>
 )
+
+/** What ties a tab to its panel, which takes its name from the tab. */
+const tabOf = (tab: DeskTab) => ({
+    id: `desk-tab-${tab}`,
+    'aria-controls': `desk-tabpanel-${tab}`
+})
 
 /** Where the panel of tabs sits, over the desk at the top right corner. */
 const deskPanel = {
@@ -179,6 +187,25 @@ export const Desk = ({ show }: DeskProps) => {
     /** The panel folds away where the roll under it is what matters. */
     const [panelOpen, setPanelOpen] = useState(true)
 
+    /**
+     * Whether the panel was just folded away or brought back. The button
+     * pressed for it goes with it, so the focus is handed to the one that
+     * undoes it rather than left to the page.
+     */
+    const panelToggled = useRef(false)
+    const togglePanel = (open: boolean) => {
+        panelToggled.current = true
+        setPanelOpen(open)
+    }
+    const takesFocusFromToggle = useCallback((button: HTMLButtonElement | null) => {
+        if (!button || !panelToggled.current) return
+        panelToggled.current = false
+        button.focus()
+    }, [])
+
+    /** Where the title page is drawn. */
+    const titlePageRef = useRef<HTMLElement>(null)
+
     const troubles = problems.length + carriage.length
     const hasProblems = troubles > 0
 
@@ -258,14 +285,25 @@ export const Desk = ({ show }: DeskProps) => {
 
     /**
      * Turns to the title page. The published desk gives it its own address,
-     * since an empty desk leaves the address as it was.
+     * since an empty desk leaves the address as it was. The button pressed
+     * for it is disabled there, so the focus goes on to the title. It is
+     * let go of first: a button disabled under the focus loses it without
+     * a word, and its tooltip, which went by the focus, would stay open.
      */
-    const showTitlePage = () => {
+    const showTitlePage = (button: HTMLElement) => {
+        button.blur()
         clearDesk()
         if (viewOnly) void navigate(titlePath, { replace: true })
+        requestAnimationFrame(() => titlePageRef.current?.querySelector<HTMLElement>('h1')?.focus())
     }
 
     const shownPath = edition && deskPath(edition, { versionId: currentVersionId, copyId: currentCopyId, selection })
+
+    const heading = edition && headingOf(edition, { versionId: currentVersionId, copyId: currentCopyId })
+
+    useEffect(() => {
+        document.title = pageTitleOf(edition, heading)
+    }, [edition, heading])
 
     // The published desk keeps its address on what is shown, so that a
     // reader can pass on or cite whatever they are looking at. The editor
@@ -397,7 +435,7 @@ export const Desk = ({ show }: DeskProps) => {
     )
 
     const viewControl = (
-        <Paper sx={{
+        <Paper component='header' sx={{
             position: 'absolute',
             margin: 1,
             left: 1,
@@ -491,12 +529,13 @@ export const Desk = ({ show }: DeskProps) => {
             {viewOnly ? viewControl : toolbar}
 
             {!panelOpen && (
-                <Paper sx={{ ...deskPanel, padding: 0.5 }}>
+                <Paper component='aside' aria-label='Panel' sx={{ ...deskPanel, padding: 0.5 }}>
                     <Tooltip title='Show the panel'>
                         <IconButton
+                            ref={takesFocusFromToggle}
                             size='small'
                             aria-label='Show the panel'
-                            onClick={() => setPanelOpen(true)}
+                            onClick={() => togglePanel(true)}
                         >
                             <ChevronLeft />
                         </IconButton>
@@ -505,7 +544,7 @@ export const Desk = ({ show }: DeskProps) => {
             )}
 
             {panelOpen && (
-                <Paper sx={{ ...deskPanel, padding: 2 }}>
+                <Paper component='aside' aria-label='Panel' sx={{ ...deskPanel, padding: 2 }}>
                     <Stack direction='row' alignItems='center'>
                         <Tooltip title={onTitlePage ? 'On the title page' : 'Back to the title page'}>
                             <span>
@@ -513,7 +552,7 @@ export const Desk = ({ show }: DeskProps) => {
                                     size='small'
                                     disabled={onTitlePage}
                                     aria-label='Back to the title page'
-                                    onClick={showTitlePage}
+                                    onClick={event => showTitlePage(event.currentTarget)}
                                 >
                                     <Home />
                                 </IconButton>
@@ -525,11 +564,12 @@ export const Desk = ({ show }: DeskProps) => {
                             onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
                             sx={{ flexGrow: 1 }}
                         >
-                            <Tab value='stemma' label='Stemma' />
-                            <Tab value='sources' label='Sources' />
+                            <Tab value='stemma' label='Stemma' {...tabOf('stemma')} />
+                            <Tab value='sources' label='Sources' {...tabOf('sources')} />
                             {hasProblems && (
                                 <Tab
                                     value='problems'
+                                    {...tabOf('problems')}
                                     label={
                                         <Badge
                                             badgeContent={troubles}
@@ -545,9 +585,10 @@ export const Desk = ({ show }: DeskProps) => {
 
                         <Tooltip title='Fold the panel away'>
                             <IconButton
+                                ref={takesFocusFromToggle}
                                 size='small'
                                 aria-label='Fold the panel away'
-                                onClick={() => setPanelOpen(false)}
+                                onClick={() => togglePanel(false)}
                             >
                                 <ChevronRight />
                             </IconButton>
@@ -639,6 +680,8 @@ export const Desk = ({ show }: DeskProps) => {
 
             {!viewOnly && (
                 <Paper
+                    component='aside'
+                    aria-label='Selection'
                     sx={{
                         position: 'absolute',
                         margin: 1,
@@ -695,12 +738,18 @@ export const Desk = ({ show }: DeskProps) => {
                 </Paper>
             )}
 
+            {/* Says what has been laid on the desk, as the eye sees it on the roll. */}
+            <Box role='status' sx={unseen}>{heading}</Box>
+
             {onTitlePage && (
-                <TitlePage onEdit={viewOnly ? undefined : () => setMetadataJob('edit')} />
+                <Box component='main' ref={titlePageRef}>
+                    <TitlePage onEdit={viewOnly ? undefined : () => setMetadataJob('edit')} />
+                </Box>
             )}
 
             {!onTitlePage && (
-                <Box overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
+                <Box component='main' overflow='scroll' ref={viewportRef} sx={{ touchAction: 'pan-x pan-y' }}>
+                    <Box component='h1' sx={unseen}>{heading}</Box>
                     <PinchZoomProvider
                         bar={deskBar}
                         zoom={stretchZoom}

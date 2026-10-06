@@ -1,3 +1,5 @@
+import { scrollBehavior } from './motion'
+
 /** The attributes a spotlight paints over. An attribute the shape does not carry reads ''. */
 type Paint = {
     fill: string
@@ -92,7 +94,7 @@ type Bring = (shape: Element) => void
 
 /** The whole shape into view, centred along the roll. */
 const centred: Bring = shape =>
-    shape.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    shape.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest', inline: 'center' })
 
 /**
  * Where a shape begins, to the middle of the viewport: the tracker bar
@@ -104,7 +106,7 @@ const centred: Bring = shape =>
  */
 export const onsetToMiddleOf = (viewport: Element): Bring => shape => {
     const middle = viewport.getBoundingClientRect().left + viewport.clientWidth / 2
-    viewport.scrollBy({ left: shape.getBoundingClientRect().left - middle, behavior: 'smooth' })
+    viewport.scrollBy({ left: shape.getBoundingClientRect().left - middle, behavior: scrollBehavior() })
 }
 
 /**
