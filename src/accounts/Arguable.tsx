@@ -1,5 +1,6 @@
 import { Add, Delete, Edit } from "@mui/icons-material";
-import { Button, IconButton, Stack } from "@mui/material";
+import { Button, Stack } from "@mui/material";
+import { ToolButton } from "../desk/ToolButton";
 import { isEdit, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useState } from "react";
 import { useSelection } from "../desk/SelectionContext";
@@ -62,12 +63,12 @@ export function Arguable({ asSVG, path, children }: ArguableProps) {
                         onRemove={viewOnly ? undefined : removeReason}
                         actions={!viewOnly && (
                             <>
-                                <IconButton size='small' onClick={() => setEditValue(true)}>
+                                <ToolButton label='Change the certainty' size='small' onClick={() => setEditValue(true)}>
                                     <Edit fontSize='small' />
-                                </IconButton>
-                                <IconButton size='small' onClick={() => clearBelief()}>
+                                </ToolButton>
+                                <ToolButton label='Withdraw the belief' size='small' onClick={() => clearBelief()}>
                                     <Delete fontSize='small' />
-                                </IconButton>
+                                </ToolButton>
                             </>
                         )}
                     />
@@ -114,6 +115,7 @@ export function Arguable({ asSVG, path, children }: ArguableProps) {
 
                     <EditChoice
                         open={editValue}
+                        label='Certainty'
                         value={belief.certainty}
                         items={certainties}
                         onClose={() => setEditValue(false)}
@@ -125,6 +127,7 @@ export function Arguable({ asSVG, path, children }: ArguableProps) {
 
                     <EditString
                         open={addCitation}
+                        label='Reference'
                         value={"Your reference ..."}
                         onClose={() => setAddCitation(false)}
                         onDone={(str) => {
@@ -144,6 +147,7 @@ export function Arguable({ asSVG, path, children }: ArguableProps) {
 
                     <EditString
                         open={addPlain}
+                        label='Reason'
                         value={"Your reason ..."}
                         onClose={() => setAddPlain(false)}
                         onDone={(str) => {

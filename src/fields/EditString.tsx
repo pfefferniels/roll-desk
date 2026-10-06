@@ -1,22 +1,29 @@
 import { CheckRounded } from "@mui/icons-material";
-import { Box, Dialog, DialogContent, IconButton, MenuItem, Select, Stack, TextField } from "@mui/material";
+import { Box, Dialog, DialogContent, MenuItem, Stack, TextField } from "@mui/material";
+import { useId } from "react";
 import { useDraft } from "./useDraft";
+import { ToolButton } from "../desk/ToolButton";
 
 interface EditStringProps {
     open: boolean;
+    /** What is asked for, which names the field and the dialog it stands alone in. */
+    label: string;
     value: string;
     onDone: (newValue: string) => void;
     onClose: () => void;
 }
 
-export const EditString = ({ open, value: value_, onDone, onClose }: EditStringProps) => {
+export const EditString = ({ open, label, value: value_, onDone, onClose }: EditStringProps) => {
     const [value, setValue] = useDraft(value_);
+    const id = useId();
 
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={onClose} aria-labelledby={`${id}-label`}>
             <DialogContent>
                 <Stack direction='row'>
                     <TextField
+                        id={id}
+                        label={label}
                         autoFocus
                         margin="dense"
                         fullWidth
@@ -26,9 +33,9 @@ export const EditString = ({ open, value: value_, onDone, onClose }: EditStringP
                         onChange={(e) => setValue(e.target.value)}
                     />
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton onClick={() => onDone(value)}>
+                        <ToolButton label='Done' onClick={() => onDone(value)}>
                             <CheckRounded />
-                        </IconButton>
+                        </ToolButton>
                     </Box>
                 </Stack>
             </DialogContent>
@@ -38,20 +45,26 @@ export const EditString = ({ open, value: value_, onDone, onClose }: EditStringP
 
 interface EditChoiceProps<T extends string> {
     open: boolean;
+    /** What is chosen, which names the field and the dialog it stands alone in. */
+    label: string;
     value: T;
     items: readonly T[];
     onDone: (newValue: T) => void;
     onClose: () => void;
 }
 
-export const EditChoice = <T extends string>({ open, value: value_, items, onDone, onClose }: EditChoiceProps<T>) => {
+export const EditChoice = <T extends string>({ open, label, value: value_, items, onDone, onClose }: EditChoiceProps<T>) => {
     const [value, setValue] = useDraft<T>(value_);
+    const id = useId();
 
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={onClose} aria-labelledby={`${id}-label`}>
             <DialogContent>
                 <Stack direction='row'>
-                    <Select
+                    <TextField
+                        select
+                        id={id}
+                        label={label}
                         autoFocus
                         margin="dense"
                         fullWidth
@@ -59,8 +72,12 @@ export const EditChoice = <T extends string>({ open, value: value_, items, onDon
                         size="small"
                         value={value}
                         onChange={(e) => setValue(e.target.value as T)}
-                        MenuProps={{
-                            disablePortal: true,
+                        slotProps={{
+                            select: {
+                                MenuProps: {
+                                    disablePortal: true,
+                                }
+                            }
                         }}
                     >
                         {items.map(item => {
@@ -73,11 +90,11 @@ export const EditChoice = <T extends string>({ open, value: value_, items, onDon
                                 </MenuItem>
                             )
                         })}
-                    </Select>
+                    </TextField>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton onClick={() => onDone(value)}>
+                        <ToolButton label='Done' onClick={() => onDone(value)}>
                             <CheckRounded />
-                        </IconButton>
+                        </ToolButton>
                     </Box>
                 </Stack>
             </DialogContent>

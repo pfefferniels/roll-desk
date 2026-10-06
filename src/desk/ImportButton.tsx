@@ -1,12 +1,13 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useRef, useState } from 'react';
 import { FileOpen } from "@mui/icons-material";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { constraintProblems } from "linked-rolls";
 import { EditionContext } from '../edition/EditionContext';
 import { useSnackbar } from './SnackbarContext';
 import { problemCount } from '../constraints/constraints';
 import { CheckedDocument, importedEdition, readDocument, refusalToOpen } from '../edition/importEdition';
 import { refusalToDrawScans } from '../facsimile/scanCalibration';
+import { ToolButton } from './ToolButton';
 
 interface ImportButtonProps {
     outlined?: boolean
@@ -18,6 +19,7 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
 
     const [errors, setErrors] = useState<string[]>()
     const [pending, setPending] = useState<CheckedDocument['document']>()
+    const fileInput = useRef<HTMLInputElement>(null)
 
     /**
      * Takes the document as the edition and says what it could not take
@@ -84,29 +86,32 @@ export const ImportButton = ({ outlined }: ImportButtonProps) => {
     return (
         <>
             <input
+                ref={fileInput}
                 accept=".json,.jsonld"
                 style={{ display: 'none' }}
-                id="import-file"
                 type="file"
                 onChange={handleFileUpload}
             />
-            <label htmlFor="import-file">
-                {outlined
-                    ? (
-                        <Button
-                            variant='outlined'
-                            component="span"
-                            startIcon={<FileOpen />}
-                        >
-                            Open
-                        </Button>
-                    )
-                    : (
-                        <IconButton size='small'>
-                            <FileOpen />
-                        </IconButton>
-                    )}
-            </label>
+            {/*
+              The button asks the hidden input for the file. A label around
+              it would answer the pointer only, and a button inside a label
+              does not even do that in every browser.
+            */}
+            {outlined
+                ? (
+                    <Button
+                        variant='outlined'
+                        startIcon={<FileOpen />}
+                        onClick={() => fileInput.current?.click()}
+                    >
+                        Open
+                    </Button>
+                )
+                : (
+                    <ToolButton label='Open an edition' size='small' onClick={() => fileInput.current?.click()}>
+                        <FileOpen />
+                    </ToolButton>
+                )}
 
             {errors && (
                 <Dialog open={true} onClose={() => setErrors(undefined)}>

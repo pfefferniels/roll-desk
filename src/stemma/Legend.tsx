@@ -1,8 +1,9 @@
 import { Help } from "@mui/icons-material"
-import { Box, Stack, IconButton, Popover } from "@mui/material"
+import { Box, Stack, Popover } from "@mui/material"
 import { ReactNode, useState } from "react"
 import { NavigationNode } from "./Stemma"
 import { CertaintyIcon } from "../accounts/CertaintyIcon"
+import { ToolButton } from "../desk/ToolButton"
 
 interface LegendRowProps {
   symbol: ReactNode
@@ -14,9 +15,12 @@ export const LegendRow = ({ symbol, description, help }: LegendRowProps) => {
   return (
     <div style={{ maxWidth: '300px'}}>
       <Box sx={{ display: "flex", alignItems: "center",  }}>
-        {symbol}
+        {/* The sample is what the description says in words; read out, it would only get in their way. */}
+        <Box component='span' aria-hidden sx={{ display: 'inline-flex' }}>
+          {symbol}
+        </Box>
         <Box component='span' sx={{ ml: 1, fontSize: "0.9rem" }}>
-          =&nbsp;<b>{description}</b>
+          <span aria-hidden>=&nbsp;</span><b>{description}</b>
         </Box>
       </Box>
       {
@@ -36,11 +40,13 @@ export const LegendPopover = ({ children }: { children: ReactNode }) => {
 
   return (
     <>
-      <IconButton
+      <ToolButton
+        label='Legend'
+        aria-expanded={Boolean(anchorEl)}
         onClick={(event) => setAnchorEl(anchorEl ? null : event.currentTarget)}
       >
         <Help />
-      </IconButton>
+      </ToolButton>
       <Popover anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <Stack direction="column" spacing={1} sx={{ p: 2}}>
           {children}

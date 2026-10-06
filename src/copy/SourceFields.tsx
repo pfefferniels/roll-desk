@@ -1,5 +1,6 @@
 import { Add, Delete } from "@mui/icons-material"
-import { Button, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
+import { Button, FormControl, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material"
+import { ToolButton } from "../desk/ToolButton"
 import { DateAssignment, FeatureSource, SourceKind, sourceKinds, sourceLabels } from "linked-rolls"
 import { DateStatementField } from "../fields/DateStatementField"
 
@@ -146,12 +147,13 @@ export const SourceFields = ({ value, onChange }: SourceFieldsProps) => (
                             placeholder='e.g. 2.0'
                             onChange={e => onChange({ ...value, software: replacing(value.software, index, { ...entry, version: e.target.value }) })}
                         />
-                        <IconButton
+                        <ToolButton
+                            label='Remove the software'
                             size='small'
                             onClick={() => onChange({ ...value, software: value.software.filter((_, at) => at !== index) })}
                         >
                             <Delete fontSize='small' />
-                        </IconButton>
+                        </ToolButton>
                     </Stack>
                 ))}
                 <Button

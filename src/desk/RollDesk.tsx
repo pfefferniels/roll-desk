@@ -17,6 +17,7 @@ import { emulationOf, EmulationOptions } from '../playback/reproducingSystems'
 import { Add, ChevronLeft, ChevronRight, Clear, Download, Home, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
+import { ToolButton } from "./ToolButton"
 import { SourceStack } from "../sources/SourceStack"
 import { Canvas } from "../canvas/LayeredRolls"
 import { downloadFile } from "./downloadFile"
@@ -373,6 +374,28 @@ export const Desk = ({ show }: DeskProps) => {
 
     const onTitlePage = !currentVersion && !currentCopy
 
+    const playButton = (
+        <ToolButton
+            label={isPlaying ? 'Stop' : 'Play'}
+            hint={currentVersion ? `${isPlaying ? 'Stop' : 'Play'} (Space)` : 'Open a version to play it'}
+            aria-keyshortcuts='Space'
+            disabled={!currentVersion}
+            onClick={playVersion}
+        >
+            {isPlaying ? <Stop /> : <PlayArrow />}
+        </ToolButton>
+    )
+
+    const emulationSettingsButton = (
+        <ToolButton
+            label='Emulation settings'
+            size='small'
+            onClick={() => setEmulationSettingsDialogOpen(true)}
+        >
+            <Settings />
+        </ToolButton>
+    )
+
     const viewControl = (
         <Paper sx={{
             position: 'absolute',
@@ -384,24 +407,15 @@ export const Desk = ({ show }: DeskProps) => {
         }}>
             <Stack direction='row' spacing={1}>
                 <Cite entity={shownEntity} />
-                <IconButton
-                    size='small'
-                    onClick={() => setEmulationSettingsDialogOpen(true)}
-                >
-                    <Settings />
-                </IconButton>
-                <IconButton
+                {emulationSettingsButton}
+                <ToolButton
+                    label='Download'
                     size='small'
                     onClick={() => setDownloadDialogOpen(true)}
                 >
                     <Download />
-                </IconButton>
-                <IconButton
-                    disabled={!currentVersion}
-                    aria-label={isPlaying ? 'Stop' : 'Play'}
-                    onClick={playVersion}>
-                    {isPlaying ? <Stop /> : <PlayArrow />}
-                </IconButton>
+                </ToolButton>
+                {playButton}
                 <About />
             </Stack>
         </Paper>
@@ -422,24 +436,26 @@ export const Desk = ({ show }: DeskProps) => {
                 <RibbonGroup>
                     <Ribbon title='File' visible={!viewOnly}>
                         <ImportButton />
-                        <IconButton size='small' onClick={() => setDownloadDialogOpen(true)}>
+                        <ToolButton label='Save' hint='Save, as a download' size='small' onClick={() => setDownloadDialogOpen(true)}>
                             <Save />
-                        </IconButton>
+                        </ToolButton>
                     </Ribbon>
                     <RibbonGroup>
                         <Ribbon title='History' visible={!viewOnly}>
-                            <IconButton
+                            <ToolButton
+                                label='Undo'
                                 onClick={() => undo()}
                                 disabled={!canUndo}
                             >
                                 <Undo />
-                            </IconButton>
-                            <IconButton
+                            </ToolButton>
+                            <ToolButton
+                                label='Redo'
                                 onClick={() => redo()}
                                 disabled={!canRedo}
                             >
                                 <Redo />
-                            </IconButton>
+                            </ToolButton>
                         </Ribbon>
                     </RibbonGroup>
                     {(!viewOnly && !currentVersion && currentCopyId) && (
@@ -450,24 +466,17 @@ export const Desk = ({ show }: DeskProps) => {
                     )}
 
                     <Ribbon title='Emulation'>
-                        <IconButton
+                        {emulationSettingsButton}
+                        <ToolButton
+                            label='Download the MIDI file'
+                            hint={currentVersion ? undefined : 'Open a version to download its MIDI file'}
                             size='small'
-                            onClick={() => setEmulationSettingsDialogOpen(true)}
-                        >
-                            <Settings />
-                        </IconButton>
-                        <IconButton
-                            size='small'
+                            disabled={!currentVersion}
                             onClick={downloadMIDI}
                         >
                             <Download />
-                        </IconButton>
-                        <IconButton
-                            disabled={!currentVersion}
-                            aria-label={isPlaying ? 'Stop' : 'Play'}
-                            onClick={playVersion}>
-                            {isPlaying ? <Stop /> : <PlayArrow />}
-                        </IconButton>
+                        </ToolButton>
+                        {playButton}
                     </Ribbon>
                 </RibbonGroup>
                 <Box sx={{ ml: 'auto' }}>
@@ -672,9 +681,14 @@ export const Desk = ({ show }: DeskProps) => {
                             </div>
                             <div style={{ float: 'right' }}>
                                 <Cite entity={shownEntity} />
-                                <IconButton onClick={() => setSelection([])}>
+                                <ToolButton
+                                    label='Clear the selection'
+                                    hint='Clear the selection (Escape)'
+                                    aria-keyshortcuts='Escape'
+                                    onClick={() => setSelection([])}
+                                >
                                     <Clear />
-                                </IconButton>
+                                </ToolButton>
                             </div>
                         </Box>
                     )}

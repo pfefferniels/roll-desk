@@ -182,6 +182,7 @@ export const CopyFacsimileMenu = ({ copyId }: MenuProps) => {
 
             <EditString
                 open={reportRollCondition}
+                label='General condition'
                 value={"Generel condition ..."}
                 onClose={() => setReportRollCondition(false)}
                 onDone={(value) => {

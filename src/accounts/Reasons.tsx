@@ -1,5 +1,6 @@
 import { Delete } from "@mui/icons-material"
-import { IconButton, Link, List, ListItem, Stack, Typography } from "@mui/material"
+import { Link, List, ListItem, Stack, Typography } from "@mui/material"
+import { ToolButton } from "../desk/ToolButton"
 import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension, symbolIn, pathIn, getAt } from "linked-rolls"
 import { ReactNode, useContext } from "react"
 import { EditionContext } from "../edition/EditionContext"
@@ -103,9 +104,9 @@ export const Reasons = ({ reasons, onRemove }: ReasonsProps) => (
                 disableGutters
                 alignItems='flex-start'
                 secondaryAction={onRemove && (
-                    <IconButton size='small' onClick={() => onRemove(index)}>
+                    <ToolButton label='Remove the reason' size='small' onClick={() => onRemove(index)}>
                         <Delete />
-                    </IconButton>
+                    </ToolButton>
                 )}
             >
                 <Reason reason={reason} />

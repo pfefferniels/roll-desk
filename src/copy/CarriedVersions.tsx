@@ -1,5 +1,6 @@
 import { Delete } from "@mui/icons-material"
-import { Button, IconButton, MenuItem, Stack, TextField, Typography } from "@mui/material"
+import { Button, MenuItem, Stack, TextField, Typography } from "@mui/material"
+import { ToolButton } from "../desk/ToolButton"
 import { certainties, Certainty, clearCarriage, idOf, stateCarriage, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
 import { v4 } from "uuid"
@@ -33,9 +34,13 @@ export const CarriedVersions = ({ copyId }: { copyId: string }) => {
                     <Arguable path={[...copyPath, 'carries', index]}>
                         <span>{sigilOf(idOf(statement))}</span>
                     </Arguable>
-                    <IconButton size='small' onClick={() => apply(clearCarriage(copyId, idOf(statement)))}>
+                    <ToolButton
+                        label={`Withdraw that it carries ${sigilOf(idOf(statement))}`}
+                        size='small'
+                        onClick={() => apply(clearCarriage(copyId, idOf(statement)))}
+                    >
                         <Delete fontSize='small' />
-                    </IconButton>
+                    </ToolButton>
                 </Stack>
             ))}
             <Stack direction='row' spacing={1} alignItems='center'>
