@@ -34,9 +34,12 @@ export const About = () => {
                         </Typography>
                         <Typography variant='body2'>
                             Space plays the version on the desk and stops it. Tab goes
-                            through the versions in the stemma and Enter opens one; on
-                            the roll, the arrow keys move along it and + and − stretch
-                            and shrink it. Escape clears the selection.
+                            through the versions in the stemma and Enter opens one. On
+                            a version’s roll, the arrow keys go from symbol to symbol,
+                            with Shift from edit to edit, Home and End to the first and
+                            the last, Page Up and Page Down a view further, and Enter
+                            selects where they stand; + and − stretch and shrink the
+                            roll. Escape clears the selection.
                         </Typography>
                         <Typography variant='body2'>
                             By Niels Pfeffer. Released under the{' '}

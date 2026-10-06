@@ -1,5 +1,5 @@
 import { add, Expression, Millimeters, mm, Note, scale, subtract, placedCarriersOf, placeOf, Track } from "linked-rolls";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { usePlaybackMark } from "../playback/usePlaybackMark";
 import { EditionContext } from "../edition/EditionContext";
@@ -7,6 +7,12 @@ import { shadowLook } from "../constraints/constraintLooks";
 import { halfOf, whiskerReach } from "./whisker";
 import { useLaneLabelling } from "./LaneLabel";
 import { ReadDynamics, Readings } from "./Dynamics";
+import { bringIntoView, useRollCursor } from "./rollCursor";
+import { OnTop } from "../canvas/OnTop";
+
+/** How far the cursor's ring keeps from the command, and how narrow it is drawn at least, in drawing units. */
+const ringGap = 3
+const ringWidth = 6
 
 interface CommandProps {
     symbol: Note | Expression;
@@ -26,11 +32,26 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
     const [hovered, setHovered] = useState(false);
     const label = useLaneLabelling();
     const { marked, followPlayback } = usePlaybackMark();
-    const { translateX, trackToY, laneHeight, height: canvasHeight, room, zoom, bar } = usePinchZoom();
+    const { cursor, followCursor } = useRollCursor();
+    const { translateX, trackToY, laneHeight, height: canvasHeight, room, zoom, bar, viewport } = usePinchZoom();
+    const ringRef = useRef<SVGRectElement>(null);
+
+    // Playback and the keyboard's cursor each tell the group drawn for the command.
+    const followed = useCallback((node: SVGGElement | null) => {
+        const unfollowPlayback = followPlayback(node)
+        const unfollowCursor = followCursor(node)
+        return () => {
+            unfollowPlayback?.()
+            unfollowCursor?.()
+        }
+    }, [followPlayback, followCursor])
+
+    // The keyboard's cursor asks what the pointer asks, and is ringed besides.
+    const pointed = hovered || cursor
 
     // Whiskers follow playback too, so a sounding command is read against
     // its dynamics; how far its carriers disagree only the pointer asks.
-    const whiskers = hovered || marked
+    const whiskers = pointed || marked
 
     // While playback stands on the command, the label at the left edge names it.
     useEffect(() => {
@@ -38,6 +59,14 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
         label.played(symbol)
         return () => label.played(current => current?.id === symbol.id ? undefined : current)
     }, [marked, symbol, label])
+
+    // So does the keyboard's cursor, as the pointer does, and the view follows it.
+    useEffect(() => {
+        if (!cursor) return
+        label.pointedAt(symbol)
+        bringIntoView(ringRef.current, viewport)
+        return () => label.pointedAt(current => current?.id === symbol.id ? undefined : current)
+    }, [cursor, symbol, label, viewport])
 
     const features = useMemo(() => edition ? placedCarriersOf(edition, symbol) : [], [edition, symbol]);
 
@@ -80,6 +109,9 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
     const dx = translateX(shift)
     const shadow = Math.abs(dx) >= 1
 
+    // The ring round the command where it plays, wide enough to be seen however short it is.
+    const ringSpan = Math.max(subtract(to, from) + 2 * ringGap, ringWidth)
+
     const half = halfOf(symbol, position, division)
     const [top, bottom] = whiskerReach(
         { y, height },
@@ -99,7 +131,7 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
 
     return (
         <g
-            ref={followPlayback}
+            ref={followed}
             data-id={symbol.id}
             id={symbol.id}
             className='collated-event'
@@ -124,9 +156,9 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
                     y={y}
                     height={height}
                     fill={highlight ? 'red' : color}
-                    fillOpacity={hovered ? 0 : opacity}
+                    fillOpacity={pointed ? 0 : opacity}
                     onClick={onClick} />
-                {hovered && (
+                {pointed && (
                     <>
                         <rect
                             x={innerFrom}
@@ -154,11 +186,28 @@ export const Command = ({ symbol, age, highlight, shift = mm(0), division, dynam
                 {whiskers && whisker(to)}
             </g>
             {/* Only under the pointer: playback marks a chord's notes at once, whose readings would be written over each other. */}
-            {hovered && half && (
+            {pointed && half && (
                 <Readings
                     at={add(place.from, shift)}
                     scope={half}
                     dynamics={dynamics} />
+            )}
+            {cursor && (
+                <OnTop>
+                    <rect
+                        ref={ringRef}
+                        x={(from + to) / 2 + dx - ringSpan / 2}
+                        y={y - ringGap}
+                        width={ringSpan}
+                        height={height + 2 * ringGap}
+                        rx={2}
+                        className='decoration'
+                        fill='none'
+                        stroke='#1976d2'
+                        strokeWidth={2}
+                        pointerEvents='none'
+                    />
+                </OnTop>
             )}
             {shadow && (
                 <g style={{ pointerEvents: 'none' }} opacity={opacity}>

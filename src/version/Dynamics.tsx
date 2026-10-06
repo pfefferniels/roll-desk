@@ -49,6 +49,12 @@ const curveOf = (emulation: Emulation<SharedOptions>, scope: Scope): DynamicsCur
     emulation.curves.find((curve): curve is DynamicsCurve =>
         curve.kind === 'dynamics' && curve.name === scope)
 
+/** The velocity a performance strikes a note of the half with in a place, where its curve reaches there. */
+export const velocityIn = (emulation: Emulation<SharedOptions>, scope: Scope, at: Millimeters): number | undefined => {
+    const curve = curveOf(emulation, scope)
+    return curve && velocityAt(curve, at)
+}
+
 /** Every so many samples of the curve, which has about twelve per millimetre. */
 const SAMPLE_STRIDE = 25
 
@@ -122,8 +128,7 @@ export const Readings = ({ at, scope, dynamics }: ReadingsProps) => {
     const feet = feetIn({ areas, areaBand, height })
 
     const readings = dynamics.flatMap(({ emulation, ink }) => {
-        const curve = curveOf(emulation, scope)
-        const velocity = curve && velocityAt(curve, at)
+        const velocity = velocityIn(emulation, scope, at)
         if (velocity === undefined) return []
         return [{ velocity, y: heightOf(velocity, feet[scope], emulation.options.velocity), ink }]
     })

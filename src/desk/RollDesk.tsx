@@ -759,7 +759,8 @@ export const Desk = ({ show }: DeskProps) => {
 
             {!onTitlePage && (
                 // The roll takes the focus, so that the arrow keys move along
-                // it and + and - stretch and shrink it.
+                // it, from symbol to symbol on a version, see `VersionView`,
+                // and + and - stretch and shrink it.
                 <Box
                     component='main'
                     overflow='scroll'
@@ -776,7 +777,9 @@ export const Desk = ({ show }: DeskProps) => {
                 >
                     <Box component='h1' id='desk-heading' sx={unseen}>{heading}</Box>
                     <Box id='desk-roll-keys' sx={unseen}>
-                        The arrow keys move along the roll, plus and minus stretch and shrink it.
+                        {currentVersion
+                            ? 'The arrow keys go from symbol to symbol along the roll, with Shift from edit to edit, and Enter selects where they stand. Plus and minus stretch and shrink the roll.'
+                            : 'The arrow keys move along the roll, plus and minus stretch and shrink it.'}
                     </Box>
                     <PinchZoomProvider
                         bar={deskBar}
