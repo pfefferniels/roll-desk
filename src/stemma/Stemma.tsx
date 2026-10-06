@@ -676,11 +676,15 @@ export const NavigationNode = ({ node, highlight, onOpen }: NavigationNodeProps)
     const [hover, setHover] = useState(false)
     const elRef = useRef<SVGGElement>(null)
 
+    // The problems a click shows in a popover are said in the node's name,
+    // so the keyboard opens the version alone: the popover, being modal,
+    // would take the focus away from the node.
     const control = onOpen && {
-        ...pressable(() => {
+        ...pressable(onOpen),
+        onClick: () => {
             setHover(!hover)
             onOpen()
-        }),
+        },
         'aria-label': spokenNameOf(node),
         'aria-current': highlight || undefined
     }
