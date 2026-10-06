@@ -65,7 +65,16 @@ export const AccountSection = ({ title, folded, children }: AccountSectionProps)
 
     return (
         <Stack sx={sectionSx}>
-            <ButtonBase onClick={() => setOpen(!open)} aria-expanded={open} sx={{ alignSelf: 'flex-start', borderRadius: 0.5 }}>
+            <ButtonBase
+                onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                sx={{
+                    alignSelf: 'flex-start',
+                    borderRadius: 0.5,
+                    // ButtonBase takes the browser's ring away and draws none of its own.
+                    '&.Mui-focusVisible': { outline: '2px solid #1976d2', outlineOffset: 1 }
+                }}
+            >
                 {heading}
                 <ExpandMore
                     fontSize='small'
