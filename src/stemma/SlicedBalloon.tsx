@@ -1,5 +1,7 @@
-import { ReactNode, useMemo, useRef, useState } from "react";
+import { FocusEvent, ReactNode, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Popper } from "@mui/material";
+import { pressable } from "../desk/pressable";
 
 /** A 2D point in SVG user space. */
 export type Pt = { x: number; y: number };
@@ -19,6 +21,15 @@ export type SlicedBalloonProps = {
     /** The slice the pointer is on, and nothing once it has left the balloon. */
     onSliceHover?: (slice: Slice | null) => void;
     onSliceClick?: (slice: Slice) => void;
+    /**
+     * Where the keyboard reaches the slices: a group drawn after the node
+     * of the version, so that Tab comes to its motivations right after
+     * it, while the slices themselves are drawn beneath every node. A
+     * stemma holds dozens of motivations, which would stand between the
+     * reader and every version after them, so only the version being
+     * read is given one. Left out, the keyboard does not reach the slices.
+     */
+    keyboardLayer?: SVGGElement | null;
     /**
      * Drawn over the balloon and part of it as far as the pointer is
      * concerned, so that a mark lying on the balloon does not read as
@@ -93,6 +104,9 @@ export function orderSlicesCenterWeighted(slices: readonly Slice[]): Slice[] {
 
     return out.filter(slot => slot !== null);
 }
+
+/** How many edits a motivation holds, as the name of its slice says it. */
+export const editCount = (count: number) => `${count} edit${count === 1 ? '' : 's'}`
 
 /** How narrow a slice may be drawn, in the units the balloon is laid out in. */
 const minSliceWidth = 6;
@@ -262,10 +276,11 @@ export function sliceCentre(a: Pt, b: Pt, slices: readonly Slice[], sliceId: str
  * balloon shows is kept in an effect, and a pointer crossing it neither
  * makes it flicker nor loses the slice it is on.
  */
-export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, children }: SlicedBalloonProps) {
+export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboardLayer, children }: SlicedBalloonProps) {
     const [pointerInside, setPointerInside] = useState(false)
     const [pointerOn, setPointerOn] = useState<string>()
     const groupRef = useRef<SVGGElement>(null)
+    const keysRef = useRef<SVGGElement>(null)
 
     // The balloon opens under the pointer, and stays open while something
     // elsewhere holds one of its slices, so that a motivation chosen on the
@@ -303,6 +318,40 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, childr
         onSliceHover?.(slice)
     }
 
+    /**
+     * Lets go of the slice once the focus has left the balloon, as the
+     * pointer does once it has left it. Where the pointer already has, the
+     * slice is let go of, and what is held now is held elsewhere.
+     */
+    const leaveByKeyboard = (event: FocusEvent) => {
+        if (keysRef.current?.contains(event.relatedTarget) || pointerInside || !pointerOn) return
+        setPointerOn(undefined)
+        onSliceHover?.(null)
+    }
+
+    // What the keyboard reaches of each slice: its outline, unpainted and
+    // passed over by the pointer, but named and ringed where it has the focus.
+    // Reaching it takes the slice up as the pointer moving onto it does,
+    // which opens the balloon.
+    const keys = keyboardLayer && createPortal(
+        <g ref={keysRef}>
+            {slicePaths.map(({ slice, d }) => (
+                <path
+                    key={slice.id}
+                    d={d}
+                    fill='none'
+                    pointerEvents='none'
+                    className='slice'
+                    aria-label={`Motivation: ${slice.description}, ${editCount(slice.count)}`}
+                    {...pressable(() => onSliceClick?.(slice))}
+                    onFocus={() => goTo(slice)}
+                    onBlur={leaveByKeyboard}
+                />
+            ))}
+        </g>,
+        keyboardLayer
+    )
+
     return (
         <g
             ref={groupRef}
@@ -332,6 +381,8 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, childr
             ))}
 
             {children}
+
+            {keys}
 
             <Popper
                 open={Boolean(current)}

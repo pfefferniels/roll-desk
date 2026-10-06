@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Slice, sliceCentre } from './SlicedBalloon'
+import { editCount, Slice, sliceCentre } from './SlicedBalloon'
 
 const slice = (id: string, count: number): Slice => ({ id, count, description: id })
 
@@ -36,5 +36,13 @@ describe('where a slice of the balloon sits', () => {
 
     it('says nothing of a motivation the balloon has no slice for', () => {
         expect(sliceCentre(a, b, halves, 'elsewhere')).toBeUndefined()
+    })
+})
+
+describe('how many edits a slice is said to hold', () => {
+    it('counts one edit in the singular and any other number in the plural', () => {
+        expect(editCount(1)).toBe('1 edit')
+        expect(editCount(0)).toBe('0 edits')
+        expect(editCount(23)).toBe('23 edits')
     })
 })

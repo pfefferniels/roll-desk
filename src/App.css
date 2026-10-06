@@ -25,3 +25,31 @@
 .zoomStage text[text-anchor="end"] {
     transform-origin: right center;
 }
+
+/*
+ * A shape on a drawing that takes the focus shows it in a ring of its
+ * own, drawn with it, rather than in the browser's outline, which is
+ * drawn round the box the shape takes up and lies askew on a balloon's
+ * slice. The ring shows only where the keyboard brought the focus, not
+ * where a click did.
+ */
+svg [role="button"]:focus {
+    outline: none;
+}
+
+.focusRing {
+    fill: none;
+    stroke: #1976d2;
+    stroke-width: 3px;
+    vector-effect: non-scaling-stroke;
+    visibility: hidden;
+}
+
+:focus-visible > .focusRing {
+    visibility: visible;
+}
+
+.slice:focus-visible {
+    stroke: #1976d2;
+    stroke-width: 3px;
+}

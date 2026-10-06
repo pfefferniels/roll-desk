@@ -1,9 +1,9 @@
 import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, pathIn, withGenerations, Edition } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../constraints/constraints';
-import { useContext, useMemo, useRef, useState } from "react"
+import { FocusEvent, Fragment, useCallback, useContext, useMemo, useRef, useState } from "react"
 import * as d3 from "d3";
-import { ReactNode, SVGProps, useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import { EditionContext } from '../edition/EditionContext';
 import { Legend } from './Legend';
 import { useSelection } from '../desk/SelectionContext';
@@ -14,12 +14,17 @@ import { Arguable } from '../accounts/Arguable';
 import { along, perpendicular, point, Point, unit } from '../geometry/drawing';
 import { HeldMotivation, isHeldMotivation, sameMotivation } from '../edition/motivation';
 import { Svg, svg } from '../canvas/units';
+import { pressable } from '../desk/pressable';
+import { prefersReducedMotion } from '../desk/motion';
 
 /** How far inside the drawing's edge a slice is brought when it is moved into view. */
 const revealMargin = svg(40)
 
-/** How long that move takes, short enough to read as the drawing following the pointer. */
-const revealDuration = 300
+/**
+ * How long that move takes, short enough to read as the drawing following
+ * the pointer, and no time at all where the reader asked for less motion.
+ */
+const revealDuration = () => prefersReducedMotion() ? 0 : 300
 
 interface Stemma {
     currentVersionId: string | undefined
@@ -36,6 +41,8 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
 
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
+    /** Where the keyboard reaches the motivations of the version being read, right after its node. */
+    const [motivationKeys, setMotivationKeys] = useState<SVGGElement | null>(null)
     const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>(null)
     const svgWidth = 300
     const svgHeight = height
@@ -94,29 +101,49 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
         return held && edition ? sliceAt(held, { nodes, links }, edition) : undefined
     }, [selection, nodes, links, edition])
 
-    // A motivation chosen elsewhere is read on its slice, so the drawing
-    // moves to it where the zoom has left it off the edge.
-    useEffect(() => {
+    /** Moves the drawing where the zoom has left a place on it, as the screen has it, off the edge. */
+    const reveal = useCallback((at: Point) => {
         const zoom = zoomRef.current
-        if (!inFocus || !zoom || !svgRef.current) return
+        if (!zoom || !svgRef.current) return
 
-        const transform = d3.zoomTransform(svgRef.current)
-        const [x, y] = transform.apply([inFocus.x, inFocus.y])
-        const shift = shiftIntoView(
-            point(svg(x), svg(y)),
-            { width: svg(svgWidth), height: svg(svgHeight) },
-            revealMargin
-        )
+        const shift = shiftIntoView(at, { width: svg(svgWidth), height: svg(svgHeight) }, revealMargin)
         if (!shift) return
 
         // `translateBy` moves the drawing in its own units, which the zoom
         // has scaled against the screen.
+        const { k } = d3.zoomTransform(svgRef.current)
         zoom.translateBy(
-            d3.select(svgRef.current).transition().duration(revealDuration),
-            shift.x / transform.k,
-            shift.y / transform.k
+            d3.select(svgRef.current).transition().duration(revealDuration()),
+            shift.x / k,
+            shift.y / k
         )
-    }, [inFocus, svgWidth, svgHeight])
+    }, [svgWidth, svgHeight])
+
+    // A motivation chosen elsewhere is read on its slice, so the drawing
+    // moves to it where the zoom has left it off the edge.
+    useEffect(() => {
+        if (!inFocus || !svgRef.current) return
+
+        const [x, y] = d3.zoomTransform(svgRef.current).apply([inFocus.x, inFocus.y])
+        reveal(point(svg(x), svg(y)))
+    }, [inFocus, reveal])
+
+    /**
+     * Moves what the keyboard has reached into view, which the zoom may
+     * have left off the edge. What a click focuses is where the pointer
+     * already is.
+     */
+    const revealFocused = (event: FocusEvent<SVGGElement>) => {
+        if (!svgRef.current || !event.target.matches(':focus-visible')) return
+
+        const frame = svgRef.current.getBoundingClientRect()
+        const box = event.target.getBoundingClientRect()
+        reveal(point(svg(box.x + box.width / 2 - frame.x), svg(box.y + box.height / 2 - frame.y)))
+    }
+
+    // Tab takes the reader through the versions as the stemma is read:
+    // generation by generation, and from left to right in each.
+    const inReadingOrder = [...nodes].sort((a, b) => (a.generation - b.generation) || ((a.x ?? 0) - (b.x ?? 0)))
 
     return (
         <Box sx={{ position: 'relative', width: svgWidth, height: svgHeight, flexShrink: 0 }}>
@@ -128,6 +155,8 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
                 height={svgHeight}
                 ref={svgRef}
                 style={{ display: 'block' }}
+                role='group'
+                aria-label='Stemma of the versions'
             >
                 <defs>
                     <filter id="f1"
@@ -142,25 +171,34 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
                     </filter>
                 </defs>
 
-                <g ref={zoomLayerRef}>
+                <g ref={zoomLayerRef} onFocus={revealFocused}>
                     <LinkContainer
                         links={links}
                         routes={routes}
                         positionedNodes={nodes}
                         markScale={1 / fit.scale}
                         onVersionClick={onClick}
+                        currentVersionId={currentVersionId}
+                        motivationKeys={motivationKeys}
                     />
 
-                    {nodes.map((node, i) => (
-                        <NavigationNode
-                            key={`interpretation_${i}`}
-                            node={node}
-                            onClick={() => {
-                                if (!edition) return
-                                onClick(node.id)
-                            }}
-                            highlight={currentVersionId === node.id}
-                        />
+                    {inReadingOrder.map(node => (
+                        <Fragment key={node.id}>
+                            <NavigationNode
+                                node={node}
+                                onOpen={() => {
+                                    if (!edition) return
+                                    onClick(node.id)
+                                }}
+                                highlight={currentVersionId === node.id}
+                            />
+                            {/*
+                              React listens for focus on whatever it portals into, and
+                              Chrome lets Tab stop at an SVG element listened to for focus,
+                              unless it is told otherwise.
+                            */}
+                            {currentVersionId === node.id && <g ref={setMotivationKeys} tabIndex={-1} />}
+                        </Fragment>
                     ))}
                 </g>
             </svg>
@@ -188,6 +226,8 @@ export interface Node extends d3.SimulationNodeDatum {
      * rather than off a copy.
      */
     inferred?: boolean
+    /** How many constraint problems the version has. */
+    troubles?: number
     overlayInfo?: ReactNode
 }
 
@@ -255,6 +295,7 @@ export const graphOf = (
             namesSystem: parent === undefined || !sharesSystem(parent, version),
             inferred: !attested.has(version.id),
             generation: version.generation,
+            troubles,
             overlayInfo: troubles > 0
                 ? <Box sx={{ p: 1 }}>{problemCount(troubles)}</Box>
                 : null
@@ -612,30 +653,59 @@ const curveThrough = d3.line<Point>()
     .y(p => p.y)
     .curve(d3.curveCatmullRom.alpha(0.5))
 
-export interface NavigationNodeProps extends SVGProps<SVGGElement> {
+/**
+ * What a node is called where it is not seen: the version by its siglum,
+ * as the legend names an open node, the system it is coded for, and the
+ * problems it has. The drawing names the system only where it changes,
+ * but a reader going from node to node hears each one on its own.
+ */
+export const spokenNameOf = (node: Node): string => [
+    `${node.inferred ? 'Inferred version' : 'Version'} ${node.label}`,
+    node.system,
+    node.troubles ? problemCount(node.troubles) : undefined
+].filter(Boolean).join(', ')
+
+export interface NavigationNodeProps {
     node: Node
     highlight: boolean
+    /** Opens the version; left out where the node only stands for one, as in the legend. */
+    onOpen?: () => void
 }
 
-export const NavigationNode = ({ node, highlight, ...svgProps }: NavigationNodeProps) => {
+export const NavigationNode = ({ node, highlight, onOpen }: NavigationNodeProps) => {
     const [hover, setHover] = useState(false)
     const elRef = useRef<SVGGElement>(null)
+
+    const control = onOpen && {
+        ...pressable(() => {
+            setHover(!hover)
+            onOpen()
+        }),
+        'aria-label': spokenNameOf(node),
+        'aria-current': highlight || undefined
+    }
 
     return (
         <>
             <g
-                {...svgProps}
+                {...control}
                 style={{
                     cursor: node.id !== '' ? 'pointer' : 'auto',
                     pointerEvents: 'auto'
                 }}
-                onClick={(e) => {
-                    setHover(!hover)
-                    svgProps.onClick?.(e)
-                }}
                 ref={elRef}
             >
                 {node.system && <title>{node.system}</title>}
+
+                {/* Shown only while the keyboard is on the node, see App.css. */}
+                {control && (
+                    <circle
+                        className='focusRing'
+                        cx={node.x || 10}
+                        cy={node.y || 10}
+                        r={radiusOf(node) + 6}
+                    />
+                )}
 
                 {highlight && (
                     <circle
@@ -751,6 +821,10 @@ interface LinkContainerProps {
      */
     markScale: number
     onVersionClick: (versionId: string) => void
+    /** The version being read, whose motivations alone the keyboard reaches. */
+    currentVersionId?: string
+    /** Where the keyboard reaches them, see `SlicedBalloon`. */
+    motivationKeys?: SVGGElement | null
 }
 
 export const LinkContainer = ({
@@ -759,6 +833,8 @@ export const LinkContainer = ({
     routes,
     markScale,
     onVersionClick,
+    currentVersionId,
+    motivationKeys,
 }: LinkContainerProps) => {
     const { selection, setSelection } = useSelection(isHeldMotivation)
     const { edition } = useContext(EditionContext)
@@ -848,6 +924,7 @@ export const LinkContainer = ({
                                 slices={slicesOf(version, selection)}
                                 a={{ x: source.x, y: source.y }}
                                 b={{ x: target.x, y: target.y }}
+                                keyboardLayer={source.id === currentVersionId ? motivationKeys : undefined}
                                 onSliceHover={(slice) => {
                                     const m = slice && motivations.find(m => m.id === slice.id)
                                     setSelection(m ? [{ versionId: source.id, motivation: m }] : [])

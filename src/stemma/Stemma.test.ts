@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, Node, radiusOf, routeMarkAt, shiftIntoView, spreadVersions } from './Stemma'
+import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, Node, radiusOf, routeMarkAt, shiftIntoView, spokenNameOf, spreadVersions } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -72,6 +72,34 @@ describe('which node is drawn open', () => {
         const { nodes } = graphOf(chain, [], { sigla: siglaOf({ versions: chain }), attested: new Set(['B']) })
 
         expect(nodes.map(node => node.inferred)).toEqual([true, false])
+    })
+})
+
+describe('what a node is called where it is not seen', () => {
+    const chain = [
+        version('A', welteT100, 0),
+        version('B', welteT100, 1, 'A')
+    ]
+    const nodeOf = (id: string, attested: string[]) =>
+        graphOf(chain, [], { sigla: new Map([['A', 'a'], ['B', 'B']]), attested: new Set(attested) })
+            .nodes.find(node => node.id === id)!
+
+    it('names the version by its siglum and the system it is coded for', () => {
+        expect(spokenNameOf(nodeOf('B', ['B']))).toBe('Version B, Welte-Mignon T100')
+    })
+
+    it('names the system where the drawing leaves it to be inherited', () => {
+        expect(nodeOf('B', ['B']).namesSystem).toBe(false)
+        expect(spokenNameOf(nodeOf('B', ['B']))).toContain('Welte-Mignon T100')
+    })
+
+    it('calls an open node an inferred version, as the legend does', () => {
+        expect(spokenNameOf(nodeOf('A', ['B']))).toBe('Inferred version a, Welte-Mignon T100')
+    })
+
+    it('counts the problems a version has, and says nothing where it has none', () => {
+        expect(spokenNameOf({ ...nodeOf('B', ['B']), troubles: 2 })).toBe('Version B, Welte-Mignon T100, 2 constraint problems')
+        expect(spokenNameOf({ ...nodeOf('B', ['B']), troubles: 0 })).toBe('Version B, Welte-Mignon T100')
     })
 })
 
