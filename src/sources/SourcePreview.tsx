@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { IconButton } from '@mui/material'
+import { ButtonBase, IconButton } from '@mui/material'
 import { InfoOutlined } from '@mui/icons-material'
 import { add, featuresOf, fromAxis, Millimeters, RollCopy, scale as times, subtract, TrackerBar } from 'linked-rolls'
 import { Arguable } from '../accounts/Arguable'
@@ -91,10 +91,10 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, onShowAccount,
     return (
         <div
             ref={containerRef}
-            onClick={onClick}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
+                position: 'relative',
                 cursor: 'pointer',
                 border: active ? '2px solid #1976d2' : '1px solid #e0e0e0',
                 borderRadius: 4,
@@ -105,6 +105,24 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, onShowAccount,
                 transition: 'background 0.15s, border-color 0.15s',
             }}
         >
+            {/*
+              The whole card opens the copy, and is one button for that
+              under everything else on it. The certainty mark and the info
+              button stand over it as buttons of their own, a button inside
+              a button being nothing a screen reader can tell apart.
+            */}
+            <ButtonBase
+                onClick={onClick}
+                disableRipple
+                aria-label={`Copy ${copyLabel(copy)}`}
+                aria-current={active || undefined}
+                sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '3px',
+                    '&.Mui-focusVisible': { outline: '2px solid #1976d2', outlineOffset: -2 }
+                }}
+            />
             {boxed && (drawn ? (
                 <canvas
                     ref={canvasRef}
@@ -129,10 +147,7 @@ export const SourcePreview = ({ copy, copyIndex, active, onClick, onShowAccount,
                     <IconButton
                         size='small'
                         aria-label={`What is known of copy ${copyLabel(copy)}`}
-                        onClick={event => {
-                            event.stopPropagation()
-                            onShowAccount()
-                        }}
+                        onClick={onShowAccount}
                         sx={{ p: 0.25, color: '#777' }}
                     >
                         <InfoOutlined sx={{ fontSize: 14 }} />
