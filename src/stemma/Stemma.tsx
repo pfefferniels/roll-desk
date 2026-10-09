@@ -419,6 +419,13 @@ export const radiusOf = (node: Node) =>
     node.radius ?? 32
 
 /**
+ * How large a siglum is lettered in its disc: as large as the disc
+ * leaves room for a siglum of four characters, such as R1.1, and no
+ * larger than in a disc of the stemma's own size.
+ */
+const siglumSize = (node: Node) => Math.min(22, radiusOf(node) * 0.8)
+
+/**
  * Half the caption and the gap to the next one. Text cannot be
  * measured before it is drawn, so the width is estimated at the
  * 5.8 px a character of 10 px sans-serif takes on average.
@@ -737,7 +744,7 @@ export const NavigationNode = ({ node, highlight, onOpen }: NavigationNodeProps)
                     height={40}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={14}
+                    fontSize={siglumSize(node)}
                     fill={node.inferred ? 'darkslategray' : 'white'}
                 >
                     {node.label}
