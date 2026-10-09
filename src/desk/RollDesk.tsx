@@ -588,7 +588,7 @@ export const Desk = ({ show }: DeskProps) => {
                             <Tab
                                 value='stemma'
                                 label={
-                                    <Tooltip title='The versions of the roll and how each derives from another. Choose one to open its roll.' describeChild>
+                                    <Tooltip title='The stemma shows the versions the roll went through.' describeChild>
                                         <span>Stemma</span>
                                     </Tooltip>
                                 }
@@ -597,7 +597,7 @@ export const Desk = ({ show }: DeskProps) => {
                             <Tab
                                 value='sources'
                                 label={
-                                    <Tooltip title='The copies of the roll that the versions are read from. Choose one to see its perforations.' describeChild>
+                                    <Tooltip title='Sources lists the copies the versions are read from.' describeChild>
                                         <span>Sources</span>
                                     </Tooltip>
                                 }

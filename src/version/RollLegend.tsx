@@ -33,11 +33,29 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                 }
                 description='Commands'
                 help={`
-                    Each bar is a perforation read as a note or an expression,
-                    on the lane of the track it runs over. Black ones are set
-                    down by the version on the desk, grey ones inherited from
-                    the versions before it, the fainter the older. Pointed at,
-                    a command names its track and what it means.
+                    Each bar is a command, a note or an expression, on the lane
+                    of the track it runs over. A command is not a perforation
+                    itself: it is carried by the perforations of the copies
+                    that bear it, and drawn where they put it. Black ones are
+                    set down by the version on the desk, grey ones inherited
+                    from the versions before it, the fainter the older. Pointed
+                    at, a command names its track and what it means.
+                `}
+            />
+
+            <LegendRow
+                symbol={
+                    <Sample>
+                        <polygon points='4,15 18,9 42,9 56,15 42,21 18,21' fill='black' />
+                    </Sample>
+                }
+                description='Scatter'
+                help={`
+                    Pointed at, a command shows how far its carriers disagree:
+                    it narrows to the stretch all of them cover and tapers out
+                    to the earliest onset and the latest end among them. Thin
+                    lines from its ends run to the dynamics curve, where the
+                    velocity it is struck with is written.
                 `}
             />
 
@@ -63,13 +81,28 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
             <LegendRow
                 symbol={
                     <Sample>
-                        <path d='M 4 15 L 14 15 L 20 5 L 40 5 L 46 15 L 56 15 L 46 15 L 40 25 L 20 25 L 14 15 Z' fill='gray' fillOpacity={0.1} stroke='black' strokeWidth={0.6} />
+                        {[[2, 7, 14], [14, 11, 20], [26, 19, 12], [38, 9, 16], [48, 23, 10]].map(([x, y, w]) => (
+                            <rect key={x} x={x} y={y} width={w} height={2} fill='gray' fillOpacity={0.5} />
+                        ))}
+                        <line x1={0} x2={width} y1={2} y2={2} stroke='dimgray' strokeWidth={0.6} strokeDasharray='4 3' />
+                        <line x1={0} x2={width} y1={28} y2={28} stroke='dimgray' strokeWidth={0.6} strokeDasharray='4 3' />
+                        {[8, 34].map(x => (
+                            <path
+                                key={x}
+                                d={`M ${x} 15 L ${x + 1} 3 L ${x + 11} 3 Q ${x + 12} 3 ${x + 12} 9 Q ${x + 12} 14 ${x + 14} 15 Q ${x + 12} 16 ${x + 12} 21 Q ${x + 12} 27 ${x + 11} 27 L ${x + 1} 27 Z`}
+                                fill='gray'
+                                fillOpacity={0.1}
+                                stroke='black'
+                                strokeWidth={0.6}
+                            />
+                        ))}
                     </Sample>
                 }
                 description='Pedal'
                 help={`
-                    A band over the keyboard that opens as the pedal goes down
-                    and closes as it comes up; the soft pedal is drawn dashed.
+                    A band over the keyboard that opens as the damper pedal goes
+                    down and closes as it comes up; the soft pedal is drawn as a
+                    dashed outline.
                 `}
             />
 
