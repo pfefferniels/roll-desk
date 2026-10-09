@@ -53,6 +53,7 @@ import { goesToAnOverlay } from "./goesToAnOverlay"
 import { activatesItsTarget } from "./activatesItsTarget"
 import { VersionView } from "../version/VersionView"
 import { RollLegend } from "../version/RollLegend"
+import { EditionHelp } from "./EditionHelp"
 import { dynamicsRoom } from "../version/Dynamics"
 import { compassOf } from "../version/compass"
 import { CopyFacsimile } from "../facsimile/CopyFacsimile"
@@ -423,6 +424,13 @@ export const Desk = ({ show }: DeskProps) => {
 
     const onTitlePage = !currentVersion && !currentCopy
 
+    // Only what is drawn on the desk is explained; the title page tells of the edition.
+    const legend = currentVersion
+        ? <RollLegend shows='version' />
+        : currentCopy
+            ? <RollLegend shows='copy' />
+            : <EditionHelp />
+
     const playButton = (
         <ToolButton
             label={isPlaying ? 'Stop' : 'Play'}
@@ -465,7 +473,7 @@ export const Desk = ({ show }: DeskProps) => {
                     <Download />
                 </ToolButton>
                 {playButton}
-                <RollLegend />
+                {legend}
                 <About />
             </Stack>
         </Paper>
@@ -530,7 +538,7 @@ export const Desk = ({ show }: DeskProps) => {
                     </Ribbon>
                 </RibbonGroup>
                 <Stack direction='row' sx={{ ml: 'auto' }}>
-                    <RollLegend />
+                    {legend}
                     <About />
                 </Stack>
             </Toolbar>
@@ -649,8 +657,8 @@ export const Desk = ({ show }: DeskProps) => {
                             {currentVersion && selection.length === 0 && (
                                 <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
                                     Point at a symbol on the roll to see what its lane means, or
-                                    open the mark over an edit for its reasons. The arrow keys step
-                                    along the roll; the legend (?) at the top explains the drawing.
+                                    open the mark over an edit for its reasons. The legend (?) at
+                                    the top explains the drawing.
                                 </Typography>
                             )}
                             {currentCopy && (

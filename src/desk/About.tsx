@@ -33,8 +33,13 @@ export const About = () => {
                             edition rests on, each with its certainty and reasons.
                         </Typography>
                         <Typography variant='body2'>
-                            The legend (?) over the desk explains the drawing of a
-                            roll and the keys that move along it.
+                            Space plays the version on the desk and stops it. Tab goes
+                            through the versions in the stemma and Enter opens one. On
+                            a version’s roll, the arrow keys go from symbol to symbol,
+                            with Shift from edit to edit, Home and End to the first and
+                            the last, Page Up and Page Down a view further, and Enter
+                            selects where they stand; + and − stretch and shrink the
+                            roll. Escape clears the selection.
                         </Typography>
                         <Typography variant='body2'>
                             By Niels Pfeffer. Released under the{' '}
