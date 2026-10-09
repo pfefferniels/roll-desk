@@ -15,6 +15,11 @@ interface CertaintyMarkProps {
     at?: { x: number, y: number }
 }
 
+/** What the mark says under the pointer, the unlikely and the false looking alike. */
+const hintOf = (certainty?: Certainty): string => certainty
+    ? `Held ${certainty}. Click for the reasons it rests on.`
+    : 'No truth value is stated for this. Click for what is known of it.'
+
 /**
  * The mark of the truth value a statement is held to have. Clicking it
  * opens what the statement rests on, wherever in the desk it is marked.
@@ -23,7 +28,7 @@ export const CertaintyMark = ({ certainty, children, at }: CertaintyMarkProps) =
     const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
     const button = (
-        <Tooltip title={certainty ? `held ${certainty}` : 'Nothing believed'}>
+        <Tooltip title={hintOf(certainty)}>
             <IconButton size='small' sx={{ padding: '2px' }} onClick={e => setAnchorEl(e.currentTarget)}>
                 <CertaintyIcon certainty={certainty} />
             </IconButton>

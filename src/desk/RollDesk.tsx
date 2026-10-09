@@ -656,7 +656,7 @@ export const Desk = ({ show }: DeskProps) => {
                             )}
                             {currentVersion && selection.length === 0 && (
                                 <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
-                                    Point at a symbol on the roll to see what its lane means, or
+                                    Point at a command on the roll to see what its lane means, or
                                     open the mark over an edit for its reasons. The legend (?) at
                                     the top explains the drawing.
                                 </Typography>

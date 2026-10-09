@@ -1,8 +1,5 @@
-import { Stack } from "@mui/material"
-import { Certainty } from "linked-rolls"
 import { ReactNode } from "react"
 import { LegendPopover, LegendRow } from "../stemma/Legend"
-import { CertaintyIcon } from "../accounts/CertaintyIcon"
 
 const width = 60
 const height = 30
@@ -14,14 +11,12 @@ const Sample = ({ children }: { children: ReactNode }) => (
     </svg>
 )
 
-const certainties: Certainty[] = ['true', 'likely', 'possible', 'unlikely', 'false']
-
 /** What is on the desk: a version's roll, or a copy's. */
 export type OnTheDesk = 'version' | 'copy'
 
 /**
  * What the drawing on the desk means, row by row, for what is on it: a
- * version's symbols and edits, or a copy's features. It hangs beside the
+ * version's commands and edits, or a copy's features. It hangs beside the
  * other buttons over the desk, so that the roll is explained where it is
  * read rather than in a text apart from it.
  */
@@ -36,13 +31,13 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                         <rect x={24} y={18} width={30} height={6} fill='gray' fillOpacity={0.5} />
                     </Sample>
                 }
-                description='Symbols'
+                description='Commands'
                 help={`
                     Each bar is a perforation read as a note or an expression,
                     on the lane of the track it runs over. Black ones are set
                     down by the version on the desk, grey ones inherited from
                     the versions before it, the fainter the older. Pointed at,
-                    a symbol names its track and what it means.
+                    a command names its track and what it means.
                 `}
             />
 
@@ -88,25 +83,24 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                 description='Edits'
                 help={`
                     What the version changed against the one it derives from:
-                    green round what it adds, red round what it takes away, an
-                    arrow from a dotted outline where it moves something. A
+                    green round what it adds, red round what it takes away. A
                     word under the green, such as "fix", names the kind of edit.
                 `}
             />
 
             <LegendRow
                 symbol={
-                    <Stack direction='row' spacing={0.25} sx={{ width, justifyContent: 'center' }}>
-                        {certainties.map(certainty => (
-                            <CertaintyIcon key={certainty} certainty={certainty} size={12} />
-                        ))}
-                    </Stack>
+                    <Sample>
+                        <rect x={4} y={21} width={16} height={5} fill='none' stroke='#666' strokeWidth={0.8} strokeDasharray='2 1.5' />
+                        <rect x={40} y={5} width={16} height={5} fill='black' />
+                        <path d='M 12 21 C 12 10, 22 7.5, 32 7.5' fill='none' stroke='black' strokeWidth={1.5} />
+                        <polygon points='38,7.5 31,4 31,11' fill='black' />
+                    </Sample>
                 }
-                description='Truth value'
+                description='Shift'
                 help={`
-                    The mark over an edit, or beside a statement in an account,
-                    says how certainly it is held: true, likely, possible,
-                    unlikely or false. The mark opens the reasons it rests on.
+                    An edit that puts something in another place: the arrow
+                    leads from where it stood, drawn dotted, to where it is now.
                 `}
             />
             </>
@@ -165,41 +159,7 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                     begins, between f sharp and g.
                 `}
             />
-
-            <LegendRow
-                symbol={
-                    <Stack direction='row' spacing={0.25} sx={{ width, justifyContent: 'center' }}>
-                        {certainties.map(certainty => (
-                            <CertaintyIcon key={certainty} certainty={certainty} size={12} />
-                        ))}
-                    </Stack>
-                }
-                description='Truth value'
-                help={`
-                    The mark beside a feature's condition, or beside a statement
-                    in an account, says how certainly it is held: true, likely,
-                    possible, unlikely or false. The mark opens the reasons it
-                    rests on.
-                `}
-            />
             </>
         )}
-
-        <LegendRow
-            symbol={
-                <Sample>
-                    <line x1={0} x2={width} y1={20} y2={20} stroke='#9ca3af' strokeWidth={1} />
-                    {[4, 16, 28, 40, 52].map(x => (
-                        <line key={x} x1={x} x2={x} y1={20} y2={x === 28 ? 27 : 23} stroke='#9ca3af' strokeWidth={1} />
-                    ))}
-                    <text x={28} y={15} fontSize={9} fill='#9ca3af' textAnchor='middle'>40 cm</text>
-                </Sample>
-            }
-            description='Ruler'
-            help={`
-                Distance from the start of the roll, measured on the
-                reference copy, which every other copy is aligned with.
-            `}
-        />
     </LegendPopover>
 )
