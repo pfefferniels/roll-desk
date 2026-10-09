@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { asJsonLd, Edition } from 'linked-rolls';
 import { downloadFile } from './downloadFile';
+import { PublicationContext } from '../edition/publication';
 
 interface DownloadDialogProps {
     open: boolean;
@@ -37,8 +38,15 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
     versionCount = 0
 }) => {
     const [renderingArchive, setRenderingArchive] = useState(false)
+    const publication = useContext(PublicationContext)
 
     const downloadJsonLd = () => {
+        // The published edition is handed out as it was read, not written anew.
+        if (publication?.bytes) {
+            downloadFile('edition.jsonld', publication.bytes, 'application/ld+json')
+            return
+        }
+
         const jsonld: unknown = asJsonLd(edition)
         downloadFile('edition.jsonld', JSON.stringify(jsonld, null, 4), 'application/ld+json')
     }
@@ -63,8 +71,10 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
                         <ListItemButton onClick={downloadJsonLd}>
                             <ListItemText
                                 primary="JSON-LD"
-                                secondary={`
-                                    The edition will be serialized using the JSON-LD format,
+                                secondary={publication?.bytes
+                                    ? `The edition file as published, in the JSON-LD format,
+                                    based on the Roll Edition Ontology (REO). This format is recommended.`
+                                    : `The edition will be serialized using the JSON-LD format,
                                     based on the Roll Edition Ontology (REO). This format is recommended.`} />
                         </ListItemButton>
                     </ListItem>

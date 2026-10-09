@@ -25,6 +25,8 @@ export const publishedEdition: Publication = {
 /** The published edition as the desk read it: where from, and the git object id of the bytes it got. */
 export interface ReadPublication extends Publication {
     blob?: string
+    /** The bytes the desk read, handed out as they are, so that a download is the file a citation names. */
+    bytes?: Uint8Array
 }
 
 /** What the desk read, or nothing where it shows an edition that was opened or written here. */
@@ -94,7 +96,7 @@ const blobIn = async (repository: string, tree: string, path: string): Promise<s
  * replaced. Nothing where none of them holds those bytes. Throws where
  * GitHub cannot be asked.
  */
-const findCommit = async ({ repository, path, blob }: Required<ReadPublication>): Promise<Commit | undefined> => {
+const findCommit = async ({ repository, path, blob }: Publication & { blob: string }): Promise<Commit | undefined> => {
     const commits = await github<ListedCommit[]>(`${repository}/commits?path=${encodeURIComponent(path)}&per_page=${lookBack}`)
     for (const commit of commits) {
         if (await blobIn(repository, commit.commit.tree.sha, path) !== blob) continue

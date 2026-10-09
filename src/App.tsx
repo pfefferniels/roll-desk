@@ -66,7 +66,7 @@ const App = () => {
         }
 
         setExistingEdition(reading.value);
-        setPublication({ ...publishedEdition, blob: await blobIdOf(bytes).catch(() => undefined) });
+        setPublication({ ...publishedEdition, bytes, blob: await blobIdOf(bytes).catch(() => undefined) });
       } catch (err) {
         console.error(err);
         setMessage('Could not load the edition of WM 225.');
