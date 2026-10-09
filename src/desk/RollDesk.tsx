@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from "@mui/material"
+import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, scale, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
@@ -95,6 +95,19 @@ const deskPanel = {
 } as const
 
 /**
+ * Where the open panel sits on a phone: across the screen below the
+ * controls at the top, which it would otherwise lie over, and scrolling
+ * where it runs longer than the screen.
+ */
+const phonePanel = {
+    top: '4.5rem',
+    left: 1,
+    maxHeight: 'calc(100dvh - 5.5rem)',
+    overflow: 'auto',
+    padding: 1
+} as const
+
+/**
  * How the bar is laid out for a version: it is read for its expression,
  * so the keyboard is pressed together and cut to the notes the piece
  * plays, and the dynamics it yields stand beyond the bar on either side.
@@ -186,8 +199,18 @@ export const Desk = ({ show }: DeskProps) => {
     const [emulationOptions, setEmulationOptions] = useState<EmulationOptions>()
 
     const [currentTab, setCurrentTab] = useState<DeskTab>('stemma')
-    /** The panel folds away where the roll under it is what matters. */
-    const [panelOpen, setPanelOpen] = useState(true)
+    /**
+     * Whether the desk is read on a phone, whose screen the panel would
+     * cover. Read before the first drawing, so that the panel starts as
+     * it should.
+     */
+    const theme = useTheme()
+    const onPhone = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true })
+    /**
+     * The panel folds away where the roll under it is what matters. On a
+     * phone it starts folded, leaving the title page and the controls free.
+     */
+    const [panelOpen, setPanelOpen] = useState(!onPhone)
 
     /**
      * Whether the panel was just folded away or brought back. The button
@@ -198,6 +221,10 @@ export const Desk = ({ show }: DeskProps) => {
     const togglePanel = (open: boolean) => {
         panelToggled.current = true
         setPanelOpen(open)
+    }
+    /** On a phone the panel folds away once it has opened a roll, which it would otherwise cover. */
+    const foldOnPhone = () => {
+        if (onPhone) togglePanel(false)
     }
     const takesFocusFromToggle = useCallback((button: HTMLButtonElement | null) => {
         if (!button || !panelToggled.current) return
@@ -565,7 +592,11 @@ export const Desk = ({ show }: DeskProps) => {
             )}
 
             {panelOpen && (
-                <Paper component='aside' aria-label='Panel' sx={{ ...deskPanel, padding: 2 }}>
+                <Paper
+                    component='aside'
+                    aria-label='Panel'
+                    sx={{ ...deskPanel, padding: 2, ...(onPhone && viewOnly && phonePanel) }}
+                >
                     <Stack direction='row' alignItems='center'>
                         <Tooltip title={onTitlePage ? 'On the title page' : 'Back to the title page'}>
                             <span>
@@ -642,6 +673,7 @@ export const Desk = ({ show }: DeskProps) => {
                                     setCurrentVersionId(versionId)
                                     setCurrentCopyId(undefined)
                                     setSelection([])
+                                    foldOnPhone()
                                 }}
                             />
                             {currentVersion && (
@@ -677,6 +709,7 @@ export const Desk = ({ show }: DeskProps) => {
                                 onClick={(copyId) => {
                                     setCurrentVersionId(undefined)
                                     setCurrentCopyId(copyId)
+                                    foldOnPhone()
                                 }}
                                 onShowAccount={setAccountCopyId}
                             />
