@@ -65,7 +65,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
                                 primary="JSON-LD"
                                 secondary={`
                                     The edition will be serialized using the JSON-LD format,
-                                    based on Roll-O data model. This format is recommended.`} />
+                                    based on the Roll Edition Ontology (REO). This format is recommended.`} />
                         </ListItemButton>
                     </ListItem>
                     <ListItem>
