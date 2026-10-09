@@ -56,7 +56,9 @@ export const SourceStack = ({ activeId, onClick, onShowAccount }: SourceStackPro
         <div>
             {measured.map(previewOf)}
             {secondary.length > 0 && (
-                <AccountSection title='Secondary sources'>
+                <AccountSection title='Secondary sources'
+                    hint='Copies known only from something made of them, such as a MIDI emulation or a recording, rather than measured on the paper or a scan.'
+                >
                     <div>{secondary.map(previewOf)}</div>
                 </AccountSection>
             )}

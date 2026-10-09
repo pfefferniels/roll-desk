@@ -49,7 +49,9 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             </div>
 
             {derivations.length > 0 && (
-                <AccountSection title='Derived from' folded>
+                <AccountSection title='Derived from'
+                    hint='The version this one was made from, and any others it is held to draw on as a hypothesis.'
+                    folded>
                     {derivations.map(({ parent, principal, belief, collationTolerance }) => (
                         <div key={parent}>
                             <HeldStatement belief={belief}>
@@ -67,7 +69,9 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             )}
 
             {creation && (
-                <AccountSection title='Made'>
+                <AccountSection title='Made'
+                    hint='How, by whom and when the version was made, as far as the edition can tell.'
+                >
                     {creation.procedure && <HeldStatement>{nameOf(creation.procedure)}</HeldStatement>}
                     {creation.actor && (
                         <HeldStatement belief={creation.actor['@annotation']?.belief}>
@@ -82,7 +86,9 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                 </AccountSection>
             )}
 
-            <AccountSection title='Witnesses' folded>
+            <AccountSection title='Witnesses'
+                hint='The copies that bear this version, by their perforations or by a statement about them.'
+                folded>
                 {/* Where only indirect witnesses are left, the reservation says so. */}
                 {witnesses.length === 0 && indirect.length === 0 && (
                     <Typography variant='body2' color='text.secondary'>No copy bears witness to it.</Typography>
@@ -101,7 +107,9 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
             </AccountSection>
 
             {reservations.length > 0 && (
-                <AccountSection title='Reservations'>
+                <AccountSection title='Reservations'
+                    hint='What the edition cannot vouch for about this version, left open for want of evidence.'
+                >
                     <ReservationNotes reservations={reservations} />
                 </AccountSection>
             )}

@@ -52,6 +52,7 @@ import { useHotkeys } from "react-hotkeys-hook"
 import { goesToAnOverlay } from "./goesToAnOverlay"
 import { activatesItsTarget } from "./activatesItsTarget"
 import { VersionView } from "../version/VersionView"
+import { RollLegend } from "../version/RollLegend"
 import { dynamicsRoom } from "../version/Dynamics"
 import { compassOf } from "../version/compass"
 import { CopyFacsimile } from "../facsimile/CopyFacsimile"
@@ -464,6 +465,7 @@ export const Desk = ({ show }: DeskProps) => {
                     <Download />
                 </ToolButton>
                 {playButton}
+                <RollLegend />
                 <About />
             </Stack>
         </Paper>
@@ -527,9 +529,10 @@ export const Desk = ({ show }: DeskProps) => {
                         {playButton}
                     </Ribbon>
                 </RibbonGroup>
-                <Box sx={{ ml: 'auto' }}>
+                <Stack direction='row' sx={{ ml: 'auto' }}>
+                    <RollLegend />
                     <About />
-                </Box>
+                </Stack>
             </Toolbar>
         </AppBar>)
 
@@ -574,8 +577,24 @@ export const Desk = ({ show }: DeskProps) => {
                             onChange={(_, tab: DeskTab) => setCurrentTab(tab)}
                             sx={{ flexGrow: 1 }}
                         >
-                            <Tab value='stemma' label='Stemma' {...tabOf('stemma')} />
-                            <Tab value='sources' label='Sources' {...tabOf('sources')} />
+                            <Tab
+                                value='stemma'
+                                label={
+                                    <Tooltip title='The versions of the roll and how each derives from another. Choose one to open its roll.' describeChild>
+                                        <span>Stemma</span>
+                                    </Tooltip>
+                                }
+                                {...tabOf('stemma')}
+                            />
+                            <Tab
+                                value='sources'
+                                label={
+                                    <Tooltip title='The copies of the roll that the versions are read from. Choose one to see its perforations.' describeChild>
+                                        <span>Sources</span>
+                                    </Tooltip>
+                                }
+                                {...tabOf('sources')}
+                            />
                             {hasProblems && (
                                 <Tab
                                     value='problems'
@@ -621,6 +640,18 @@ export const Desk = ({ show }: DeskProps) => {
                                 <AccountPanel>
                                     <VersionAccount versionId={currentVersion.id} />
                                 </AccountPanel>
+                            )}
+                            {onTitlePage && (
+                                <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
+                                    Choose a version to open its roll, or a copy under Sources.
+                                </Typography>
+                            )}
+                            {currentVersion && selection.length === 0 && (
+                                <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
+                                    Point at a symbol on the roll to see what its lane means, or
+                                    open the mark over an edit for its reasons. The arrow keys step
+                                    along the roll; the legend (?) at the top explains the drawing.
+                                </Typography>
                             )}
                             {currentCopy && (
                                 <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>

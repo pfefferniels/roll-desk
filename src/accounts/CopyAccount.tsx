@@ -89,7 +89,9 @@ const AlignmentAccount = ({ copy, edition }: { copy: RollCopy, edition: Edition 
     if (!isReference && !alignment && !paper && problems.length === 0) return null
 
     return (
-        <AccountSection title='Alignment'>
+        <AccountSection title='Alignment'
+            hint="How this copy's measurements are laid onto the reference copy, whose millimetres are the edition's axis."
+        >
             {isReference && (
                 <Typography variant='body2'>The reference copy: its millimetres are the edition&apos;s axis.</Typography>
             )}
@@ -133,12 +135,16 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
             </Typography>
 
             {copy.readFrom && (
-                <AccountSection title='Read from'>
+                <AccountSection title='Read from'
+                    hint="What the copy's features were taken from: the paper itself, a scan, a roll reader, or something made of it."
+                >
                     <SourceAccount source={copy.readFrom} />
                 </AccountSection>
             )}
 
-            <AccountSection title='Carries'>
+            <AccountSection title='Carries'
+                hint="The versions this copy bears, by its perforations or by a statement about it."
+            >
                 {carriages.length === 0 && (
                     <Typography variant='body2' color='text.secondary'>Nothing is known of what it carries.</Typography>
                 )}
@@ -156,13 +162,17 @@ export const CopyAccount = ({ copyId }: { copyId: string }) => {
             <AlignmentAccount copy={copy} edition={edition} />
 
             {statesPerforator && (
-                <AccountSection title='Perforator'>
+                <AccountSection title='Perforator'
+                    hint='What is known of the machine that punched the copy: its drive, its setting and its condition.'
+                >
                     <PerforatorAccount perforator={perforator} path={[...copyPath, 'production', 'perforator']} />
                 </AccountSection>
             )}
 
             {reservations.length > 0 && (
-                <AccountSection title='Reservations'>
+                <AccountSection title='Reservations'
+                    hint='What the edition cannot vouch for about this copy, left open for want of evidence.'
+                >
                     <ReservationNotes reservations={reservations} />
                 </AccountSection>
             )}

@@ -34,14 +34,20 @@ export const LegendRow = ({ symbol, description, help }: LegendRowProps) => {
   )
 }
 
+interface LegendPopoverProps {
+    /** What the button is named, where more than one legend is on the desk. */
+    label?: string
+    children: ReactNode
+}
+
 /** A help button that opens the rows given to it. */
-export const LegendPopover = ({ children }: { children: ReactNode }) => {
+export const LegendPopover = ({ label = 'Legend', children }: LegendPopoverProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
   return (
     <>
       <ToolButton
-        label='Legend'
+        label={label}
         aria-expanded={Boolean(anchorEl)}
         onClick={(event) => setAnchorEl(anchorEl ? null : event.currentTarget)}
       >
@@ -61,7 +67,7 @@ export const Legend = () => {
   const shadowMargin = 25
 
   return (
-    <LegendPopover>
+    <LegendPopover label='Legend of the stemma'>
       <LegendRow
         symbol={
           <svg

@@ -1,7 +1,7 @@
 import { ExpandMore } from "@mui/icons-material"
-import { Box, ButtonBase, Collapse, Stack, Typography } from "@mui/material"
+import { Box, ButtonBase, Collapse, Stack, Tooltip, Typography } from "@mui/material"
 import { Belief } from "linked-rolls"
-import { ReactNode, useState } from "react"
+import { ReactElement, ReactNode, useState } from "react"
 import { CertaintyMark } from "./CertaintyMark"
 import { BeliefAccount } from "./Reasons"
 
@@ -34,6 +34,8 @@ export const AccountPanel = ({ children }: { children: ReactNode }) => (
 
 interface AccountSectionProps {
     title: string
+    /** What the title means, in a sentence shown under the pointer. */
+    hint?: string
     /**
      * Where given, the section folds under its title, a click on which opens
      * and shuts it; true starts it shut, for what a reader seldom needs to see.
@@ -45,27 +47,42 @@ interface AccountSectionProps {
 const sectionSx = { pt: 1, borderTop: '1px solid #f3f4f6' }
 
 /** One part of an account, under its title. */
-export const AccountSection = ({ title, folded, children }: AccountSectionProps) => {
+export const AccountSection = ({ title, hint, folded, children }: AccountSectionProps) => {
     const [open, setOpen] = useState(!folded)
 
     const heading = (
-        <Typography variant='overline' color='text.secondary' sx={{ lineHeight: 1.5 }}>
+        <Typography
+            variant='overline'
+            color='text.secondary'
+            sx={{
+                lineHeight: 1.5,
+                alignSelf: 'flex-start',
+                // A dotted line under a title says there is more to it under the pointer.
+                ...(hint && { textDecoration: 'underline dotted', textUnderlineOffset: 3 }),
+                ...(hint && folded === undefined && { cursor: 'help' })
+            }}
+        >
             {title}
         </Typography>
     )
 
+    const explained = (heading: ReactElement) => hint
+        ? <Tooltip title={hint} describeChild placement='top-start'>{heading}</Tooltip>
+        : heading
+
     if (folded === undefined) {
         return (
             <Stack spacing={0.75} sx={sectionSx}>
-                {heading}
+                {explained(heading)}
                 {children}
             </Stack>
         )
     }
 
+    // The tooltip hangs on the button, so that it shows where the keyboard is too.
     return (
         <Stack sx={sectionSx}>
-            <ButtonBase
+            {explained(<ButtonBase
                 onClick={() => setOpen(!open)}
                 aria-expanded={open}
                 sx={{
@@ -84,7 +101,7 @@ export const AccountSection = ({ title, folded, children }: AccountSectionProps)
                         transition: 'transform 150ms'
                     }}
                 />
-            </ButtonBase>
+            </ButtonBase>)}
             <Collapse in={open}>
                 <Stack spacing={0.75} sx={{ pt: 0.75 }}>
                     {children}

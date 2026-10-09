@@ -98,6 +98,16 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
                 )}
             </Stack>
 
+            {/* Kept to a pointer: the parts of the desk explain themselves where they are. */}
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 2 }}>
+                A critical edition of a piano roll: the stemma beside this page draws
+                the versions the roll went through, Sources lists its copies. A roll
+                has no running text to search; it is read along its length, and every
+                version, copy and symbol has an address of its own. The editorial
+                principles are set out in the dissertation <i>Grünfelds Geist</i>{' '}
+                (Niels Pfeffer, Tübingen 2026), chapter “Varianten”.
+            </Typography>
+
             <Section title='Roll'>
                 <Field label='Catalogue number'>{roll.catalogueNumber.trim() || undefined}</Field>
                 <Field label='Pianist'>
