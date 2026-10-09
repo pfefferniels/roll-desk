@@ -34,9 +34,9 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                 description='Commands'
                 help={`
                     Each bar is a command, a note or an expression, on the lane
-                    of the track it runs over. A command is not a perforation
-                    itself: it is carried by the perforations of the copies
-                    that bear it, and drawn where they put it. Black ones are
+                    of the track it runs over. A command is carried by the
+                    perforations of the copies that bear it, and drawn where
+                    they put it. Black ones are
                     set down by the version on the desk, grey ones inherited
                     from the versions before it, the fainter the older. Pointed
                     at, a command names its track and what it means.
