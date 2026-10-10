@@ -5,7 +5,7 @@ import { appliedBy, inPageOrder, ruleLabel, rulesOf, rulesOnPage } from './rules
 const BASE = 'https://welte225.org/'
 
 const inference = (applies: string[]): AnyArgumentation =>
-    ({ type: 'inference', premises: [], applies }) as AnyArgumentation
+    ({ type: 'inference', premises: [], applies })
 
 describe('the rules a reason applies', () => {
     it('reads each against the edition\'s address', () => {

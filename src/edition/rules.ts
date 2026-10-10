@@ -27,15 +27,10 @@ const iriOf = (id: string, base: string): string | undefined => {
     return url && (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : undefined
 }
 
-/**
- * The rules a reason applies, by IRI. Only an inference applies any.
- * `applies` came to the format after linked-rolls 0.69, so it is read
- * off the reason until the desk takes the release that types it.
- */
+/** The rules a reason applies, by IRI. Only an inference applies any. */
 export const appliedBy = (reason: AnyArgumentation, base: string): string[] => {
     if (reason.type !== 'inference') return []
-    const { applies } = reason as { applies?: readonly string[] }
-    return (applies ?? []).flatMap(id => iriOf(id, base) ?? [])
+    return (reason.applies ?? []).flatMap(id => iriOf(id, base) ?? [])
 }
 
 /** Every rule the edition's inferences apply, by IRI, in the order they are first named. */
