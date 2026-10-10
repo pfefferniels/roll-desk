@@ -69,15 +69,48 @@ const keysFor = (context: JsonObject, iris: readonly string[]): string[] => [
         .map(([term]) => term)
 ]
 
-/** A literal as JSON-LD may write it: plain, or as a value object. */
-const literal = (value: unknown): string | undefined => {
-    if (typeof value === 'string') return value
-    const inner = isObject(value) ? value['@value'] : undefined
-    return typeof inner === 'string' ? inner : undefined
+interface Literal {
+    value: string
+    language?: string
 }
 
-/** The rules one JSON-LD document states, each node's label as its name and its symbolic content (crm:P190) as its text. */
-const rulesIn = (document: unknown, address: string, into: Map<string, RuleText>) => {
+/** The literals a value states as JSON-LD may write them: plain, as value objects, as a language map, or several. */
+const literalsOf = (value: unknown): Literal[] => {
+    if (typeof value === 'string') return [{ value }]
+    if (Array.isArray(value)) return value.flatMap(literalsOf)
+    if (!isObject(value)) return []
+    if ('@value' in value) {
+        const { '@value': inner, '@language': language } = value
+        return typeof inner === 'string' ? [{ value: inner, language: typeof language === 'string' ? language : undefined }] : []
+    }
+    // A language map: what stands under each language is in it.
+    return Object.entries(value)
+        .filter(([key]) => !key.startsWith('@'))
+        .flatMap(([language, inner]) => literalsOf(inner).map(literal => ({ ...literal, language })))
+}
+
+/** A language tag without its region, script or variant, for comparing. */
+const primary = (tag: string): string => tag.split('-')[0]?.toLowerCase() ?? ''
+
+/** The literal in the first of the languages asked for that it is stated in, or else the first it states. */
+const literal = (value: unknown, languages: readonly string[]): string | undefined => {
+    const all = literalsOf(value)
+    const preferred = languages
+        .map(language => all.find(literal => literal.language !== undefined && primary(literal.language) === primary(language)))
+        .find(literal => literal !== undefined)
+    return (preferred ?? all[0])?.value
+}
+
+/** The languages the reader reads, in the order they prefer them, and then English, the desk's own. */
+const readersLanguages = (): string[] =>
+    [...(typeof navigator === 'undefined' ? [] : navigator.languages ?? []), 'en']
+
+/**
+ * The rules one JSON-LD document states, each node's label as its name and
+ * its symbolic content (crm:P190) as its text, each in the first of the
+ * languages asked for that the document states it in.
+ */
+const rulesIn = (document: unknown, address: string, languages: readonly string[], into: Map<string, RuleText>) => {
     if (!isObject(document)) return
     const contexts: unknown[] = [document['@context']].flat()
     const context = contexts.filter(isObject).reduce<JsonObject>((all, one) => ({ ...all, ...one }), {})
@@ -92,8 +125,8 @@ const rulesIn = (document: unknown, address: string, into: Map<string, RuleText>
         const iri = iriOf(node['@id'], base)
         if (!iri) continue
         into.set(iri, {
-            name: names.map(key => literal(node[key])).find(Boolean),
-            text: texts.map(key => literal(node[key])).find(Boolean),
+            name: names.map(key => literal(node[key], languages)).find(Boolean),
+            text: texts.map(key => literal(node[key], languages)).find(Boolean),
             order: into.size
         })
     }
@@ -101,15 +134,16 @@ const rulesIn = (document: unknown, address: string, into: Map<string, RuleText>
 
 /**
  * The rules a page states, by IRI, from the JSON-LD it carries in
- * `application/ld+json` script blocks. A plain JSON-LD document is read
- * the same way.
+ * `application/ld+json` script blocks, each in the first of the languages
+ * asked for, by default the reader's, that the page states it in. A plain
+ * JSON-LD document is read the same way.
  */
-export const rulesOnPage = (page: string, address: string): Map<string, RuleText> => {
+export const rulesOnPage = (page: string, address: string, languages: readonly string[] = readersLanguages()): Map<string, RuleText> => {
     const blocks = [...page.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1] ?? '')
     const rules = new Map<string, RuleText>()
     for (const block of blocks.length > 0 ? blocks : [page]) {
         try {
-            rulesIn(JSON.parse(block), address, rules)
+            rulesIn(JSON.parse(block), address, languages, rules)
         } catch {
             // A block that is no JSON states no rule.
         }

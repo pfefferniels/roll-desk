@@ -58,6 +58,24 @@ describe('the rules a page states', () => {
         expect(rules.get('https://welte225.org/rules#refinement')).toEqual({ name: 'Verfeinerung', text: undefined, order: 1 })
     })
 
+    it('states each rule in the first language asked for that the page has, or else in the first it gives', () => {
+        const bilingual = `<script type="application/ld+json">
+        {
+          "@context": {
+            "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+            "@base": "https://welte225.org/rules",
+            "name": { "@id": "rdfs:label", "@container": "@language" }
+          },
+          "@graph": [{ "@id": "#refinement", "name": { "de": "Verfeinerung", "en": "Refinement" } }]
+        }
+        </script>`
+        const named = (languages: string[]) => rulesOnPage(bilingual, 'https://welte225.org/rules', languages).get('https://welte225.org/rules#refinement')?.name
+
+        expect(named(['de-AT', 'en'])).toBe('Verfeinerung')
+        expect(named(['fr', 'en'])).toBe('Refinement')
+        expect(named(['fr'])).toBe('Verfeinerung')
+    })
+
     it('states nothing where the page carries no JSON-LD', () => {
         expect(rulesOnPage('<html><body>Not found</body></html>', 'https://welte225.org/rules').size).toBe(0)
     })
