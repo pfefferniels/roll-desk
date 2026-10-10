@@ -33,6 +33,11 @@ export const About = () => {
                             edition rests on, each with its certainty and reasons.
                         </Typography>
                         <Typography variant='body2'>
+                            The editorial principles behind it are set out in the
+                            dissertation <i>Grünfelds Geist</i> (Niels Pfeffer,
+                            Tübingen 2026), chapter “Varianten”.
+                        </Typography>
+                        <Typography variant='body2'>
                             Space plays the version on the desk and stops it. Tab goes
                             through the versions in the stemma and Enter opens one. On
                             a version’s roll, the arrow keys go from symbol to symbol,

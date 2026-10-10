@@ -53,7 +53,6 @@ import { goesToAnOverlay } from "./goesToAnOverlay"
 import { activatesItsTarget } from "./activatesItsTarget"
 import { VersionView } from "../version/VersionView"
 import { RollLegend } from "../version/RollLegend"
-import { EditionHelp } from "./EditionHelp"
 import { dynamicsRoom } from "../version/Dynamics"
 import { compassOf } from "../version/compass"
 import { CopyFacsimile } from "../facsimile/CopyFacsimile"
@@ -451,12 +450,11 @@ export const Desk = ({ show }: DeskProps) => {
 
     const onTitlePage = !currentVersion && !currentCopy
 
-    // Only what is drawn on the desk is explained; the title page tells of the edition.
+    // Only what is drawn on the desk is explained; the title page has
+    // nothing drawn, and what the edition rests on is told in About.
     const legend = currentVersion
         ? <RollLegend shows='version' />
-        : currentCopy
-            ? <RollLegend shows='copy' />
-            : <EditionHelp />
+        : currentCopy && <RollLegend shows='copy' />
 
     const playButton = (
         <ToolButton
