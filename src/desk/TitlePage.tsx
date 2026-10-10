@@ -1,13 +1,14 @@
 import { Create } from "@mui/icons-material"
 import { Box, IconButton, Link, Stack, Typography } from "@mui/material"
 import { Editor } from "linked-rolls"
-import { Fragment, ReactNode, useContext } from "react"
+import { Fragment, ReactNode, useContext, useMemo } from "react"
 import { Arguable } from "../accounts/Arguable"
 import { Name } from "../accounts/Name"
 import { recordLabel } from "../edition/authorities"
 import { EditionContext } from "../edition/EditionContext"
 import { dateStatement, day } from "../edition/dateStatement"
 import { licenseName } from "../edition/licenses"
+import { inPageOrder, ruleLabel, rulesOf, useRules } from "../edition/rules"
 
 /** Stands where the edition states nothing. */
 const missing = <Box component='span' sx={{ color: 'text.disabled' }}>—</Box>
@@ -66,6 +67,34 @@ const Section = ({ title, children }: { title: string, children: ReactNode }) =>
     </Box>
 )
 
+/**
+ * The rules the edition draws its conclusions by, as its inferences name
+ * them, each leading to where it is stated. An edition whose inferences
+ * name none shows nothing here.
+ */
+const Rules = ({ iris }: { iris: readonly string[] }) => {
+    const rules = inPageOrder(useRules(iris))
+    if (rules.length === 0) return null
+
+    return (
+        <Box component='section' sx={{ mt: 3 }}>
+            <Typography variant='overline' component='h2' color='text.secondary' sx={{ lineHeight: 1.5 }}>
+                Rules
+            </Typography>
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
+                The edition draws its conclusions by these rules; each inference names those it applies.
+            </Typography>
+            <Box component='ul' sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+                {rules.map(rule => (
+                    <Typography component='li' variant='body2' key={rule.iri}>
+                        <OutLink href={rule.iri}>{ruleLabel(rule)}</OutLink>
+                    </Typography>
+                ))}
+            </Box>
+        </Box>
+    )
+}
+
 interface TitlePageProps {
     /** Opens the edition's metadata for editing; left out where the edition is only read. */
     onEdit?: () => void
@@ -78,6 +107,7 @@ interface TitlePageProps {
  */
 export const TitlePage = ({ onEdit }: TitlePageProps) => {
     const { edition } = useContext(EditionContext)
+    const rules = useMemo(() => edition ? rulesOf(edition) : [], [edition])
     if (!edition) return null
 
     const { roll, creation } = edition
@@ -134,6 +164,8 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
                     {edition.base ? <OutLink href={edition.base}>{edition.base}</OutLink> : undefined}
                 </Field>
             </Section>
+
+            <Rules iris={rules} />
         </Box>
     )
 }

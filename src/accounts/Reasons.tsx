@@ -5,6 +5,7 @@ import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension, symbolIn, p
 import { ReactNode, useContext } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../edition/reasons"
+import { appliedBy, ruleLabel, useRules } from "../edition/rules"
 import { CertaintyIcon } from "./CertaintyIcon"
 import { EntityLink } from "./EntityLink"
 import { Name } from "./Name"
@@ -32,6 +33,25 @@ const Cited = ({ heading, ids }: { heading: string, ids: readonly string[] }) =>
                 <span key={id}>
                     {index > 0 && ', '}
                     <CitationLink citation={citationOf(edition, id)} />
+                </span>
+            ))}
+        </Typography>
+    )
+}
+
+/** The rules an inference applies, each by its name and leading to where it is stated, or nothing where it names none. */
+const Applied = ({ reason }: { reason: AnyArgumentation }) => {
+    const { edition } = useContext(EditionContext)
+    const rules = useRules(edition ? appliedBy(reason, edition.base) : [])
+    if (rules.length === 0) return null
+
+    return (
+        <Typography variant='caption' component='div' color='text.secondary' sx={{ overflowWrap: 'anywhere' }}>
+            Rules:{' '}
+            {rules.map((rule, index) => (
+                <span key={rule.iri}>
+                    {index > 0 && ', '}
+                    <Link href={rule.iri} target='_blank' rel='noreferrer' title={rule.text}>{ruleLabel(rule)}</Link>
                 </span>
             ))}
         </Typography>
@@ -85,6 +105,7 @@ const Reason = ({ reason }: { reason: AnyArgumentation }) => {
             {reason.type === 'meaningComprehension' && <Comprehended reason={reason} />}
             {(reason.type === 'inference' || reason.type === 'measurement') && <Cited heading='Used' ids={reason.used ?? []} />}
             {reason.type === 'inference' && <Cited heading='Premises' ids={reason.premises} />}
+            <Applied reason={reason} />
         </Stack>
     )
 }
