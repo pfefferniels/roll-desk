@@ -68,9 +68,9 @@ const Section = ({ title, children }: { title: string, children: ReactNode }) =>
 )
 
 /**
- * The editorial principles the edition draws its conclusions by, as its
- * inferences name them, on one line, each leading to where it is stated.
- * An edition whose inferences name none shows nothing here.
+ * The editorial principles the edition's inferences apply, on one line,
+ * each leading to where it is stated. A principle no inference names is
+ * not among them. An edition whose inferences name none shows nothing here.
  */
 const Rules = ({ iris }: { iris: readonly string[] }) => {
     const rules = inPageOrder(useRules(iris))
@@ -79,7 +79,7 @@ const Rules = ({ iris }: { iris: readonly string[] }) => {
     return (
         <Box component='section' sx={{ mt: 3 }}>
             <Typography variant='overline' component='h2' color='text.secondary' sx={{ lineHeight: 1.5 }}>
-                Editorial principles
+                Applied editorial principles
             </Typography>
             <Typography variant='body2' sx={{ mt: 0.5 }}>
                 {rules.map((rule, at) => (
