@@ -1,4 +1,4 @@
-import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, pathIn, withGenerations, Edition } from 'linked-rolls'
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, withGenerations, Edition } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../constraints/constraints';
 import { FocusEvent, Fragment, useCallback, useContext, useMemo, useRef, useState } from "react"
@@ -9,9 +9,8 @@ import { Legend } from './Legend';
 import { useSelection } from '../desk/SelectionContext';
 import { outlineOf, restingReachOf, Slice, sliceCentre, SlicedBalloon } from './SlicedBalloon';
 import { Clash, overlap, Shape, spreadApart, Thickened } from './spreading';
-import { End, endAt, fieldOf, halfwayAlong, Obstacle, routeAround } from './routing';
-import { Arguable } from '../accounts/Arguable';
-import { along, perpendicular, point, Point, unit } from '../geometry/drawing';
+import { End, endAt, fieldOf, Obstacle, routeAround } from './routing';
+import { point, Point } from '../geometry/drawing';
 import { HeldMotivation, isHeldMotivation, sameMotivation } from '../edition/motivation';
 import { Svg, svg } from '../canvas/units';
 import { pressable } from '../desk/pressable';
@@ -48,7 +47,6 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     const svgHeight = height
     const versions = edition?.versions
 
-    // Laid out while rendering, so that no link outlives the derivation its mark addresses.
     const { nodes, links, routes, fit } = useMemo(() => {
         if (!versions || !edition) {
             return { nodes: [], links: [], routes: new Map<Link, Point[]>(), fit: fitOf([], svgWidth, svgHeight) }
@@ -176,7 +174,6 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
                         links={links}
                         routes={routes}
                         positionedNodes={nodes}
-                        markScale={1 / fit.scale}
                         onVersionClick={onClick}
                         currentVersionId={currentVersionId}
                         motivationKeys={motivationKeys}
@@ -251,12 +248,6 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
      */
     principal: boolean
 
-    /** Where the derivation stands in the version's `basedOn`, which is how its belief is addressed. */
-    derivation: number
-
-    /** Whether a belief is stated of the derivation, which is then marked on the link. */
-    believed: boolean
-
     /** Whether the derivation is drawn as a balloon sliced by its version's motivations, which a principal one with motivations is. */
     sliced: boolean
 }
@@ -306,7 +297,7 @@ export const graphOf = (
 
     const links: Link[] = versions.flatMap(version => {
         const principal = parentOf(version)
-        return derivationsOf(version).flatMap(({ parent, certainty, belief }, derivation): Link[] => {
+        return derivationsOf(version).flatMap(({ parent, certainty }): Link[] => {
             const target = versionBy(parent)
             if (!target) return []
 
@@ -316,8 +307,6 @@ export const graphOf = (
                 transfer: !sharesSystem(target, version),
                 certainty,
                 principal: target === principal,
-                derivation,
-                believed: belief !== undefined,
                 sliced: target === principal && version.motivations.length > 0
             }]
         })
@@ -401,18 +390,6 @@ export const fitOf = (places: readonly { x?: number, y?: number }[], width: numb
         midX: (minX + maxX) / 2,
         midY: (minY + maxY) / 2
     }
-}
-
-/**
- * Where the mark of a derivation's belief sits: beside the place halfway
- * along the link, measured along it where it turns, clear of it by the
- * distance given.
- */
-export const routeMarkAt = (route: readonly Point[], clearance: Svg): Point => {
-    const halfway = halfwayAlong(route)
-    if (!halfway) return point(svg(0), svg(0))
-    const direction = unit(halfway.direction)
-    return direction ? along(halfway.at, perpendicular(direction), clearance) : halfway.at
 }
 
 export const radiusOf = (node: Node) =>
@@ -540,12 +517,6 @@ export const routesOf = (nodes: readonly Node[], links: readonly Link[]): Map<Li
     }))
 }
 
-/** How far on the screen the mark of a derivation's belief keeps from its link, clear of the balloon at rest. */
-const markClearance = 16
-
-/** How far on the screen the button of a belief's mark reaches from where the mark is placed. */
-const markReach = 10
-
 /** How far a derivation drawn as a line rather than a balloon reaches to either side. */
 const lineReach = 2
 
@@ -566,13 +537,12 @@ interface Piece {
 
 /**
  * What the opened balloon of each derivation runs into: another
- * derivation, the mark of another's belief, a version or its caption.
- * Balloons open one at a time, so the others are met at rest. Where a
- * version is drawn over both, the pointer lands on the version, so the
- * derivations meeting at it do not clash there. A mark keeps its size on
- * the screen, and is enlarged against the drawing by the scale given.
+ * derivation, a version or its caption. Balloons open one at a time, so
+ * the others are met at rest. Where a version is drawn over both, the
+ * pointer lands on the version, so the derivations meeting at it do not
+ * clash there.
  */
-export const clashesOf = (nodes: readonly Node[], links: readonly Link[], markScale: number): Clash[] => {
+export const clashesOf = (nodes: readonly Node[], links: readonly Link[]): Clash[] => {
     const discs = nodes.flatMap(node => {
         const at = placed(nodes, node.id)
         return at ? [{ node, at }] : []
@@ -595,10 +565,6 @@ export const clashesOf = (nodes: readonly Node[], links: readonly Link[], markSc
             x: (a.x + b.x) / 2,
             of: link
         })),
-        ...derivations.filter(({ link }) => link.believed).map(({ link, child, a, b }) => {
-            const at = routeMarkAt([a, b], svg(markClearance * markScale))
-            return { shape: { from: at, to: at, radius: markReach * markScale }, root: child, x: at.x, of: link }
-        }),
         ...discs.flatMap(({ node, at }) => {
             const caption = captionOf(node, at)
             return [{ from: at, to: at, radius: radiusOf(node) }, ...(caption ? [caption] : [])]
@@ -621,36 +587,24 @@ export const clashesOf = (nodes: readonly Node[], links: readonly Link[], markSc
  * anything, each with the versions descending from it. Says whether
  * anything moved.
  */
-export const spreadVersions = (nodes: readonly Node[], links: readonly Link[], markScale: number): boolean => {
+export const spreadVersions = (nodes: readonly Node[], links: readonly Link[]): boolean => {
     const children = new Map<string, string[]>()
     for (const link of links.filter(link => link.principal)) {
         const parent = (link.target as Node).id
         children.set(parent, [...children.get(parent) ?? [], (link.source as Node).id])
     }
-    return spreadApart(nodes, id => children.get(id) ?? [], () => clashesOf(nodes, links, markScale))
+    return spreadApart(nodes, id => children.get(id) ?? [], () => clashesOf(nodes, links))
 }
-
-/** How many times spreading the versions and fitting the drawing are settled against each other at most. */
-const settlings = 3
 
 /**
  * The versions spread apart, the hypotheses routed round them, and the
- * scale and centre the drawing is fitted at. A mark keeps its size on the
- * screen, so how much room it takes on the drawing depends on the fit,
- * which spreading changes; the two are therefore settled in turn.
+ * scale and centre the drawing is fitted at.
  */
 export const laidOut = (nodes: readonly Node[], links: readonly Link[], width: number, height: number) => {
-    let fit = fitOf(nodes, width, height)
-    let routes = new Map<Link, Point[]>()
-    for (let round = 0; round < settlings; round++) {
-        const moved = spreadVersions(nodes, links, 1 / fit.scale)
-        routes = routesOf(nodes, links)
-        // A hypothesis may go round the outside of the stemma, and is fitted in with it.
-        const next = fitOf([...nodes, ...[...routes.values()].flat()], width, height)
-        const settled = !moved || next.scale >= fit.scale
-        fit = next
-        if (settled) break
-    }
+    spreadVersions(nodes, links)
+    const routes = routesOf(nodes, links)
+    // A hypothesis may go round the outside of the stemma, and is fitted in with it.
+    const fit = fitOf([...nodes, ...[...routes.values()].flat()], width, height)
     return { routes, fit }
 }
 
@@ -793,22 +747,6 @@ export const NavigationNode = ({ node, highlight, onOpen }: NavigationNodeProps)
     )
 }
 
-interface BeliefMarkProps {
-    at: Point
-    path: Path
-    /** How much the mark is enlarged against the drawing. */
-    scale: number
-}
-
-/** The mark of the belief a derivation is held under, centred on the point given. */
-const BeliefMark = ({ at, path, scale }: BeliefMarkProps) => (
-    <g transform={`translate(${at.x} ${at.y}) scale(${scale})`}>
-        <Arguable asSVG={{ buttonPlacement: { x: -10, y: -10 } }} path={path}>
-            {null}
-        </Arguable>
-    </g>
-)
-
 /**
  * The links in the order they are drawn, each with where it stands among
  * them. A derivation held as a hypothesis goes beneath every balloon: its
@@ -825,12 +763,6 @@ interface LinkContainerProps {
     links: Link[];
     /** The way each hypothesis takes round the rest; one without is drawn straight. */
     routes: ReadonlyMap<Link, readonly Point[]>
-    /**
-     * How much a mark is enlarged against the drawing: the inverse of the
-     * scale the drawing is fitted at, so that a mark keeps a size one can
-     * click however many generations the stemma has to fit.
-     */
-    markScale: number
     onVersionClick: (versionId: string) => void
     /** The version being read, whose motivations alone the keyboard reaches. */
     currentVersionId?: string
@@ -842,7 +774,6 @@ export const LinkContainer = ({
     positionedNodes,
     links,
     routes,
-    markScale,
     onVersionClick,
     currentVersionId,
     motivationKeys,
@@ -866,14 +797,6 @@ export const LinkContainer = ({
 
                 const route = routes.get(link)
                     ?? [point(svg(source.x), svg(source.y)), point(svg(target.x), svg(target.y))]
-                const versionPath = edition && pathIn(edition, source.id)
-                const mark = link.believed && versionPath && (
-                    <BeliefMark
-                        at={routeMarkAt(route, svg(markClearance * markScale))}
-                        path={[...versionPath, 'basedOn', link.derivation]}
-                        scale={markScale}
-                    />
-                )
 
                 if (!link.principal) {
                     const d = curveThrough([...route]) ?? undefined
@@ -896,7 +819,6 @@ export const LinkContainer = ({
                                     pointerEvents="stroke"
                                 />
                             </g>
-                            {mark}
                         </g>
                     )
                 }
@@ -930,7 +852,7 @@ export const LinkContainer = ({
                                 strokeWidth={2}
                             />
                         )}
-                        {version && motivations.length > 0 ? (
+                        {version && motivations.length > 0 && (
                             <SlicedBalloon
                                 slices={slicesOf(version, selection)}
                                 a={{ x: source.x, y: source.y }}
@@ -947,10 +869,8 @@ export const LinkContainer = ({
                                     queueMicrotask(() =>
                                         setSelection([{ versionId: source.id, motivation: m }]))
                                 }}
-                            >
-                                {mark}
-                            </SlicedBalloon>
-                        ) : mark}
+                            />
+                        )}
                     </g>
                 )
             })}

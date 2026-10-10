@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { endAt, halfwayAlong, Obstacle, roomAt, routeAround } from './routing'
+import { endAt, Obstacle, roomAt, routeAround } from './routing'
 import { point, Point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -60,20 +60,5 @@ describe('routing a hypothesis round the stemma', () => {
 
         expect(route.at(-1)).toEqual(to.at)
         expect(route.some(p => p.y > 460)).toBe(true)
-    })
-})
-
-describe('the place halfway along a route', () => {
-    it('is measured along the route, not between its ends', () => {
-        const halfway = halfwayAlong([at(0, 0), at(0, 100), at(100, 100)])
-
-        expect(halfway?.at).toEqual(at(0, 100))
-    })
-
-    it('says which way the route runs there', () => {
-        const halfway = halfwayAlong([at(0, 0), at(0, 60), at(100, 60)])
-
-        expect(halfway?.at).toEqual(at(20, 60))
-        expect(halfway?.direction).toEqual(at(100, 0))
     })
 })

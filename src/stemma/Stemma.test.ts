@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, Node, radiusOf, routeMarkAt, shiftIntoView, spokenNameOf, spreadVersions } from './Stemma'
+import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, Node, radiusOf, shiftIntoView, spokenNameOf, spreadVersions } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -115,8 +115,8 @@ describe('derivations held as hypotheses', () => {
     ]
 
     it('draws every derivation and tells the one the text is read against apart', () => {
-        expect(graphFor(contaminated).links.map(link => [(link.target as Node).id, link.principal, link.certainty, link.derivation, link.believed]))
-            .toEqual([['A', true, 'true', 0, false], ['B', false, 'possible', 1, true]])
+        expect(graphFor(contaminated).links.map(link => [(link.target as Node).id, link.principal, link.certainty]))
+            .toEqual([['A', true, 'true'], ['B', false, 'possible']])
     })
 
     it('draws a hypothesis beneath every balloon, keeping where each link stands', () => {
@@ -139,28 +139,6 @@ describe('fitting the stemma into its drawing', () => {
 
     it('leaves a drawing without nodes as it is', () => {
         expect(fitOf([], 300, 600)).toEqual({ scale: 1, midX: 0, midY: 0 })
-    })
-})
-
-describe('where the mark of a derivation sits', () => {
-    it('sits beside the middle of the link, as far off it as asked', () => {
-        const mark = routeMarkAt([point(svg(0), svg(0)), point(svg(0), svg(100))], svg(20))
-
-        expect(mark.y).toBeCloseTo(50)
-        expect(Math.abs(mark.x)).toBeCloseTo(20)
-    })
-
-    it('sits beside the place halfway along a link that turns', () => {
-        const mark = routeMarkAt([point(svg(0), svg(0)), point(svg(0), svg(60)), point(svg(100), svg(60))], svg(20))
-
-        expect(mark.x).toBeCloseTo(20)
-        expect(Math.abs(mark.y - 60)).toBeCloseTo(20)
-    })
-
-    it('sits on a link that has no length', () => {
-        const at = point(svg(5), svg(5))
-
-        expect(routeMarkAt([at, at], svg(20))).toEqual(at)
     })
 })
 
@@ -235,14 +213,14 @@ describe('keeping an opened balloon clear', () => {
     it('finds the balloon of one sibling opened across the other', () => {
         const { nodes, links } = crowded()
 
-        expect(clashesOf(nodes, links, 1).map(clash => clash.movers)).toContainEqual(['B', 'C'])
+        expect(clashesOf(nodes, links).map(clash => clash.movers)).toContainEqual(['B', 'C'])
     })
 
     it('spreads the siblings apart until neither opened balloon reaches the other, keeping their order', () => {
         const { nodes, links } = crowded()
 
-        expect(spreadVersions(nodes, links, 1)).toBe(true)
-        expect(clashesOf(nodes, links, 1)).toEqual([])
+        expect(spreadVersions(nodes, links)).toBe(true)
+        expect(clashesOf(nodes, links)).toEqual([])
 
         const [, b, c] = nodes
         expect(b?.x).toBeLessThan(c?.x ?? 0)
@@ -250,10 +228,10 @@ describe('keeping an opened balloon clear', () => {
 
     it('leaves them where they are once they are clear', () => {
         const { nodes, links } = crowded()
-        spreadVersions(nodes, links, 1)
+        spreadVersions(nodes, links)
         const spread = nodes.map(node => node.x)
 
-        expect(spreadVersions(nodes, links, 1)).toBe(false)
+        expect(spreadVersions(nodes, links)).toBe(false)
         expect(nodes.map(node => node.x)).toEqual(spread)
     })
 })

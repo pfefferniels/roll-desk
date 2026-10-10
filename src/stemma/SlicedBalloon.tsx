@@ -1,4 +1,4 @@
-import { FocusEvent, ReactNode, useMemo, useRef, useState } from "react";
+import { FocusEvent, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Popper } from "@mui/material";
 import { pressable } from "../desk/pressable";
@@ -30,12 +30,6 @@ export type SlicedBalloonProps = {
      * read is given one. Left out, the keyboard does not reach the slices.
      */
     keyboardLayer?: SVGGElement | null;
-    /**
-     * Drawn over the balloon and part of it as far as the pointer is
-     * concerned, so that a mark lying on the balloon does not read as
-     * having left it.
-     */
-    children?: ReactNode;
 };
 
 /** How far the balloon reaches from the line, as a part of its length: opened, and at rest. */
@@ -276,7 +270,7 @@ export function sliceCentre(a: Pt, b: Pt, slices: readonly Slice[], sliceId: str
  * balloon shows is kept in an effect, and a pointer crossing it neither
  * makes it flicker nor loses the slice it is on.
  */
-export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboardLayer, children }: SlicedBalloonProps) {
+export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboardLayer }: SlicedBalloonProps) {
     const [pointerInside, setPointerInside] = useState(false)
     const [pointerOn, setPointerOn] = useState<string>()
     const groupRef = useRef<SVGGElement>(null)
@@ -379,8 +373,6 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboa
                     onClick={() => onSliceClick?.(slice)}
                 />
             ))}
-
-            {children}
 
             {keys}
 

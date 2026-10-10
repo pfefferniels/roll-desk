@@ -369,26 +369,3 @@ export const routeAround = (
     return unkinked(pulledTaut(path, room), room).map(p => point(svg(p.x), svg(p.y)))
 }
 
-/** The place halfway along a route, measured along it, and which way the route runs there. */
-export const halfwayAlong = (route: readonly Point[]): { at: Point, direction: Point } | undefined => {
-    const legs = route.slice(1).map((to, i) => {
-        const from = route[i] ?? to
-        return { from, to, length: Math.hypot(to.x - from.x, to.y - from.y) }
-    })
-    const total = legs.reduce((sum, leg) => sum + leg.length, 0)
-
-    let left = total / 2
-    for (const leg of legs) {
-        if (left <= leg.length && leg.length > 0) {
-            const t = left / leg.length
-            return {
-                at: point(svg(leg.from.x + t * (leg.to.x - leg.from.x)), svg(leg.from.y + t * (leg.to.y - leg.from.y))),
-                direction: point(svg(leg.to.x - leg.from.x), svg(leg.to.y - leg.from.y))
-            }
-        }
-        left -= leg.length
-    }
-
-    const [first] = route
-    return first && { at: first, direction: point(svg(0), svg(0)) }
-}
