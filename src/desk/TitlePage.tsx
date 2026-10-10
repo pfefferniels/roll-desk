@@ -68,9 +68,9 @@ const Section = ({ title, children }: { title: string, children: ReactNode }) =>
 )
 
 /**
- * The rules the edition draws its conclusions by, as its inferences name
- * them, each leading to where it is stated. An edition whose inferences
- * name none shows nothing here.
+ * The editorial principles the edition draws its conclusions by, as its
+ * inferences name them, on one line, each leading to where it is stated.
+ * An edition whose inferences name none shows nothing here.
  */
 const Rules = ({ iris }: { iris: readonly string[] }) => {
     const rules = inPageOrder(useRules(iris))
@@ -79,18 +79,16 @@ const Rules = ({ iris }: { iris: readonly string[] }) => {
     return (
         <Box component='section' sx={{ mt: 3 }}>
             <Typography variant='overline' component='h2' color='text.secondary' sx={{ lineHeight: 1.5 }}>
-                Rules
+                Editorial principles
             </Typography>
-            <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
-                The edition draws its conclusions by these rules; each inference names those it applies.
-            </Typography>
-            <Box component='ul' sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-                {rules.map(rule => (
-                    <Typography component='li' variant='body2' key={rule.iri}>
+            <Typography variant='body2' sx={{ mt: 0.5 }}>
+                {rules.map((rule, at) => (
+                    <Fragment key={rule.iri}>
+                        {at > 0 && ' | '}
                         <OutLink href={rule.iri}>{ruleLabel(rule)}</OutLink>
-                    </Typography>
+                    </Fragment>
                 ))}
-            </Box>
+            </Typography>
         </Box>
     )
 }

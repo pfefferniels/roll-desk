@@ -39,7 +39,7 @@ const Cited = ({ heading, ids }: { heading: string, ids: readonly string[] }) =>
     )
 }
 
-/** The rules an inference applies, each by its name and leading to where it is stated, or nothing where it names none. */
+/** The editorial principles an inference applies, each by its name and leading to where it is stated, or nothing where it names none. */
 const Applied = ({ reason }: { reason: AnyArgumentation }) => {
     const { edition } = useContext(EditionContext)
     const rules = useRules(edition ? appliedBy(reason, edition.base) : [])
@@ -47,7 +47,7 @@ const Applied = ({ reason }: { reason: AnyArgumentation }) => {
 
     return (
         <Typography variant='caption' component='div' color='text.secondary' sx={{ overflowWrap: 'anywhere' }}>
-            Rules:{' '}
+            Principles:{' '}
             {rules.map((rule, index) => (
                 <span key={rule.iri}>
                     {index > 0 && ', '}
