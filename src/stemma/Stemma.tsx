@@ -515,6 +515,10 @@ export const obstaclesOf = (nodes: readonly Node[], links: readonly Link[]): Obs
  * it names, round the derivations, versions and captions in between.
  */
 export const routesOf = (nodes: readonly Node[], links: readonly Link[]): Map<Link, Point[]> => {
+    // Without a hypothesis there is nothing to route, and in a stemma
+    // without versions nothing to lay the field over.
+    if (links.every(link => link.principal)) return new Map()
+
     const obstacles = obstaclesOf(nodes, links)
     const field = fieldOf(obstacles)
     const endOf = (node: Node): End | undefined => {

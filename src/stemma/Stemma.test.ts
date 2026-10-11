@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
-import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, Node, radiusOf, shiftIntoView, spokenNameOf, spreadVersions } from './Stemma'
+import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, laidOut, Node, radiusOf, shiftIntoView, spokenNameOf, spreadVersions } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
 
@@ -139,6 +139,10 @@ describe('fitting the stemma into its drawing', () => {
 
     it('leaves a drawing without nodes as it is', () => {
         expect(fitOf([], 300, 600)).toEqual({ scale: 1, midX: 0, midY: 0 })
+    })
+
+    it('lays out a stemma without versions, as a new edition has', () => {
+        expect(laidOut([], [], 300, 600)).toEqual({ routes: new Map(), fit: { scale: 1, midX: 0, midY: 0 } })
     })
 })
 
