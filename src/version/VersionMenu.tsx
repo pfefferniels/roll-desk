@@ -1,4 +1,4 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, SelectAll } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
 import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
@@ -14,7 +14,8 @@ import { MotivateDialog } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../desk/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
-import { HeldMotivation, isHeldMotivation, motivationIdFor } from "../edition/motivation"
+import { editsAlongRoll, HeldMotivation, isHeldMotivation, motivationIdFor } from "../edition/motivation"
+import { RenameMotivationDialog } from "./RenameMotivationDialog"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "../accounts/Arguable"
 import { nameOf } from "../edition/names"
@@ -38,6 +39,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const [symbolsToRecollate, setSymbolsToRecollate] = useState<string[]>()
     const [confirmDetach, setConfirmDetach] = useState(false)
     const [stateHypothesis, setStateHypothesis] = useState(false)
+    const [renaming, setRenaming] = useState(false)
 
     // No focused control claims a letter for itself, so unlike the desk's
     // Space these need no guard beyond the one for overlays.
@@ -68,6 +70,17 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     const version = edition.versions.find(v => v.id === versionId)
     if (!version) return null
 
+    /**
+     * The motivation of this version that is held, as it now reads: the
+     * selection keeps it as it was when it was held.
+     */
+    const held = selection.filter(isHeldMotivation).find(one => one.versionId === versionId)
+    const heldMotivation = held && version.motivations.find(m => m.id === held.motivation.id)
+    /** The edits selected beside it that it does not hold yet, which it can be given. */
+    const toAssign = heldMotivation
+        ? selection.filter(isEdit).filter(edit => edit.motivation !== heldMotivation.id)
+        : []
+
     const tolerance = derivationToleranceOf(version)
     const principal = principalDerivationOf(version)
     const sigilOf = (id: string) => nameOf(edition, id) ?? 'unknown'
@@ -96,6 +109,67 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     Made by
                 </Button>
             </Ribbon>
+            {held && heldMotivation && (
+                <Ribbon title='Motivation'>
+                    <Button
+                        size='small'
+                        startIcon={<EditIcon />}
+                        onClick={() => setRenaming(true)}
+                    >
+                        Rename
+                    </Button>
+                    <Button
+                        size='small'
+                        startIcon={<SelectAll />}
+                        // In place of the motivation, so that what is done to
+                        // edits can be done to these.
+                        onClick={() => setSelection(editsAlongRoll(edition, held))}
+                    >
+                        Select Edits
+                    </Button>
+                    {toAssign.length > 0 && (
+                        <Button
+                            size='small'
+                            startIcon={<Lightbulb />}
+                            onClick={() => {
+                                const ids = toAssign.map(edit => edit.id)
+                                apply(draft => {
+                                    const edited = draft.versions.find(v => v.id === versionId)
+                                    if (!edited) return
+                                    editsOf(edited)
+                                        .filter(edit => ids.includes(edit.id))
+                                        .forEach(edit => {
+                                            edit.motivation = heldMotivation.id
+                                        })
+                                })
+                                setSelection([held])
+                            }}
+                        >
+                            Assign {toAssign.length === 1 ? 'Edit' : `${toAssign.length} Edits`}
+                        </Button>
+                    )}
+                    <Button
+                        size='small'
+                        startIcon={<Delete />}
+                        // The edits stay, giving no reason any more.
+                        onClick={() => {
+                            apply(draft => {
+                                const edited = draft.versions.find(v => v.id === versionId)
+                                if (!edited) return
+                                edited.motivations = edited.motivations.filter(m => m.id !== heldMotivation.id)
+                                editsOf(edited)
+                                    .filter(edit => edit.motivation === heldMotivation.id)
+                                    .forEach(edit => {
+                                        delete edit.motivation
+                                    })
+                            })
+                            setSelection([])
+                        }}
+                    >
+                        Remove
+                    </Button>
+                </Ribbon>
+            )}
             {selection.length > 0 && (
                 <>
                     {selection.every(isSymbol) && (
@@ -276,6 +350,23 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {renaming && heldMotivation && (
+                <RenameMotivationDialog
+                    version={version}
+                    motivation={heldMotivation}
+                    onClose={() => setRenaming(false)}
+                    onDone={note => {
+                        apply(draft => {
+                            const renamed = draft.versions
+                                .find(v => v.id === versionId)
+                                ?.motivations.find(m => m.id === heldMotivation.id)
+                            if (renamed) renamed.note = note
+                        })
+                        setRenaming(false)
+                    }}
+                />
+            )}
 
             {editsToMotivate && (
                 <MotivateDialog
