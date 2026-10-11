@@ -2,6 +2,7 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material"
 import { EditType, Restoration } from "linked-rolls"
 import { Fragment, ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../edition/EditionContext"
+import { versionLabel } from "../edition/names"
 import { Counts, derivationEvidenceOf, EvidenceRow } from "../edition/derivationEvidence"
 import { EntityLink } from "./EntityLink"
 
@@ -31,30 +32,76 @@ const symbols = (n: number) => `${n} symbol${n === 1 ? '' : 's'}`
 const Against = ({ children }: { children: ReactNode }) =>
     <Box component='span' sx={{ color: AGAINST, fontWeight: 500 }}>{children}</Box>
 
-/** How a copy of the line bears what a version inserts: carried, then replaced and struck further down, then what is missing for no reason. */
-const InLine = ({ counts }: { counts: Counts }) => (
-    <>
-        {counts.carried}
-        {counts.replaced > 0 && ` +${counts.replaced}`}
-        {counts.struck > 0 && ` −${counts.struck}`}
-        {counts.unaccounted > 0 && <Against> ?{counts.unaccounted}</Against>}
-    </>
+/** A count that tells what it is made of, or why it speaks against the stemma, when pointed at. */
+const Hinted = ({ hint, against = false, children }: { hint: string, against?: boolean, children: ReactNode }) => (
+    <Tooltip title={hint} describeChild placement='top'>
+        <Box component='span' sx={{
+            cursor: 'help',
+            textDecoration: 'underline dotted',
+            textUnderlineOffset: 3,
+            ...(against && { color: AGAINST, fontWeight: 500 })
+        }}>
+            {children}
+        </Box>
+    </Tooltip>
 )
 
-const NONE = '·'
+/** How many of the symbols a column counts a copy has: all of them, none, or the number. */
+const share = (n: number, total: number) => n === 0 ? 'none' : n === total ? 'all' : `${n}`
 
-const Row = ({ row, showsParent }: { row: EvidenceRow, showsParent: boolean }) => (
+/**
+ * How a copy bears what a version adds. A copy on the version's line has
+ * each symbol as added or as a later version of its line replaced or
+ * struck it; what it lacks beyond that, and anything a copy off the line
+ * carries, speaks against the stemma.
+ */
+const Added = ({ counts, total }: { counts: Counts, total: number }) => {
+    const { inLine, carried, replaced, struck, unaccounted } = counts
+    if (!inLine) {
+        return unaccounted === 0
+            ? <>none</>
+            : <Hinted against hint='Carried, though the copy is not on the line of the version that adds them.'>{unaccounted}</Hinted>
+    }
+
+    const parts = [
+        `${carried} as added`,
+        replaced > 0 && `${replaced} replaced by a later version`,
+        struck > 0 && `${struck} struck by a later version`,
+        unaccounted > 0 && `${unaccounted} missing, which no later edit accounts for`
+    ].filter((part): part is string => part !== false)
+    const shown = share(total - unaccounted, total)
+    return parts.length === 1
+        ? <>{shown}</>
+        : <Hinted against={unaccounted > 0} hint={`${parts.join(', ')}.`}>{shown}</Hinted>
+}
+
+/** How many of the symbols a version strikes a copy still has. On the version's line, any speaks against the stemma. */
+const Kept = ({ keeps, inLine, total }: { keeps: number, inLine: boolean, total: number }) =>
+    inLine && keeps > 0
+        ? <Hinted against hint='Still there, though the copy is on the line of the version that strikes them.'>{keeps}</Hinted>
+        : <>{share(keeps, total)}</>
+
+interface Columns {
+    parent?: { version: string, inserted: number }
+    inserted: number
+    struck: number
+}
+
+const Row = ({ row, columns: { parent, inserted, struck } }: { row: EvidenceRow, columns: Columns }) => (
     <tr>
         <td><EntityLink id={row.copy} /></td>
-        <td>
-            {row.inLine
-                ? <InLine counts={row.insertions} />
-                : row.insertions.carried > 0 ? <Against>{row.insertions.carried}</Against> : NONE}
-        </td>
-        <td>
-            {row.keeps === 0 ? NONE : row.inLine ? <Against>{row.keeps}</Against> : row.keeps}
-        </td>
-        {showsParent && <td>{row.parent ? <InLine counts={row.parent} /> : ''}</td>}
+        {parent && <td>{row.parent && <Added counts={row.parent} total={parent.inserted} />}</td>}
+        {inserted > 0 && <td><Added counts={row.insertions} total={inserted} /></td>}
+        {struck > 0 && <td><Kept keeps={row.keeps} inLine={row.insertions.inLine} total={struck} /></td>}
+    </tr>
+)
+
+/** A row naming the group of copies the rows below it make up. */
+const Group = ({ span, children }: { span: number, children: ReactNode }) => (
+    <tr>
+        <Box component='td' colSpan={span} sx={{ pt: '6px !important', color: 'text.secondary', fontStyle: 'italic' }}>
+            {children}
+        </Box>
     </tr>
 )
 
@@ -80,11 +127,12 @@ const restorationGroups = (restorations: readonly Restoration[]) =>
 /**
  * What the edition holds as evidence that the version derives from the
  * version its text is read against, worked out rather than written into
- * the derivation's note: a row for each copy, saying how it bears what
- * the version adds and strikes and, where the parent is not the root,
- * what the parent adds; the versions apart from its line that none of
- * its copies follows; its edits by type; and what it puts back that an
- * ancestor struck. What speaks against the derivation is marked.
+ * the derivation's note: for each copy, first those on the version's
+ * line, how much it has of what the version adds and strikes and, where
+ * the parent is not the root, of what the parent adds; the versions apart
+ * from its line that none of its copies follows; its edits by type; and
+ * what it puts back that an ancestor struck. What speaks against the
+ * derivation is marked.
  */
 export const DerivationEvidence = ({ versionId }: { versionId: string }) => {
     const { edition } = useContext(EditionContext)
@@ -92,6 +140,11 @@ export const DerivationEvidence = ({ versionId }: { versionId: string }) => {
     if (!edition || !evidence || (evidence.inserted === 0 && evidence.struck === 0)) return null
 
     const { inserted, struck, parent, rows, apart, editTypes, restorations } = evidence
+    const label = versionLabel(edition, versionId)
+    const columns: Columns = { parent, inserted, struck }
+    const span = 1 + Number(parent !== undefined) + Number(inserted > 0) + Number(struck > 0)
+    const onLine = rows.filter(row => row.insertions.inLine)
+    const others = rows.filter(row => !row.insertions.inLine)
 
     return (
         <Stack spacing={0.5} sx={{ pl: 1.5, pt: 0.5 }}>
@@ -104,33 +157,44 @@ export const DerivationEvidence = ({ versionId }: { versionId: string }) => {
                     borderCollapse: 'collapse',
                     typography: 'caption',
                     fontVariantNumeric: 'tabular-nums',
-                    '& th, & td': { px: 0.75, py: 0.125, textAlign: 'right', whiteSpace: 'nowrap' },
-                    '& th': { fontWeight: 400, color: 'text.secondary' },
+                    '& th, & td': { px: 0.75, py: 0.125, textAlign: 'center', whiteSpace: 'nowrap' },
+                    '& th': { fontWeight: 400, color: 'text.secondary', verticalAlign: 'bottom' },
                     '& th:first-of-type, & td:first-of-type': { textAlign: 'left', pl: 0 }
                 }}
             >
                 <thead>
                     <tr>
                         <th />
-                        <Heading hint='How many of the symbols this version adds each copy carries. A copy of its line should carry them all, one outside it none.'>
-                            adds {inserted}
-                        </Heading>
-                        <Heading hint='How many of the symbols this version strikes each copy still carries. A copy of its line should carry none.'>
-                            strikes {struck}
-                        </Heading>
                         {parent && (
-                            <Heading hint='How many of the symbols the version it derives from adds the copies of its line carry.'>
+                            <Heading hint='The symbols the version it derives from adds. The copies on this version’s line should have all of them as well.'>
                                 <EntityLink id={parent.version} /> adds {parent.inserted}
+                            </Heading>
+                        )}
+                        {inserted > 0 && (
+                            <Heading hint='The symbols this version adds. The copies on its line should have all of them, the other copies none.'>
+                                {label} adds {inserted}
+                            </Heading>
+                        )}
+                        {struck > 0 && (
+                            <Heading hint='The symbols this version strikes. The copies on its line should have none of them.'>
+                                {label} strikes {struck}
                             </Heading>
                         )}
                     </tr>
                 </thead>
                 <tbody>
-                    {rows.map(row => <Row key={row.copy} row={row} showsParent={parent !== undefined} />)}
+                    {onLine.length > 0 && <Group span={span}>On {label}’s line</Group>}
+                    {onLine.map(row => <Row key={row.copy} row={row} columns={columns} />)}
+                    {others.length > 0 && <Group span={span}>Other copies</Group>}
+                    {others.map(row => <Row key={row.copy} row={row} columns={columns} />)}
                 </tbody>
             </Box>
             <Typography variant='caption' color='text.secondary' component='div'>
-                +n replaced and −n struck by a later version on the copy’s line; {NONE} none.
+                A cell counts the symbols in its heading that the copy has.
+                Copies on {label}’s line should have all{' '}
+                {parent ? <><EntityLink id={parent.version} /> and {label} add</> : <>{label} adds</>}
+                {struck > 0 && ` and none ${label} strikes`}; other copies none {label} adds.
+                A dotted “all” includes some that a later version replaced or struck.
             </Typography>
             {apart.length > 0 && (
                 <Typography variant='caption' color='text.secondary' component='div'>

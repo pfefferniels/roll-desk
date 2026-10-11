@@ -52,18 +52,26 @@ const stemma = (): Edition => ({
 })
 
 describe('the evidence for a derivation', () => {
-    it('lists the copies of the line first, with what they bear of the version and of its parent', () => {
+    it('lists the copies of the line first, with what each bears of the version and of its parent', () => {
         const evidence = derivationEvidenceOf(stemma(), 'D')
 
         expect(evidence).toMatchObject({ inserted: 2, struck: 1, parent: { version: 'B', inserted: 2 } })
         expect(evidence?.rows).toEqual([
             {
-                copy: 'second', inLine: true, keeps: 0,
-                insertions: { carried: 2, replaced: 0, struck: 0, unaccounted: 0 },
-                parent: { carried: 1, replaced: 0, struck: 1, unaccounted: 0 }
+                copy: 'second', keeps: 0,
+                insertions: { inLine: true, carried: 2, replaced: 0, struck: 0, unaccounted: 0 },
+                parent: { inLine: true, carried: 1, replaced: 0, struck: 1, unaccounted: 0 }
             },
-            { copy: 'first', inLine: false, keeps: 1, insertions: { carried: 0, replaced: 0, struck: 0, unaccounted: 0 } },
-            { copy: 'third', inLine: false, keeps: 0, insertions: { carried: 0, replaced: 0, struck: 0, unaccounted: 0 } }
+            {
+                copy: 'first', keeps: 1,
+                insertions: { inLine: false, carried: 0, replaced: 0, struck: 0, unaccounted: 0 },
+                parent: { inLine: true, carried: 2, replaced: 0, struck: 0, unaccounted: 0 }
+            },
+            {
+                copy: 'third', keeps: 0,
+                insertions: { inLine: false, carried: 0, replaced: 0, struck: 0, unaccounted: 0 },
+                parent: { inLine: false, carried: 0, replaced: 0, struck: 0, unaccounted: 0 }
+            }
         ])
     })
 

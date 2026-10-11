@@ -5,18 +5,18 @@ import {
 
 /** How one copy bears a version's insertions, as counts. */
 export interface Counts {
+    /** Whether the copy's line runs through the version, so that it should bear all of them rather than none. */
+    inLine: boolean
     carried: number
     replaced: number
     struck: number
-    /** What it carries against the stemma. */
+    /** What it lacks on the version's line, or carries off it, against the stemma. */
     unaccounted: number
 }
 
 /** A copy's row in the evidence for a derivation. */
 export interface EvidenceRow {
     copy: string
-    /** Whether the copy's line runs through the version. */
-    inLine: boolean
     /** How it bears what the version inserts. */
     insertions: Counts
     /** How many of the symbols the version strikes it still carries. */
@@ -28,8 +28,8 @@ export interface EvidenceRow {
 /**
  * What the edition holds as evidence that a version derives from its
  * parent, as `derivationEvidenceOf` gathers it: how each copy bears
- * what the version inserts and strikes, and the parent's own insertions
- * on the same copies, which bind the version to it; the versions apart
+ * what the version inserts and strikes, and what the parent inserts,
+ * which binds the copies of the version's line to it; the versions apart
  * from its line that none of its copies follows; how its edits work on
  * the text; and what it puts back that an ancestor struck. What speaks
  * against the derivation shows in the rows as `unaccounted`.
@@ -50,6 +50,7 @@ export interface DerivationEvidence {
 }
 
 const countsOf = (bearing: Bearing): Counts => ({
+    inLine: bearing.inLine,
     carried: bearing.carried.length,
     replaced: bearing.replaced.length,
     struck: bearing.struck.length,
@@ -79,13 +80,12 @@ export const derivationEvidenceOf = (edition: Edition, versionId: string): Deriv
             const ofParent = parentBearings.get(bearing.copy)
             return {
                 copy: bearing.copy,
-                inLine: bearing.inLine,
                 insertions: countsOf(bearing),
                 keeps: bearing.keeps.length,
-                ...(ofParent && bearing.inLine && { parent: countsOf(ofParent) })
+                ...(ofParent && { parent: countsOf(ofParent) })
             }
         })
-        .sort((a, b) => Number(b.inLine) - Number(a.inLine))
+        .sort((a, b) => Number(b.insertions.inLine) - Number(a.insertions.inLine))
 
     const apart = edition.versions
         .filter(other => insertedBy(other).length > 0 && !related(edition, versionId, other.id))
