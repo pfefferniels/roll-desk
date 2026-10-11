@@ -15,7 +15,7 @@ import { EditView, Focus, getEditBBoxes, hullBoxesOf, stretchOf, useDeletedIn } 
 import { usePiano } from "react-pianosound"
 import { useSelection } from "../desk/SelectionContext"
 import { usePinchZoom } from "../canvas/usePinchZoom"
-import { isHeldMotivation } from "../edition/motivation"
+import { inFocusOn, isHeldMotivation } from "../edition/motivation"
 import { ConstraintView } from "../constraints/ConstraintView"
 import { problemsOfVersion, shiftsIn } from "../constraints/constraints"
 import { derivationToleranceOf } from "../edition/collationTolerance"
@@ -153,7 +153,7 @@ interface VersionViewProps {
 }
 
 export const VersionView = ({ version, problems, emulationOptions, onClick, onResizeLane, playing }: VersionViewProps) => {
-    const { selection, setSelection } = useSelection(isHeldMotivation)
+    const { selection: held, pointed, setPointed } = useSelection(isHeldMotivation)
     const { playSingleNote } = usePiano()
     const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
@@ -305,20 +305,36 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         motivation: version.motivations.find(m => m.id === edit.motivation)?.note || undefined
     })
 
-    /** The motivation an edit is held under, put in focus or let go of again, as the pointer does by resting on the edit. */
-    const holdMotivationOf = (edit: Edit, held: boolean) => {
+    /** The motivation of this version that is held, whose edits alone the keyboard then goes through. */
+    const holding = held.find(one => one.versionId === version.id)
+
+    /**
+     * The motivation an edit is held under, put in focus or let go of again,
+     * as the pointer does by resting on the edit. Not while a motivation of
+     * this version is held: the reader chose that one to read its edits,
+     * and passing over another's on the way should not take it away.
+     */
+    const pointAtMotivationOf = (edit: Edit, resting: boolean) => {
         const motivation = version.motivations.find(m => m.id === edit.motivation)
         if (!motivation) return
-        setSelection(selected => held
-            ? [{ versionId: version.id, motivation }]
-            : selected.filter(one => !(one.versionId === version.id && one.motivation.id === motivation.id)))
+        if (resting) {
+            if (!holding) setPointed({ versionId: version.id, motivation })
+            return
+        }
+        setPointed(was => was?.versionId === version.id && was.motivation.id === motivation.id ? undefined : was)
     }
+
+    // What the pointer rested on goes with the roll it lay on, which may be
+    // taken off the desk under the pointer without it ever leaving.
+    useEffect(() => () => {
+        setPointed(was => was?.versionId === version.id ? undefined : was)
+    }, [version.id, setPointed])
 
     /** Takes the cursor off what it stands on, where it stands on anything. */
     const release = (from: Cursor | undefined) => {
         if (from?.kind === 'symbol') tellCursor(from.id, false)
         const edit = from?.kind === 'edit' && editStops.find(stop => stop.id === from.id)
-        if (edit) holdMotivationOf(edit.edit, false)
+        if (edit) pointAtMotivationOf(edit.edit, false)
         editRing.current?.standOn(undefined)
     }
 
@@ -361,14 +377,18 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         const step = steps[event.key]
         if (!step) return
 
+        // With a motivation held, the edits gone through are its own.
         const kind = event.shiftKey ? 'edit' : 'symbol'
-        const stops = kind === 'edit' ? editStops : symbolStops
+        const stops = kind === 'symbol'
+            ? symbolStops
+            : editStops.filter(stop => !holding || stop.edit.motivation === holding.motivation.id)
         if (stops.length === 0) return
         event.preventDefault()
 
         const next = stepIn<{ id: string, from: Millimeters, y: number }>(stops, step, standing, shown())
         if (!next) {
-            say(`No ${kind} ${step === 'next' ? 'after' : 'before'} this one`)
+            const which = kind === 'edit' && holding ? 'edit of the motivation' : kind
+            say(`No ${which} ${step === 'next' ? 'after' : 'before'} this one`)
             return
         }
 
@@ -380,7 +400,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         }
         else {
             const edit = editStops.find(stop => stop.id === next.id)
-            if (edit) holdMotivationOf(edit.edit, true)
+            if (edit) pointAtMotivationOf(edit.edit, true)
             editRing.current?.standOn(next.id)
             say(edit ? editSaid(edit.edit, edit.from) : '')
         }
@@ -409,11 +429,9 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     if (!edition) return null
 
     // A balloon on another derivation must leave this roll alone, and two
-    // versions may write one motivation id, so a selection counts as in
+    // versions may write one motivation id, so a motivation counts as in
     // focus only where it is this version's.
-    const inFocus = selection
-        .filter(held => held.versionId === version.id)
-        .map(held => held.motivation)
+    const inFocus = inFocusOn(version.id, held, pointed)
 
     const focusOf = (edit: Edit): Focus | undefined => {
         if (!inFocus.length) return undefined
@@ -423,11 +441,14 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     const edits = layers.map(({ of: edit, rings }) => {
         const motivation = version.motivations.find(m => m.id === edit.motivation)
 
+        // The id is carried by the whole of what is drawn for the edit, so
+        // that a spotlight finds it however many shapes it is drawn as.
         return (
             <g
                 key={`editView_${edit.id}`}
-                onMouseEnter={motivation ? () => setSelection([{ versionId: version.id, motivation }]) : undefined}
-                onMouseLeave={motivation ? () => setSelection([]) : undefined}
+                data-id={edit.id}
+                onMouseEnter={motivation ? () => pointAtMotivationOf(edit, true) : undefined}
+                onMouseLeave={motivation ? () => pointAtMotivationOf(edit, false) : undefined}
             >
                 <EditView
                     edit={edit}

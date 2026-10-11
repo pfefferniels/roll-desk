@@ -152,6 +152,8 @@ export const Legend = () => {
           Edges represent the intentions, that lead from one stage to the other.
           Intentions in turn are editorial conclusions based on the factual edits
           (addition or removal of symbols) observed between two versions.
+          Pointing at a slice lights its edits on the roll, and a click holds
+          them lit until it is clicked again.
         `}
       />
 

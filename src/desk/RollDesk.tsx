@@ -57,7 +57,8 @@ import { dynamicsRoom } from "../version/Dynamics"
 import { compassOf } from "../version/compass"
 import { CopyFacsimile } from "../facsimile/CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "../constraints/ConstraintsPanel"
-import { isHeldMotivation } from "../edition/motivation"
+import { HeldMotivation, isHeldMotivation } from "../edition/motivation"
+import { MotivationAccount } from "../accounts/MotivationAccount"
 
 type DeskTab = 'stemma' | 'sources' | 'problems'
 
@@ -182,6 +183,7 @@ export const Desk = ({ show }: DeskProps) => {
 
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [range, setRange] = useState<RollRange>()
+    const [pointed, setPointed] = useState<HeldMotivation>()
 
     const [currentCopyId, setCurrentCopyId] = useState<string>()
     const [currentVersionId, setCurrentVersionId] = useState<string>()
@@ -247,6 +249,10 @@ export const Desk = ({ show }: DeskProps) => {
     const deskBar = (currentVersion
         ? trackerBarOf(currentVersion.system)
         : currentCopy && barOf(currentCopy)) ?? welteT100
+
+    /** The motivation of the version open that is held, which the panel gives an account of. */
+    const heldMotivation = selection.find(isHeldMotivation)
+    const heldHere = heldMotivation?.versionId === currentVersionId ? heldMotivation : undefined
 
     const [soleSelected] = selection.length === 1 ? selection : []
     const selectedCommand = soleSelected && 'id' in soleSelected
@@ -417,6 +423,19 @@ export const Desk = ({ show }: DeskProps) => {
         )
     }, [edition, emulationOptions])
 
+    /**
+     * Holds a motivation, as a click on its slice does: opens the version
+     * it belongs to and brings the roll to its first edit, as a link to it
+     * does, and keeps its edits in focus until it is let go of.
+     */
+    const holdMotivation = (held: HeldMotivation) => {
+        setCurrentVersionId(held.versionId)
+        setCurrentCopyId(undefined)
+        setSelection([held])
+        setPendingSpotlight(held.motivation.id)
+        foldOnPhone()
+    }
+
     /** Opens the version a constraint holds in and marks the symbols it binds. */
     const showConstraint = (versionId: string, symbolIds: string[]) => {
         setCurrentVersionId(versionId)
@@ -570,7 +589,7 @@ export const Desk = ({ show }: DeskProps) => {
         </AppBar>)
 
     return (
-        <SelectionContext.Provider value={{ selection, setSelection, range, setRange }}>
+        <SelectionContext.Provider value={{ selection, setSelection, range, setRange, pointed, setPointed }}>
         <OpenContext.Provider value={openFromAccount}>
             {viewOnly ? viewControl : toolbar}
 
@@ -673,7 +692,17 @@ export const Desk = ({ show }: DeskProps) => {
                                     setSelection([])
                                     foldOnPhone()
                                 }}
+                                onHold={holdMotivation}
                             />
+                            {heldHere && (
+                                <AccountPanel>
+                                    <MotivationAccount
+                                        key={`${heldHere.versionId} ${heldHere.motivation.id}`}
+                                        held={heldHere}
+                                        onLetGo={() => setSelection(selected => selected.filter(item => item !== heldHere))}
+                                    />
+                                </AccountPanel>
+                            )}
                             {currentVersion && (
                                 <AccountPanel>
                                     <VersionAccount versionId={currentVersion.id} />
@@ -687,8 +716,9 @@ export const Desk = ({ show }: DeskProps) => {
                             {currentVersion && selection.length === 0 && (
                                 <Typography variant='caption' color='text.secondary' sx={{ mt: 1, width: 300 }}>
                                     Point at a command on the roll to see what its lane means, or
-                                    open the mark over an edit for its reasons. The legend (?) at
-                                    the top explains the drawing.
+                                    open the mark over an edit for its reasons. Click a slice of the
+                                    stemma to hold its edits in view. The legend (?) at the top
+                                    explains the drawing.
                                 </Typography>
                             )}
                             {currentCopy && (
@@ -848,7 +878,7 @@ export const Desk = ({ show }: DeskProps) => {
                     <Box component='h1' id='desk-heading' sx={unseen}>{heading}</Box>
                     <Box id='desk-roll-keys' sx={unseen}>
                         {currentVersion
-                            ? 'The arrow keys go from symbol to symbol along the roll, with Shift from edit to edit, and Enter selects where they stand. Plus and minus stretch and shrink the roll.'
+                            ? `The arrow keys go from symbol to symbol along the roll, with Shift from edit to edit${heldHere ? ' of the motivation held' : ''}, and Enter selects where they stand. Plus and minus stretch and shrink the roll.`
                             : 'The arrow keys move along the roll, plus and minus stretch and shrink it.'}
                     </Box>
                     <PinchZoomProvider

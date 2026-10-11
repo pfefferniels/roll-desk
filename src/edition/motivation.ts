@@ -1,4 +1,4 @@
-import { Motivation, unchecked } from "linked-rolls"
+import { Edit, Edition, Motivation, editsOf, placeOf, symbolIn, unchecked, versionIn } from "linked-rolls"
 
 export const isMotivation = (obj: unknown): obj is Motivation =>
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
@@ -25,6 +25,46 @@ export const isHeldMotivation = (obj: unknown): obj is HeldMotivation =>
 /** Whether the two are the one motivation of the one version. */
 export const sameMotivation = (one: HeldMotivation, other: HeldMotivation) =>
     one.versionId === other.versionId && one.motivation.id === other.motivation.id
+
+/**
+ * The motivations in focus on a version's roll: the one the pointer rests
+ * on, where it is one of this version's, and otherwise those held. A slice
+ * of another derivation pointed at leaves this roll to what it holds.
+ */
+export const inFocusOn = (
+    versionId: string,
+    held: readonly HeldMotivation[],
+    pointed?: HeldMotivation
+): Motivation[] =>
+    pointed?.versionId === versionId
+        ? [pointed.motivation]
+        : held.filter(one => one.versionId === versionId).map(one => one.motivation)
+
+/**
+ * The edits a motivation holds, in the order they come along the roll: by
+ * where the first of what each inserts or deletes begins. The version keeps
+ * its edits in an order of its own, which need not be that one. An edit
+ * touching nothing the roll can place comes last.
+ */
+export const editsAlongRoll = (edition: Edition, held: HeldMotivation): Edit[] => {
+    const version = versionIn(edition, held.versionId)
+    if (!version) return []
+
+    const beginning = (edit: Edit) => {
+        const touched = [...edit.insert ?? [], ...(edit.delete ?? []).map(id => symbolIn(edition, id))]
+        const onsets = touched.flatMap(symbol => {
+            const place = symbol && placeOf(edition, symbol)
+            return place ? [place.from] : []
+        })
+        return onsets.length > 0 ? Math.min(...onsets) : Infinity
+    }
+
+    return editsOf(version)
+        .filter(edit => edit.motivation === held.motivation.id)
+        .map(edit => ({ edit, from: beginning(edit) }))
+        .sort((a, b) => a.from - b.from)
+        .map(({ edit }) => edit)
+}
 
 /** How long an id made from a note runs at most, a number to tell it apart left aside. */
 const longest = 40

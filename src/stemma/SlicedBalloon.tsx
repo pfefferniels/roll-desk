@@ -11,7 +11,10 @@ export type Slice = {
     id: string;
     count: number;
     description: string;
+    /** Whether the slice is in focus from elsewhere, an edit of it being pointed at on the roll. */
     selected?: boolean;
+    /** Whether the motivation is held, chosen by a click, which keeps its edits in focus. */
+    held?: boolean;
 };
 
 export type SlicedBalloonProps = {
@@ -20,6 +23,7 @@ export type SlicedBalloonProps = {
     slices: Slice[];
     /** The slice the pointer is on, and nothing once it has left the balloon. */
     onSliceHover?: (slice: Slice | null) => void;
+    /** A slice clicked or pressed, which holds its motivation, or lets go of it where it is held. */
     onSliceClick?: (slice: Slice) => void;
     /**
      * Where the keyboard reaches the slices: a group drawn after the node
@@ -278,10 +282,14 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboa
 
     // The balloon opens under the pointer, and stays open while something
     // elsewhere holds one of its slices, so that a motivation chosen on the
-    // roll can be read here as well.
+    // roll can be read here as well. A held motivation keeps it open, and
+    // is drawn in focus whenever nothing else is. What it says is written
+    // in the panel while it is held, so it is told here only on the way.
     const selected = slices.find(s => s.selected)
-    const open = pointerInside || Boolean(selected)
-    const current = slices.find(s => s.id === pointerOn) ?? selected
+    const held = slices.find(s => s.held)
+    const open = pointerInside || Boolean(selected) || Boolean(held)
+    const told = slices.find(s => s.id === pointerOn) ?? selected
+    const current = told ?? held
 
     const totalHalfWidth = halfWidthOf(a, b, open);
 
@@ -337,6 +345,7 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboa
                     pointerEvents='none'
                     className='slice'
                     aria-label={`Motivation: ${slice.description}, ${editCount(slice.count)}`}
+                    aria-pressed={Boolean(slice.held)}
                     {...pressable(() => onSliceClick?.(slice))}
                     onFocus={() => goTo(slice)}
                     onBlur={leaveByKeyboard}
@@ -371,13 +380,27 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboa
                     // the balloon opening under a pointer that came to a stop.
                     onMouseMove={() => { if (open) goTo(slice) }}
                     onClick={() => onSliceClick?.(slice)}
+                    style={{ cursor: 'pointer' }}
+                />
+            ))}
+
+            {/* The held slice ringed over the others, whose borders would cover its own. */}
+            {open && slicePaths.filter(({ slice }) => slice.held).map(({ slice, d }) => (
+                <path
+                    key={slice.id}
+                    d={d}
+                    fill='none'
+                    stroke='#1976d2'
+                    strokeWidth={2.5}
+                    vectorEffect='non-scaling-stroke'
+                    pointerEvents='none'
                 />
             ))}
 
             {keys}
 
             <Popper
-                open={Boolean(current)}
+                open={Boolean(told)}
                 anchorEl={() => groupRef.current!}
                 placement="left"
                 sx={{ pointerEvents: 'none', zIndex: theme => theme.zIndex.tooltip }}
@@ -391,7 +414,7 @@ export function SlicedBalloon({ a, b, slices, onSliceHover, onSliceClick, keyboa
                     maxWidth: 260,
                     fontSize: 14,
                 }}>
-                    {current?.description}
+                    {told?.description}
                 </div>
             </Popper>
         </g>

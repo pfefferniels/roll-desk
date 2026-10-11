@@ -1,6 +1,7 @@
 import { createContext, Dispatch, SetStateAction, useCallback, useContext } from "react";
 import { Millimeters } from "linked-rolls";
 import { UserSelection } from "./RollDesk";
+import { HeldMotivation } from "../edition/motivation";
 
 /** A stretch of the roll, from its start. */
 export type RollRange = [Millimeters, Millimeters]
@@ -11,13 +12,24 @@ interface SelectionContextProps<T extends UserSelection = UserSelection> {
 
     range?: RollRange;
     setRange: Dispatch<SetStateAction<RollRange | undefined>>;
+
+    /**
+     * The motivation the pointer or the keyboard rests on, on its slice or
+     * on one of its edits. It is in focus while they rest there, ahead of
+     * a motivation held in the selection, which comes back once they move
+     * on. Not selected itself: passing over a motivation does not choose it.
+     */
+    pointed?: HeldMotivation;
+    setPointed: Dispatch<SetStateAction<HeldMotivation | undefined>>;
 }
 
 export const SelectionContext = createContext<SelectionContextProps>({
     selection: [],
     setSelection: (() => { }),
     range: undefined,
-    setRange: (() => { })
+    setRange: (() => { }),
+    pointed: undefined,
+    setPointed: (() => { })
 });
 
 /**
@@ -31,7 +43,7 @@ export const SelectionContext = createContext<SelectionContextProps>({
 export function useSelection<T extends UserSelection = UserSelection>(
     filter?: (item: UserSelection) => item is T
 ): SelectionContextProps<T> {
-    const { selection, setSelection, range, setRange } = useContext(SelectionContext);
+    const { selection, setSelection, range, setRange, pointed, setPointed } = useContext(SelectionContext);
 
     // Without a filter there is nothing for T to be inferred from, so it
     // is the whole selection and the assertion holds.
@@ -53,6 +65,8 @@ export function useSelection<T extends UserSelection = UserSelection>(
         selection: narrow(selection),
         setSelection: setNarrowed,
         range,
-        setRange
+        setRange,
+        pointed,
+        setPointed
     };
 }

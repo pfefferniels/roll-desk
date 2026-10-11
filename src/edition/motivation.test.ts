@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { unchecked } from 'linked-rolls'
-import { motivationIdFor } from './motivation'
+import { Motivation, unchecked } from 'linked-rolls'
+import { editsAlongRoll, HeldMotivation, inFocusOn, motivationIdFor } from './motivation'
+import { fixtureEdition, ids } from './editionFixture'
 
 describe('the id made for a new motivation', () => {
     it('is its note in lowercase words joined by hyphens', () => {
@@ -38,5 +39,60 @@ describe('the id made for a new motivation', () => {
     it('is never the collation\'s own nor the editor\'s', () => {
         expect(motivationIdFor('Unchecked', [])).toBe(`${unchecked}-2`)
         expect(motivationIdFor('Editor', [])).toBe('editor-2')
+    })
+})
+
+describe('the motivations in focus on a roll', () => {
+    const cleanup: Motivation = { type: 'motivation', id: 'cleanup', note: 'Bereinigung' }
+    const accent: Motivation = { type: 'motivation', id: 'accent', note: 'Akzent' }
+    const held: HeldMotivation[] = [{ versionId: 'B', motivation: cleanup }]
+
+    it('are those held where nothing is pointed at', () => {
+        expect(inFocusOn('B', held)).toEqual([cleanup])
+    })
+
+    it('are the one pointed at ahead of those held', () => {
+        expect(inFocusOn('B', held, { versionId: 'B', motivation: accent })).toEqual([accent])
+    })
+
+    it('leave a motivation of another version pointed at to that version', () => {
+        expect(inFocusOn('B', held, { versionId: 'C', motivation: accent })).toEqual([cleanup])
+    })
+
+    it('leave out what another version holds', () => {
+        expect(inFocusOn('C', held)).toEqual([])
+    })
+})
+
+describe('the edits a motivation holds along the roll', () => {
+    const cleanup: Motivation = { type: 'motivation', id: 'cleanup' }
+
+    /** Version B, deleting what the ids name in this order, each edit under the motivation. */
+    const deleting = (...deleted: string[]) => {
+        const edition = fixtureEdition()
+        const b = edition.versions.find(version => version.id === ids.b)!
+        b.motivations = [cleanup]
+        b.edits = deleted.map(id => ({ type: 'edit', id: `delete-${id}`, delete: [id], motivation: cleanup.id }))
+        return edition
+    }
+
+    const along = (...deleted: string[]) =>
+        editsAlongRoll(deleting(...deleted), { versionId: ids.b, motivation: cleanup }).map(edit => edit.id)
+
+    it('come in the order of where they begin rather than in the version\'s', () => {
+        expect(along(ids.otherNote, ids.forzandoOn, ids.note)).toEqual(
+            [`delete-${ids.forzandoOn}`, `delete-${ids.note}`, `delete-${ids.otherNote}`]
+        )
+    })
+
+    it('put an edit touching nothing placed last', () => {
+        expect(along(ids.label, ids.note)).toEqual([`delete-${ids.note}`, `delete-${ids.label}`])
+    })
+
+    it('leave out the edits of other motivations', () => {
+        const edition = deleting(ids.note, ids.otherNote)
+        edition.versions.find(version => version.id === ids.b)!.edits![1]!.motivation = 'other'
+        expect(editsAlongRoll(edition, { versionId: ids.b, motivation: cleanup }).map(edit => edit.id))
+            .toEqual([`delete-${ids.note}`])
     })
 })

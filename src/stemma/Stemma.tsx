@@ -32,11 +32,13 @@ interface Stemma {
     /** How tall the drawing is, which leaves room beneath it for what is written about a version. */
     height?: number
     onClick: (versionId: string) => void
+    /** Holds a motivation clicked on its slice, opening the version it belongs to. */
+    onHold: (held: HeldMotivation) => void
 }
 
-export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 }: Stemma) => {
+export const Stemma = ({ onClick, onHold, currentVersionId, problems = [], height = 600 }: Stemma) => {
     const { edition } = useContext(EditionContext)
-    const { selection } = useSelection(isHeldMotivation)
+    const { selection, pointed } = useSelection(isHeldMotivation)
 
     const svgRef = useRef<SVGSVGElement>(null)
     const zoomLayerRef = useRef<SVGGElement>(null)
@@ -93,11 +95,11 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
     }, [nodes, fit, svgWidth, svgHeight])
 
     // The slice of the motivation in focus, which an edit on the roll puts
-    // there by being hovered.
+    // there by being hovered, and a link or a click by holding it.
     const inFocus = useMemo(() => {
-        const [held] = selection
-        return held && edition ? sliceAt(held, { nodes, links }, edition) : undefined
-    }, [selection, nodes, links, edition])
+        const focused = pointed ?? selection[0]
+        return focused && edition ? sliceAt(focused, { nodes, links }, edition) : undefined
+    }, [pointed, selection, nodes, links, edition])
 
     /** Moves the drawing where the zoom has left a place on it, as the screen has it, off the edge. */
     const reveal = useCallback((at: Point) => {
@@ -175,6 +177,7 @@ export const Stemma = ({ onClick, currentVersionId, problems = [], height = 600 
                         routes={routes}
                         positionedNodes={nodes}
                         onVersionClick={onClick}
+                        onHold={onHold}
                         currentVersionId={currentVersionId}
                         motivationKeys={motivationKeys}
                     />
@@ -317,17 +320,26 @@ export const graphOf = (
 
 /**
  * The motivations a derivation's balloon is sliced by, each weighed by the
- * edits held under it and told whether it is one of those in focus.
+ * edits held under it and told whether it is held, and whether it is the
+ * one pointed at.
  */
-export const slicesOf = (version: Version, inFocus: readonly HeldMotivation[] = []): Slice[] => {
+export const slicesOf = (
+    version: Version,
+    held: readonly HeldMotivation[] = [],
+    pointed?: HeldMotivation
+): Slice[] => {
     const edits = editsOf(version)
 
-    return version.motivations.map(motivation => ({
-        id: motivation.id,
-        count: edits.filter(edit => edit.motivation === motivation.id).length,
-        description: motivation.note || 'No description',
-        selected: inFocus.some(held => sameMotivation(held, { versionId: version.id, motivation }))
-    }))
+    return version.motivations.map(motivation => {
+        const own = { versionId: version.id, motivation }
+        return {
+            id: motivation.id,
+            count: edits.filter(edit => edit.motivation === motivation.id).length,
+            description: motivation.note || 'No description',
+            selected: !!pointed && sameMotivation(pointed, own),
+            held: held.some(one => sameMotivation(one, own))
+        }
+    })
 }
 
 /** The version a node stands for, where the drawing has placed it. */
@@ -764,6 +776,8 @@ interface LinkContainerProps {
     /** The way each hypothesis takes round the rest; one without is drawn straight. */
     routes: ReadonlyMap<Link, readonly Point[]>
     onVersionClick: (versionId: string) => void
+    /** Holds a motivation clicked on its slice. */
+    onHold: (held: HeldMotivation) => void
     /** The version being read, whose motivations alone the keyboard reaches. */
     currentVersionId?: string
     /** Where the keyboard reaches them, see `SlicedBalloon`. */
@@ -775,10 +789,11 @@ export const LinkContainer = ({
     links,
     routes,
     onVersionClick,
+    onHold,
     currentVersionId,
     motivationKeys,
 }: LinkContainerProps) => {
-    const { selection, setSelection } = useSelection(isHeldMotivation)
+    const { selection, setSelection, pointed, setPointed } = useSelection(isHeldMotivation)
     const { edition } = useContext(EditionContext)
 
     return (
@@ -854,20 +869,20 @@ export const LinkContainer = ({
                         )}
                         {version && motivations.length > 0 && (
                             <SlicedBalloon
-                                slices={slicesOf(version, selection)}
+                                slices={slicesOf(version, selection, pointed)}
                                 a={{ x: source.x, y: source.y }}
                                 b={{ x: target.x, y: target.y }}
                                 keyboardLayer={source.id === currentVersionId ? motivationKeys : undefined}
                                 onSliceHover={(slice) => {
                                     const m = slice && motivations.find(m => m.id === slice.id)
-                                    setSelection(m ? [{ versionId: source.id, motivation: m }] : [])
+                                    setPointed(m ? { versionId: source.id, motivation: m } : undefined)
                                 }}
                                 onSliceClick={(slice) => {
                                     const m = motivations.find(m => m.id === slice.id)
                                     if (!m) return
-                                    onVersionClick(source.id)
-                                    queueMicrotask(() =>
-                                        setSelection([{ versionId: source.id, motivation: m }]))
+                                    // A second click lets go of what the first held.
+                                    if (slice.held) setSelection([])
+                                    else onHold({ versionId: source.id, motivation: m })
                                 }}
                             />
                         )}
