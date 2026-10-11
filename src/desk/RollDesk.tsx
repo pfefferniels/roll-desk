@@ -14,7 +14,7 @@ import { Svg, svg, svgPerMm } from "../canvas/units"
 import { LaneHeights, lanesOf } from "../canvas/rollGeometry"
 import { announcePlayback } from "../playback/usePlaybackMark"
 import { emulationOf, EmulationOptions } from '../playback/reproducingSystems'
-import { Add, ChevronLeft, ChevronRight, Clear, Download, Home, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
+import { AccountTree, Add, ChevronLeft, ChevronRight, Clear, Download, Home, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
 import { ToolButton } from "./ToolButton"
@@ -59,6 +59,7 @@ import { CopyFacsimile } from "../facsimile/CopyFacsimile"
 import { ConstraintsPanel, ConstraintSummary } from "../constraints/ConstraintsPanel"
 import { HeldMotivation, isHeldMotivation } from "../edition/motivation"
 import { MotivationAccount } from "../accounts/MotivationAccount"
+import { FiliationDialog } from "../filiation/FiliationDialog"
 
 type DeskTab = 'stemma' | 'sources' | 'problems'
 
@@ -180,6 +181,7 @@ export const Desk = ({ show }: DeskProps) => {
     const [editCopy, setEditCopy] = useState(false)
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
     const [emulationSettingsDialogOpen, setEmulationSettingsDialogOpen] = useState(false)
+    const [filiationOpen, setFiliationOpen] = useState(false)
 
     const [selection, setSelection] = useState<UserSelection[]>([])
     const [range, setRange] = useState<RollRange>()
@@ -560,6 +562,16 @@ export const Desk = ({ show }: DeskProps) => {
                             </ToolButton>
                         </Ribbon>
                     </RibbonGroup>
+                    <Ribbon title='Stemma' visible={!viewOnly}>
+                        <ToolButton
+                            label='Propose a stemma'
+                            hint='Propose a stemma from the copies'
+                            size='small'
+                            onClick={() => setFiliationOpen(true)}
+                        >
+                            <AccountTree />
+                        </ToolButton>
+                    </Ribbon>
                     {(!viewOnly && !currentVersion && currentCopyId) && (
                         <CopyFacsimileMenu copyId={currentCopyId} />
                     )}
@@ -942,6 +954,10 @@ export const Desk = ({ show }: DeskProps) => {
                     copyId={accountCopyId}
                     onClose={() => setAccountCopyId(undefined)}
                 />
+            )}
+
+            {filiationOpen && (
+                <FiliationDialog onClose={() => setFiliationOpen(false)} />
             )}
 
             {metadataJob && (

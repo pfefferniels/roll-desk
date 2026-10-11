@@ -2,13 +2,13 @@ import { Expression, Note, Track, TrackerBar } from "linked-rolls"
 import { Midi } from "tonal"
 
 /** A command's type as words: `SustainPedalOn` reads "Sustain pedal on". */
-const wordsOf = (expressionType: string): string => {
+export const wordsOf = (expressionType: string): string => {
     const words = expressionType.split(/(?=[A-Z])/).map(word => word.toLowerCase()).join(' ')
     return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
 /** A pitch as a note name, its octave numbered as middle C is C4. */
-const noteNameOf = (pitch: number): string =>
+export const noteNameOf = (pitch: number): string =>
     Midi.midiToNoteName(pitch, { sharps: true }).replace('#', '♯')
 
 /**
