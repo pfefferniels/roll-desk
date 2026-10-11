@@ -2,7 +2,7 @@
 
 import { AppBar, Badge, Box, Button, IconButton, Paper, Slider, Stack, Tab, Tabs, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, milliseconds, mm, scale, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
+import { HorizontalSpan, VerticalSpan, barOf, carriageProblems, constraintProblems, filiationProblems, milliseconds, mm, scale, trackerBarOf, isCommand, welteT100, symbolIn, symbolsIn, TrackRole } from 'linked-rolls'
 import { useLocation, useNavigate } from "react-router-dom"
 import { onsetToMiddleOf, spotlight, spotlightWhenDrawn } from "./spotlight"
 import { deskPath, entityOfPath, idNamed, idOfMark, linkTarget, LinkTarget, titlePath } from "../edition/addresses"
@@ -174,6 +174,7 @@ export const Desk = ({ show }: DeskProps) => {
     const compass = useMemo(() => edition ? compassOf(edition) : undefined, [edition])
     const problems = useMemo(() => edition ? constraintProblems(edition) : [], [edition])
     const carriage = useMemo(() => edition ? carriageProblems(edition) : [], [edition])
+    const filiation = useMemo(() => edition ? filiationProblems(edition) : [], [edition])
 
     const [metadataJob, setMetadataJob] = useState<MetadataJob>()
     const [editCopy, setEditCopy] = useState(false)
@@ -234,7 +235,7 @@ export const Desk = ({ show }: DeskProps) => {
     /** Where the title page is drawn. */
     const titlePageRef = useRef<HTMLElement>(null)
 
-    const troubles = problems.length + carriage.length
+    const troubles = problems.length + carriage.length + filiation.length
     const hasProblems = troubles > 0
 
     // The problems tab goes with the last problem, taking the choice of it along.
@@ -752,6 +753,7 @@ export const Desk = ({ show }: DeskProps) => {
                             versionId={currentVersionId}
                             problems={problems}
                             carriage={carriage}
+                            filiation={filiation}
                             onShow={showConstraint}
                         />
                     </TabPanel>
