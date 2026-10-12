@@ -4,6 +4,7 @@ import { OptionField, parseAmount, TypedOptions } from "./filiation"
 
 /** What each amount is called, and what it counts, in a line. */
 const fields: { field: OptionField, label: string, help: string }[] = [
+    { field: 'sameText', label: 'Same text within (readings)', help: 'Copies of one system that differ in no more readings carry one version.' },
     { field: 'gain', label: 'Gain', help: 'A reading arising, ten times a loss: one addition is seldom made twice.' },
     { field: 'lostState', label: 'Lost state', help: 'A lost version, so that one is posited only where shared additions call for it.' },
     { field: 'redundantLoss', label: 'Redundant loss', help: 'A reading that did nothing, lost, counts for this share of a loss.' },
@@ -57,8 +58,8 @@ export const FiliationFields = ({ typed, onType, pin, onPin, onReset, disabled }
                             disabled={disabled}
                             value={typed[field]}
                             error={invalid}
-                            helperText={invalid ? 'An amount of 0 or more is wanted here.' : help}
-                            slotProps={{ htmlInput: { inputMode: 'decimal' } }}
+                            helperText={invalid ? (field === 'sameText' ? 'A whole number of 0 or more is wanted here.' : 'An amount of 0 or more is wanted here.') : help}
+                            slotProps={{ htmlInput: { inputMode: field === 'sameText' ? 'numeric' : 'decimal' } }}
                             onChange={event => onType(field, event.target.value)}
                         />
                     )

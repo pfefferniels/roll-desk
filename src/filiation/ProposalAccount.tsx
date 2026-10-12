@@ -8,7 +8,7 @@ import { AccountSection } from "../accounts/Account"
 import { Stemma } from "../stemma/Stemma"
 import {
     amount, baseTextRows, ChangeRow, changeRows, conflictRows, copyNames, deviationRows, listed,
-    marginLabel, proposedNames, supportLabel, Tally, unpinnedRows
+    marginLabel, proposedNames, readingsApart, supportLabel, Tally, textRows, unpinnedRows
 } from "./filiation"
 
 const ignore = () => { }
@@ -151,6 +151,7 @@ export const ProposalAccount = ({ edition, proposal, preview }: ProposalAccountP
     const deviations = deviationRows(proposal, copyName, versionName)
     const unpinned = unpinnedRows(proposal.unpinned, edition)
     const baseText = baseTextRows(proposal, copyName)
+    const texts = textRows(proposal, copyName)
     const changed = rows.filter(row => row.changed).length
 
     return (
@@ -164,6 +165,26 @@ export const ProposalAccount = ({ edition, proposal, preview }: ProposalAccountP
                     A lost version is written *, the versions derived from one in brackets after it.
                 </Typography>
             </Box>
+
+            <AccountSection
+                title={`Copies carrying one text · ${texts.length}`}
+                hint={`Copies of one system that differ in no more than ${proposal.sameText} readings, or that the edition gives one version, are one version of the stemma. What one of them lacks of it is a reading that copy does not show.`}
+            >
+                {texts.map(text => (
+                    <Typography key={text.copies.join()} variant='body2'>
+                        {listed(text.copies)}, {readingsApart(text.differences)}{text.stated ? ', as the edition has it' : ''}.
+                    </Typography>
+                ))}
+                {texts.length === 0 && (
+                    <Typography variant='body2'>Every copy carries a text of its own.</Typography>
+                )}
+                {proposal.apart.length > 0 && (
+                    <Typography variant='caption' color='text.secondary'>
+                        Closest kept apart: {proposal.apart.slice(0, 3).map(pair =>
+                            `${listed(pair.copies.map(copyName))}, ${readingsApart(pair.differences)}`).join('; ')}.
+                    </Typography>
+                )}
+            </AccountSection>
 
             <OwnSelection>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent='center' alignItems='center'>
