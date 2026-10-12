@@ -1,4 +1,4 @@
-import { AnyArgumentation, Edition } from "linked-rolls"
+import { AnyArgumentation, derivationsOf, Edition } from "linked-rolls"
 import { linkTarget } from "./addresses"
 import { nameOf } from "./names"
 
@@ -36,9 +36,28 @@ const placeOf = (edition: Edition, id: string): string | undefined => {
 }
 
 /**
+ * What a premise names where it names a belief of the edition: what is
+ * held, in words. A proposition set is told by the run that concluded
+ * it, a derivation by the versions it joins.
+ */
+const beliefNamed = (edition: Edition, id: string): string | undefined => {
+    const set = (edition.propositionSets ?? []).find(candidate => candidate.belief.id === id)
+    if (set) {
+        const reason = set.belief.reasons.find(reason => reason.type === 'inference' && reason.software?.length)
+        const program = reason?.type === 'inference' ? reason.software?.[0] : undefined
+        return program ? `what ${program.name}${program.version ? ` ${program.version}` : ''} concluded` : 'what a reasoning concluded'
+    }
+    for (const version of edition.versions) {
+        const derivation = derivationsOf(version).find(derivation => derivation.belief?.id === id)
+        if (derivation) return `that ${nameOf(edition, version.id) ?? version.id} derives from ${nameOf(edition, derivation.parent) ?? derivation.parent}`
+    }
+    return undefined
+}
+
+/**
  * What an entry of a reason's `used` or `premises` cites, as a reader can
  * follow it. A web address is named by the last segment of its path,
- * which says which file it is.
+ * which says which file it is, and a belief by what it holds.
  */
 export const citationOf = (edition: Edition, id: string): Citation => {
     const url = webAddressOf(id)
@@ -46,6 +65,9 @@ export const citationOf = (edition: Edition, id: string): Citation => {
 
     const name = nameOf(edition, id)
     if (name) return { kind: 'entity', id, label: name }
+
+    const belief = beliefNamed(edition, id)
+    if (belief) return { kind: 'unknown', label: belief }
 
     const place = placeOf(edition, id)
     return place ? { kind: 'entity', id, label: `on ${place}` } : { kind: 'unknown', label: id }

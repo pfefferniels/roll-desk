@@ -5,7 +5,7 @@ import { emptyMetadata } from '../edition/EditionContext'
 import { fixtureEdition, hole, ids } from '../edition/editionFixture'
 import {
     adoption, amount, asSentence, changeRows, conflictRows, copyNames, defaultTyping, editRows, listed, marginLabel, meaningLabel,
-    deviationRows, optionsOf, parseAmount, proposedNames, readingRow, readingsApart, supportLabel, textRows, unpinnedRows
+    deviationRows, optionsOf, parseAmount, proposedNames, readingRow, readingsApart, runOf, supportLabel, textRows, unpinnedRows
 } from './filiation'
 
 /** A reading of a text: what it says and where it begins. */
@@ -237,6 +237,35 @@ describe('a stemma adopted with the edits of its versions', () => {
     it('leaves the edits one change at a time where they are not proposed', () => {
         const b = editRows(produce(edition, adoption(proposal, false))).find(row => row.siglum === 'R2')!
         expect(b).toMatchObject({ edits: 20, types: ['20 untyped'] })
+    })
+})
+
+describe('a run started at the desk', () => {
+    const editor = { name: 'Niels Pfeffer', sameAs: ['https://orcid.org/0000-0002-6210-7255'], role: 'editor' as const }
+
+    it('is dated to the day it is started, by the one editor the edition names', () => {
+        const edition = { creation: { ...emptyMetadata.creation, editors: [editor] } }
+        expect(runOf(edition, new Date(2026, 9, 12, 21, 30))).toEqual({
+            date: { within: new Date(2026, 9, 12) },
+            actor: { name: editor.name, sameAs: editor.sameAs }
+        })
+    })
+
+    it('names nobody where the edition names several editors, or none', () => {
+        const several = { creation: { ...emptyMetadata.creation, editors: [editor, { ...editor, name: 'Another' }] } }
+        expect(runOf(several).actor).toBeUndefined()
+        expect(runOf({ creation: { ...emptyMetadata.creation, editors: [] } }).actor).toBeUndefined()
+    })
+
+    it('is recorded with the stemma and the edits it proposed', () => {
+        const edition = tradition()
+        const run = runOf({ creation: { ...emptyMetadata.creation, editors: [editor] } }, new Date(2026, 9, 12))
+        const adopted = produce(edition, adoption(proposeStemma(edition), true, run))
+        const [stemma, edits] = adopted.propositionSets!
+        for (const set of [stemma, edits]) {
+            const [reason] = set.belief.reasons
+            expect(reason).toMatchObject({ type: 'inference', actor: run.actor, date: run.date, software: [{ name: 'linked-rolls' }] })
+        }
     })
 })
 

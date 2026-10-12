@@ -18,6 +18,7 @@ import { editsAlongRoll, HeldMotivation, isHeldMotivation, motivationIdFor } fro
 import { RenameMotivationDialog } from "./RenameMotivationDialog"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "../accounts/Arguable"
+import { runOf } from "../filiation/filiation"
 import { nameOf } from "../edition/names"
 
 export type VersionSelection = AnySymbol | Edit | HeldMotivation
@@ -112,7 +113,7 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     // Groups and types what the collation left one change at a time;
                     // the edits somebody wrote stay, and so does the selection of symbols.
                     onClick={() => {
-                        apply(adoptEdits([versionId]))
+                        apply(adoptEdits([versionId], {}, runOf(edition)))
                         setSelection(selection.filter(item => !isEdit(item)))
                     }}
                     disabled={!principal}

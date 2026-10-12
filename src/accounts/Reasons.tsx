@@ -1,7 +1,7 @@
 import { Delete } from "@mui/icons-material"
 import { Link, List, ListItem, Stack, Typography } from "@mui/material"
 import { ToolButton } from "../desk/ToolButton"
-import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension, symbolIn, pathIn, getAt } from "linked-rolls"
+import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension, symbolIn, pathIn, getAt, TimeSpan } from "linked-rolls"
 import { ReactNode, useContext } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { actorOf, Citation, citationOf, reasonLabels } from "../edition/reasons"
@@ -58,6 +58,35 @@ const Applied = ({ reason }: { reason: AnyArgumentation }) => {
     )
 }
 
+/** "12 October 2026" */
+const day = (date: Date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+
+/** When something happened, as far as it is stated: the day, or the bounds of it. */
+export const spanWords = (span: TimeSpan): string => {
+    if ('within' in span) return day(span.within)
+    if (span.after && span.before) return `between ${day(span.after)} and ${day(span.before)}`
+    return span.after ? `not before ${day(span.after)}` : `not after ${day(span.before!)}`
+}
+
+/**
+ * The programs that drew an inference or took a measurement, each in its
+ * release, and when, or nothing where the reason names neither. A
+ * conclusion a program drew can be drawn again by the same release.
+ */
+const Ran = ({ reason }: { reason: AnyArgumentation }) => {
+    if (reason.type !== 'inference' && reason.type !== 'measurement') return null
+    const software = reason.software ?? []
+    if (software.length === 0 && !reason.date) return null
+
+    return (
+        <Typography variant='caption' component='div' color='text.secondary' sx={{ overflowWrap: 'anywhere' }}>
+            {software.length > 0 && <>Program: {software.map(program => program.version ? `${program.name} ${program.version}` : program.name).join(', ')}</>}
+            {software.length > 0 && reason.date && ', '}
+            {reason.date && <>{software.length > 0 ? 'run on' : 'On'} {spanWords(reason.date)}</>}
+        </Typography>
+    )
+}
+
 /** The symbols a meaning comprehension interprets, each with the feature it was read from. */
 const Comprehended = ({ reason }: { reason: MeaningComprehension }) => {
     const { edition } = useContext(EditionContext)
@@ -106,6 +135,7 @@ const Reason = ({ reason }: { reason: AnyArgumentation }) => {
             {(reason.type === 'inference' || reason.type === 'measurement') && <Cited heading='Used' ids={reason.used ?? []} />}
             {reason.type === 'inference' && <Cited heading='Premises' ids={reason.premises} />}
             <Applied reason={reason} />
+            <Ran reason={reason} />
         </Stack>
     )
 }
