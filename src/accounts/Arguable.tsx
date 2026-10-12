@@ -1,7 +1,7 @@
 import { Add, Delete, Edit } from "@mui/icons-material";
-import { Button, Stack } from "@mui/material";
+import { Button, Stack, Typography } from "@mui/material";
 import { ToolButton } from "../desk/ToolButton";
-import { isEdit, isSymbol, Path } from "linked-rolls";
+import { beliefIn, isEdit, isSymbol, Path } from "linked-rolls";
 import { ReactNode, useContext, useState } from "react";
 import { useSelection } from "../desk/SelectionContext";
 import { EditChoice, EditString } from "../fields/EditString";
@@ -23,7 +23,7 @@ interface ArguableProps {
 }
 
 export function Arguable({ asSVG, path, children }: ArguableProps) {
-    const { viewOnly } = useContext(EditionContext)
+    const { edition, viewOnly } = useContext(EditionContext)
 
     const [editValue, setEditValue] = useState(false)
     const [addCitation, setAddCitation] = useState(false)
@@ -43,14 +43,32 @@ export function Arguable({ asSVG, path, children }: ArguableProps) {
     }
 
     const belief = about['@annotation']?.belief;
+    // A statement one reasoning concluded together with others, as a
+    // program's run does, is held with the belief of their set. The
+    // editor who holds it for reasons of their own takes it out of the set.
+    const ofSet = !belief && edition ? beliefIn(edition, about) : undefined
 
-    if (viewOnly && !belief) {
+    if (viewOnly && !belief && !ofSet) {
         return asSVG ? <g>{children}</g> : <span>{children}</span>
     }
 
     const mark = (
-        <CertaintyMark certainty={belief?.certainty} at={asSVG?.buttonPlacement}>
-            {(!belief && !viewOnly) && (
+        <CertaintyMark certainty={belief?.certainty ?? ofSet?.certainty} at={asSVG?.buttonPlacement}>
+            {ofSet && (
+                <Stack spacing={1}>
+                    <Typography variant='caption' color='text.secondary'>
+                        Concluded together with others in one run, and held as they are
+                    </Typography>
+                    <BeliefAccount belief={ofSet} />
+                    {!viewOnly && (
+                        <Button onClick={() => createBelief()}>
+                            Hold for Reasons of Your Own
+                        </Button>
+                    )}
+                </Stack>
+            )}
+
+            {(!belief && !ofSet && !viewOnly) && (
                 <Button onClick={() => createBelief()}>
                     Create Belief
                 </Button>

@@ -1,6 +1,6 @@
 import {
     adoptEdits, adoptionOf, adoptStemma, CollatedReading, Costs, defaultCosts, defaultMargin, defaultMovedWithin, defaultSameText, Edition,
-    EditionOp, editsOf, EditType, FiliationOptions, mm, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, unchecked, Unpinned, versionIn
+    EditionOp, editsOf, EditType, FiliationOptions, mm, Run, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, unchecked, Unpinned, versionIn
 } from "linked-rolls"
 import { copyLabel } from "../edition/names"
 import { noteNameOf, wordsOf } from "../version/laneMeaning"
@@ -71,13 +71,29 @@ export const optionsOf = (typed: TypedOptions, pin: boolean): { options: Filiati
 }
 
 /**
+ * A run of the library's proposals started at the desk, as adopting one
+ * records it: on the day, and by the editor where the edition names one
+ * alone, who is then the one at the desk. Where it names several, who
+ * ran it is left unstated.
+ */
+export const runOf = (edition: Pick<Edition, 'creation'>, on: Date = new Date()): Run => {
+    const editors = edition.creation.editors ?? []
+    const editor = editors.length === 1 ? editors[0] : undefined
+    return {
+        date: { within: new Date(on.getFullYear(), on.getMonth(), on.getDate()) },
+        ...(editor && { actor: { name: editor.name, sameAs: editor.sameAs } })
+    }
+}
+
+/**
  * The proposed stemma put in place of the edition's, and where asked,
  * the edits of its versions proposed from what each changes, as one
- * operation and so one undo step.
+ * operation and so one undo step. Both are recorded as what the
+ * library's run concluded, under the run given.
  */
-export const adoption = (proposal: StemmaProposal, withEdits: boolean): EditionOp => draft => {
-    adoptStemma(proposal)(draft)
-    if (withEdits) adoptEdits()(draft)
+export const adoption = (proposal: StemmaProposal, withEdits: boolean, run: Run = {}): EditionOp => draft => {
+    adoptStemma(proposal, run)(draft)
+    if (withEdits) adoptEdits(undefined, {}, run)(draft)
 }
 
 /** A refusal as a sentence, which the library words without the full stop. */
@@ -298,7 +314,6 @@ const editTypeWords: Record<EditType, [string, string]> = {
     'remove-redundancy': ['redundancy removed', 'redundancies removed'],
     'recoding': ['recoding', 'recodings'],
     'shift': ['shift', 'shifts'],
-    'correct-error': ['error corrected', 'errors corrected'],
     'shorten': ['shortening', 'shortenings'],
     'prolong': ['prolongation', 'prolongations']
 }

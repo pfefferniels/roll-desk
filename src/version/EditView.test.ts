@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignReference, CollationTolerance, Edit, Edition, editTypes, mm, Note } from 'linked-rolls'
+import { assignReference, CollationTolerance, correctedError, Edit, Edition, editTypes, mm, Note } from 'linked-rolls'
 import { arrowId, beliefMarkAt, editTypeLabel, endOf, endsThatMoved, hullId, Stretch, stretchOf } from './EditView'
 import { svg } from '../canvas/units'
 import { fixtureEdition, hole } from '../edition/editionFixture'
@@ -15,9 +15,10 @@ describe('the word written under an edit', () => {
         expect(editTypeLabel(undefined)).toBeUndefined()
     })
 
-    it('is a sign of its own for an accent and a correction', () => {
+    it('is a sign of its own for an accent, and for a correction, which its motivation says', () => {
         expect(editTypeLabel('additional-accent')).toBe('>')
-        expect(editTypeLabel('correct-error')).toBe('fix')
+        expect(editTypeLabel('shift', correctedError)).toBe('fix')
+        expect(editTypeLabel(undefined, correctedError)).toBe('fix')
     })
 
     it('is left out for a shift, which the arrow already tells', () => {

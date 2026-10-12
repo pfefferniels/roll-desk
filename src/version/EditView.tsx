@@ -5,7 +5,7 @@ import {
 import { getHull, Hull, hullPadding } from "./Hull";
 import { getBoundingBox } from "../geometry/getBoundingBox";
 import { MouseEventHandler, SVGProps, useContext, useMemo } from "react";
-import { AnySymbol } from "linked-rolls";
+import { AnySymbol, correctedError, isHeldForItself } from "linked-rolls";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionContext } from "../edition/EditionContext";
@@ -242,11 +242,14 @@ export const beliefMarkAt = (boxes: readonly Box[]): Point => {
     return point(add(x, width), subtract(y, beliefMarkRise))
 }
 
-/** The word written under an edit's insertions, where its type calls for one. */
-export const editTypeLabel = (editType: EditType | undefined): string | undefined => {
+/**
+ * The word written under an edit's insertions, where its type calls for
+ * one, or where it corrects an error, which is said by its motivation.
+ */
+export const editTypeLabel = (editType: EditType | undefined, motivation?: string): string | undefined => {
+    if (motivation === correctedError) return 'fix'
     if (!editType) return undefined
     if (editType === 'additional-accent') return '>'
-    if (editType === 'correct-error') return 'fix'
     // a shift is already told by the arrow from the old place to the new one
     if (editType === 'shift') return undefined
     // in a transfer nearly every edit of expression matter is a recoding, so
@@ -343,7 +346,9 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, rings = 0,
     const inserted = insertions.length
     const deleted = deletions.length
 
-    const annotated = edit['@annotation'] && pathIn(edition, edit.id)
+    // An edit held as one of a program's run is argued where that run is,
+    // and a mark on each would cover the roll; only the editor's are marked.
+    const annotated = isHeldForItself(edit) && pathIn(edition, edit.id)
 
     // An edit that is argued carries the mark of its belief where it lies,
     // so that it is read off the roll rather than from a list apart from
@@ -435,7 +440,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, rings = 0,
                     colours={insertion}
                     padding={padding}
                     focus={focus}
-                    label={editTypeLabel(edit.editType)}
+                    label={editTypeLabel(edit.editType, edit.motivation)}
                     onClick={onClick}
                 />
             )}

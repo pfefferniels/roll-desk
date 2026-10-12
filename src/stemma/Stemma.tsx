@@ -57,7 +57,7 @@ export const Stemma = ({ onClick, onHold, currentVersionId, problems = [], heigh
         const graph = graphOf(withGenerations(edition), problems, {
             sigla: siglaOf(edition),
             attested: attestedVersions(edition)
-        })
+        }, edition)
         const nodes = calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight)
         return { links: graph.links, nodes, ...laidOut(nodes, graph.links, svgWidth, svgHeight) }
     }, [versions, edition, problems, svgHeight])
@@ -268,7 +268,8 @@ export interface Naming {
 export const graphOf = (
     versions: readonly (Version & { generation: number })[],
     problems: readonly ConstraintProblem[],
-    { sigla, attested }: Naming
+    { sigla, attested }: Naming,
+    held: Pick<Edition, 'propositionSets'> = {}
 ): { nodes: Node[], links: Link[] } => {
     const versionBy = (id: string) => versions.find(other => other.id === id)
 
@@ -300,7 +301,8 @@ export const graphOf = (
 
     const links: Link[] = versions.flatMap(version => {
         const principal = parentOf(version)
-        return derivationsOf(version).flatMap(({ parent, certainty }): Link[] => {
+        // A derivation of a program's run is held as the run is.
+        return derivationsOf(version, held).flatMap(({ parent, certainty }): Link[] => {
             const target = versionBy(parent)
             if (!target) return []
 

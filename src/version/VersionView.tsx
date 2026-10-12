@@ -1,7 +1,7 @@
 import { Ref, useContext, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Box } from "@mui/material"
-import { add, AnySymbol, ConstraintProblem, editsOf, Expression, max, Millimeters, min, mm, Note, placedCarriersOf, placeOf, subtract, symbolIn, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole } from "linked-rolls"
+import { add, AnySymbol, beliefIn, ConstraintProblem, editsOf, Expression, max, Millimeters, min, mm, Note, placedCarriersOf, placeOf, subtract, symbolIn, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
 import { Dynamics, DynamicsGrid, ReadDynamics, velocityIn } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -301,7 +301,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
         type: edit.editType?.replaceAll('-', ' '),
         inserted: edit.insert?.length ?? 0,
         deleted: edit.delete?.length ?? 0,
-        certainty: edit['@annotation']?.belief.certainty,
+        certainty: edition && beliefIn(edition, edit)?.certainty,
         motivation: version.motivations.find(m => m.id === edit.motivation)?.note || undefined
     })
 
