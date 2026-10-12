@@ -4,7 +4,7 @@ import { adoptStemma, assignReference, defaultCosts, Edition, proposeStemma, Rol
 import { emptyMetadata } from '../edition/EditionContext'
 import { fixtureEdition, hole, ids } from '../edition/editionFixture'
 import {
-    amount, asSentence, changeRows, conflictRows, copyNames, defaultTyping, listed, marginLabel, meaningLabel,
+    adoption, amount, asSentence, changeRows, conflictRows, copyNames, defaultTyping, editRows, listed, marginLabel, meaningLabel,
     deviationRows, optionsOf, parseAmount, proposedNames, readingRow, readingsApart, supportLabel, textRows, unpinnedRows
 } from './filiation'
 
@@ -212,6 +212,31 @@ describe('a stemma proposed for an edition that states none', () => {
 
     it('lets no reading arise twice', () => {
         expect(conflictRows(proposal, copyNames(edition), proposedNames(proposal, edition, preview))).toEqual([])
+    })
+})
+
+describe('a stemma adopted with the edits of its versions', () => {
+    const edition = tradition()
+    const proposal = proposeStemma(edition)
+    const preview = produce(edition, adoption(proposal, true))
+
+    it('changes the stemma as adopting it alone does', () => {
+        expect(changeRows(edition, preview)).toEqual(changeRows(edition, produce(edition, adoptStemma(proposal))))
+    })
+
+    it('makes each accent a version adds one edit, left to motivate', () => {
+        // B carries R2, the first version below the lost mother text.
+        const b = editRows(preview).find(row => row.siglum === 'R2')!
+        expect(b).toMatchObject({ edits: 10, unmotivated: 10, types: ['10 accents added'] })
+    })
+
+    it('says nothing of the root, whose insertions are its text', () => {
+        expect(editRows(preview)).toHaveLength(5)
+    })
+
+    it('leaves the edits one change at a time where they are not proposed', () => {
+        const b = editRows(produce(edition, adoption(proposal, false))).find(row => row.siglum === 'R2')!
+        expect(b).toMatchObject({ edits: 20, types: ['20 untyped'] })
     })
 })
 

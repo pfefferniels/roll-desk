@@ -1,10 +1,10 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, LinearProgress, Stack, Typography, useMediaQuery, useTheme } from "@mui/material"
-import { adoptStemma, Edition, StemmaProposal } from "linked-rolls"
+import { Edition, StemmaProposal } from "linked-rolls"
 import { produce } from "immer"
 import { useContext, useEffect, useRef, useState } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { useSnackbar } from "../desk/SnackbarContext"
-import { asSentence, defaultTyping, FiliationReply, FiliationRequest, optionsOf } from "./filiation"
+import { adoption, asSentence, defaultTyping, FiliationReply, FiliationRequest, optionsOf } from "./filiation"
 import { FiliationFields } from "./FiliationFields"
 import { ProposalAccount } from "./ProposalAccount"
 
@@ -23,8 +23,9 @@ interface FiliationDialogProps {
 
 /**
  * Proposes a stemma from the copies alone and sets it against the one
- * the edition states, to be adopted as a whole or left. The search runs
- * in a worker, which is let go of when the dialog closes.
+ * the edition states, to be adopted as a whole or left, with the edits
+ * of its versions where they are proposed too. The search runs in a
+ * worker, which is let go of when the dialog closes.
  */
 export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
     const { edition, apply } = useContext(EditionContext)
@@ -34,6 +35,7 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
 
     const [typed, setTyped] = useState(defaultTyping)
     const [pin, setPin] = useState(true)
+    const [withEdits, setWithEdits] = useState(true)
     const [outcome, setOutcome] = useState<Outcome>()
     const worker = useRef<Worker>(null)
 
@@ -63,7 +65,7 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
                 return
             }
             try {
-                settle({ from: edition, proposal: data.proposal, preview: produce(edition, adoptStemma(data.proposal)) })
+                settle({ from: edition, proposal: data.proposal, preview: produce(edition, adoption(data.proposal, withEdits)) })
             }
             catch (error) {
                 settle({ from: edition, refusal: `The proposal could not be adopted: ${reasonOf(error)}` })
@@ -78,11 +80,25 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
         started.postMessage({ edition, options: read.options } satisfies FiliationRequest)
     }
 
+    /** Proposes the edits with the stemma or leaves them, the preview of a proposal made already following. */
+    const proposeEdits = (proposing: boolean) => {
+        setWithEdits(proposing)
+        if (!proposed) return
+        try {
+            setOutcome({ ...proposed, preview: produce(proposed.from, adoption(proposed.proposal, proposing)) })
+        }
+        catch (error) {
+            setOutcome({ from: proposed.from, refusal: `The proposal could not be adopted: ${reasonOf(error)}` })
+        }
+    }
+
     const adopt = () => {
         if (!proposed || outdated) return
 
-        apply(adoptStemma(proposed.proposal))
-        setMessage('Adopted the proposed stemma. Undo takes it back.')
+        apply(adoption(proposed.proposal, withEdits))
+        setMessage(withEdits
+            ? 'Adopted the proposed stemma and its edits. Undo takes them back.'
+            : 'Adopted the proposed stemma. Undo takes it back.')
         onClose()
     }
 
@@ -102,9 +118,12 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
                         onType={(field, text) => setTyped(before => ({ ...before, [field]: text }))}
                         pin={pin}
                         onPin={setPin}
+                        withEdits={withEdits}
+                        onWithEdits={proposeEdits}
                         onReset={() => {
                             setTyped(defaultTyping())
                             setPin(true)
+                            proposeEdits(true)
                         }}
                         disabled={running}
                     />
@@ -127,7 +146,7 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
                     )}
 
                     {proposed && (
-                        <ProposalAccount edition={proposed.from} proposal={proposed.proposal} preview={proposed.preview} />
+                        <ProposalAccount edition={proposed.from} proposal={proposed.proposal} preview={proposed.preview} withEdits={withEdits} />
                     )}
                 </Stack>
             </DialogContent>

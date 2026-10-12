@@ -7,7 +7,7 @@ import { HeldMotivation } from "../edition/motivation"
 import { AccountSection } from "../accounts/Account"
 import { Stemma } from "../stemma/Stemma"
 import {
-    amount, baseTextRows, ChangeRow, changeRows, conflictRows, copyNames, deviationRows, listed,
+    amount, baseTextRows, ChangeRow, changeRows, conflictRows, copyNames, deviationRows, EditRow, editRows, listed,
     marginLabel, proposedNames, readingsApart, supportLabel, Tally, textRows, unpinnedRows
 } from "./filiation"
 
@@ -58,6 +58,32 @@ const tallyCells = (tally: Tally, changed: boolean) => (
         <TableCell align='right' sx={{ fontWeight: changed && tally.gone > 0 ? 600 : undefined }}>{tally.gone}</TableCell>
         <TableCell align='right' sx={{ fontWeight: changed && tally.added > 0 ? 600 : undefined }}>{tally.added}</TableCell>
     </>
+)
+
+/** Version by version, the edits adopting leaves, how many are left to motivate, and of what types. */
+const EditTable = ({ rows }: { rows: EditRow[] }) => (
+    <TableContainer>
+        <Table size='small' sx={{ '& td, & th': { px: 1 } }}>
+            <TableHead>
+                <TableRow>
+                    <TableCell>Version</TableCell>
+                    <TableCell align='right'>Edits</TableCell>
+                    <TableCell align='right'>To motivate</TableCell>
+                    <TableCell>Of which</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {rows.map(row => (
+                    <TableRow key={row.version}>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.siglum}</TableCell>
+                        <TableCell align='right'>{row.edits}</TableCell>
+                        <TableCell align='right'>{row.unmotivated}</TableCell>
+                        <TableCell>{row.types.join(', ')}</TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    </TableContainer>
 )
 
 const parentText = (row: ChangeRow): string => {
@@ -133,6 +159,8 @@ interface ProposalAccountProps {
     proposal: StemmaProposal
     /** The edition as it would stand with the proposal adopted. */
     preview: Edition
+    /** Whether the preview has the edits of its versions proposed too. */
+    withEdits: boolean
 }
 
 /**
@@ -140,10 +168,11 @@ interface ProposalAccountProps {
  * it costs, both drawn side by side, what adopting it changes version by
  * version, how firmly the copies decide it, and what it leaves unsettled.
  */
-export const ProposalAccount = ({ edition, proposal, preview }: ProposalAccountProps) => {
+export const ProposalAccount = ({ edition, proposal, preview, withEdits }: ProposalAccountProps) => {
     const copyName = useMemo(() => copyNames(edition), [edition])
     const versionName = useMemo(() => proposedNames(proposal, edition, preview), [proposal, edition, preview])
     const rows = useMemo(() => changeRows(edition, preview), [edition, preview])
+    const edits = useMemo(() => withEdits ? editRows(preview) : [], [preview, withEdits])
     const problemsBefore = useMemo(() => constraintProblems(edition), [edition])
     const problemsAfter = useMemo(() => constraintProblems(preview), [preview])
 
@@ -153,6 +182,7 @@ export const ProposalAccount = ({ edition, proposal, preview }: ProposalAccountP
     const baseText = baseTextRows(proposal, copyName)
     const texts = textRows(proposal, copyName)
     const changed = rows.filter(row => row.changed).length
+    const unmotivated = edits.reduce((sum, row) => sum + row.unmotivated, 0)
 
     return (
         <Stack spacing={2}>
@@ -199,6 +229,15 @@ export const ProposalAccount = ({ edition, proposal, preview }: ProposalAccountP
             >
                 <ChangeTable rows={rows} />
             </AccountSection>
+
+            {withEdits && (
+                <AccountSection
+                    title={`The edits proposed · ${unmotivated} left to motivate`}
+                    hint='What each version changes, grouped into edits and typed by its shape. The edits you wrote stay as they are.'
+                >
+                    <EditTable rows={edits} />
+                </AccountSection>
+            )}
 
             <AccountSection
                 title='How firmly the copies decide it'

@@ -1,6 +1,6 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, SelectAll } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, SelectAll, AutoFixHigh } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, adoptEdits, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
 import { useContext, useState } from "react"
 import { Ribbon } from "../desk/Ribbon"
 import { v4 } from "uuid"
@@ -107,6 +107,19 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     size='small'
                 >
                     Made by
+                </Button>
+                <Button
+                    // Groups and types what the collation left one change at a time;
+                    // the edits somebody wrote stay, and so does the selection of symbols.
+                    onClick={() => {
+                        apply(adoptEdits([versionId]))
+                        setSelection(selection.filter(item => !isEdit(item)))
+                    }}
+                    disabled={!principal}
+                    size='small'
+                    startIcon={<AutoFixHigh />}
+                >
+                    Propose Edits
                 </Button>
             </Ribbon>
             {held && heldMotivation && (

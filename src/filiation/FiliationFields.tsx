@@ -20,6 +20,9 @@ interface FiliationFieldsProps {
     /** Whether the edits the editor wrote hold their versions. */
     pin: boolean
     onPin: (pin: boolean) => void
+    /** Whether the edits of each version are proposed with the stemma. */
+    withEdits: boolean
+    onWithEdits: (withEdits: boolean) => void
     /** Puts every option back to where it started. */
     onReset: () => void
     disabled?: boolean
@@ -30,7 +33,7 @@ interface FiliationFieldsProps {
  * values the edition of WM 225 is reproduced with, and fold away, since
  * they are seldom changed.
  */
-export const FiliationFields = ({ typed, onType, pin, onPin, onReset, disabled }: FiliationFieldsProps) => (
+export const FiliationFields = ({ typed, onType, pin, onPin, withEdits, onWithEdits, onReset, disabled }: FiliationFieldsProps) => (
     <Stack spacing={1}>
         <Box>
             <FormControlLabel
@@ -39,6 +42,16 @@ export const FiliationFields = ({ typed, onType, pin, onPin, onReset, disabled }
             />
             <FormHelperText sx={{ mt: 0 }}>
                 An edit no collation wrote holds its version to what it inserts and deletes, as far as the copies allow.
+            </FormHelperText>
+        </Box>
+
+        <Box>
+            <FormControlLabel
+                control={<Checkbox checked={withEdits} disabled={disabled} onChange={event => onWithEdits(event.target.checked)} />}
+                label='Propose the edits too'
+            />
+            <FormHelperText sx={{ mt: 0 }}>
+                What each version changes is grouped into edits and typed by its shape. The edits you wrote stay; what is left is to say why.
             </FormHelperText>
         </Box>
 

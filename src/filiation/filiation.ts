@@ -1,6 +1,6 @@
 import {
-    adoptionOf, CollatedReading, Costs, defaultCosts, defaultMargin, defaultMovedWithin, defaultSameText, Edition, editsOf, FiliationOptions,
-    mm, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, Unpinned, versionIn
+    adoptEdits, adoptionOf, adoptStemma, CollatedReading, Costs, defaultCosts, defaultMargin, defaultMovedWithin, defaultSameText, Edition,
+    EditionOp, editsOf, EditType, FiliationOptions, mm, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, unchecked, Unpinned, versionIn
 } from "linked-rolls"
 import { copyLabel } from "../edition/names"
 import { noteNameOf, wordsOf } from "../version/laneMeaning"
@@ -68,6 +68,16 @@ export const optionsOf = (typed: TypedOptions, pin: boolean): { options: Filiati
             pin
         }
     }
+}
+
+/**
+ * The proposed stemma put in place of the edition's, and where asked,
+ * the edits of its versions proposed from what each changes, as one
+ * operation and so one undo step.
+ */
+export const adoption = (proposal: StemmaProposal, withEdits: boolean): EditionOp => draft => {
+    adoptStemma(proposal)(draft)
+    if (withEdits) adoptEdits()(draft)
 }
 
 /** A refusal as a sentence, which the library words without the full stop. */
@@ -279,4 +289,59 @@ export const unpinnedRows = (unpinned: readonly Unpinned[], edition: Edition): U
             ...(motivation && { motivation })
         }
     })
+}
+
+/** What each edit type is called in a count, one and many. */
+const editTypeWords: Record<EditType, [string, string]> = {
+    'additional-accent': ['accent added', 'accents added'],
+    'add-redundancy': ['redundancy added', 'redundancies added'],
+    'remove-redundancy': ['redundancy removed', 'redundancies removed'],
+    'recoding': ['recoding', 'recodings'],
+    'shift': ['shift', 'shifts'],
+    'correct-error': ['error corrected', 'errors corrected'],
+    'shorten': ['shortening', 'shortenings'],
+    'prolong': ['prolongation', 'prolongations']
+}
+
+/** The edits of one version as adopting leaves them. */
+export interface EditRow {
+    version: string
+    siglum: string
+    edits: number
+    /** How many of them nobody has said why yet. */
+    unmotivated: number
+    /** How many there are of each type, the commonest first, in words. */
+    types: string[]
+}
+
+/**
+ * Version by version, the edits adopting leaves, and how many of them are
+ * left to motivate. The root is left out: what it inserts is its text,
+ * not edits of another.
+ */
+export const editRows = (after: Edition): EditRow[] => {
+    const sigla = siglaOf(after)
+    return after.versions
+        .filter(version => (version.basedOn ?? []).length > 0)
+        .map(version => {
+            const edits = editsOf(version)
+            const counts = new Map<string, number>()
+            edits.forEach(edit => {
+                const type = edit.editType ?? 'untyped'
+                counts.set(type, (counts.get(type) ?? 0) + 1)
+            })
+            const types = [...counts]
+                .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+                .map(([type, count]) => {
+                    const [one, many] = type === 'untyped' ? ['untyped', 'untyped'] : editTypeWords[type as EditType]
+                    return `${count} ${count === 1 ? one : many}`
+                })
+            return {
+                version: version.id,
+                siglum: sigla.get(version.id) ?? 'unnamed version',
+                edits: edits.length,
+                unmotivated: edits.filter(edit => edit.motivation === undefined || edit.motivation === unchecked).length,
+                types
+            }
+        })
 }
