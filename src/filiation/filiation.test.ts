@@ -5,7 +5,7 @@ import { emptyMetadata } from '../edition/EditionContext'
 import { fixtureEdition, hole, ids } from '../edition/editionFixture'
 import {
     amount, asSentence, changeRows, conflictRows, copyNames, defaultTyping, listed, marginLabel, meaningLabel,
-    optionsOf, parseAmount, proposedNames, readingRow, supportLabel, unpinnedRows
+    deviationRows, optionsOf, parseAmount, proposedNames, readingRow, readingsApart, supportLabel, textRows, unpinnedRows
 } from './filiation'
 
 /** A reading of a text: what it says and where it begins. */
@@ -60,7 +60,7 @@ const tradition = (): Edition => {
 describe('the options as typed', () => {
     it('start at the values the edition of WM 225 is reproduced with', () => {
         expect(optionsOf(defaultTyping(), true)).toEqual({
-            options: { costs: defaultCosts, movedWithin: 25, margin: 3, pin: true }
+            options: { costs: defaultCosts, movedWithin: 25, margin: 3, sameText: 3, pin: true }
         })
     })
 
@@ -73,6 +73,12 @@ describe('the options as typed', () => {
         expect(parseAmount('copyDeviation', '∞')).toBe(Infinity)
         expect(parseAmount('copyDeviation', ' Infinity ')).toBe(Infinity)
         expect(parseAmount('gain', '∞')).toBeUndefined()
+    })
+
+    it('count the readings copies of one text may differ in by whole numbers', () => {
+        expect(parseAmount('sameText', '0')).toBe(0)
+        expect(parseAmount('sameText', '2.5')).toBeUndefined()
+        expect(parseAmount('sameText', '∞')).toBeUndefined()
     })
 })
 
@@ -98,10 +104,12 @@ describe('what the dialog says in words', () => {
         const name = (copy: string) => copy.toUpperCase()
         expect(supportLabel({ copies: ['d', 'e'], margin: 29 }, name))
             .toBe('D and E derive from one lost or common version')
-        expect(supportLabel({ copies: ['b', 'd', 'e'], ancestor: 'b', margin: 4 }, name))
+        expect(supportLabel({ copies: ['b', 'd', 'e'], ancestor: ['b'], margin: 4 }, name))
             .toBe('B carries the version D and E derive from')
-        expect(supportLabel({ copies: ['b', 'd'], ancestor: 'b', margin: 4 }, name))
+        expect(supportLabel({ copies: ['b', 'd'], ancestor: ['b'], margin: 4 }, name))
             .toBe('B carries the version D derives from')
+        expect(supportLabel({ copies: ['b', 'b2', 'd'], ancestor: ['b', 'b2'], margin: 4 }, name))
+            .toBe('B and B2 carry the version D derives from')
     })
 
     it('says how firmly the copies decide it', () => {
@@ -191,7 +199,7 @@ describe('a stemma proposed for an edition that states none', () => {
         expect(names.every(one => [...siglaOf(preview).values()].includes(one))).toBe(true)
         proposal.versions.forEach((proposed, index) => {
             const siglum = names[index]!
-            expect(siglum === siglum.toLowerCase()).toBe(proposed.copy === undefined)
+            expect(siglum === siglum.toLowerCase()).toBe(proposed.copies.length === 0)
         })
     })
 
@@ -220,5 +228,32 @@ describe('an edit of the editor\'s that is not kept', () => {
             reason: 'No version of the proposal stands for its version',
             motivation: 'The accent is taken back.'
         }])
+    })
+})
+
+describe('copies carrying one text', () => {
+    /** The tradition with a second pressing of D that lacks one hole. */
+    const withPressing = (): Edition => {
+        const edition = tradition()
+        const d = edition.copies.find(copy => copy.siglum === 'D')!
+        const produced = d.production!.produced!.filter((_, index) => index !== 7)
+            .map(feature => ({ ...feature, id: `D2-${feature.id}` }))
+        return { ...edition, copies: [...edition.copies, { ...d, id: 'd2', siglum: 'D2', production: { ...d.production, produced } }] }
+    }
+
+    it('are named together, with how far apart they are', () => {
+        const edition = withPressing()
+        const proposal = proposeStemma(edition)
+        expect(textRows(proposal, copyNames(edition))).toEqual([{ copies: ['D', 'D2'], differences: 1, stated: false }])
+        expect(readingsApart(1)).toBe('1 reading apart')
+        expect(readingsApart(148)).toBe('148 readings apart')
+    })
+
+    it('tell which of them lacks a reading of the version they carry', () => {
+        const edition = withPressing()
+        const proposal = proposeStemma(edition)
+        const preview = produce(edition, adoptStemma(proposal))
+        const rows = deviationRows(proposal, copyNames(edition), proposedNames(proposal, edition, preview))
+        expect(rows.map(row => row.copy)).toEqual(['D2'])
     })
 })

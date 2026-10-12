@@ -1,6 +1,6 @@
 import {
-    adoptionOf, CollatedReading, Costs, defaultCosts, defaultMargin, defaultMovedWithin, Edition, editsOf, FiliationOptions, mm, siglaOf,
-    StemmaProposal, stemmaChanges, Support, TrackMeaning, Unpinned, versionIn
+    adoptionOf, CollatedReading, Costs, defaultCosts, defaultMargin, defaultMovedWithin, defaultSameText, Edition, editsOf, FiliationOptions,
+    mm, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, Unpinned, versionIn
 } from "linked-rolls"
 import { copyLabel } from "../edition/names"
 import { noteNameOf, wordsOf } from "../version/laneMeaning"
@@ -12,7 +12,7 @@ export type FiliationRequest = { edition: Edition, options: FiliationOptions }
 export type FiliationReply = { proposal: StemmaProposal } | { refusal: string }
 
 /** The options that are typed as numbers. */
-export type OptionField = keyof Costs | 'movedWithin' | 'margin'
+export type OptionField = keyof Costs | 'movedWithin' | 'margin' | 'sameText'
 
 export type TypedOptions = Record<OptionField, string>
 
@@ -24,7 +24,8 @@ export const defaultTyping = (): TypedOptions => ({
     copyDeviation: String(defaultCosts.copyDeviation),
     lostState: String(defaultCosts.lostState),
     movedWithin: String(defaultMovedWithin),
-    margin: String(defaultMargin)
+    margin: String(defaultMargin),
+    sameText: String(defaultSameText)
 })
 
 /** Spellings of a cost too high to be paid. */
@@ -33,13 +34,15 @@ const unbounded = new Set(['∞', 'inf', 'infinity'])
 /**
  * The amount the text spells, or nothing where it spells none: an empty
  * or half-typed field, or a negative amount. A copy's deviation may be
- * unbounded, which holds a copy to its version exactly.
+ * unbounded, which holds a copy to its version exactly. How many readings
+ * copies of one text may differ in is a count, and so a whole number.
  */
 export const parseAmount = (field: OptionField, text: string): number | undefined => {
     const trimmed = text.trim()
     if (field === 'copyDeviation' && unbounded.has(trimmed.toLowerCase())) return Infinity
     if (trimmed.length === 0) return undefined
     const amount = Number(trimmed)
+    if (field === 'sameText' && !Number.isInteger(amount)) return undefined
     return Number.isFinite(amount) && amount >= 0 ? amount : undefined
 }
 
@@ -61,6 +64,7 @@ export const optionsOf = (typed: TypedOptions, pin: boolean): { options: Filiati
             },
             movedWithin: mm(read('movedWithin')),
             margin: mm(read('margin')),
+            sameText: read('sameText'),
             pin
         }
     }
@@ -158,9 +162,28 @@ export const changeRows = (before: Edition, after: Edition): ChangeRow[] => {
 /** What a grouping of the stemma says of the copies. */
 export const supportLabel = (support: Support, nameOf: (copyId: string) => string): string => {
     if (!support.ancestor) return `${listed(support.copies.map(nameOf))} derive from one lost or common version`
-    const others = support.copies.filter(copy => copy !== support.ancestor).map(nameOf)
-    return `${nameOf(support.ancestor)} carries the version ${listed(others)} derive${others.length === 1 ? 's' : ''} from`
+    const carrying = support.ancestor
+    const others = support.copies.filter(copy => !carrying.includes(copy)).map(nameOf)
+    return `${listed(carrying.map(nameOf))} carr${carrying.length === 1 ? 'ies' : 'y'} the version ${listed(others)} derive${others.length === 1 ? 's' : ''} from`
 }
+
+/** Copies the proposal takes to carry one text, and how far apart they are. */
+export interface TextRow {
+    copies: string[]
+    /** The most readings any two of them differ in. */
+    differences: number
+    /** Whether the edition gives them one version. */
+    stated: boolean
+}
+
+/** The texts several copies carry, each one version of the proposal. */
+export const textRows = (proposal: Pick<StemmaProposal, 'texts'>, copyName: (copyId: string) => string): TextRow[] =>
+    proposal.texts
+        .filter(text => text.copies.length > 1)
+        .map(text => ({ copies: text.copies.map(copyName), differences: text.differences, stated: text.stated }))
+
+/** How many readings apart, in words. */
+export const readingsApart = (count: number): string => `${count} reading${count === 1 ? '' : 's'} apart`
 
 /** How firmly the copies decide a grouping, as the cost of doing without it. */
 export const marginLabel = (margin: number): string =>
@@ -205,18 +228,16 @@ export const conflictRows = (
     })
 }
 
-/** The readings a version holds that the copy carrying it lacks. */
+/** The readings a version holds that a copy carrying it lacks. */
 export const deviationRows = (
     proposal: Pick<StemmaProposal, 'versions' | 'collation'>,
     copyName: (copyId: string) => string,
     versionName: (proposed: string) => string
 ): (ReadingRow & { version: string, copy: string })[] => {
     const readings = readingsOf(proposal)
-    return proposal.versions.flatMap(proposed => proposed.deviations.flatMap(reading => {
+    return proposal.versions.flatMap(proposed => proposed.deviations.flatMap(({ copy, reading }) => {
         const collated = readings.get(reading)
-        return collated && proposed.copy
-            ? [{ ...readingRow(collated, copyName), version: versionName(proposed.id), copy: copyName(proposed.copy) }]
-            : []
+        return collated ? [{ ...readingRow(collated, copyName), version: versionName(proposed.id), copy: copyName(copy) }] : []
     }))
 }
 
