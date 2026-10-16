@@ -1,5 +1,5 @@
 import { RefCallback, useCallback, useState } from 'react'
-import { Certainty, Millimeters, subtract } from 'linked-rolls'
+import { Certainty, ChangeKind, Millimeters, subtract } from 'linked-rolls'
 import { scrollBehavior } from '../desk/motion'
 
 /**
@@ -113,6 +113,8 @@ export interface SpokenEdit {
     from: Millimeters
     /** Its type, in words. */
     type?: string
+    /** Whether it is a musical or a technical change, where it is a change. */
+    kind?: ChangeKind
     inserted: number
     deleted: number
     certainty?: Certainty
@@ -130,10 +132,11 @@ const doneBy = (inserted: number, deleted: number) => {
 }
 
 /** What the cursor says of an edit: where it lies, what it does, how certainly it is held, and why it was made. */
-export const editWords = ({ from, type, inserted, deleted, certainty, motivation }: SpokenEdit): string => {
+export const editWords = ({ from, type, kind, inserted, deleted, certainty, motivation }: SpokenEdit): string => {
     const said = [
         `Edit at ${placeWords(from)}`,
         type,
+        kind && `${kind} change`,
         doneBy(inserted, deleted),
         certainty && `held ${certainty}`
     ].filter(Boolean).join(', ')

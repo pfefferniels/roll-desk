@@ -35,7 +35,6 @@ const derived = (displacements: readonly number[], tolerance: CollationTolerance
     const base: Version = {
         id: 'A',
         system: systemOf(welteT100),
-        motivations: [],
         edits: [{
             type: 'edit',
             id: 'edit-a',
@@ -48,7 +47,6 @@ const derived = (displacements: readonly number[], tolerance: CollationTolerance
     const child: Version = {
         id: 'B',
         system: systemOf(welteT100),
-        motivations: [],
         edits: [{ type: 'edit', id: 'edit-b', insert: [note('own', 61, 'witness-own')], delete: ['note-0'] }],
         basedOn: [{ ...assignReference('A'), ...(tolerance && { collationTolerance: tolerance }) }]
     }

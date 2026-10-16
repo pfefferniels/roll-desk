@@ -1,7 +1,6 @@
 import { ChevronLeft, ChevronRight, Clear } from "@mui/icons-material"
 import { Stack, Typography } from "@mui/material"
 import { useContext, useMemo, useState } from "react"
-import { versionIn } from "linked-rolls"
 import { EditionContext } from "../edition/EditionContext"
 import { editsAlongRoll, HeldMotivation } from "../edition/motivation"
 import { editCount } from "../stemma/SlicedBalloon"
@@ -30,8 +29,7 @@ export const MotivationAccount = ({ held, onLetGo }: MotivationAccountProps) => 
 
     // Read off the edition rather than the selection, which keeps the
     // motivation as it was when it was held, before any renaming.
-    const motivation = edition && versionIn(edition, held.versionId)
-        ?.motivations.find(m => m.id === held.motivation.id)
+    const motivation = edition?.motivations?.find(m => m.id === held.motivation.id)
     if (!motivation) return null
 
     // The edits may have become fewer since the last step.

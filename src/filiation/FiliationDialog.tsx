@@ -4,7 +4,7 @@ import { produce } from "immer"
 import { useContext, useEffect, useRef, useState } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { useSnackbar } from "../desk/SnackbarContext"
-import { adoption, asSentence, defaultTyping, FiliationReply, FiliationRequest, optionsOf, runOf } from "./filiation"
+import { adoption, asSentence, defaultTyping, FiliationReply, FiliationRequest, optionsOf } from "./filiation"
 import { FiliationFields } from "./FiliationFields"
 import { ProposalAccount } from "./ProposalAccount"
 
@@ -65,7 +65,7 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
                 return
             }
             try {
-                settle({ from: edition, proposal: data.proposal, preview: produce(edition, adoption(data.proposal, withEdits, runOf(edition))) })
+                settle({ from: edition, proposal: data.proposal, preview: produce(edition, adoption(data.proposal, withEdits)) })
             }
             catch (error) {
                 settle({ from: edition, refusal: `The proposal could not be adopted: ${reasonOf(error)}` })
@@ -85,7 +85,7 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
         setWithEdits(proposing)
         if (!proposed) return
         try {
-            setOutcome({ ...proposed, preview: produce(proposed.from, adoption(proposed.proposal, proposing, runOf(proposed.from))) })
+            setOutcome({ ...proposed, preview: produce(proposed.from, adoption(proposed.proposal, proposing)) })
         }
         catch (error) {
             setOutcome({ from: proposed.from, refusal: `The proposal could not be adopted: ${reasonOf(error)}` })
@@ -95,7 +95,7 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
     const adopt = () => {
         if (!proposed || outdated) return
 
-        apply(adoption(proposed.proposal, withEdits, runOf(proposed.from)))
+        apply(adoption(proposed.proposal, withEdits))
         setMessage(withEdits
             ? 'Adopted the proposed stemma and its edits. Undo takes them back.'
             : 'Adopted the proposed stemma. Undo takes it back.')

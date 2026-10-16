@@ -1,12 +1,14 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material"
-import { Motivation, Version } from "linked-rolls"
+import { Motivation } from "linked-rolls"
 import { KeyboardEvent, useState } from "react"
-import { reasonFor, usesOf } from "./MotivateDialog"
+import { reasonFor } from "./MotivateDialog"
 import { editCount } from "../stemma/SlicedBalloon"
 
 interface RenameMotivationDialogProps {
-    /** The version the motivation belongs to, whose other motivations it is told apart from. */
-    version: Version
+    /** The motivations the edition states, which it is told apart from. */
+    motivations: readonly Motivation[]
+    /** How many edits of the edition give it. */
+    uses: number
     motivation: Motivation
     /** The new words, trimmed. */
     onDone: (note: string) => void
@@ -18,13 +20,13 @@ interface RenameMotivationDialogProps {
  * although it was made from the old words: it is the motivation's
  * address, and what refers to it would otherwise find nothing.
  */
-export const RenameMotivationDialog = ({ version, motivation, onDone, onClose }: RenameMotivationDialogProps) => {
+export const RenameMotivationDialog = ({ motivations, uses, motivation, onDone, onClose }: RenameMotivationDialogProps) => {
     const [note, setNote] = useState(motivation.note ?? '')
     const words = note.trim()
 
-    // Another motivation of the version in these words would be the same
+    // Another motivation of the edition in these words would be the same
     // reason given twice, which the editor may rather want to merge.
-    const others = version.motivations.filter(other => other.id !== motivation.id)
+    const others = motivations.filter(other => other.id !== motivation.id)
     const twin = reasonFor(others, words)
     const repeats = !!twin && typeof twin !== 'string'
 
@@ -44,7 +46,7 @@ export const RenameMotivationDialog = ({ version, motivation, onDone, onClose }:
             <DialogTitle>Rename Motivation</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 2 }}>
-                    Why the {editCount(usesOf(version).get(motivation.id) ?? 0)} it
+                    Why the {editCount(uses)} it
                     holds were made. Its identifier, <code>{motivation.id}</code>,
                     stays as it is, so that what refers to it still finds it.
                 </DialogContentText>
@@ -59,7 +61,7 @@ export const RenameMotivationDialog = ({ version, motivation, onDone, onClose }:
                     onChange={event => setNote(event.target.value)}
                     onKeyDown={doneOnEnter}
                     error={repeats}
-                    helperText={repeats ? 'Another motivation of the version gives this reason already.' : undefined}
+                    helperText={repeats ? 'Another motivation of the edition gives this reason already.' : undefined}
                 />
             </DialogContent>
             <DialogActions>

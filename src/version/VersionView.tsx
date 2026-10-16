@@ -1,7 +1,7 @@
 import { Ref, useContext, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Box } from "@mui/material"
-import { add, AnySymbol, beliefIn, ConstraintProblem, editsOf, Expression, max, Millimeters, min, mm, Note, placedCarriersOf, placeOf, subtract, symbolIn, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole } from "linked-rolls"
+import { add, AnySymbol, ConstraintProblem, editsOf, shapeOf, Expression, max, Millimeters, min, mm, Note, placedCarriersOf, placeOf, subtract, symbolIn, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole, kindOfChange } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
 import { Dynamics, DynamicsGrid, ReadDynamics, velocityIn } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -202,6 +202,13 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     // What this version does away with was coded for its parent's system,
     // so that is the bar those commands are drawn by.
     const parent = edition && predecessorOf(edition, version.id)
+
+    /** The shape each edit takes, read off it, for what is written under it and said of it. */
+    const shapes = useMemo(() => new Map(editsOf(version).map(edit =>
+        [edit.id, edition && parent ? shapeOf(edition, version.id, edit) : undefined])), [edition, version, parent])
+
+    /** The motivation of the edition's own an edit names, which the reader can point at and hold. */
+    const motivationOf = (edit: Edit) => edition?.motivations?.find(m => m.id === edit.motivation)
     const deletedOn = trackerBarOf(parent?.system)
     const deletedIn = useDeletedIn(deletedOn)
 
@@ -298,11 +305,12 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     /** What the cursor says of an edit: what it does, how certainly, and why. */
     const editSaid = (edit: Edit, from: Millimeters): string => editWords({
         from,
-        type: edit.editType?.replaceAll('-', ' '),
+        type: shapes.get(edit.id)?.replaceAll('-', ' '),
+        kind: kindOfChange(edit),
         inserted: edit.insert?.length ?? 0,
         deleted: edit.delete?.length ?? 0,
-        certainty: edition && beliefIn(edition, edit)?.certainty,
-        motivation: version.motivations.find(m => m.id === edit.motivation)?.note || undefined
+        certainty: edit['@annotation']?.belief.certainty,
+        motivation: motivationOf(edit)?.note || undefined
     })
 
     /** The motivation of this version that is held, whose edits alone the keyboard then goes through. */
@@ -315,7 +323,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
      * and passing over another's on the way should not take it away.
      */
     const pointAtMotivationOf = (edit: Edit, resting: boolean) => {
-        const motivation = version.motivations.find(m => m.id === edit.motivation)
+        const motivation = motivationOf(edit)
         if (!motivation) return
         if (resting) {
             if (!holding) setPointed({ versionId: version.id, motivation })
@@ -439,7 +447,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     }
 
     const edits = layers.map(({ of: edit, rings }) => {
-        const motivation = version.motivations.find(m => m.id === edit.motivation)
+        const motivation = motivationOf(edit)
 
         // The id is carried by the whole of what is drawn for the edit, so
         // that a spotlight finds it however many shapes it is drawn as.
@@ -452,6 +460,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
             >
                 <EditView
                     edit={edit}
+                    shape={shapes.get(edit.id)}
                     deletedOn={deletedOn}
                     tolerance={derivationToleranceOf(version)}
                     focus={focusOf(edit)}

@@ -19,24 +19,16 @@ const motivatedEdition = () => {
     if (!version || !edit) throw new Error('the fixture has changed')
 
     const motivation: Motivation = { type: 'motivation', id: 'chord-shading' }
-    version.motivations = [motivation]
+    edition.motivations = [motivation]
     edit.motivation = motivation.id
     edit['@annotation'] = assumed('why-b')
 
     return edition
 }
 
-/** Version A writing the same motivation id, as a collation writes `unchecked` on every version it makes. */
-const alsoInA = (edition: Edition) => {
-    const version = edition.versions[0]
-    if (!version) throw new Error('the fixture has changed')
-    version.motivations = [{ type: 'motivation', id: 'chord-shading' }]
-    return edition
-}
-
-/** B's motivation, as the desk holds it: the motivation and the version it belongs to. */
+/** B's motivation, as the desk holds it: the motivation and the version it is looked at on. */
 const motivationOfB = (edition: Edition): HeldMotivation => {
-    const motivation = edition.versions[1]?.motivations[0]
+    const motivation = edition.motivations?.[0]
     if (!motivation) throw new Error('the fixture has changed')
     return { versionId: ids.b, motivation }
 }
@@ -81,18 +73,18 @@ describe('the address of what the desk shows', () => {
         expect(deskPath(edition(), { selection: [] })).toBeUndefined()
     })
 
-    it('names a motivation by its id, no other version writing that id', () => {
+    it('names a motivation by its id, the edition stating it once', () => {
         const edition = motivatedEdition()
 
         expect(deskPath(edition, { versionId: ids.b, selection: [motivationOfB(edition)] }))
             .toBe('/chord-shading')
     })
 
-    it('falls back to the version where another version writes the same motivation id', () => {
-        const edition = alsoInA(motivatedEdition())
+    it('falls back to the version where the motivation is none the edition states', () => {
+        const edition = motivatedEdition()
+        const published: HeldMotivation = { versionId: ids.b, motivation: { type: 'motivation', id: 'https://w3id.org/reo/type/motivation/musical' } }
 
-        expect(deskPath(edition, { versionId: ids.b, selection: [motivationOfB(edition)] }))
-            .toBe(`/${ids.b}`)
+        expect(deskPath(edition, { versionId: ids.b, selection: [published] })).toBe(`/${ids.b}`)
     })
 
     it('is the entity IRI under the base of the edition', () => {
@@ -136,7 +128,7 @@ describe('what a link to an entity opens', () => {
         expect(marked(target)).toBe('edit-b')
     })
 
-    it('is the version a motivation belongs to, and the motivation as that version holds it', () => {
+    it('is the first version whose edits name a motivation, and the motivation as looked at there', () => {
         const target = linkTarget(motivatedEdition(), 'chord-shading')
 
         expect(target).toMatchObject({

@@ -5,7 +5,7 @@ import { emptyMetadata } from '../edition/EditionContext'
 import { fixtureEdition, hole, ids } from '../edition/editionFixture'
 import {
     adoption, amount, asSentence, changeRows, conflictRows, copyNames, defaultTyping, editRows, listed, marginLabel, meaningLabel,
-    deviationRows, optionsOf, parseAmount, proposedNames, readingRow, readingsApart, runOf, supportLabel, textRows, unpinnedRows
+    deviationRows, optionsOf, parseAmount, proposedNames, readingRow, readingsApart, supportLabel, textRows, unpinnedRows
 } from './filiation'
 
 /** A reading of a text: what it says and where it begins. */
@@ -138,7 +138,7 @@ const restemmed = (edition: Edition): Edition => produce(edition, draft => {
     const b = draft.versions.find(version => version.id === ids.b)!
     b.basedOn = [assignReference('C')]
     b.edits = []
-    const c: Version = { id: 'C', system: b.system, edits: [], motivations: [], basedOn: [assignReference(ids.a)] }
+    const c: Version = { id: 'C', system: b.system, edits: [], basedOn: [assignReference(ids.a)] }
     draft.versions.push(c)
 })
 
@@ -236,36 +236,17 @@ describe('a stemma adopted with the edits of its versions', () => {
 
     it('leaves the edits one change at a time where they are not proposed', () => {
         const b = editRows(produce(edition, adoption(proposal, false))).find(row => row.siglum === 'R2')!
-        expect(b).toMatchObject({ edits: 20, types: ['20 untyped'] })
+        expect(b).toMatchObject({ edits: 20, types: ['20 other changes'] })
     })
 })
 
-describe('a run started at the desk', () => {
-    const editor = { name: 'Niels Pfeffer', sameAs: ['https://orcid.org/0000-0002-6210-7255'], role: 'editor' as const }
-
-    it('is dated to the day it is started, by the one editor the edition names', () => {
-        const edition = { creation: { ...emptyMetadata.creation, editors: [editor] } }
-        expect(runOf(edition, new Date(2026, 9, 12, 21, 30))).toEqual({
-            date: { within: new Date(2026, 9, 12) },
-            actor: { name: editor.name, sameAs: editor.sameAs }
-        })
-    })
-
-    it('names nobody where the edition names several editors, or none', () => {
-        const several = { creation: { ...emptyMetadata.creation, editors: [editor, { ...editor, name: 'Another' }] } }
-        expect(runOf(several).actor).toBeUndefined()
-        expect(runOf({ creation: { ...emptyMetadata.creation, editors: [] } }).actor).toBeUndefined()
-    })
-
-    it('is recorded with the stemma and the edits it proposed', () => {
+describe('an adoption at the desk', () => {
+    it('names the rules the stemma and the edits follow, and the release of the library that found them', () => {
         const edition = tradition()
-        const run = runOf({ creation: { ...emptyMetadata.creation, editors: [editor] } }, new Date(2026, 9, 12))
-        const adopted = produce(edition, adoption(proposeStemma(edition), true, run))
-        expect(adopted.propositionSets).toHaveLength(2)
-        for (const set of adopted.propositionSets!) {
-            const [reason] = set.belief.reasons
-            expect(reason).toMatchObject({ type: 'inference', actor: run.actor, date: run.date, software: [{ name: 'linked-rolls' }] })
-        }
+        const adopted = produce(edition, adoption(proposeStemma(edition), true))
+        expect(adopted.creation.principles).toContain('https://welte225.org/rules#shared-addition')
+        expect(adopted.creation.principles).toContain('https://welte225.org/rules#one-place')
+        expect(adopted.creation.software).toEqual([expect.objectContaining({ name: 'linked-rolls' })])
     })
 })
 
@@ -273,7 +254,7 @@ describe('an edit of the editor\'s that is not kept', () => {
     it('is told with its version and the motivation it was given', () => {
         const edition = produce(fixtureEdition(), draft => {
             const b = draft.versions.find(version => version.id === ids.b)!
-            b.motivations.push({ type: 'motivation', id: 'accent', note: 'The accent is taken back.' })
+            draft.motivations = [{ type: 'motivation', id: 'accent', note: 'The accent is taken back.' }]
             b.edits![0]!.motivation = 'accent'
         })
         expect(unpinnedRows([{ edit: 'edit-b', version: ids.b, reason: 'version-gone' }], edition)).toEqual([{

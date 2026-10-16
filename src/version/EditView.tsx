@@ -1,11 +1,11 @@
 import {
-    admittedAtEnds, CollationTolerance, defaultCollationTolerance, distance, Edit, EditType, HorizontalSpan,
+    admittedAtEnds, CollationTolerance, defaultCollationTolerance, distance, Edit, EditShape, HorizontalSpan,
     isCommand, max, min, positionOfSameFunction, Track, TrackerBar, symbolIn, pathIn, placeOf, Edition
 } from "linked-rolls";
 import { getHull, Hull, hullPadding } from "./Hull";
 import { getBoundingBox } from "../geometry/getBoundingBox";
 import { MouseEventHandler, SVGProps, useContext, useMemo } from "react";
-import { AnySymbol, correctedError, isHeldForItself } from "linked-rolls";
+import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionContext } from "../edition/EditionContext";
@@ -242,20 +242,16 @@ export const beliefMarkAt = (boxes: readonly Box[]): Point => {
     return point(add(x, width), subtract(y, beliefMarkRise))
 }
 
-/**
- * The word written under an edit's insertions, where its type calls for
- * one, or where it corrects an error, which is said by its motivation.
- */
-export const editTypeLabel = (editType: EditType | undefined, motivation?: string): string | undefined => {
-    if (motivation === correctedError) return 'fix'
-    if (!editType) return undefined
-    if (editType === 'additional-accent') return '>'
+/** The word written under an edit's insertions, where its shape calls for one. */
+export const editLabel = (shape: EditShape | undefined): string | undefined => {
+    if (!shape) return undefined
+    if (shape === 'additional-accent') return '>'
     // a shift is already told by the arrow from the old place to the new one
-    if (editType === 'shift') return undefined
+    if (shape === 'shift') return undefined
     // in a transfer nearly every edit of expression matter is a recoding, so
     // the word would say nothing that the version does not say already
-    if (editType === 'recoding') return undefined
-    return editType.replaceAll('-', ' ')
+    if (shape === 'recoding') return undefined
+    return shape.replaceAll('-', ' ')
 }
 
 /** An edit that inserts as well as deletes draws two hulls, so each needs its own id. */
@@ -308,6 +304,8 @@ const EditHull = ({ id, boxes, colours, padding, focus, label, onClick }: EditHu
 
 interface EditViewProps {
     edit: Edit;
+    /** The shape the edit takes in its version, read off it (`shapeOf`). */
+    shape?: EditShape;
     /**
      * The bar the version this is based on was coded for, where that is
      * another system's. What the edit deletes is drawn by it.
@@ -333,7 +331,7 @@ interface EditViewProps {
     onClick?: MouseEventHandler;
 }
 
-export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, rings = 0, onClick }: EditViewProps) => {
+export const EditView = ({ edit, shape, deletedOn, tolerance, focus, atRoot, rings = 0, onClick }: EditViewProps) => {
     const { edition } = useContext(EditionContext)
     const translation = usePinchZoom()
     const deletedIn = useDeletedIn(deletedOn)
@@ -346,9 +344,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, rings = 0,
     const inserted = insertions.length
     const deleted = deletions.length
 
-    // An edit held as one of a program's run is argued where that run is,
-    // and a mark on each would cover the roll; only the editor's are marked.
-    const annotated = isHeldForItself(edit) && pathIn(edition, edit.id)
+    const annotated = edit['@annotation'] && pathIn(edition, edit.id)
 
     // An edit that is argued carries the mark of its belief where it lies,
     // so that it is read off the roll rather than from a list apart from
@@ -440,7 +436,7 @@ export const EditView = ({ edit, deletedOn, tolerance, focus, atRoot, rings = 0,
                     colours={insertion}
                     padding={padding}
                     focus={focus}
-                    label={editTypeLabel(edit.editType, edit.motivation)}
+                    label={editLabel(shape)}
                     onClick={onClick}
                 />
             )}

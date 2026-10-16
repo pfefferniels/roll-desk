@@ -1,16 +1,15 @@
-import { Edit, Edition, Motivation, editsOf, placeOf, symbolIn, unchecked, versionIn } from "linked-rolls"
+import { ChangeKind, Edit, Edition, EditionOp, Motivation, Version, editsOf, kindOfChange, musicalChange, placeOf, principalDerivationOf, symbolIn, technicalChange, versionIn } from "linked-rolls"
 
 export const isMotivation = (obj: unknown): obj is Motivation =>
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
 
 /**
- * A motivation together with the version holding it.
+ * A motivation together with the version it is looked at on.
  *
- * An id does not name a motivation on its own. A collation writes
- * `unchecked` on everything it makes, so every version that was
- * collated carries a motivation of that name, and two versions may
- * agree on an id for any other reason as well. The desk therefore marks,
- * counts and addresses a motivation as one of a particular version.
+ * The edition states a motivation once, and the edits of any version may
+ * name it. The desk marks and counts it on the roll of one version at a
+ * time, its edits there, so it holds the motivation together with that
+ * version.
  */
 export interface HeldMotivation {
     versionId: string
@@ -22,9 +21,18 @@ export const isHeldMotivation = (obj: unknown): obj is HeldMotivation =>
     'motivation' in obj && isMotivation(obj.motivation) &&
     'versionId' in obj && typeof obj.versionId === 'string'
 
-/** Whether the two are the one motivation of the one version. */
+/** Whether the two are the one motivation, looked at on the one version. */
 export const sameMotivation = (one: HeldMotivation, other: HeldMotivation) =>
     one.versionId === other.versionId && one.motivation.id === other.motivation.id
+
+/**
+ * The edition's motivations that the version's edits name, in the order
+ * the edition states them.
+ */
+export const motivationsOn = (motivations: readonly Motivation[] | undefined, version: Readonly<Version>): Motivation[] => {
+    const named = new Set(editsOf(version).map(edit => edit.motivation))
+    return (motivations ?? []).filter(motivation => named.has(motivation.id))
+}
 
 /**
  * The motivations in focus on a version's roll: the one the pointer rests
@@ -66,15 +74,55 @@ export const editsAlongRoll = (edition: Edition, held: HeldMotivation): Edit[] =
         .map(({ edit }) => edit)
 }
 
+/**
+ * The kind of change all the edits are, where they agree on one: musical
+ * or technical, as their motivations say (`kindOfChange`).
+ */
+export const kindOfAll = (edits: readonly Pick<Edit, 'motivation'>[]): ChangeKind | undefined => {
+    const kinds = new Set(edits.map(kindOfChange))
+    return kinds.size === 1 ? [...kinds][0] : undefined
+}
+
+/** The edit as a change of the kind given: as it is where it is one already. */
+export const asKind = <E extends Pick<Edit, 'motivation'>>(edit: E, kind: ChangeKind): E =>
+    kindOfChange(edit) === kind ? edit : { ...edit, motivation: kind === 'musical' ? musicalChange : technicalChange }
+
+/**
+ * Says that the edits of the version are changes of the kind given,
+ * where the editor reads them otherwise than the program did from their
+ * shape. An edit made musical states the generic musical motivation,
+ * whose reason the editor may give next; one already musical keeps the
+ * reason it has. An edit made technical gives no reason, and a
+ * motivation no edit names any longer goes. The edits of a version that
+ * derives from none state its text and are of no kind, so that nothing
+ * changes there.
+ */
+export const stateKind = (versionId: string, editIds: readonly string[], kind: ChangeKind): EditionOp => draft => {
+    const version = draft.versions.find(v => v.id === versionId)
+    if (!version || !principalDerivationOf(version)) return
+    const ids = new Set(editIds)
+    const given = new Set<string>()
+    editsOf(version)
+        .filter(edit => ids.has(edit.id) && kindOfChange(edit) !== kind)
+        .forEach(edit => {
+            if (edit.motivation) given.add(edit.motivation)
+            edit.motivation = asKind(edit, kind).motivation
+        })
+    if (given.size === 0 || !draft.motivations) return
+    const named = new Set(draft.versions.flatMap(other => editsOf(other).map(edit => edit.motivation)))
+    draft.motivations = draft.motivations.filter(motivation => !given.has(motivation.id) || named.has(motivation.id))
+}
+
 /** How long an id made from a note runs at most, a number to tell it apart left aside. */
 const longest = 40
 
 /**
  * Ids a new motivation is not given although nothing holds them yet: the
- * one a collation writes, which it would take for its own and rewrite,
- * and the editor's, whose address the desk keeps for itself.
+ * one an import takes for an edit that a document written before
+ * linked-rolls 0.76 left unchecked, whose kind it reads off its shape
+ * instead, and the editor's, whose address the desk keeps for itself.
  */
-const reserved = [unchecked, 'editor']
+const reserved = ['unchecked', 'editor']
 
 /**
  * An id for a new motivation, made from its note, so that its address

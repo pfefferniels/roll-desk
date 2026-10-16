@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignReference, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
+import { assignReference, Motivation, siglaOf, systemOf, TrackerBar, Version, welteLicensee, welteT100, welteT98 } from 'linked-rolls'
 import { calculatePositions, clashesOf, fitOf, graphOf, inDrawingOrder, laidOut, Node, radiusOf, shiftIntoView, spokenNameOf, spreadVersions } from './Stemma'
 import { point } from '../geometry/drawing'
 import { svg } from '../canvas/units'
@@ -14,16 +14,15 @@ const version = (
     system: systemOf(bar),
     ...(basedOn && { basedOn: [assignReference(basedOn)] }),
     edits: [],
-    motivations: [],
     generation
 })
 
 /** The graph of a stemma whose versions are all shown by a copy. */
-const graphFor = (versions: (Version & { generation: number })[]) =>
+const graphFor = (versions: (Version & { generation: number })[], motivations: Motivation[] = []) =>
     graphOf(versions, [], {
         sigla: siglaOf({ versions }),
         attested: new Set(versions.map(version => version.id))
-    })
+    }, motivations)
 
 const captionOf = (nodes: Node[], siglum: string) => {
     const node = nodes.find(n => n.id === siglum)!
@@ -198,15 +197,17 @@ describe('the room a node takes in its row', () => {
 })
 
 describe('keeping an opened balloon clear', () => {
+    /** A version whose one edit names a motivation of the edition's. */
     const motivated = (siglum: string, generation: number, basedOn?: string) => ({
         ...version(siglum, welteT100, generation, basedOn),
-        motivations: [{ type: 'motivation' as const, id: `${siglum}-m` }]
+        edits: [{ type: 'edit' as const, id: `${siglum}-e`, motivation: `${siglum}-m` }]
     })
     const siblings = [version('A', welteT100, 0), motivated('B', 1, 'A'), motivated('C', 1, 'A')]
+    const motivations: Motivation[] = [{ type: 'motivation', id: 'B-m' }, { type: 'motivation', id: 'C-m' }]
 
     /** The siblings drawn close beneath their parent, as the force layout may leave them. */
     const crowded = () => {
-        const { nodes, links } = graphFor(siblings)
+        const { nodes, links } = graphFor(siblings, motivations)
         const place = (id: string, x: number, y: number) => Object.assign(nodes.find(n => n.id === id) ?? {}, { x, y })
         place('A', 0, 50)
         place('B', -40, 250)

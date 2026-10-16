@@ -33,9 +33,13 @@ export const appliedBy = (reason: AnyArgumentation, base: string): string[] => {
     return (reason.applies ?? []).flatMap(id => iriOf(id, base) ?? [])
 }
 
-/** Every rule the edition's inferences apply, by IRI, in the order they are first named. */
+/**
+ * Every rule the edition follows, by IRI: the principles its creation
+ * names, then those its inferences apply, in the order they are first
+ * named.
+ */
 export const rulesOf = (edition: Edition): string[] => {
-    const found = new Set<string>()
+    const found = new Set<string>((edition.creation?.principles ?? []).flatMap(id => iriOf(id, edition.base) ?? []))
     const seen = new WeakSet<object>()
     const walk = (node: unknown) => {
         if (!node || typeof node !== 'object' || seen.has(node)) return

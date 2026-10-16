@@ -69,12 +69,12 @@ export const spanWords = (span: TimeSpan): string => {
 }
 
 /**
- * The programs that drew an inference or took a measurement, each in its
- * release, and when, or nothing where the reason names neither. A
- * conclusion a program drew can be drawn again by the same release.
+ * The programs that took a measurement, each in its release, and when,
+ * or nothing where the measurement names neither. A value a program
+ * took can be taken again by the same release.
  */
 const Ran = ({ reason }: { reason: AnyArgumentation }) => {
-    if (reason.type !== 'inference' && reason.type !== 'measurement') return null
+    if (reason.type !== 'measurement') return null
     const software = reason.software ?? []
     if (software.length === 0 && !reason.date) return null
 
