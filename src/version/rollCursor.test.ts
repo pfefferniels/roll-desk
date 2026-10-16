@@ -86,6 +86,13 @@ describe('what the cursor says of an edit', () => {
             .toBe('Edit at 120.3 cm, inserts 2 symbols. Bereinigung')
     })
 
+    it('says whether it is a musical or a technical change', () => {
+        expect(editWords({ from: mm(50), type: 'additional accent', kind: 'musical', inserted: 2, deleted: 0 }))
+            .toBe('Edit at 5.0 cm, additional accent, musical change, inserts 2 symbols')
+        expect(editWords({ from: mm(50), kind: 'technical', inserted: 0, deleted: 1 }))
+            .toBe('Edit at 5.0 cm, technical change, deletes 1 symbol')
+    })
+
     it('counts what it inserts and deletes, and names its type and certainty', () => {
         expect(editWords({ from: mm(50), type: 'shift', inserted: 1, deleted: 1, certainty: 'likely' }))
             .toBe('Edit at 5.0 cm, shift, inserts 1 symbol, deletes 1, held likely')

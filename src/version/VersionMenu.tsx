@@ -1,4 +1,4 @@
-import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, SelectAll, AutoFixHigh } from "@mui/icons-material"
+import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, SelectAll, AutoFixHigh, MusicNote, Build } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
 import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, adoptEdits, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn, musicalChange } from "linked-rolls"
 import { useContext, useState } from "react"
@@ -14,7 +14,7 @@ import { MotivateDialog, usesOf } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../desk/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
-import { editsAlongRoll, HeldMotivation, isHeldMotivation, motivationIdFor } from "../edition/motivation"
+import { asKind, editsAlongRoll, HeldMotivation, isHeldMotivation, kindOfAll, motivationIdFor, stateKind } from "../edition/motivation"
 import { RenameMotivationDialog } from "./RenameMotivationDialog"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "../accounts/Arguable"
@@ -217,6 +217,33 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                             >
                                 Motivate
                             </Button>
+                            {/* The program said from the shape whether a change is musical or technical; the editor may read it otherwise. */}
+                            {principal && kindOfAll(selection) !== 'musical' && (
+                                <Button
+                                    size='small'
+                                    startIcon={<MusicNote />}
+                                    title='Say that these are musical changes, whose reason may be given'
+                                    onClick={() => {
+                                        apply(stateKind(versionId, selection.map(edit => edit.id), 'musical'))
+                                        setSelection(selection.map(edit => asKind(edit, 'musical')))
+                                    }}
+                                >
+                                    Musical
+                                </Button>
+                            )}
+                            {principal && kindOfAll(selection) !== 'technical' && (
+                                <Button
+                                    size='small'
+                                    startIcon={<Build />}
+                                    title='Say that these are technical changes, which need no reason'
+                                    onClick={() => {
+                                        apply(stateKind(versionId, selection.map(edit => edit.id), 'technical'))
+                                        setSelection(selection.map(edit => asKind(edit, 'technical')))
+                                    }}
+                                >
+                                    Technical
+                                </Button>
+                            )}
                             {selection.length >= 2 && (
                                 <Button
                                     onClick={() => {

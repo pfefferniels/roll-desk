@@ -1,7 +1,7 @@
 import { Ref, useContext, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Box } from "@mui/material"
-import { add, AnySymbol, ConstraintProblem, editsOf, shapeOf, Expression, max, Millimeters, min, mm, Note, placedCarriersOf, placeOf, subtract, symbolIn, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole } from "linked-rolls"
+import { add, AnySymbol, ConstraintProblem, editsOf, shapeOf, Expression, max, Millimeters, min, mm, Note, placedCarriersOf, placeOf, subtract, symbolIn, trackerBarOf, Version, Edit, predecessorOf, onsetOf, Edition, lineageOf, scale, TrackRole, kindOfChange } from "linked-rolls"
 import { emulationOf, EmulationOptions } from "../playback/reproducingSystems"
 import { Dynamics, DynamicsGrid, ReadDynamics, velocityIn } from "./Dynamics"
 import { Pedals } from "./Pedal"
@@ -306,6 +306,7 @@ export const VersionView = ({ version, problems, emulationOptions, onClick, onRe
     const editSaid = (edit: Edit, from: Millimeters): string => editWords({
         from,
         type: shapes.get(edit.id)?.replaceAll('-', ' '),
+        kind: kindOfChange(edit),
         inserted: edit.insert?.length ?? 0,
         deleted: edit.delete?.length ?? 0,
         certainty: edit['@annotation']?.belief.certainty,

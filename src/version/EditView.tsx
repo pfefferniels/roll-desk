@@ -5,7 +5,7 @@ import {
 import { getHull, Hull, hullPadding } from "./Hull";
 import { getBoundingBox } from "../geometry/getBoundingBox";
 import { MouseEventHandler, SVGProps, useContext, useMemo } from "react";
-import { AnySymbol, correctedError, safeguard } from "linked-rolls";
+import { AnySymbol } from "linked-rolls";
 import { usePinchZoom } from "../canvas/usePinchZoom";
 import { Arrow } from "./Arrow";
 import { EditionContext } from "../edition/EditionContext";
@@ -242,14 +242,8 @@ export const beliefMarkAt = (boxes: readonly Box[]): Point => {
     return point(add(x, width), subtract(y, beliefMarkRise))
 }
 
-/**
- * The word written under an edit's insertions, where its shape calls for
- * one, or where its motivation says it corrects an error or is a
- * safeguard.
- */
-export const editLabel = (shape: EditShape | undefined, motivation?: string): string | undefined => {
-    if (motivation === correctedError) return 'fix'
-    if (motivation === safeguard) return 'safeguard'
+/** The word written under an edit's insertions, where its shape calls for one. */
+export const editLabel = (shape: EditShape | undefined): string | undefined => {
     if (!shape) return undefined
     if (shape === 'additional-accent') return '>'
     // a shift is already told by the arrow from the old place to the new one
@@ -442,7 +436,7 @@ export const EditView = ({ edit, shape, deletedOn, tolerance, focus, atRoot, rin
                     colours={insertion}
                     padding={padding}
                     focus={focus}
-                    label={editLabel(shape, edit.motivation)}
+                    label={editLabel(shape)}
                     onClick={onClick}
                 />
             )}

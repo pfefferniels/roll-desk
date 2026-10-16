@@ -117,8 +117,8 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                 help={`
                     What the version changed against the one it derives from:
                     green round what it adds, red round what it takes away. A
-                    word or sign under the green names the shape of the change,
-                    or what its motivation makes of it, such as "fix".
+                    word or sign under the green names the shape of the change.
+                    Each change is musical or technical, as the cursor says.
                 `}
             />
 

@@ -1,4 +1,4 @@
-import { Edit, Edition, Motivation, Version, editsOf, placeOf, symbolIn, versionIn } from "linked-rolls"
+import { ChangeKind, Edit, Edition, EditionOp, Motivation, Version, editsOf, kindOfChange, musicalChange, placeOf, principalDerivationOf, symbolIn, technicalChange, versionIn } from "linked-rolls"
 
 export const isMotivation = (obj: unknown): obj is Motivation =>
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
@@ -72,6 +72,45 @@ export const editsAlongRoll = (edition: Edition, held: HeldMotivation): Edit[] =
         .map(edit => ({ edit, from: beginning(edit) }))
         .sort((a, b) => a.from - b.from)
         .map(({ edit }) => edit)
+}
+
+/**
+ * The kind of change all the edits are, where they agree on one: musical
+ * or technical, as their motivations say (`kindOfChange`).
+ */
+export const kindOfAll = (edits: readonly Pick<Edit, 'motivation'>[]): ChangeKind | undefined => {
+    const kinds = new Set(edits.map(kindOfChange))
+    return kinds.size === 1 ? [...kinds][0] : undefined
+}
+
+/** The edit as a change of the kind given: as it is where it is one already. */
+export const asKind = <E extends Pick<Edit, 'motivation'>>(edit: E, kind: ChangeKind): E =>
+    kindOfChange(edit) === kind ? edit : { ...edit, motivation: kind === 'musical' ? musicalChange : technicalChange }
+
+/**
+ * Says that the edits of the version are changes of the kind given,
+ * where the editor reads them otherwise than the program did from their
+ * shape. An edit made musical states the generic musical motivation,
+ * whose reason the editor may give next; one already musical keeps the
+ * reason it has. An edit made technical gives no reason, and a
+ * motivation no edit names any longer goes. The edits of a version that
+ * derives from none state its text and are of no kind, so that nothing
+ * changes there.
+ */
+export const stateKind = (versionId: string, editIds: readonly string[], kind: ChangeKind): EditionOp => draft => {
+    const version = draft.versions.find(v => v.id === versionId)
+    if (!version || !principalDerivationOf(version)) return
+    const ids = new Set(editIds)
+    const given = new Set<string>()
+    editsOf(version)
+        .filter(edit => ids.has(edit.id) && kindOfChange(edit) !== kind)
+        .forEach(edit => {
+            if (edit.motivation) given.add(edit.motivation)
+            edit.motivation = asKind(edit, kind).motivation
+        })
+    if (given.size === 0 || !draft.motivations) return
+    const named = new Set(draft.versions.flatMap(other => editsOf(other).map(edit => edit.motivation)))
+    draft.motivations = draft.motivations.filter(motivation => !given.has(motivation.id) || named.has(motivation.id))
 }
 
 /** How long an id made from a note runs at most, a number to tell it apart left aside. */
