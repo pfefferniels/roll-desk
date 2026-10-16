@@ -1,6 +1,6 @@
 import {
     adoptEdits, adoptionOf, adoptStemma, CollatedReading, Costs, defaultCosts, defaultMargin, defaultMovedWithin, defaultSameText, Edition,
-    EditionOp, editsOf, EditType, FiliationOptions, mm, Run, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, unchecked, Unpinned, versionIn
+    EditionOp, editsOf, EditShape, FiliationOptions, mm, musicalChange, shapeOf, siglaOf, StemmaProposal, stemmaChanges, Support, TrackMeaning, Unpinned, versionIn
 } from "linked-rolls"
 import { copyLabel } from "../edition/names"
 import { noteNameOf, wordsOf } from "../version/laneMeaning"
@@ -71,29 +71,14 @@ export const optionsOf = (typed: TypedOptions, pin: boolean): { options: Filiati
 }
 
 /**
- * A run of the library's proposals started at the desk, as adopting one
- * records it: on the day, and by the editor where the edition names one
- * alone, who is then the one at the desk. Where it names several, who
- * ran it is left unstated.
- */
-export const runOf = (edition: Pick<Edition, 'creation'>, on: Date = new Date()): Run => {
-    const editors = edition.creation.editors ?? []
-    const editor = editors.length === 1 ? editors[0] : undefined
-    return {
-        date: { within: new Date(on.getFullYear(), on.getMonth(), on.getDate()) },
-        ...(editor && { actor: { name: editor.name, sameAs: editor.sameAs } })
-    }
-}
-
-/**
  * The proposed stemma put in place of the edition's, and where asked,
  * the edits of its versions proposed from what each changes, as one
- * operation and so one undo step. Both are recorded as what the
- * library's run concluded, under the run given.
+ * operation and so one undo step. The edition's creation comes to name
+ * the rules they follow and the release of the library that found them.
  */
-export const adoption = (proposal: StemmaProposal, withEdits: boolean, run: Run = {}): EditionOp => draft => {
-    adoptStemma(proposal, run)(draft)
-    if (withEdits) adoptEdits(undefined, {}, run)(draft)
+export const adoption = (proposal: StemmaProposal, withEdits: boolean): EditionOp => draft => {
+    adoptStemma(proposal)(draft)
+    if (withEdits) adoptEdits()(draft)
 }
 
 /** A refusal as a sentence, which the library words without the full stop. */
@@ -297,7 +282,7 @@ export const unpinnedRows = (unpinned: readonly Unpinned[], edition: Edition): U
     return unpinned.map(({ edit, version, reason }) => {
         const stated = versionIn(edition, version)
         const motivationId = stated && editsOf(stated).find(one => one.id === edit)?.motivation
-        const motivation = motivationId ? stated.motivations.find(one => one.id === motivationId)?.note : undefined
+        const motivation = motivationId ? edition.motivations?.find(one => one.id === motivationId)?.note : undefined
         return {
             edit,
             version: sigla.get(version) ?? 'unnamed version',
@@ -307,8 +292,8 @@ export const unpinnedRows = (unpinned: readonly Unpinned[], edition: Edition): U
     })
 }
 
-/** What each edit type is called in a count, one and many. */
-const editTypeWords: Record<EditType, [string, string]> = {
+/** What each shape of edit is called in a count, one and many. */
+const shapeWords: Record<EditShape, [string, string]> = {
     'additional-accent': ['accent added', 'accents added'],
     'add-redundancy': ['redundancy added', 'redundancies added'],
     'remove-redundancy': ['redundancy removed', 'redundancies removed'],
@@ -323,16 +308,16 @@ export interface EditRow {
     version: string
     siglum: string
     edits: number
-    /** How many of them nobody has said why yet. */
+    /** How many of them are musical changes nobody has said why yet. */
     unmotivated: number
-    /** How many there are of each type, the commonest first, in words. */
+    /** How many there are of each shape, the commonest first, in words. */
     types: string[]
 }
 
 /**
  * Version by version, the edits adopting leaves, and how many of them are
- * left to motivate. The root is left out: what it inserts is its text,
- * not edits of another.
+ * musical changes left to motivate; a technical change needs no reason.
+ * The root is left out: what it inserts is its text, not edits of another.
  */
 export const editRows = (after: Edition): EditRow[] => {
     const sigla = siglaOf(after)
@@ -342,20 +327,20 @@ export const editRows = (after: Edition): EditRow[] => {
             const edits = editsOf(version)
             const counts = new Map<string, number>()
             edits.forEach(edit => {
-                const type = edit.editType ?? 'untyped'
-                counts.set(type, (counts.get(type) ?? 0) + 1)
+                const shape = shapeOf(after, version.id, edit) ?? 'other'
+                counts.set(shape, (counts.get(shape) ?? 0) + 1)
             })
             const types = [...counts]
                 .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
-                .map(([type, count]) => {
-                    const [one, many] = type === 'untyped' ? ['untyped', 'untyped'] : editTypeWords[type as EditType]
+                .map(([shape, count]) => {
+                    const [one, many] = shape === 'other' ? ['other change', 'other changes'] : shapeWords[shape as EditShape]
                     return `${count} ${count === 1 ? one : many}`
                 })
             return {
                 version: version.id,
                 siglum: sigla.get(version.id) ?? 'unnamed version',
                 edits: edits.length,
-                unmotivated: edits.filter(edit => edit.motivation === undefined || edit.motivation === unchecked).length,
+                unmotivated: edits.filter(edit => edit.motivation === musicalChange).length,
                 types
             }
         })

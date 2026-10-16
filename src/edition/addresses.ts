@@ -32,14 +32,9 @@ export interface DeskAddress {
     selection: readonly UserSelection[]
 }
 
-/**
- * Whether a link by this id would land on the motivation meant. A
- * collation writes `unchecked` on what it makes, so several versions
- * carry a motivation of that name and the id names none of them in
- * particular.
- */
+/** Whether a link by this id lands on a motivation the edition states. */
 const namesOneMotivation = (edition: Edition, id: string) =>
-    edition.versions.filter(version => version.motivations.some(m => m.id === id)).length === 1
+    (edition.motivations ?? []).some(motivation => motivation.id === id)
 
 /**
  * The address of what the desk shows: the one entity selected, or else
@@ -47,8 +42,8 @@ const namesOneMotivation = (edition: Edition, id: string) =>
  * so that an address is never written over with an empty one; the title
  * page is gone to by its own address instead.
  *
- * A motivation whose id other versions write as well falls back to its
- * version, since the id alone would send a reader to another roll.
+ * A motivation the edition does not state, as one the vocabulary
+ * publishes is not, falls back to its version.
  */
 export const deskPath = (edition: Edition, { versionId, copyId, selection }: DeskAddress): string | undefined => {
     const [sole] = selection.length === 1 ? selection : []
@@ -149,6 +144,13 @@ export const linkTarget = (edition: Edition, id: string): LinkTarget | undefined
     const drawn = drawnAt(edition, path)
 
     if (typeof index === 'number') {
+        // A motivation is the edition's, and opens on the first version whose edits name it.
+        const motivation = collection === 'motivations' ? edition.motivations?.[index] : undefined
+        if (motivation) {
+            const naming = edition.versions.find(version => (version.edits ?? []).some(edit => edit.motivation === motivation.id))
+            return naming ? { on: 'version', versionId: naming.id, mark: { versionId: naming.id, motivation } } : { on: 'edition' }
+        }
+
         const version = collection === 'versions' ? edition.versions[index] : undefined
         if (version) return { on: 'version', versionId: version.id, mark: markOf(drawn, version.id) }
 

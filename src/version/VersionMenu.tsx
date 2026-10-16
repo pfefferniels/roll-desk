@@ -1,6 +1,6 @@
 import { Delete, Edit as EditIcon, Link, LinkOff, GroupAdd, GroupRemove, CallMerge, CallSplit, Lightbulb, SelectAll, AutoFixHigh } from "@mui/icons-material"
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material"
-import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, adoptEdits, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn } from "linked-rolls"
+import { AnySymbol, Edit, Motivation, isEdit, isSymbol, mergeEdits, splitEdit, adoptEdits, connectVersions, detachVersion, collateSymbols, deriveVersion, removeSymbols, removeVersion, idOf, idsIn, editsOf, principalDerivationOf, stateDerivation, clearDerivation, pathIn, musicalChange } from "linked-rolls"
 import { useContext, useState } from "react"
 import { Ribbon } from "../desk/Ribbon"
 import { v4 } from "uuid"
@@ -10,7 +10,7 @@ import { ConstraintsRibbon } from "../constraints/ConstraintsRibbon"
 import { EditionContext } from "../edition/EditionContext"
 import { useSelection } from "../desk/SelectionContext"
 import { derivationToleranceOf } from "../edition/collationTolerance"
-import { MotivateDialog } from "./MotivateDialog"
+import { MotivateDialog, usesOf } from "./MotivateDialog"
 import { RecollateDialog } from "./RecollateDialog"
 import { goesToAnOverlay } from "../desk/goesToAnOverlay"
 import { VersionCreationDialog } from "./VersionCreationDialog"
@@ -18,7 +18,6 @@ import { editsAlongRoll, HeldMotivation, isHeldMotivation, motivationIdFor } fro
 import { RenameMotivationDialog } from "./RenameMotivationDialog"
 import { HypothesisDialog } from "./HypothesisDialog"
 import { Arguable } from "../accounts/Arguable"
-import { runOf } from "../filiation/filiation"
 import { nameOf } from "../edition/names"
 
 export type VersionSelection = AnySymbol | Edit | HeldMotivation
@@ -72,11 +71,12 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
     if (!version) return null
 
     /**
-     * The motivation of this version that is held, as it now reads: the
-     * selection keeps it as it was when it was held.
+     * The motivation held on this version, as it now reads: the selection
+     * keeps it as it was when it was held.
      */
     const held = selection.filter(isHeldMotivation).find(one => one.versionId === versionId)
-    const heldMotivation = held && version.motivations.find(m => m.id === held.motivation.id)
+    const motivations = edition.motivations ?? []
+    const heldMotivation = held && motivations.find(m => m.id === held.motivation.id)
     /** The edits selected beside it that it does not hold yet, which it can be given. */
     const toAssign = heldMotivation
         ? selection.filter(isEdit).filter(edit => edit.motivation !== heldMotivation.id)
@@ -110,10 +110,10 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     Made by
                 </Button>
                 <Button
-                    // Groups and types what the collation left one change at a time;
-                    // the edits somebody wrote stay, and so does the selection of symbols.
+                    // Groups what the collation left one change at a time; the edits
+                    // somebody gave a reason stay, and so does the selection of symbols.
                     onClick={() => {
-                        apply(adoptEdits([versionId], {}, runOf(edition)))
+                        apply(adoptEdits([versionId]))
                         setSelection(selection.filter(item => !isEdit(item)))
                     }}
                     disabled={!principal}
@@ -165,17 +165,19 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                     <Button
                         size='small'
                         startIcon={<Delete />}
-                        // The edits stay, giving no reason any more.
+                        // The edits of this version stay, musical changes whose reason
+                        // is not given any more; the motivation goes once no edit names it.
                         onClick={() => {
                             apply(draft => {
                                 const edited = draft.versions.find(v => v.id === versionId)
                                 if (!edited) return
-                                edited.motivations = edited.motivations.filter(m => m.id !== heldMotivation.id)
                                 editsOf(edited)
                                     .filter(edit => edit.motivation === heldMotivation.id)
                                     .forEach(edit => {
-                                        delete edit.motivation
+                                        edit.motivation = musicalChange
                                     })
+                                const named = draft.versions.some(other => editsOf(other).some(edit => edit.motivation === heldMotivation.id))
+                                if (!named && draft.motivations) draft.motivations = draft.motivations.filter(m => m.id !== heldMotivation.id)
                             })
                             setSelection([])
                         }}
@@ -350,8 +352,8 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                 <DialogContent>
                     <DialogContentText>
                         Detaching {sigilOf(versionId)}
-                        {principal ? ` from ${sigilOf(idOf(principal))}` : ''} will discard edit classifications,
-                        motivation references and every hypothesis of derivation.
+                        {principal ? ` from ${sigilOf(idOf(principal))}` : ''} will discard what its edits say
+                        of why they were made, and every hypothesis of derivation.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -367,14 +369,13 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
             {renaming && heldMotivation && (
                 <RenameMotivationDialog
-                    version={version}
+                    motivations={motivations}
+                    uses={usesOf(edition.versions).get(heldMotivation.id) ?? 0}
                     motivation={heldMotivation}
                     onClose={() => setRenaming(false)}
                     onDone={note => {
                         apply(draft => {
-                            const renamed = draft.versions
-                                .find(v => v.id === versionId)
-                                ?.motivations.find(m => m.id === heldMotivation.id)
+                            const renamed = draft.motivations?.find(m => m.id === heldMotivation.id)
                             if (renamed) renamed.note = note
                         })
                         setRenaming(false)
@@ -384,8 +385,9 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
 
             {editsToMotivate && (
                 <MotivateDialog
+                    motivations={motivations}
+                    uses={usesOf(edition.versions)}
                     version={version}
-                    name={sigilOf(versionId)}
                     editIds={editsToMotivate}
                     onClose={() => setEditsToMotivate(undefined)}
                     onDone={(chosen) => {
@@ -396,8 +398,9 @@ export const VersionMenu = ({ versionId }: MenuProps) => {
                         apply((d) => {
                             const version = d.versions.find(v => v.id === versionId)
                             if (!version) return
-                            if (!version.motivations.some(m => m.id === motivation.id)) {
-                                version.motivations.push(motivation)
+                            d.motivations ??= []
+                            if (!d.motivations.some(m => m.id === motivation.id)) {
+                                d.motivations.push(motivation)
                             }
 
                             editsOf(version)

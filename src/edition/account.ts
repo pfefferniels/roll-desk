@@ -44,7 +44,7 @@ export const versionAccount = (edition: Edition, versionId: string): VersionAcco
 
     return {
         version,
-        derivations: derivationsOf(version, edition)
+        derivations: derivationsOf(version)
             .map((derivation, index) => ({
                 ...derivation,
                 principal: derivation.parent === readAgainst,

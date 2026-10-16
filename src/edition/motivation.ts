@@ -1,16 +1,15 @@
-import { Edit, Edition, Motivation, editsOf, placeOf, symbolIn, unchecked, versionIn } from "linked-rolls"
+import { Edit, Edition, Motivation, Version, editsOf, placeOf, symbolIn, versionIn } from "linked-rolls"
 
 export const isMotivation = (obj: unknown): obj is Motivation =>
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'motivation'
 
 /**
- * A motivation together with the version holding it.
+ * A motivation together with the version it is looked at on.
  *
- * An id does not name a motivation on its own. A collation writes
- * `unchecked` on everything it makes, so every version that was
- * collated carries a motivation of that name, and two versions may
- * agree on an id for any other reason as well. The desk therefore marks,
- * counts and addresses a motivation as one of a particular version.
+ * The edition states a motivation once, and the edits of any version may
+ * name it. The desk marks and counts it on the roll of one version at a
+ * time, its edits there, so it holds the motivation together with that
+ * version.
  */
 export interface HeldMotivation {
     versionId: string
@@ -22,9 +21,18 @@ export const isHeldMotivation = (obj: unknown): obj is HeldMotivation =>
     'motivation' in obj && isMotivation(obj.motivation) &&
     'versionId' in obj && typeof obj.versionId === 'string'
 
-/** Whether the two are the one motivation of the one version. */
+/** Whether the two are the one motivation, looked at on the one version. */
 export const sameMotivation = (one: HeldMotivation, other: HeldMotivation) =>
     one.versionId === other.versionId && one.motivation.id === other.motivation.id
+
+/**
+ * The edition's motivations that the version's edits name, in the order
+ * the edition states them.
+ */
+export const motivationsOn = (motivations: readonly Motivation[] | undefined, version: Readonly<Version>): Motivation[] => {
+    const named = new Set(editsOf(version).map(edit => edit.motivation))
+    return (motivations ?? []).filter(motivation => named.has(motivation.id))
+}
 
 /**
  * The motivations in focus on a version's roll: the one the pointer rests
@@ -71,10 +79,11 @@ const longest = 40
 
 /**
  * Ids a new motivation is not given although nothing holds them yet: the
- * one a collation writes, which it would take for its own and rewrite,
- * and the editor's, whose address the desk keeps for itself.
+ * one an import takes for an edit that a document written before
+ * linked-rolls 0.76 left unchecked, whose kind it reads off its shape
+ * instead, and the editor's, whose address the desk keeps for itself.
  */
-const reserved = [unchecked, 'editor']
+const reserved = ['unchecked', 'editor']
 
 /**
  * An id for a new motivation, made from its note, so that its address

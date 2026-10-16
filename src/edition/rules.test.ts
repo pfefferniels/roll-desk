@@ -32,6 +32,21 @@ describe('the rules an edition applies', () => {
             'https://welte225.org/rules#system-terminus'
         ])
     })
+
+    it('begin with the principles the edition\'s creation names', () => {
+        const edition = {
+            base: BASE,
+            creation: { principles: ['rules#refinement', 'rules#shared-addition'] },
+            versions: [{ basedOn: [{ '@annotation': { belief: { type: 'belief', certainty: 'likely', reasons: [inference(['rules#system-terminus', 'rules#shared-addition'])] } } }] }],
+            copies: []
+        } as unknown as Edition
+
+        expect(rulesOf(edition)).toEqual([
+            'https://welte225.org/rules#refinement',
+            'https://welte225.org/rules#shared-addition',
+            'https://welte225.org/rules#system-terminus'
+        ])
+    })
 })
 
 describe('the rules a page states', () => {

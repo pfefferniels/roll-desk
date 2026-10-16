@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Motivation, unchecked } from 'linked-rolls'
+import { Motivation } from 'linked-rolls'
 import { editsAlongRoll, HeldMotivation, inFocusOn, motivationIdFor } from './motivation'
 import { fixtureEdition, ids } from './editionFixture'
 
@@ -36,8 +36,8 @@ describe('the id made for a new motivation', () => {
         expect(motivationIdFor('Bereinigung', ['bereinigung', 'bereinigung-2'])).toBe('bereinigung-3')
     })
 
-    it('is never the collation\'s own nor the editor\'s', () => {
-        expect(motivationIdFor('Unchecked', [])).toBe(`${unchecked}-2`)
+    it('is never the one an import of an older document reads off the shape, nor the editor\'s', () => {
+        expect(motivationIdFor('Unchecked', [])).toBe('unchecked-2')
         expect(motivationIdFor('Editor', [])).toBe('editor-2')
     })
 })
@@ -71,7 +71,7 @@ describe('the edits a motivation holds along the roll', () => {
     const deleting = (...deleted: string[]) => {
         const edition = fixtureEdition()
         const b = edition.versions.find(version => version.id === ids.b)!
-        b.motivations = [cleanup]
+        edition.motivations = [cleanup]
         b.edits = deleted.map(id => ({ type: 'edit', id: `delete-${id}`, delete: [id], motivation: cleanup.id }))
         return edition
     }

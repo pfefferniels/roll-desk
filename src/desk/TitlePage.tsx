@@ -68,9 +68,9 @@ const Section = ({ title, children }: { title: string, children: ReactNode }) =>
 )
 
 /**
- * The editorial principles the edition's inferences apply, on one line,
- * each leading to where it is stated. A principle no inference names is
- * not among them. An edition whose inferences name none shows nothing here.
+ * The editorial principles the edition follows, on one line, each leading
+ * to where it is stated: those its creation names and those its
+ * inferences apply. An edition that names none shows nothing here.
  */
 const Rules = ({ iris }: { iris: readonly string[] }) => {
     const rules = inPageOrder(useRules(iris))
@@ -79,7 +79,7 @@ const Rules = ({ iris }: { iris: readonly string[] }) => {
     return (
         <Box component='section' sx={{ mt: 3 }}>
             <Typography variant='overline' component='h2' color='text.secondary' sx={{ lineHeight: 1.5 }}>
-                Applied editorial principles
+                Editorial principles
             </Typography>
             <Typography variant='body2' sx={{ mt: 0.5 }}>
                 {rules.map((rule, at) => (
@@ -155,6 +155,11 @@ export const TitlePage = ({ onEdit }: TitlePageProps) => {
                 </Field>
                 <Field label='Version'>{edition.version?.trim() || undefined}</Field>
                 <Field label='Published'>{day(creation.publicationDate)}</Field>
+                <Field label='Made with'>
+                    {(creation.software ?? []).length > 0
+                        ? (creation.software ?? []).map(program => [program.name, program.version].filter(Boolean).join(' ')).join(', ')
+                        : undefined}
+                </Field>
                 <Field label='License'>
                     {edition.license ? <OutLink href={edition.license}>{licenseName(edition.license)}</OutLink> : undefined}
                 </Field>

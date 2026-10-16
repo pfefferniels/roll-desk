@@ -37,16 +37,9 @@ const placeOf = (edition: Edition, id: string): string | undefined => {
 
 /**
  * What a premise names where it names a belief of the edition: what is
- * held, in words. A proposition set is told by the run that concluded
- * it, a derivation by the versions it joins.
+ * held, in words. A derivation is told by the versions it joins.
  */
 const beliefNamed = (edition: Edition, id: string): string | undefined => {
-    const set = (edition.propositionSets ?? []).find(candidate => candidate.belief.id === id)
-    if (set) {
-        const reason = set.belief.reasons.find(reason => reason.type === 'inference' && reason.software?.length)
-        const program = reason?.type === 'inference' ? reason.software?.[0] : undefined
-        return program ? `what ${program.name}${program.version ? ` ${program.version}` : ''} concluded` : 'what a reasoning concluded'
-    }
     for (const version of edition.versions) {
         const derivation = derivationsOf(version).find(derivation => derivation.belief?.id === id)
         if (derivation) return `that ${nameOf(edition, version.id) ?? version.id} derives from ${nameOf(edition, derivation.parent) ?? derivation.parent}`

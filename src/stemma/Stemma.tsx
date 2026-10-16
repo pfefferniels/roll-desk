@@ -1,4 +1,4 @@
-import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, withGenerations, Edition } from 'linked-rolls'
+import { attestedVersions, Certainty, ConstraintProblem, derivationsOf, editsOf, idOf, Motivation, Path, principalDerivationOf, siglaOf, systemIdOf, trackerBarOf, Version, versionIn, withGenerations, Edition } from 'linked-rolls'
 import { Box, Popover, Portal } from "@mui/material";
 import { problemCount, problemsOfVersion } from '../constraints/constraints';
 import { FocusEvent, Fragment, useCallback, useContext, useMemo, useRef, useState } from "react"
@@ -11,7 +11,7 @@ import { outlineOf, restingReachOf, Slice, sliceCentre, SlicedBalloon } from './
 import { Clash, overlap, Shape, spreadApart, Thickened } from './spreading';
 import { End, endAt, fieldOf, Obstacle, routeAround } from './routing';
 import { point, Point } from '../geometry/drawing';
-import { HeldMotivation, isHeldMotivation, sameMotivation } from '../edition/motivation';
+import { HeldMotivation, isHeldMotivation, motivationsOn, sameMotivation } from '../edition/motivation';
 import { Svg, svg } from '../canvas/units';
 import { pressable } from '../desk/pressable';
 import { prefersReducedMotion } from '../desk/motion';
@@ -57,7 +57,7 @@ export const Stemma = ({ onClick, onHold, currentVersionId, problems = [], heigh
         const graph = graphOf(withGenerations(edition), problems, {
             sigla: siglaOf(edition),
             attested: attestedVersions(edition)
-        }, edition)
+        }, edition.motivations)
         const nodes = calculatePositions(graph.nodes, graph.links, svgWidth, svgHeight)
         return { links: graph.links, nodes, ...laidOut(nodes, graph.links, svgWidth, svgHeight) }
     }, [versions, edition, problems, svgHeight])
@@ -269,7 +269,7 @@ export const graphOf = (
     versions: readonly (Version & { generation: number })[],
     problems: readonly ConstraintProblem[],
     { sigla, attested }: Naming,
-    held: Pick<Edition, 'propositionSets'> = {}
+    motivations: readonly Motivation[] = []
 ): { nodes: Node[], links: Link[] } => {
     const versionBy = (id: string) => versions.find(other => other.id === id)
 
@@ -301,8 +301,7 @@ export const graphOf = (
 
     const links: Link[] = versions.flatMap(version => {
         const principal = parentOf(version)
-        // A derivation of a program's run is held as the run is.
-        return derivationsOf(version, held).flatMap(({ parent, certainty }): Link[] => {
+        return derivationsOf(version).flatMap(({ parent, certainty }): Link[] => {
             const target = versionBy(parent)
             if (!target) return []
 
@@ -312,7 +311,7 @@ export const graphOf = (
                 transfer: !sharesSystem(target, version),
                 certainty,
                 principal: target === principal,
-                sliced: target === principal && version.motivations.length > 0
+                sliced: target === principal && motivationsOn(motivations, version).length > 0
             }]
         })
     })
@@ -327,12 +326,13 @@ export const graphOf = (
  */
 export const slicesOf = (
     version: Version,
+    motivations: readonly Motivation[] | undefined,
     held: readonly HeldMotivation[] = [],
     pointed?: HeldMotivation
 ): Slice[] => {
     const edits = editsOf(version)
 
-    return version.motivations.map(motivation => {
+    return motivationsOn(motivations, version).map(motivation => {
         const own = { versionId: version.id, motivation }
         return {
             id: motivation.id,
@@ -368,7 +368,7 @@ export const sliceAt = (
     const target = placed(nodes, (link.target as Node).id)
     if (!source || !target) return undefined
 
-    const centre = sliceCentre(source, target, slicesOf(version), held.motivation.id)
+    const centre = sliceCentre(source, target, slicesOf(version, edition.motivations), held.motivation.id)
     return centre && point(svg(centre.x), svg(centre.y))
 }
 
@@ -845,7 +845,7 @@ export const LinkContainer = ({
                 }
 
                 const version = edition && versionIn(edition, source.id)
-                const motivations = version?.motivations ?? []
+                const motivations = version ? motivationsOn(edition?.motivations, version) : []
 
                 return (
                     <g key={`link_${i}`}>
@@ -875,7 +875,7 @@ export const LinkContainer = ({
                         )}
                         {version && motivations.length > 0 && (
                             <SlicedBalloon
-                                slices={slicesOf(version, selection, pointed)}
+                                slices={slicesOf(version, edition?.motivations, selection, pointed)}
                                 a={{ x: source.x, y: source.y }}
                                 b={{ x: target.x, y: target.y }}
                                 keyboardLayer={source.id === currentVersionId ? motivationKeys : undefined}

@@ -2,21 +2,21 @@ import { alpha, Box, Button, Dialog, DialogActions, DialogContent, DialogContent
 import { Motivation, Version, editsOf } from "linked-rolls"
 import { KeyboardEvent, useState } from "react"
 
-/** The motivation all of the given edits already reference, if they agree on one. */
-export const sharedMotivation = (version: Version, editIds: readonly string[]) => {
+/** The motivation of the edition's all of the given edits already reference, if they agree on one. */
+export const sharedMotivation = (motivations: readonly Motivation[], version: Version, editIds: readonly string[]) => {
     const referenced = new Set(
         editsOf(version)
             .filter(edit => editIds.includes(edit.id))
             .map(edit => edit.motivation)
     )
     if (referenced.size !== 1) return undefined
-    return version.motivations.find(m => m.id === [...referenced][0])
+    return motivations.find(m => m.id === [...referenced][0])
 }
 
-/** How many of the version's edits reference each of its motivations, by id. */
-export const usesOf = (version: Version) => {
+/** How many edits of the versions reference each motivation, by id. */
+export const usesOf = (versions: readonly Version[]) => {
     const uses = new Map<string, number>()
-    for (const edit of editsOf(version)) {
+    for (const edit of versions.flatMap(editsOf)) {
         if (!edit.motivation) continue
         uses.set(edit.motivation, (uses.get(edit.motivation) ?? 0) + 1)
     }
@@ -24,7 +24,7 @@ export const usesOf = (version: Version) => {
 }
 
 /**
- * What a new reason amounts to: the motivation the version already gives
+ * What a new reason amounts to: the motivation the edition already gives
  * in these words, so that typing a reason out again does not state it a
  * second time, or else the words of a new one. Nothing where none is given.
  */
@@ -52,10 +52,12 @@ const countOf = (n: number) => n === 0 ? 'no edits' : n === 1 ? '1 edit' : `${n}
 const NEW = 'new'
 
 interface MotivateDialogProps {
-    /** The version the edits belong to, whose motivations are offered. */
+    /** The motivations the edition states, which are offered. */
+    motivations: readonly Motivation[]
+    /** How many edits of the edition give each motivation, by id. */
+    uses: ReadonlyMap<string, number>
+    /** The version the edits belong to. */
     version: Version
-    /** What the version is called. */
-    name: string
     /** The edits to motivate. */
     editIds: readonly string[]
     /** An existing motivation to reuse, or the note of a new one. */
@@ -64,14 +66,13 @@ interface MotivateDialogProps {
 }
 
 /**
- * Why the selected edits were made: one of the reasons the version
- * already gives, or a new one. The reasons are listed in full, since
- * they are often whole sentences, each with how many edits give it.
+ * Why the selected edits were made: one of the reasons the edition
+ * already gives, for the edits of any version, or a new one. The reasons
+ * are listed in full, since they are often whole sentences, each with
+ * how many edits give it.
  */
-export const MotivateDialog = ({ version, name, editIds, onDone, onClose }: MotivateDialogProps) => {
-    const { motivations } = version
-    const uses = usesOf(version)
-    const shared = sharedMotivation(version, editIds)
+export const MotivateDialog = ({ motivations, uses, version, editIds, onDone, onClose }: MotivateDialogProps) => {
+    const shared = sharedMotivation(motivations, version, editIds)
 
     const [choice, setChoice] = useState(shared?.id ?? NEW)
     const [note, setNote] = useState('')
@@ -97,7 +98,7 @@ export const MotivateDialog = ({ version, name, editIds, onDone, onClose }: Moti
             <DialogTitle>Motivate</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 2 }}>
-                    {question} Choose a reason {name} already gives,
+                    {question} Choose a reason the edition already gives,
                     or state a new one.
                 </DialogContentText>
                 <RadioGroup

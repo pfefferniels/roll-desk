@@ -233,7 +233,7 @@ export const ProposalAccount = ({ edition, proposal, preview, withEdits }: Propo
             {withEdits && (
                 <AccountSection
                     title={`The edits proposed · ${unmotivated} left to motivate`}
-                    hint='What each version changes, grouped into edits and typed by its shape. The edits you wrote stay as they are.'
+                    hint='What each version changes, grouped into edits, each a musical or a technical change as its shape says. The edits you gave a reason stay as they are.'
                 >
                     <EditTable rows={edits} />
                 </AccountSection>

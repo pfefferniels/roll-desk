@@ -41,7 +41,7 @@ export const FiliationFields = ({ typed, onType, pin, onPin, withEdits, onWithEd
                 label='Keep the edits I wrote'
             />
             <FormHelperText sx={{ mt: 0 }}>
-                An edit no collation wrote holds its version to what it inserts and deletes, as far as the copies allow.
+                An edit you gave a reason holds its version to what it inserts and deletes, as far as the copies allow.
             </FormHelperText>
         </Box>
 
@@ -51,7 +51,7 @@ export const FiliationFields = ({ typed, onType, pin, onPin, withEdits, onWithEd
                 label='Propose the edits too'
             />
             <FormHelperText sx={{ mt: 0 }}>
-                What each version changes is grouped into edits and typed by its shape. The edits you wrote stay; what is left is to say why.
+                What each version changes is grouped into edits, each a musical or a technical change as its shape says. The edits you gave a reason stay; what is left is to say why the musical ones were made.
             </FormHelperText>
         </Box>
 

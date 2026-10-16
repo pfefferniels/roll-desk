@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { assignReference, CollationTolerance, correctedError, Edit, Edition, editTypes, mm, Note } from 'linked-rolls'
-import { arrowId, beliefMarkAt, editTypeLabel, endOf, endsThatMoved, hullId, Stretch, stretchOf } from './EditView'
+import { assignReference, CollationTolerance, correctedError, Edit, Edition, editShapes, mm, Note, safeguard } from 'linked-rolls'
+import { arrowId, beliefMarkAt, editLabel, endOf, endsThatMoved, hullId, Stretch, stretchOf } from './EditView'
 import { svg } from '../canvas/units'
 import { fixtureEdition, hole } from '../edition/editionFixture'
 
@@ -11,31 +11,32 @@ const edit = (parts: Partial<Edit>): Edit => ({ type: 'edit', id: 'edit-1', ...p
 const stretch = (from: number, to: number): Stretch => ({ from: mm(from), to: mm(to) })
 
 describe('the word written under an edit', () => {
-    it('is left out where there is no type to write', () => {
-        expect(editTypeLabel(undefined)).toBeUndefined()
+    it('is left out where there is no shape to write', () => {
+        expect(editLabel(undefined)).toBeUndefined()
     })
 
-    it('is a sign of its own for an accent, and for a correction, which its motivation says', () => {
-        expect(editTypeLabel('additional-accent')).toBe('>')
-        expect(editTypeLabel('shift', correctedError)).toBe('fix')
-        expect(editTypeLabel(undefined, correctedError)).toBe('fix')
+    it('is a sign of its own for an accent, and a word for a correction or a safeguard, which its motivation says', () => {
+        expect(editLabel('additional-accent')).toBe('>')
+        expect(editLabel('shift', correctedError)).toBe('fix')
+        expect(editLabel(undefined, correctedError)).toBe('fix')
+        expect(editLabel('add-redundancy', safeguard)).toBe('safeguard')
     })
 
     it('is left out for a shift, which the arrow already tells', () => {
-        expect(editTypeLabel('shift')).toBeUndefined()
+        expect(editLabel('shift')).toBeUndefined()
     })
 
-    it('is otherwise the name of the type, read as words', () => {
-        expect(editTypeLabel('add-redundancy')).toBe('add redundancy')
+    it('is otherwise the name of the shape, read as words', () => {
+        expect(editLabel('add-redundancy')).toBe('add redundancy')
     })
 
     /** A transfer is made of recodings, so writing the word under each would bury the text. */
     it('is left out for a recoding, which the transfer already tells', () => {
-        expect(editTypeLabel('recoding')).toBeUndefined()
+        expect(editLabel('recoding')).toBeUndefined()
     })
 
-    it('is given for every type the library knows, the shift and the recoding apart', () => {
-        const unlabelled = editTypes.filter(editType => !editTypeLabel(editType))
+    it('is given for every shape the library knows, the shift and the recoding apart', () => {
+        const unlabelled = editShapes.filter(shape => !editLabel(shape))
 
         expect(unlabelled).toEqual(['recoding', 'shift'])
     })
