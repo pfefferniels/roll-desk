@@ -1,4 +1,4 @@
-import { AnyArgumentation, derivationsOf, Edition, FeatureOrPatch, getAt, isRollFeature, isSymbol, pathIn } from "linked-rolls"
+import { AnyArgumentation, derivationsOf, Edition, getAt, isPlaced, isRollFeature, isSymbol, NestedFeature, pathIn } from "linked-rolls"
 import { linkTarget } from "./addresses"
 import { nameOf } from "./names"
 
@@ -72,17 +72,20 @@ export interface Comprehended {
     text?: string
     /** A picture of what is read, taken from the scan. */
     depiction?: string
+    /** The feature the copy draws for what is read, by id, which a link brings into view. */
+    drawnAs?: string
 }
 
-const isFeature = (entity: unknown): entity is FeatureOrPatch =>
+const isFeature = (entity: unknown): entity is NestedFeature =>
     typeof entity === 'object' && entity !== null && isRollFeature(entity)
 
 /**
  * What a meaning comprehension reads under the id: a text in its words,
  * and a picture of it where a feature shows it. A transcription is shown
- * by the writing it transcribes, and a writing on a patch that has no
- * picture of its own by the patch; a text a version inserts stands on
- * no feature. Nothing where the edition holds no such entity.
+ * by the writing it transcribes. A writing on a patch is drawn as the
+ * patch, having no place of its own, and shown by the patch where it has
+ * no picture of its own. A text a version inserts stands on no feature.
+ * Nothing where the edition holds no such entity.
  */
 export const comprehendedOf = (edition: Edition, id: string): Comprehended | undefined => {
     const path = pathIn(edition, id)
@@ -91,9 +94,11 @@ export const comprehendedOf = (edition: Edition, id: string): Comprehended | und
 
     // The entity and everything it stands in, nearest first.
     const bearers = path.map((_, depth) => getAt<unknown>(path.slice(0, path.length - depth), edition))
+    const features = bearers.filter(isFeature)
 
     return {
         text: isSymbol(entity) && entity.type === 'text' ? entity.text : undefined,
-        depiction: bearers.filter(isFeature).find(feature => feature.depiction)?.depiction
+        depiction: features.find(feature => feature.depiction)?.depiction,
+        drawnAs: features.find(isPlaced)?.id
     }
 }

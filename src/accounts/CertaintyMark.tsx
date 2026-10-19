@@ -1,6 +1,7 @@
 import { Box, IconButton, Popover, Portal, Tooltip } from "@mui/material"
 import { Certainty } from "linked-rolls"
-import { ReactNode, useState } from "react"
+import { ReactNode, useContext, useState } from "react"
+import { OpenContext } from "../desk/OpenContext"
 import { CertaintyIcon } from "./CertaintyIcon"
 
 /** The box the button needs where the mark is drawn into an SVG. */
@@ -26,6 +27,13 @@ const hintOf = (certainty?: Certainty): string => certainty
  */
 export const CertaintyMark = ({ certainty, children, at }: CertaintyMarkProps) => {
     const [anchorEl, setAnchorEl] = useState<Element | null>(null)
+    const open = useContext(OpenContext)
+
+    // What a link in the reasons opens lies on the desk, which the popover covers.
+    const follow = (id: string) => {
+        setAnchorEl(null)
+        open(id)
+    }
 
     const button = (
         <Tooltip title={hintOf(certainty)}>
@@ -43,7 +51,9 @@ export const CertaintyMark = ({ certainty, children, at }: CertaintyMarkProps) =
             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         >
             <Box sx={{ p: 1.5, maxWidth: 420 }}>
-                {children}
+                <OpenContext.Provider value={follow}>
+                    {children}
+                </OpenContext.Provider>
             </Box>
         </Popover>
     )

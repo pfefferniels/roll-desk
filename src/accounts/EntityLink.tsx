@@ -1,5 +1,5 @@
 import { Link } from "@mui/material"
-import { MouseEvent, useContext } from "react"
+import { MouseEvent, ReactNode, useContext } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { OpenContext } from "../desk/OpenContext"
 import { pathOf } from "../edition/addresses"
@@ -13,6 +13,8 @@ interface EntityLinkProps {
      * gives one, so a siglum written out cannot outlive the stemma.
      */
     label?: string
+    /** What the link shows in place of a name, such as a picture of the entity. */
+    children?: ReactNode
 }
 
 /** Whether the reader asked for the link to open beside what they are reading. */
@@ -26,7 +28,7 @@ const opensBeside = (event: MouseEvent) =>
  * keep their place can open it in a tab of its own, and so that the
  * address can be copied out of a note.
  */
-export const EntityLink = ({ id, label }: EntityLinkProps) => {
+export const EntityLink = ({ id, label, children }: EntityLinkProps) => {
     const { edition } = useContext(EditionContext)
     const open = useContext(OpenContext)
 
@@ -44,7 +46,7 @@ export const EntityLink = ({ id, label }: EntityLinkProps) => {
             }}
             sx={{ font: 'inherit', verticalAlign: 'baseline', textAlign: 'left' }}
         >
-            {(edition && nameOf(edition, id)) ?? label ?? id}
+            {children ?? (edition && nameOf(edition, id)) ?? label ?? id}
         </Link>
     )
 }

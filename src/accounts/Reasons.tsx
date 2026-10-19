@@ -88,25 +88,37 @@ const Ran = ({ reason }: { reason: AnyArgumentation }) => {
 }
 
 /**
- * What a meaning comprehension reads: a text in its words, leading to
- * where it stands, and a picture of it from the scan. Anything else is
- * cited as a premise is.
+ * What a meaning comprehension reads: a text in its words and a picture
+ * of it from the scan, together leading to where the copy draws it.
+ * Anything with neither is cited as a premise is.
  */
 const Comprehended = ({ reason }: { reason: MeaningComprehension }) => {
     const { edition } = useContext(EditionContext)
     if (!edition) return null
 
     return reason.comprehends.map(id => {
-        const { text, depiction } = comprehendedOf(edition, id) ?? {}
+        const { text, depiction, drawnAs } = comprehendedOf(edition, id) ?? {}
+
+        if (!text && !depiction) {
+            return (
+                <Typography key={id} variant='body2' sx={{ overflowWrap: 'anywhere' }}>
+                    <CitationLink citation={citationOf(edition, id)} />
+                </Typography>
+            )
+        }
 
         return (
-            <Stack key={id} spacing={0.5}>
-                <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
-                    {text
-                        ? <EntityLink id={id} label={`“${text}”`} />
-                        : <CitationLink citation={citationOf(edition, id)} />}
-                </Typography>
-                {depiction && <img src={depiction} alt='' width={200} style={{ maxWidth: '100%' }} />}
+            <Stack key={id} alignItems='flex-start'>
+                <EntityLink id={drawnAs ?? id}>
+                    {text && (
+                        <Typography component='span' variant='body2' sx={{ display: 'block', whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
+                            “{text}”
+                        </Typography>
+                    )}
+                    {depiction && (
+                        <img src={depiction} alt={text ? '' : 'On the scan'} width={200} style={{ display: 'block', maxWidth: '100%', marginTop: 4 }} />
+                    )}
+                </EntityLink>
             </Stack>
         )
     })

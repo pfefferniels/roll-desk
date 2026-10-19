@@ -48,15 +48,17 @@ describe('what a reason cites', () => {
 describe('what a meaning comprehension reads', () => {
     const { horizontal, vertical } = hole('place', 2000, 2010, 80)
 
-    const writing = (id: string, text: string, depiction?: string): Writing => ({
+    /** A writing as a patch bears it, stating no place of its own. */
+    const borne = (id: string, text: string, depiction?: string): Omit<Writing, 'horizontal' | 'vertical'> => ({
         type: 'Writing',
         id: `${id}-writing`,
         technique: 'handwriting',
-        horizontal,
-        vertical,
         transcription: { type: 'text', id, text },
         ...(depiction ? { depiction } : {})
     })
+
+    const writing = (id: string, text: string, depiction?: string): Writing =>
+        ({ ...borne(id, text, depiction), horizontal, vertical })
 
     /** The fixture with a date written on its copy, and a label glued on whose title has no picture of its own. */
     const withWritings = (): Edition => {
@@ -76,7 +78,7 @@ describe('what a meaning comprehension reads', () => {
                             horizontal,
                             vertical,
                             depiction: 'https://example.org/patch.jpg',
-                            features: [writing('title', 'Träumerei\nR. Schumann')]
+                            features: [borne('title', 'Träumerei\nR. Schumann')]
                         }]
                     }
                 ]
@@ -86,20 +88,32 @@ describe('what a meaning comprehension reads', () => {
 
     const edition = withWritings()
 
-    it('reads a transcription in its words, with the picture of the writing it transcribes', () => {
-        expect(comprehendedOf(edition, 'date')).toEqual({ text: '225. Fritz. 18 Jan 09.', depiction: 'https://example.org/date.jpg' })
+    it('reads a transcription in its words, with the picture of the writing it transcribes and leading to it', () => {
+        expect(comprehendedOf(edition, 'date')).toEqual({
+            text: '225. Fritz. 18 Jan 09.',
+            depiction: 'https://example.org/date.jpg',
+            drawnAs: 'date-writing'
+        })
     })
 
-    it('shows a writing on a patch by the patch where the writing has no picture of its own', () => {
-        expect(comprehendedOf(edition, 'title')).toEqual({ text: 'Träumerei\nR. Schumann', depiction: 'https://example.org/patch.jpg' })
+    it('shows a writing on a patch by the patch, which the copy draws for it', () => {
+        expect(comprehendedOf(edition, 'title')).toEqual({
+            text: 'Träumerei\nR. Schumann',
+            depiction: 'https://example.org/patch.jpg',
+            drawnAs: 'patch'
+        })
     })
 
-    it('reads a text a version inserts in its words, with no picture', () => {
-        expect(comprehendedOf(edition, ids.label)).toEqual({ text: 'WM 225', depiction: undefined })
+    it('reads a text a version inserts in its words, on no feature', () => {
+        expect(comprehendedOf(edition, ids.label)).toEqual({ text: 'WM 225', depiction: undefined, drawnAs: undefined })
     })
 
-    it('shows a feature by its picture, with no words', () => {
-        expect(comprehendedOf(edition, 'date-writing')).toEqual({ text: undefined, depiction: 'https://example.org/date.jpg' })
+    it('shows a feature by its picture, with no words, and leads to the feature itself', () => {
+        expect(comprehendedOf(edition, 'date-writing')).toEqual({
+            text: undefined,
+            depiction: 'https://example.org/date.jpg',
+            drawnAs: 'date-writing'
+        })
     })
 
     it('reads nothing under an id the edition lacks', () => {
