@@ -17,6 +17,7 @@ import { emulationOf, EmulationOptions } from '../playback/reproducingSystems'
 import { AccountTree, Add, ChevronLeft, ChevronRight, Clear, Download, Home, PlayArrow, Redo, Save, Settings, Stop, Undo } from "@mui/icons-material"
 import { Ribbon } from "./Ribbon"
 import { RibbonGroup } from "./RibbonGroup"
+import { RibbonStrip } from "./RibbonStrip"
 import { ToolButton } from "./ToolButton"
 import { headingOf, pageTitleOf } from "./pageTitle"
 import { unseen } from "./unseen"
@@ -537,63 +538,65 @@ export const Desk = ({ show }: DeskProps) => {
             elevation={1}
         >
             <Toolbar>
-                <RibbonGroup>
-                    <Ribbon title='File' visible={!viewOnly}>
-                        <ImportButton />
-                        <ToolButton label='Save' hint='Save, as a download' size='small' onClick={() => setDownloadDialogOpen(true)}>
-                            <Save />
-                        </ToolButton>
-                    </Ribbon>
+                <RibbonStrip>
                     <RibbonGroup>
-                        <Ribbon title='History' visible={!viewOnly}>
-                            <ToolButton
-                                label='Undo'
-                                onClick={() => undo()}
-                                disabled={!canUndo}
-                            >
-                                <Undo />
-                            </ToolButton>
-                            <ToolButton
-                                label='Redo'
-                                onClick={() => redo()}
-                                disabled={!canRedo}
-                            >
-                                <Redo />
+                        <Ribbon title='File' visible={!viewOnly}>
+                            <ImportButton />
+                            <ToolButton label='Save' hint='Save, as a download' size='small' onClick={() => setDownloadDialogOpen(true)}>
+                                <Save />
                             </ToolButton>
                         </Ribbon>
-                    </RibbonGroup>
-                    <Ribbon title='Stemma' visible={!viewOnly}>
-                        <ToolButton
-                            label='Propose a stemma'
-                            hint='Propose a stemma from the copies'
-                            size='small'
-                            onClick={() => setFiliationOpen(true)}
-                        >
-                            <AccountTree />
-                        </ToolButton>
-                    </Ribbon>
-                    {(!viewOnly && !currentVersion && currentCopyId) && (
-                        <CopyFacsimileMenu copyId={currentCopyId} />
-                    )}
-                    {(!viewOnly && currentVersionId) && (
-                        <VersionMenu versionId={currentVersionId} />
-                    )}
+                        <RibbonGroup>
+                            <Ribbon title='History' visible={!viewOnly}>
+                                <ToolButton
+                                    label='Undo'
+                                    onClick={() => undo()}
+                                    disabled={!canUndo}
+                                >
+                                    <Undo />
+                                </ToolButton>
+                                <ToolButton
+                                    label='Redo'
+                                    onClick={() => redo()}
+                                    disabled={!canRedo}
+                                >
+                                    <Redo />
+                                </ToolButton>
+                            </Ribbon>
+                        </RibbonGroup>
+                        <Ribbon title='Stemma' visible={!viewOnly}>
+                            <ToolButton
+                                label='Propose a stemma'
+                                hint='Propose a stemma from the copies'
+                                size='small'
+                                onClick={() => setFiliationOpen(true)}
+                            >
+                                <AccountTree />
+                            </ToolButton>
+                        </Ribbon>
+                        {(!viewOnly && !currentVersion && currentCopyId) && (
+                            <CopyFacsimileMenu copyId={currentCopyId} />
+                        )}
+                        {(!viewOnly && currentVersionId) && (
+                            <VersionMenu versionId={currentVersionId} />
+                        )}
 
-                    <Ribbon title='Emulation'>
-                        {emulationSettingsButton}
-                        <ToolButton
-                            label='Download the MIDI file'
-                            hint={currentVersion ? undefined : 'Open a version to download its MIDI file'}
-                            size='small'
-                            disabled={!currentVersion}
-                            onClick={downloadMIDI}
-                        >
-                            <Download />
-                        </ToolButton>
-                        {playButton}
-                    </Ribbon>
-                </RibbonGroup>
-                <Stack direction='row' sx={{ ml: 'auto' }}>
+                        <Ribbon title='Emulation'>
+                            {emulationSettingsButton}
+                            <ToolButton
+                                label='Download the MIDI file'
+                                hint={currentVersion ? undefined : 'Open a version to download its MIDI file'}
+                                size='small'
+                                disabled={!currentVersion}
+                                onClick={downloadMIDI}
+                            >
+                                <Download />
+                            </ToolButton>
+                            {playButton}
+                        </Ribbon>
+                    </RibbonGroup>
+                </RibbonStrip>
+                <Stack direction='row' sx={{ ml: 'auto', flexShrink: 0 }}>
                     {legend}
                     <About />
                 </Stack>
