@@ -1,4 +1,4 @@
-import { AnyArgumentation, derivationsOf, Edition } from "linked-rolls"
+import { AnyArgumentation, derivationsOf, Edition, FeatureOrPatch, getAt, isRollFeature, isSymbol, pathIn } from "linked-rolls"
 import { linkTarget } from "./addresses"
 import { nameOf } from "./names"
 
@@ -64,4 +64,36 @@ export const citationOf = (edition: Edition, id: string): Citation => {
 
     const place = placeOf(edition, id)
     return place ? { kind: 'entity', id, label: `on ${place}` } : { kind: 'unknown', label: id }
+}
+
+/** What a meaning comprehension reads, as far as the edition holds it. */
+export interface Comprehended {
+    /** The words read, where what is read is a text. */
+    text?: string
+    /** A picture of what is read, taken from the scan. */
+    depiction?: string
+}
+
+const isFeature = (entity: unknown): entity is FeatureOrPatch =>
+    typeof entity === 'object' && entity !== null && isRollFeature(entity)
+
+/**
+ * What a meaning comprehension reads under the id: a text in its words,
+ * and a picture of it where a feature shows it. A transcription is shown
+ * by the writing it transcribes, and a writing on a patch that has no
+ * picture of its own by the patch; a text a version inserts stands on
+ * no feature. Nothing where the edition holds no such entity.
+ */
+export const comprehendedOf = (edition: Edition, id: string): Comprehended | undefined => {
+    const path = pathIn(edition, id)
+    const entity = path && getAt<object>(path, edition)
+    if (!path || !entity) return undefined
+
+    // The entity and everything it stands in, nearest first.
+    const bearers = path.map((_, depth) => getAt<unknown>(path.slice(0, path.length - depth), edition))
+
+    return {
+        text: isSymbol(entity) && entity.type === 'text' ? entity.text : undefined,
+        depiction: bearers.filter(isFeature).find(feature => feature.depiction)?.depiction
+    }
 }

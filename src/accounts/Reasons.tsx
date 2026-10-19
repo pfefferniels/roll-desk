@@ -1,10 +1,10 @@
 import { Delete } from "@mui/icons-material"
 import { Link, List, ListItem, Stack, Typography } from "@mui/material"
 import { ToolButton } from "../desk/ToolButton"
-import { AnyArgumentation, AnyFeature, Belief, MeaningComprehension, symbolIn, pathIn, getAt, TimeSpan } from "linked-rolls"
+import { AnyArgumentation, Belief, MeaningComprehension, TimeSpan } from "linked-rolls"
 import { ReactNode, useContext } from "react"
 import { EditionContext } from "../edition/EditionContext"
-import { actorOf, Citation, citationOf, reasonLabels } from "../edition/reasons"
+import { actorOf, Citation, citationOf, comprehendedOf, reasonLabels } from "../edition/reasons"
 import { appliedBy, ruleLabel, useRules } from "../edition/rules"
 import { CertaintyIcon } from "./CertaintyIcon"
 import { EntityLink } from "./EntityLink"
@@ -87,26 +87,27 @@ const Ran = ({ reason }: { reason: AnyArgumentation }) => {
     )
 }
 
-/** The symbols a meaning comprehension interprets, each with the feature it was read from. */
+/**
+ * What a meaning comprehension reads: a text in its words, leading to
+ * where it stands, and a picture of it from the scan. Anything else is
+ * cited as a premise is.
+ */
 const Comprehended = ({ reason }: { reason: MeaningComprehension }) => {
     const { edition } = useContext(EditionContext)
+    if (!edition) return null
 
-    return reason.comprehends.map((subject: string) => {
-        const target = edition && symbolIn(edition, subject)
-        const key = `comprehends-${subject}`
-
-        if (!target) {
-            return <span key={key}>{subject}</span>
-        }
-
-        const featurePath = (edition && pathIn(edition, subject))?.slice(0, -1)
-        const feature = featurePath && edition && getAt<AnyFeature>(featurePath, edition)
+    return reason.comprehends.map(id => {
+        const { text, depiction } = comprehendedOf(edition, id) ?? {}
 
         return (
-            <div key={key}>
-                <div>{'text' in target ? target.text : 'no text'}</div>
-                <img src={feature?.depiction} width={200} />
-            </div>
+            <Stack key={id} spacing={0.5}>
+                <Typography variant='body2' sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
+                    {text
+                        ? <EntityLink id={id} label={`“${text}”`} />
+                        : <CitationLink citation={citationOf(edition, id)} />}
+                </Typography>
+                {depiction && <img src={depiction} alt='' width={200} style={{ maxWidth: '100%' }} />}
+            </Stack>
         )
     })
 }
