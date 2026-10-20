@@ -12,9 +12,8 @@ format the desk reads and writes: the Roll Edition Format, JSON-LD built
 on the Roll Edition Ontology, documented at
 https://pfefferniels.github.io/linked-rolls/.
 
-| | |
-|---|---|
 | Viewer | https://rolldesk.welte225.org/, showing the [edition of Welte-Mignon roll 225](https://welte225.org/edition.jsonld) (from [pfefferniels/welte225.org](https://github.com/pfefferniels/welte225.org)) |
+|---|---|
 | Editor | https://rolldesk.welte225.org/editor |
 
 The editor opens an edition from a file or starts a new one, and the
