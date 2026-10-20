@@ -27,19 +27,6 @@ export default tseslint.config(
         ...tseslint.configs.disableTypeChecked,
     },
     {
-        // The scripts edit the stored JSON-LD document, which has no type of
-        // its own, so everything read out of it is `any` by design. The rules
-        // that object to that would report the whole file; the rest still apply.
-        files: ['scripts/**'],
-        rules: {
-            '@typescript-eslint/no-unsafe-argument': 'off',
-            '@typescript-eslint/no-unsafe-assignment': 'off',
-            '@typescript-eslint/no-unsafe-call': 'off',
-            '@typescript-eslint/no-unsafe-member-access': 'off',
-            '@typescript-eslint/no-unsafe-return': 'off',
-        },
-    },
-    {
         settings: { react: { version: 'detect' } },
         plugins: { 'react-hooks': reactHooks },
         rules: { ...reactHooks.configs.recommended.rules },

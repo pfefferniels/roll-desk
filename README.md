@@ -14,13 +14,12 @@ https://pfefferniels.github.io/linked-rolls/.
 
 | | |
 |---|---|
-| Viewer | https://rolldesk.welte225.org/, showing the edition of Welte-Mignon roll 225 |
+| Viewer | https://rolldesk.welte225.org/, showing the [edition of Welte-Mignon roll 225](https://welte225.org/edition.jsonld) (from [pfefferniels/welte225.org](https://github.com/pfefferniels/welte225.org)) |
 | Editor | https://rolldesk.welte225.org/editor |
-| Edition shown | https://welte225.org/edition.jsonld, from [pfefferniels/welte225.org](https://github.com/pfefferniels/welte225.org) |
 
-The viewer loads the published edition and cannot change it. The editor
-opens an edition from a file or starts a new one, and the Save button
-downloads it again as JSON-LD. Nothing is stored in the browser.
+The editor opens an edition from a file or starts a new one, and the
+Save button downloads it again as JSON-LD. Nothing is stored in the
+browser.
 
 ## Development
 
@@ -37,9 +36,8 @@ npm run serve      # serves build/
 ```
 
 A push to `main` is linted, type-checked, tested, built and deployed to
-GitHub Pages (`.github/workflows/deploy.yml`), under the custom domain
-`rolldesk.welte225.org`. The desk has no releases: a build is named by
-the commit it was made from, which the About dialog shows.
+GitHub Pages (`.github/workflows/deploy.yml`), under the domain
+`rolldesk.welte225.org`.
 
 ## What lives where
 
@@ -47,11 +45,7 @@ the commit it was made from, which the About dialog shows.
 |---|---|
 | `src/` | the desk |
 | `public/facsimiles/` | scans of three copies of roll 225 as static IIIF tiles, see the README there |
-| `scripts/` | scripts that changed the edition of roll 225 outside the desk |
-
-The scripts read and write `edition.jsonld` in a checkout of
-welte225.org beside this one (`../welte225.org`). Each says at its top
-what it does.
+| `scripts/` | `facsimile_tiles.py`, which cuts a scan into those tiles |
 
 ## Licence
 
