@@ -6,6 +6,7 @@ import { versionAccount } from "../edition/account"
 import { windowAtEnds } from "../edition/collationTolerance"
 import { versionLabel } from "../edition/names"
 import { dateStatement } from "../edition/dateStatement"
+import { DerivationEvidence, RestoredFrom } from "./DerivationEvidence"
 import { DerivationScatter } from "./DerivationScatter"
 import { AccountSection, HeldStatement } from "./Account"
 import { EntityLink } from "./EntityLink"
@@ -63,6 +64,9 @@ export const VersionAccount = ({ versionId }: { versionId: string }) => {
                                 <CollatedAt tolerance={collationTolerance} />
                             )}
                             {principal && <DerivationScatter versionId={version.id} />}
+                            {principal
+                                ? <DerivationEvidence versionId={version.id} />
+                                : <RestoredFrom versionId={version.id} parent={parent} />}
                         </div>
                     ))}
                 </AccountSection>
