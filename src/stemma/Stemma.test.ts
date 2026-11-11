@@ -189,6 +189,31 @@ describe('the room a node takes in its row', () => {
             .toBeGreaterThan((captionWidth(d1) + captionWidth(d2)) / 2)
     })
 
+    /**
+     * A selected disc draws a ring 6 px beyond itself. Two versions of
+     * one row that only just do not overlap, as the lost r2 and R1.1 of
+     * WM 570 came out, read as one shape.
+     */
+    it('leaves a gap between the discs of a row', () => {
+        const { nodes, links } = graphFor([
+            version('r1', welteT100, 0),
+            version('r2', welteT100, 1, 'r1'),
+            version('R1.1', welteT100, 1, 'r1'),
+            version('R2.1', welteT100, 2, 'r2'),
+            version('R3', welteT100, 2, 'r2')
+        ])
+        const positioned = calculatePositions(nodes, links, 340, 760)
+        const rows = Map.groupBy(positioned, node => node.y)
+
+        for (const row of rows.values()) {
+            for (const [i, one] of row.entries()) {
+                for (const other of row.slice(i + 1)) {
+                    expect(Math.abs(one.x! - other.x!)).toBeGreaterThan(radiusOf(one) + radiusOf(other) + 8)
+                }
+            }
+        }
+    })
+
     it('takes the radius a node was given over the one its type implies', () => {
         const [node] = graphFor(siblings).nodes
         if (!node) throw new Error('the graph should have a node')

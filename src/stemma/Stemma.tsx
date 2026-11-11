@@ -424,8 +424,15 @@ const siglumSize = (node: Node) => Math.min(22, radiusOf(node) * 0.8)
 const captionHalfWidth = (node: Node) =>
     node.namesSystem && node.system ? node.system.length * 2.9 + 4 : 0
 
+/**
+ * What keeps the discs of a row apart: the ring a disc draws around
+ * itself when it is selected reaches 6 px beyond it, and two discs that
+ * only just do not overlap read as one shape.
+ */
+const discGap = 8
+
 /** What a node claims of its row, caption included. */
-const spaceFor = (node: Node) => Math.max(radiusOf(node), captionHalfWidth(node))
+export const spaceFor = (node: Node) => Math.max(radiusOf(node) + discGap, captionHalfWidth(node))
 
 export const calculatePositions = (
     nodes: Node[],
