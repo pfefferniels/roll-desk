@@ -629,8 +629,32 @@ export const laidOut = (nodes: readonly Node[], links: readonly Link[], width: n
     spreadVersions(nodes, links)
     const routes = routesOf(nodes, links)
     // A hypothesis may go round the outside of the stemma, and is fitted in with it.
-    const fit = fitOf([...nodes, ...[...routes.values()].flat()], width, height)
+    const fit = fitOf([...nodes.flatMap(reachOf), ...[...routes.values()].flat()], width, height, fitMargin)
     return { routes, fit }
+}
+
+/**
+ * What is left free around the fitted stemma. The discs are fitted in
+ * with their own reach (`reachOf`), so this is clear space and nothing
+ * a disc may still run into.
+ */
+const fitMargin = 16
+
+/**
+ * The corners of what a node takes of the drawing: its disc, and below
+ * it the caption where it has one. The drawing is scaled as a whole,
+ * discs included, so a stemma fitted by the middles of its nodes alone
+ * runs over the edge by the scaled radius: two versions below a lost
+ * one, the commonest stemma of two copies, were cut off on either side.
+ */
+const reachOf = (node: Node): { x: number, y: number }[] => {
+    if (node.x === undefined || node.y === undefined) return []
+    const captioned = captionHalfWidth(node) > 0
+    const half = Math.max(radiusOf(node), captionHalfWidth(node))
+    return [
+        { x: node.x - half, y: node.y - radiusOf(node) },
+        { x: node.x + half, y: node.y + radiusOf(node) + (captioned ? captionDrop + 2 * captionReach : 0) }
+    ]
 }
 
 /** The curve a route is drawn as, through every place it turns at. */
