@@ -136,6 +136,34 @@ describe('fitting the stemma into its drawing', () => {
         expect(fitOf(nodes, 300, 600)).toEqual({ scale: 2.2, midX: 50, midY: 100 })
     })
 
+    /**
+     * The drawing is scaled as a whole, discs and captions with it. Two
+     * versions below a lost one, as nearly every pair of copies gives,
+     * were fitted by their middles and cut off at either edge of the
+     * panel.
+     */
+    it('keeps the discs and captions of a small stemma inside the drawing', () => {
+        const { nodes, links } = graphFor([
+            version('r1', welteT100, 0),
+            version('R2', welteT100, 1, 'r1'),
+            version('L1', welteLicensee, 1, 'r1')
+        ])
+        const [width, height] = [340, 660]
+        const positioned = calculatePositions(nodes, links, width, height)
+        const { fit } = laidOut(positioned, links, width, height)
+
+        // Where a place of the stemma comes to lie in the drawing.
+        const across = (x: number) => width / 2 + (x - fit.midX) * fit.scale
+        const down = (y: number) => height / 2 + (y - fit.midY) * fit.scale
+        for (const node of positioned) {
+            const half = Math.max(radiusOf(node), node.namesSystem && node.system ? node.system.length * 2.9 + 4 : 0)
+            expect(across(node.x! - half)).toBeGreaterThanOrEqual(0)
+            expect(across(node.x! + half)).toBeLessThanOrEqual(width)
+            expect(down(node.y! - radiusOf(node))).toBeGreaterThanOrEqual(0)
+            expect(down(node.y! + radiusOf(node))).toBeLessThanOrEqual(height)
+        }
+    })
+
     it('leaves a drawing without nodes as it is', () => {
         expect(fitOf([], 300, 600)).toEqual({ scale: 1, midX: 0, midY: 0 })
     })
@@ -187,6 +215,31 @@ describe('the room a node takes in its row', () => {
 
         expect(Math.abs(d1.x! - d2.x!))
             .toBeGreaterThan((captionWidth(d1) + captionWidth(d2)) / 2)
+    })
+
+    /**
+     * A selected disc draws a ring 6 px beyond itself. Two versions of
+     * one row that only just do not overlap, as the lost r2 and R1.1 of
+     * WM 570 came out, read as one shape.
+     */
+    it('leaves a gap between the discs of a row', () => {
+        const { nodes, links } = graphFor([
+            version('r1', welteT100, 0),
+            version('r2', welteT100, 1, 'r1'),
+            version('R1.1', welteT100, 1, 'r1'),
+            version('R2.1', welteT100, 2, 'r2'),
+            version('R3', welteT100, 2, 'r2')
+        ])
+        const positioned = calculatePositions(nodes, links, 340, 760)
+        const rows = Map.groupBy(positioned, node => node.y)
+
+        for (const row of rows.values()) {
+            for (const [i, one] of row.entries()) {
+                for (const other of row.slice(i + 1)) {
+                    expect(Math.abs(one.x! - other.x!)).toBeGreaterThan(radiusOf(one) + radiusOf(other) + 8)
+                }
+            }
+        }
     })
 
     it('takes the radius a node was given over the one its type implies', () => {

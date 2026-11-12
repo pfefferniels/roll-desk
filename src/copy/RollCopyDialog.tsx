@@ -1,9 +1,11 @@
 import { MusicNote } from "@mui/icons-material";
-import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, TextField, Typography, Divider, Stack } from "@mui/material";
+import { Alert, Button, CircularProgress, DialogTitle, DialogContent, Dialog, DialogActions, FormControl, InputLabel, MenuItem, Select, TextField, Typography, Divider, Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
-import { addCopy, alignCopy, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, RollCopy, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
+import { addCopy, alignCopy, alignmentFor, assignObject, clearSource, createVersion, EditionOp, KeeperAssignment, Millimeters, mm, nameCopy, ObjectAssumption, PaperSpeed, paperSpeedOfSpencerAnn, readFromPhillipsEroll, readFromSpencerBar, readFromStanfordAton, readSpencerAnn, Edition, RollCopy, Seconds, stateSource, systemOf, TrackerBar, welteLicensee, welteT100 } from "linked-rolls";
 import { paperAt, WELTE_SPOOL } from "welte-mignon-emulator";
 import { EditionContext } from "../edition/EditionContext";
+import { useSnackbar } from "../desk/SnackbarContext";
+import { standingAsSentence, standingOf } from "./alignmentStanding";
 import { v4 } from "uuid";
 import { noSpeed, PaperSpeedFields, paperSpeedOf, SpeedInput, speedInputOf, SystemSelect } from "./ProductionFields";
 import { featureSourceOf, noSource, SourceFields, SourceInput, sourceInputOf } from "./SourceFields";
@@ -36,6 +38,62 @@ const isAnnFile = (file: File) => file.name.endsWith('.ann')
  * against another copy says by how much.
  */
 export const placeOnPaper = (elapsed: Seconds): Millimeters => mm(paperAt(WELTE_SPOOL, elapsed) * 10)
+
+/**
+ * How the seconds of an e-roll are put onto the paper. A pneumatic
+ * reader such as Phillips's times the perforations as they pass on a
+ * take-up spool, which accelerates; an e-roll written from a scan, as
+ * those of the Hochschule der Künste Bern are, runs at one speed from
+ * end to end. Read on the wrong one, a roll comes out bent against every
+ * other copy, and an alignment finds a tenth of its notes.
+ */
+export type Placement = 'spool' | 'constant'
+
+export const placementLabels: Record<Placement, string> = {
+    spool: 'A roll reader: the paper accelerates on the spool',
+    constant: 'A scan: the paper runs at one speed'
+}
+
+/** An e-roll read as a copy, its seconds put onto the paper one way or the other. */
+export const readEroll = (bytes: ArrayBuffer, system: TrackerBar, placement: Placement): RollCopy =>
+    readFromPhillipsEroll(bytes, { system, ...(placement === 'spool' && { placeAt: placeOnPaper }) })
+
+/**
+ * Which way an e-roll lies better on the edition's reference copy, with
+ * how many of its notes each way finds there. Nothing where there is no
+ * copy to try it against, or where neither way finds one.
+ */
+export const suggestedPlacement = (
+    bytes: ArrayBuffer,
+    system: TrackerBar,
+    edition: Edition
+): { placement: Placement, matched: Record<Placement, number> } | undefined => {
+    const matchedBy = (placement: Placement): number => {
+        try {
+            return alignmentFor(edition, readEroll(bytes, system, placement))?.matched ?? 0
+        } catch {
+            return 0
+        }
+    }
+    const matched = { spool: matchedBy('spool'), constant: matchedBy('constant') }
+    if (matched.spool === 0 && matched.constant === 0) return undefined
+    return { placement: matched.constant > matched.spool ? 'constant' : 'spool', matched }
+}
+
+/**
+ * Puts a copy read from a file into the edition, with a version of its
+ * own, named and aligned with the reference copy straight away, which
+ * leaves it as it was read where it is the first copy or shares no
+ * notes. The copy is taken afresh every time the operation runs: under
+ * React's strict mode the reducer runs it twice, and what the first run
+ * put into the edition is frozen there.
+ */
+export const addingCopy = (rollCopy: RollCopy, siglum: string): EditionOp => draft => {
+    const copy = structuredClone(rollCopy)
+    createVersion(copy)(draft)
+    nameCopy(copy.id, siglum)(draft)
+    alignCopy(copy.id)(draft)
+}
 
 /**
  * The speed the upload suggests: the tempo in the .ann beside a Spencer
@@ -85,6 +143,10 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     const [sourceTyped, setSourceTyped] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string>()
+    const [placement, setPlacement] = useState<Placement>('spool')
+    const [placementChosen, setPlacementChosen] = useState(false)
+    const [tried, setTried] = useState<{ file: File, found: ReturnType<typeof suggestedPlacement> }>()
+    const { setMessage } = useSnackbar()
 
     useEffect(() => {
         if (!copy) return
@@ -108,6 +170,9 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             setSourceTyped(false)
             setError(undefined)
             setLoading(false)
+            setPlacement('spool')
+            setPlacementChosen(false)
+            setTried(undefined)
         }
     }, [open, copy, editionBar])
 
@@ -125,6 +190,30 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
     }, [files, speedTyped])
 
     const rollFile = files.find(isRollFile)
+    const erollFile = rollFile?.name.endsWith('.mid') ? rollFile : undefined
+
+    // An e-roll is tried both ways against the reference copy, and the
+    // way that finds more of its notes there is prefilled, unless the
+    // editor has chosen.
+    useEffect(() => {
+        if (!erollFile || !edition) return
+        let stale = false
+        erollFile.arrayBuffer()
+            .then(bytes => {
+                if (stale) return
+                const found = suggestedPlacement(bytes, system, edition)
+                setTried({ file: erollFile, found })
+                if (found && !placementChosen) setPlacement(found.placement)
+            })
+            .catch((error: unknown) => console.warn('The e-roll could not be tried against the reference copy:', error))
+        return () => { stale = true }
+    }, [erollFile, edition, system, placementChosen])
+
+    const placementHint = !erollFile || tried?.file !== erollFile
+        ? undefined
+        : tried.found
+            ? `Tried against the reference copy: as from a roll reader ${tried.found.matched.spool} notes are found there, as from a scan ${tried.found.matched.constant}.`
+            : 'There is no copy to try the file against yet. Phillips\u2019s e-rolls come from a roll reader.'
 
     /**
      * The keeper as typed, or nothing where no name is given. A belief the
@@ -192,7 +281,8 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 readFrom: stated,
                 ...(keeperOfCopy && { keeper: keeperOfCopy })
             }
-            apply(together(addCopy(known), nameCopy(known.id, copySiglum)))
+            // Taken afresh every time the operation runs, as `addingCopy` does.
+            apply(draft => together(addCopy(structuredClone(known)), nameCopy(known.id, copySiglum))(draft))
             onDone?.(known.id)
             onClose()
             return
@@ -211,13 +301,13 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                 rollCopy = readFromStanfordAton(await rollFile.text(), { system });
             }
             else if (rollFile.name.endsWith('.mid')) {
-                rollCopy = readFromPhillipsEroll(await rollFile.arrayBuffer(), {
-                    system,
-                    placeAt: placeOnPaper
-                });
+                rollCopy = readEroll(await rollFile.arrayBuffer(), system, placement);
+                // The reader says of every e-roll that Phillips read it on
+                // his roll reader. One written from a scan is not his.
+                if (placement === 'constant') delete rollCopy.readFrom
             }
             else {
-                throw new Error('Expected a Stanford analysis (.txt), a Spencer e-roll (.bar) or a Phillips e-roll (.mid).')
+                throw new Error('Expected a Stanford analysis (.txt), a Spencer e-roll (.bar) or an e-roll as MIDI (.mid).')
             }
 
             const speedOfCopy = speedStated()
@@ -229,11 +319,17 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
             // A reader that knows how it read the roll says so itself;
             // the dialog only overrides that where the editor stated one,
             // and keeps who read it.
-            rollCopy.readFrom = featureSourceOf(source, rollCopy.readFrom) ?? rollCopy.readFrom
+            const stated = featureSourceOf(source, rollCopy.readFrom) ?? rollCopy.readFrom
+            if (stated) rollCopy.readFrom = stated
 
-            // Aligned with the reference copy straight away, which leaves it
-            // as it was read where it is the first copy or shares no notes.
-            apply(together(createVersion(rollCopy), nameCopy(rollCopy.id, copySiglum), alignCopy(rollCopy.id)))
+            // How the copy will lie on the reference copy is said once it is
+            // in, so that a copy read off its tracks or on the wrong clock is
+            // noticed here and not when its readings are collated.
+            const named: RollCopy = { ...rollCopy, ...(copySiglum.trim() && { siglum: copySiglum.trim() }) }
+            const standing = standingOf(edition, named, alignmentFor(edition, rollCopy))
+
+            apply(addingCopy(rollCopy, copySiglum))
+            if (standing) setMessage(standingAsSentence(standing))
             onDone?.(rollCopy.id)
             onClose()
         } catch (e) {
@@ -323,7 +419,7 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                             <Button variant="outlined" component="label" startIcon={<MusicNote />}>
                                 {files.length > 0
                                     ? files.map(file => file.name).join(', ')
-                                    : 'Upload Roll Analysis (.txt), Spencer E-Roll (.bar with its .ann) or Phillips E-Roll (.mid)'}
+                                    : 'Upload Roll Analysis (.txt), Spencer E-Roll (.bar with its .ann) or E-Roll MIDI (.mid)'}
                                 <input
                                     type="file"
                                     hidden
@@ -335,17 +431,40 @@ export const RollCopyDialog = ({ open, copy, onClose, onDone }: RollCopyDialogPr
                                         // Spencer's Welte e-rolls are Licensee rolls
                                         if (chosen.some(file => file.name.endsWith('.bar'))) setSystem(welteLicensee)
                                         const roll = chosen.find(isRollFile)
-                                        // A hole list somebody measured on a scan. A
-                                        // Phillips e-roll says for itself that it was
-                                        // played on his reader, and says who read it,
-                                        // so leaving the field empty keeps the more
-                                        // it knows.
+                                        // A hole list somebody measured on a scan. An
+                                        // e-roll from a roll reader says for itself
+                                        // that it was played on Phillips's, and says
+                                        // who read it, so leaving the field empty
+                                        // keeps the more it knows.
                                         if (roll && !roll.name.endsWith('.mid') && !sourceTyped) {
                                             setSource(current => ({ ...current, kind: 'analysis' }))
                                         }
                                     }}
                                 />
                             </Button>
+                            {erollFile && (
+                                <>
+                                    <FormControl size='small' fullWidth>
+                                        <InputLabel id='eroll-placement'>The e-roll was written from</InputLabel>
+                                        <Select
+                                            labelId='eroll-placement'
+                                            label='The e-roll was written from'
+                                            value={placement}
+                                            onChange={event => {
+                                                setPlacement(event.target.value)
+                                                setPlacementChosen(true)
+                                            }}
+                                        >
+                                            {(Object.keys(placementLabels) as Placement[]).map(way => (
+                                                <MenuItem key={way} value={way}>{placementLabels[way]}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    <Typography variant='caption' color='text.secondary'>
+                                        {placementHint ?? 'An e-roll times its perforations in seconds, and where they lie on the paper depends on how it was made.'}
+                                    </Typography>
+                                </>
+                            )}
                             <Typography variant='caption' color='text.secondary'>
                                 A copy known only from a recording needs no file: state its source above
                                 and save, then say which versions it carries.

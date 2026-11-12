@@ -7,6 +7,7 @@ import { useSnackbar } from "../desk/SnackbarContext"
 import { adoption, asSentence, defaultTyping, FiliationReply, FiliationRequest, optionsOf } from "./filiation"
 import { FiliationFields } from "./FiliationFields"
 import { ProposalAccount } from "./ProposalAccount"
+import { alignmentWarnings } from "../copy/alignmentStanding"
 
 /** Where a proposal stands, for the edition it was asked for. */
 type Outcome = { from: Edition } & (
@@ -42,6 +43,8 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
     useEffect(() => () => worker.current?.terminate(), [])
 
     const read = optionsOf(typed, pin)
+    /** The copies that do not lie on the reference copy, which a collation cannot make up for. */
+    const misaligned = edition ? alignmentWarnings(edition) : []
     const running = outcome !== undefined && 'running' in outcome
     const proposed = outcome && 'proposal' in outcome ? outcome : undefined
     /** Whether the edition has changed since the proposal was made for it, which it would then no longer fit. */
@@ -112,6 +115,16 @@ export const FiliationDialog = ({ onClose }: FiliationDialogProps) => {
                         scored by what it has to let arise and be lost, and the least costly is set
                         against the edition&apos;s own. Nothing changes until it is adopted.
                     </DialogContentText>
+
+                    {misaligned.length > 0 && (
+                        <Alert severity='warning'>
+                            {misaligned.map(sentence => <div key={sentence}>{sentence}</div>)}
+                            <div>
+                                A copy that does not lie on the reference copy is collated where it was read,
+                                so nearly every reading it has counts as its own, and the stemma is proposed from that.
+                            </div>
+                        </Alert>
+                    )}
 
                     <FiliationFields
                         typed={typed}
