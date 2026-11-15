@@ -1,5 +1,5 @@
 import { Box, List, ListItem, ListItemButton, ListItemText, ListSubheader, Stack, Typography } from "@mui/material"
-import { AnyCommand, CarriageProblem, ConstraintProblem, Path, PlacementRelation, isCommand, copyIn, symbolIn, pathIn } from "linked-rolls"
+import { AnyCommand, CarriageProblem, ConstraintProblem, FiliationProblem, Path, PlacementRelation, isCommand, copyIn, symbolIn, pathIn } from "linked-rolls"
 import { ReactNode, useContext, useMemo } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { useSnapshot } from "./useSnapshot"
@@ -105,6 +105,42 @@ const CarriageList = ({ problems }: { problems: readonly CarriageProblem[] }) =>
     )
 }
 
+const filiationLabels: Record<FiliationProblem['problem'], string> = {
+    'missing-from-its-line': 'Missing from a copy of its line, and no later edit accounts for that',
+    'struck-yet-carried': 'Struck, yet a copy of its line still carries it',
+    'carried-outside-its-line': 'Added, yet a copy outside its line carries it',
+    'restores-a-strike': 'Puts back what an earlier version struck, and no second derivation accounts for it'
+}
+
+/** Where the copies speak against the stemma, under the version concerned, or nothing where they do not. */
+const FiliationList = ({ problems, onShow }: { problems: readonly FiliationProblem[], onShow: ShowConstraint }) => {
+    const { edition } = useContext(EditionContext)
+    if (!edition || problems.length === 0) return null
+
+    const describe = (problem: FiliationProblem) => {
+        const symbol = symbolIn(edition, problem.symbol)
+        const what = isCommand(symbol) ? describeCommand(symbol, edition) : problem.symbol
+        const copy = problem.copy && copyIn(edition, problem.copy)
+        return copy ? `${what}, ${whichCopy(copy)}` : what
+    }
+
+    return (
+        <List dense subheader={<ListSubheader disableSticky>Stemma</ListSubheader>}>
+            {problems.map(problem => (
+                <ListItemButton
+                    key={`${problem.version}-${problem.symbol}-${problem.copy}-${problem.problem}`}
+                    onClick={() => onShow(problem.version, [problem.symbol])}
+                >
+                    <ListItemText
+                        primary={filiationLabels[problem.problem]}
+                        secondary={`${nameOf(edition, problem.version) ?? problem.version}: ${describe(problem)}`}
+                    />
+                </ListItemButton>
+            ))}
+        </List>
+    )
+}
+
 interface ConstraintsPanelProps {
     /** The version whose constraints are shown, absent while none is chosen. */
     versionId?: string
@@ -112,6 +148,8 @@ interface ConstraintsPanelProps {
     problems: readonly ConstraintProblem[]
     /** What the copies state about the versions they carry, where it cannot stand. */
     carriage: readonly CarriageProblem[]
+    /** Where the copies speak against the stemma. */
+    filiation: readonly FiliationProblem[]
     onShow: ShowConstraint
 }
 
@@ -120,7 +158,7 @@ interface ConstraintsPanelProps {
  * shown version, each with its belief. An entry opens its version and
  * marks its symbols.
  */
-export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: ConstraintsPanelProps) => {
+export const ConstraintsPanel = ({ versionId, problems, carriage, filiation, onShow }: ConstraintsPanelProps) => {
     const { edition } = useContext(EditionContext)
     const snapshot = useSnapshot(versionId)
     const placements = useMemo(() => placementsIn(snapshot), [snapshot])
@@ -139,6 +177,7 @@ export const ConstraintsPanel = ({ versionId, problems, carriage, onShow }: Cons
         <Box sx={{ width: 320, maxHeight: '70vh', overflow: 'auto' }}>
             <ProblemList problems={problems} onShow={onShow} />
             <CarriageList problems={carriage} />
+            <FiliationList problems={filiation} onShow={onShow} />
 
             <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ pl: 2 }}>
                 <Typography variant='subtitle2'>
