@@ -27,6 +27,15 @@
 }
 
 /*
+ * A writing is on the paper and stretches with it, as the scan does. It
+ * is turned by a group round it, which the transform above would not
+ * reach, but its counter-scale would run along the turned text.
+ */
+.zoomStage text.onPaper {
+    transform: none;
+}
+
+/*
  * A shape on a drawing that takes the focus shows it in a ring of its
  * own, drawn with it, rather than in the browser's outline, which is
  * drawn round the box the shape takes up and lies askew on a balloon's
@@ -52,4 +61,10 @@ svg [role="button"]:focus {
 .slice:focus-visible {
     stroke: #1976d2;
     stroke-width: 3px;
+}
+
+/* The tag naming a modification is set as HTML, and rings itself under the keyboard. */
+svg .modificationTag:focus-visible {
+    outline: 2px solid #1976d2;
+    outline-offset: 1px;
 }

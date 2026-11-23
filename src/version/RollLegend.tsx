@@ -1,5 +1,6 @@
 import { ReactNode } from "react"
 import { LegendPopover, LegendRow } from "../stemma/Legend"
+import { laterHand } from "../facsimile/Modifications"
 
 const width = 60
 const height = 30
@@ -157,27 +158,35 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
             <LegendRow
                 symbol={
                     <Sample>
-                        <rect x={8} y={4} width={44} height={22} fill='#444' fillOpacity={0.2} />
+                        <rect x={8} y={4} width={44} height={22} fill={laterHand} fillOpacity={0.2} />
                     </Sample>
                 }
                 description='Patch'
                 help={`
                     Paper or tape glued onto the roll: a label, a strip
-                    covering perforations, or a patch over a tear.
+                    covering perforations, or a patch over a tear. It is
+                    always put on after the punching, so it is drawn in the
+                    colour of a later hand.
                 `}
             />
 
             <LegendRow
                 symbol={
                     <Sample>
-                        <rect x={6} y={5} width={48} height={20} rx={9} fill='gray' fillOpacity={0.2} stroke='black' strokeDasharray='4 2' />
+                        <rect x={14} y={18} width={16} height={3} fill={laterHand} />
+                        <rect x={34} y={22} width={14} height={3} fill={laterHand} />
+                        <rect x={9} y={14.5} width={44} height={14} rx={4} fill='none' stroke={laterHand} strokeWidth={1.25} strokeDasharray='4 3' />
+                        <rect x={9} y={1} width={36} height={11} rx={2} fill='white' stroke={laterHand} />
+                        <text x={27} y={9.5} fontSize={8} textAnchor='middle' fill={laterHand}>purpose</text>
                     </Sample>
                 }
                 description='Modification'
                 help={`
-                    An act that changed this copy after it was punched, drawn
-                    round what it added, took away or made, with its purpose
-                    and, where known, who did it.
+                    An act that changed this copy after it was punched. What
+                    it brought onto the copy is drawn in teal, outlined
+                    wherever it lies, and tagged with what it was done for.
+                    Pointed at, it says what it added, the texts it wrote, and
+                    who did it and when; a click opens the reasons for that.
                 `}
             />
 

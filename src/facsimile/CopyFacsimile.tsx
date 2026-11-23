@@ -1,18 +1,19 @@
 import {
-    featuresOf, FeatureOrPatch, Patch, Path, RollCopy, Writing, pathIn
+    featuresMadeBy, featuresOf, FeatureOrPatch, Patch, Path, RollCopy, Writing, pathIn
 } from "linked-rolls";
 import { usePinchZoom } from "../canvas/usePinchZoom.tsx";
 import { boxOf } from "../canvas/rollGeometry.ts";
-import { useContext, useLayoutEffect, useRef, useState } from "react";
+import { useContext, useMemo, useRef } from "react";
 import { RollGrid } from "./RollGrid.tsx";
 import { Cursor } from "../canvas/Cursor.tsx";
 import { useRollDrag } from "../canvas/useRollDrag.ts";
 import { EventDimension } from "../desk/RollDesk.tsx";
 import { Arguable } from "../accounts/Arguable.tsx";
 import { EditionContext } from "../edition/EditionContext.tsx";
-import { ModificationView } from "./ModificationView.tsx";
+import { laterHand, Modifications } from "./Modifications.tsx";
 import { Facsimile } from "./Facsimile.tsx";
 import { FacsimileBlend, transcriptionTakesPointer } from "./facsimileBlend.ts";
+import { WrittenText } from "./WrittenText.tsx";
 
 interface CopyFacsimileProps {
     copy: RollCopy;
@@ -35,6 +36,11 @@ export const CopyFacsimile = ({
     const geometry = usePinchZoom();
     const svgRef = useRef<SVGGElement>(null);
     const drag = useRollDrag(svgRef);
+
+    const madeLater = useMemo(
+        () => new Set(copy.modifications.flatMap(featuresMadeBy).map(feature => feature.id)),
+        [copy.modifications]
+    )
 
     if (!edition) return null
 
@@ -83,25 +89,19 @@ export const CopyFacsimile = ({
 
                 {featuresOf(copy).map(feature => {
                     const path = edition && pathIn(edition, feature.id)
+                    // What a later hand brought onto the copy is drawn in its colour.
                     return (
                         <Feature
                             key={feature.id}
                             feature={feature}
                             conditionPath={path && [...path, 'condition']}
                             onClick={() => onClick(feature)}
-                            color={color}
+                            color={madeLater.has(feature.id) ? laterHand : color}
                         />
                     )
                 })}
 
-                {copy.modifications.map((modification, i) => {
-                    return (
-                        <ModificationView
-                            key={`modification_${i}`}
-                            modification={modification}
-                        />
-                    )
-                })}
+                <Modifications copy={copy} />
 
                 <KeyboardDivision />
             </g>
@@ -192,132 +192,38 @@ const PatchFeature = ({ feature, color }: FeatureProps<Patch>) => {
                 filter="url(#spray)"
             />
 
-            {feature.features?.map((subFeature, index) => {
-                if (subFeature.type !== "Writing") return null;
-
-                const text = (subFeature as Writing).transcription.text;
-                const chunks = text.split("\n");
-
-                const cx = x + width;
-                const cy = y + height / 2;
-
-                return (
-                    <ScaledRotatedText
-                        key={`subfeature_${index}`}
-                        cx={cx}
-                        cy={cy}
-                        boxWidth={width}
-                        boxHeight={height}
-                        color={color}
-                        chunks={chunks}
-                    />
-                );
-            })}
+            {feature.features?.map((borne, index) => borne.type === 'Writing' && (
+                <WrittenText
+                    key={borne.id ?? index}
+                    box={{ x, y, width, height }}
+                    lines={borne.transcription.text.split('\n')}
+                    angle={angleOf(borne)}
+                    color={color}
+                />
+            ))}
         </>
     );
 };
 
-function ScaledRotatedText({
-    cx,
-    cy,
-    boxWidth,
-    boxHeight,
-    color,
-    chunks,
-}: {
-    cx: number;
-    cy: number;
-    boxWidth: number;
-    boxHeight: number;
-    color: string;
-    chunks: string[];
-}) {
-    const textRef = useRef<SVGTextElement | null>(null);
-    const [scale, setScale] = useState(1);
+/**
+ * How far a writing is turned on the drawing. The roll is drawn running
+ * from left to right, so a writing across it stands upright, and its
+ * rotation turns it from there. The angle is added rather than subtracted
+ * because the bar is laid out with the bass below, which makes a turn
+ * towards the end of the roll clockwise here.
+ */
+const angleOf = (writing: Pick<Writing, 'rotation'>) =>
+    90 + Number(writing.rotation?.value ?? 0)
 
-    const fontSize = 8;
-    const lineHeight = 12;
-
-    // padding so it doesn't touch edges
-    const pad = 4;
-    const availW = Math.max(0, boxWidth - pad * 2);
-    const availH = Math.max(0, boxHeight - pad * 2);
-
-    const joinedChunks = chunks.join("\n");
-
-    useLayoutEffect(() => {
-        const el = textRef.current;
-        if (!el) return;
-
-        // Important: bbox is in the element's current user space.
-        // Measure BEFORE we apply our scale (or reset scale to 1 before measuring).
-        const bbox = el.getBBox();
-        const w = bbox.width || 1;
-        const h = bbox.height || 1;
-
-        // Uniform scale to fit
-        const s = Math.min(availW / w, availH / h);
-
-        // clamp so it doesn't get absurdly tiny/huge (tweak to taste)
-        const clamped = Math.max(0.3, Math.min(6, s));
-
-        setScale(clamped);
-    }, [joinedChunks, availW, availH]);
-
-    // Apply scale around the same rotation center.
-    // Order matters: rotate around (cx,cy), then scale around (cx,cy).
-    const transform = `rotate(90 ${cx} ${cy}) translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`;
-
-    return (
-        <text
-            ref={textRef}
-            transform={transform}
-            x={cx}
-            y={cy}
-            fontSize={fontSize}
-            fill={color}
-            textAnchor="middle"
-            dominantBaseline="hanging" // keep your current baseline choice
-            style={{ userSelect: "none" }}
-        >
-            {chunks.map((chunk, i) => (
-                <tspan key={i} x={cx} dy={i === 0 ? 0 : lineHeight}>
-                    {chunk}
-                </tspan>
-            ))}
-        </text>
-    );
-}
-
-const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => {
-    const { x, y, width, height } = boxOf(feature, usePinchZoom());
-
-    const chunks = feature.transcription.text.split("\n");
-
-    // The roll is drawn running from left to right, so a writing across it
-    // stands upright, and its rotation turns it from there. The angle is
-    // added rather than subtracted because the bar is laid out with the bass
-    // below, which makes a turn towards the end of the roll clockwise here.
-    const askew = 90 + Number(feature.rotation?.value ?? 0);
-
-    return (
-        <text
-            transform={`rotate(${askew} ${x + width / 2} ${y + height / 2})`}
-            x={x + width / 2}
-            y={y + height / 2}
-            fontSize={8}
-            fill={color}
-            textAnchor="middle"
-            id={feature.id}
-        >
-            {chunks.map((chunk, i) => (
-                <tspan key={i} x={x + width / 2} dy={i === 0 ? 0 : 12}>
-                    {chunk}
-                </tspan>
-            ))}
-        </text>
-    );
-};
+const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => (
+    <WrittenText
+        id={feature.id}
+        box={boxOf(feature, usePinchZoom())}
+        lines={feature.transcription.text.split('\n')}
+        angle={angleOf(feature)}
+        color={color}
+    />
+);
 
 const HoleChainFeature = ({ feature, onClick, color }: FeatureProps) => {
     const geometry = usePinchZoom();
