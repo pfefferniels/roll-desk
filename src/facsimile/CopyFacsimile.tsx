@@ -206,11 +206,11 @@ const PatchFeature = ({ feature, color }: FeatureProps<Patch>) => {
 };
 
 /**
- * How far a writing is turned on the drawing. The roll is drawn running
- * from left to right, so a writing across it stands upright, and its
- * rotation turns it from there. The angle is added rather than subtracted
- * because the bar is laid out with the bass below, which makes a turn
- * towards the end of the roll clockwise here.
+ * How far a writing is turned on the drawing. At zero it reads across the
+ * roll from the treble side towards the bass, which with the bass laid out
+ * below is downwards, a right angle from a line of text; its rotation
+ * turns it from there towards the beginning of the roll, which with the
+ * roll running from left to right is clockwise, so the angle is added.
  */
 const angleOf = (writing: Pick<Writing, 'rotation'>) =>
     90 + Number(writing.rotation?.value ?? 0)
