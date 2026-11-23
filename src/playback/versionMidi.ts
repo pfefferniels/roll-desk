@@ -1,7 +1,29 @@
-import { siglaOf, Version, Edition } from "linked-rolls"
-import { write } from "midifile-ts"
+import { siglaOf, Version, Edition, idsIn } from "linked-rolls"
+import { AnyEvent, write } from "midifile-ts"
 import { zipSync } from "fflate"
 import { emulationOf, EmulationOptions } from "./reproducingSystems"
+import { pathOf, referenceOf } from "../edition/addresses"
+
+/**
+ * The texts of a performed file as references. The emulation labels every
+ * note and pedal step with the id of the symbol it performs, and names the
+ * version it plays by its id; read outside the edition, an id names
+ * nothing. Each is written as the IRI the edition gives it, so that what
+ * reads the file, MPM Desk among them, can follow a note back to the
+ * symbol. A text that is no id of the edition, as the system's name and
+ * the options are not, stays as it is, and so does every text where the
+ * edition has no base to read an id against.
+ */
+const withIris = (track: AnyEvent[], edition: Edition): AnyEvent[] => {
+    if (!URL.canParse(edition.base)) return track
+
+    const ids = new Set(idsIn(edition))
+    return track.map(event =>
+        event.type === 'meta' && event.subtype === 'text' && ids.has(event.text)
+            ? { ...event, text: referenceOf(pathOf(event.text), edition.base) }
+            : event
+    )
+}
 
 /**
  * The version performed on the machine it was coded for, as MIDI, or
@@ -18,7 +40,7 @@ export const versionAsMidi = (
     emulation.emulateVersion(version, edition)
 
     const { tracks, header } = emulation.asMIDI()
-    return write(tracks, header.ticksPerBeat)
+    return write(tracks.map(track => withIris(track, edition)), header.ticksPerBeat)
 }
 
 const fileNameOf = (siglum: string) => `${siglum.replace(/[^\w.-]+/g, '_')}.mid`
