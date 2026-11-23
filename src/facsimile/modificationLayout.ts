@@ -134,3 +134,36 @@ export const textsOf = (features: readonly NestedFeature[]): string[] =>
 /** A text cut short where it runs longer than the room, with an ellipsis to say so. */
 export const shortened = (text: string, room: number): string =>
     text.length <= room ? text : `${text.slice(0, room - 1).trimEnd()}…`
+
+/** Whether a point lies within a convex polygon, whichever way round its corners run. */
+export const within = (point: Point, polygon: readonly Point[]): boolean => {
+    if (polygon.length < 3) return false
+
+    const sides = polygon.map((corner, i) => {
+        const next = polygon[(i + 1) % polygon.length] ?? corner
+        return (next.x - corner.x) * (point.y - corner.y) - (next.y - corner.y) * (point.x - corner.x)
+    })
+    return sides.every(side => side >= 0) || sides.every(side => side <= 0)
+}
+
+/** How much room a polygon takes, by the shoelace formula. */
+export const areaOf = (polygon: readonly Point[]): number =>
+    Math.abs(polygon.reduce((sum, corner, i) => {
+        const next = polygon[(i + 1) % polygon.length] ?? corner
+        return sum + corner.x * next.y - next.x * corner.y
+    }, 0)) / 2
+
+/**
+ * Of the things drawn round the point, the one that draws round the
+ * least: where outlines lie one in another, the pointer means the one it
+ * is most narrowly within.
+ */
+export const narrowestAround = <T extends { areas: readonly (readonly Point[])[] }>(
+    things: readonly T[],
+    point: Point
+): T | undefined =>
+    things
+        .flatMap(thing => thing.areas
+            .filter(area => within(point, area))
+            .map(area => ({ thing, size: areaOf(area) })))
+        .sort((a, b) => a.size - b.size)[0]?.thing

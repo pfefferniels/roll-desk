@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mm, track, Writing, Patch } from 'linked-rolls'
-import { clustersOf, contentsOf, placeTags, purposeOf, shortened, textsOf } from './modificationLayout'
+import { areaOf, clustersOf, contentsOf, narrowestAround, placeTags, purposeOf, shortened, textsOf, within } from './modificationLayout'
 import { svg } from '../canvas/units'
 import { Box } from '../geometry/drawing'
 
@@ -118,5 +118,34 @@ describe('what an act is said to be', () => {
     it('cuts a long text short', () => {
         expect(shortened('Das Recht der Vervielfältigung', 10)).toBe('Das Recht…')
         expect(shortened('kurz', 10)).toBe('kurz')
+    })
+})
+
+describe('what the pointer rests on', () => {
+    const square = (x: number, y: number, side: number) => [
+        { x: svg(x), y: svg(y) },
+        { x: svg(x + side), y: svg(y) },
+        { x: svg(x + side), y: svg(y + side) },
+        { x: svg(x), y: svg(y + side) }
+    ]
+
+    it('is within a polygon whichever way round its corners run', () => {
+        const point = { x: svg(5), y: svg(5) }
+        expect(within(point, square(0, 0, 10))).toBe(true)
+        expect(within(point, [...square(0, 0, 10)].reverse())).toBe(true)
+        expect(within({ x: svg(15), y: svg(5) }, square(0, 0, 10))).toBe(false)
+    })
+
+    it('is the outline it lies most narrowly within', () => {
+        const wide = { name: 'wide', areas: [square(0, 0, 100)] }
+        const narrow = { name: 'narrow', areas: [square(40, 40, 20)] }
+
+        expect(narrowestAround([wide, narrow], { x: svg(50), y: svg(50) })?.name).toBe('narrow')
+        expect(narrowestAround([wide, narrow], { x: svg(10), y: svg(10) })?.name).toBe('wide')
+        expect(narrowestAround([wide, narrow], { x: svg(200), y: svg(10) })).toBeUndefined()
+    })
+
+    it('measures a polygon by the room it takes', () => {
+        expect(areaOf(square(0, 0, 10))).toBe(100)
     })
 })

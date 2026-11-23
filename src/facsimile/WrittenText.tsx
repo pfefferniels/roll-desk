@@ -16,6 +16,8 @@ interface WrittenTextProps {
     /** How far it is turned on the drawing, clockwise, in degrees. */
     angle: number
     color: string
+    /** An edge round the letters, so that they read on a ground of any colour. */
+    halo?: string
     id?: string
 }
 
@@ -30,7 +32,7 @@ interface WrittenTextProps {
  * runs (see App.css), which would take the place of the turn. A writing is
  * on the paper and stretches with it during the gesture, as the scan does.
  */
-export const WrittenText = ({ box, lines, angle, color, id }: WrittenTextProps) => {
+export const WrittenText = ({ box, lines, angle, color, halo, id }: WrittenTextProps) => {
     const [measured, setMeasured] = useState<Extent>()
 
     // The text is keyed by what it says, so a new text is a new element and measured afresh.
@@ -64,8 +66,10 @@ export const WrittenText = ({ box, lines, angle, color, id }: WrittenTextProps) 
                 y={0}
                 fontSize={fontSize}
                 fill={color}
+                {...(halo && { stroke: halo, strokeWidth: fontSize * 0.22, strokeLinejoin: 'round' as const, paintOrder: 'stroke' })}
                 textAnchor='middle'
-                style={{ userSelect: 'none' }}
+                // The edge grows and shrinks with the letters, which the stage's non-scaling strokes would not let it.
+                style={{ userSelect: 'none', vectorEffect: 'none' }}
             >
                 {lines.map((line, i) => (
                     <tspan key={i} x={0} dy={i === 0 ? 0 : '1.25em'}>

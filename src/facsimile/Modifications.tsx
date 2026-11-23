@@ -1,25 +1,24 @@
-import { Popover, Stack, Tooltip, Typography } from "@mui/material"
+import { Box as MuiBox, Popover, Popper, PopperProps, Stack, Typography } from "@mui/material"
 import { featuresMadeBy, Modification, Path, pathIn, RollCopy } from "linked-rolls"
-import { useContext, useMemo, useState } from "react"
+import { RefObject, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { EditionContext } from "../edition/EditionContext"
 import { usePinchZoom } from "../canvas/usePinchZoom"
 import { atLeastVisible, boxOf } from "../canvas/rollGeometry"
-import { Box, cornersOf, Point } from "../geometry/drawing"
+import { Box, convexHull, cornersOf, padded, Point } from "../geometry/drawing"
 import { roundedHull } from "../geometry/roundedHull"
 import { svg } from "../canvas/units"
 import { Arguable } from "../accounts/Arguable"
 import { Name } from "../accounts/Name"
 import { dateStatement } from "../edition/dateStatement"
-import { clustersOf, contentsOf, placeTags, purposeOf, shortened, textsOf } from "./modificationLayout"
-
-/**
- * The colour of what a later hand did to a copy: the features an act
- * brought onto it, the outline round them and the tag naming the act.
- */
-export const laterHand = '#0f766e'
+import { clustersOf, contentsOf, narrowestAround, placeTags, purposeOf, shortened, textsOf } from "./modificationLayout"
+import { drawnPointAt } from "../canvas/pointer"
+import { Hand } from "./laterHand"
 
 /** How far an outline keeps from the features it is drawn round. */
 const outlinePadding = svg(4)
+
+/** How far beyond an outline the pointer still counts as on it, so that its line is within. */
+const lineReach = svg(3)
 
 /** How close features lie on the drawing to be outlined as one. */
 const clusterGap = svg(24)
@@ -37,6 +36,8 @@ interface ActLayout {
     index: number
     modification: Modification
     outlines: string[]
+    /** Where the pointer counts as being on the act: round each outline, its line included. */
+    areas: Point[][]
     /** The top left corner of the first outline, which the tag names. */
     anchor: Point
     tag: Box
@@ -59,6 +60,9 @@ const useActLayouts = (modifications: readonly Modification[]): ActLayout[] => {
                 modification,
                 label,
                 outlines: clusters.map(cluster => roundedHull(cluster.boxes.flatMap(cornersOf), outlinePadding)),
+                areas: clusters.map(cluster => convexHull(
+                    cluster.boxes.flatMap(box => cornersOf(padded(box, svg(outlinePadding + lineReach))))
+                )),
                 anchor: { x: svg(first.box.x - outlinePadding), y: svg(first.box.y - outlinePadding) }
             }]
         })
@@ -161,149 +165,236 @@ const ActAccount = ({ modification, label, path }: { modification: Modification,
 
 interface ActProps {
     act: ActLayout
+    hand: Hand
     /** Whether the pointer rests on the act. */
     pointed: boolean
-    onPoint: (pointed: boolean) => void
+    /** The pointer came onto the tag or the keyboard to it, and the summary is to stand at the place given. */
+    onPoint: (at?: { x: number, y: number }) => void
     /** Opens the act's account at a place on the screen. */
     onOpen: (at: { left: number, top: number }) => void
 }
 
 /**
  * One act on the drawing: a dashed outline round each place it changed
- * the copy, and a tag with its purpose at the first of them. The outline
- * answers the pointer only along its line, so that what it encloses stays
- * to be clicked; under the pointer the act's outlines all come forward
- * together, and say what the act was.
+ * the copy, and a tag with its purpose at the first of them. Only the tag
+ * is an element the pointer meets; the area within the outlines is found
+ * by where the pointer is (see `Modifications`), so that what it encloses
+ * stays to be clicked and dragged across.
  */
-const Act = ({ act, pointed, onPoint, onOpen }: ActProps) => {
-    const { outlines, tag, anchor, label, modification } = act
+const Act = ({ act, hand, pointed, onPoint, onOpen }: ActProps) => {
+    const { outlines, tag, anchor, label } = act
     // A tag pushed up past another one is tied back to what it names.
     const lifted = tag.y + tag.height < anchor.y - tagGap - 0.5
 
     return (
-        <Tooltip
-            title={<ActSummary modification={modification} label={label} />}
-            followCursor
-            placement='top-start'
-            describeChild
-            slotProps={{ tooltip: { sx: cardSx } }}
-        >
-            <g
-                className='modification'
-                data-modification={act.index}
-                onMouseEnter={() => onPoint(true)}
-                onMouseLeave={() => onPoint(false)}
-                onClick={e => onOpen({ left: e.clientX, top: e.clientY })}
-                style={{ cursor: 'pointer' }}
-            >
-                {outlines.map((d, i) => (
-                    <g key={i}>
-                        {/* A light edge under the dashes, so that they show on the scan as on white. */}
-                        <path
-                            d={d}
-                            fill={laterHand}
-                            fillOpacity={pointed ? 0.08 : 0}
-                            stroke='white'
-                            strokeOpacity={0.8}
-                            strokeWidth={3}
-                            pointerEvents='none'
-                        />
-                        <path
-                            d={d}
-                            fill='none'
-                            stroke={laterHand}
-                            strokeWidth={pointed ? 2 : 1.25}
-                            strokeDasharray='4 3'
-                            pointerEvents='none'
-                        />
-                        <path d={d} fill='none' stroke='transparent' strokeWidth={10} pointerEvents='stroke' />
-                    </g>
-                ))}
-
-                {lifted && (
-                    <line
-                        x1={tag.x + 0.5}
-                        y1={tag.y + tag.height}
-                        x2={anchor.x + 0.5}
-                        y2={anchor.y}
-                        stroke={laterHand}
-                        strokeWidth={1}
-                        pointerEvents='none'
+        <g className='modification' data-modification={act.index} pointerEvents='none'>
+            {outlines.map((d, i) => (
+                <g key={i}>
+                    {/* An edge under the dashes, so that they show on the scan as on white. */}
+                    <path
+                        d={d}
+                        fill={hand.colour}
+                        fillOpacity={pointed ? 0.15 : 0}
+                        stroke={hand.halo}
+                        strokeOpacity={0.6}
+                        strokeWidth={3}
                     />
-                )}
+                    <path
+                        d={d}
+                        fill='none'
+                        stroke={hand.colour}
+                        strokeWidth={pointed ? 2 : 1.25}
+                        strokeDasharray='4 3'
+                    />
+                </g>
+            ))}
 
-                <foreignObject
-                    x={tag.x}
-                    y={tag.y}
-                    width={tag.width + 40}
-                    height={tag.height}
-                    pointerEvents='none'
+            {lifted && (
+                <line
+                    x1={tag.x + 0.5}
+                    y1={tag.y + tag.height}
+                    x2={anchor.x + 0.5}
+                    y2={anchor.y}
+                    stroke={hand.colour}
+                    strokeWidth={1}
+                />
+            )}
+
+            <foreignObject x={tag.x} y={tag.y} width={tag.width + 40} height={tag.height}>
+                <span
+                    className='modificationTag'
+                    role='button'
+                    tabIndex={0}
+                    aria-label={`Later modification: ${label}`}
+                    onMouseEnter={e => onPoint({ x: e.clientX, y: e.clientY })}
+                    onMouseLeave={() => onPoint(undefined)}
+                    onFocus={e => {
+                        const { left, top } = e.currentTarget.getBoundingClientRect()
+                        onPoint({ x: left, y: top })
+                    }}
+                    onBlur={() => onPoint(undefined)}
+                    onClick={e => onOpen({ left: e.clientX, top: e.clientY })}
+                    onKeyDown={e => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return
+                        e.preventDefault()
+                        const { left, bottom } = e.currentTarget.getBoundingClientRect()
+                        onOpen({ left, top: bottom })
+                    }}
+                    style={{
+                        // A block of its own, so the line it would sit in cannot push it down out of its box.
+                        display: 'block',
+                        width: 'max-content',
+                        height: tag.height,
+                        lineHeight: `${tag.height - 2}px`,
+                        boxSizing: 'border-box',
+                        padding: '0 5px',
+                        background: hand.colour,
+                        border: `1px solid ${hand.halo}`,
+                        borderRadius: 3,
+                        color: hand.ink,
+                        fontSize: 11,
+                        fontWeight: pointed ? 700 : 500,
+                        whiteSpace: 'nowrap',
+                        pointerEvents: 'auto',
+                        cursor: 'pointer',
+                        userSelect: 'none'
+                    }}
                 >
-                    <span
-                        className='modificationTag'
-                        role='button'
-                        tabIndex={0}
-                        aria-label={`Later modification: ${label}`}
-                        onKeyDown={e => {
-                            if (e.key !== 'Enter' && e.key !== ' ') return
-                            e.preventDefault()
-                            const { left, bottom } = e.currentTarget.getBoundingClientRect()
-                            onOpen({ left, top: bottom })
-                        }}
-                        style={{
-                            // A block of its own, so the line it would sit in cannot push it down out of its box.
-                            display: 'block',
-                            width: 'max-content',
-                            height: tag.height,
-                            lineHeight: `${tag.height - 2}px`,
-                            boxSizing: 'border-box',
-                            padding: '0 5px',
-                            background: 'white',
-                            border: `1px solid ${laterHand}`,
-                            borderRadius: 3,
-                            color: laterHand,
-                            fontSize: 11,
-                            fontWeight: pointed ? 700 : 500,
-                            whiteSpace: 'nowrap',
-                            pointerEvents: 'auto',
-                            userSelect: 'none'
-                        }}
-                    >
-                        {label}
-                    </span>
-                </foreignObject>
-            </g>
-        </Tooltip>
+                    {label}
+                </span>
+            </foreignObject>
+        </g>
     )
+}
+
+/** How far the pointer may move between pressing and letting go for it to count as a click, in screen pixels. */
+const clickSlop = 4
+
+type PopperInstance = NonNullable<PopperProps['popperRef']> extends React.Ref<infer I> ? I : never
+
+/**
+ * The acts in the area under the pointer, and a click there: the svg is
+ * listened to as a whole, since the area is no element of its own. What
+ * the click lands on decides first: the tag answers for itself, and a hole
+ * or a mark is selected rather than opening the act it belongs to, as is
+ * a drag across the roll.
+ */
+const usePointedArea = (
+    group: RefObject<SVGGElement | null>,
+    acts: readonly ActLayout[],
+    onMove: (at: { x: number, y: number }) => void,
+    onOpen: (index: number, at: { left: number, top: number }) => void
+) => {
+    const [pointed, setPointed] = useState<number>()
+
+    useEffect(() => {
+        const element = group.current
+        const svgElement = element?.ownerSVGElement
+        if (!element || !svgElement) return
+
+        const actAt = (event: MouseEvent) => {
+            const point = drawnPointAt(element, event)
+            return point && narrowestAround(acts, point)
+        }
+
+        let pressedAt: { x: number, y: number } | undefined
+
+        const move = (event: PointerEvent) => {
+            onMove({ x: event.clientX, y: event.clientY })
+            setPointed(event.buttons ? undefined : actAt(event)?.index)
+        }
+        const leave = () => setPointed(undefined)
+        const press = (event: PointerEvent) => { pressedAt = { x: event.clientX, y: event.clientY } }
+        const click = (event: MouseEvent) => {
+            const target = event.target instanceof Element ? event.target : undefined
+            if (target?.closest('.modificationTag, .selectable')) return
+            if (pressedAt && Math.hypot(event.clientX - pressedAt.x, event.clientY - pressedAt.y) > clickSlop) return
+
+            const act = actAt(event)
+            if (act) onOpen(act.index, { left: event.clientX, top: event.clientY })
+        }
+
+        svgElement.addEventListener('pointermove', move)
+        svgElement.addEventListener('pointerleave', leave)
+        svgElement.addEventListener('pointerdown', press)
+        svgElement.addEventListener('click', click)
+        return () => {
+            svgElement.removeEventListener('pointermove', move)
+            svgElement.removeEventListener('pointerleave', leave)
+            svgElement.removeEventListener('pointerdown', press)
+            svgElement.removeEventListener('click', click)
+        }
+    }, [group, acts, onMove, onOpen])
+
+    return pointed
 }
 
 /**
  * What later hands did to the copy after it was punched, act by act: each
  * act outlined where it changed the copy and tagged with its purpose,
- * the rest of what is known of it under the pointer, and its reasons a
- * click away. A removal brought nothing onto the copy and has nothing
- * here to be drawn round.
+ * the rest of what is known of it wherever the pointer rests within its
+ * outlines, and its reasons a click away. A removal brought nothing onto
+ * the copy and has nothing here to be drawn round.
  */
-export const Modifications = ({ copy }: { copy: RollCopy }) => {
+export const Modifications = ({ copy, hand }: { copy: RollCopy, hand: Hand }) => {
     const { edition } = useContext(EditionContext)
     const acts = useActLayouts(copy.modifications)
-    const [pointed, setPointed] = useState<number>()
+    const group = useRef<SVGGElement>(null)
+    const [onTag, setOnTag] = useState<number>()
     const [opened, setOpened] = useState<{ index: number, at: { left: number, top: number } }>()
+
+    // The summary follows the pointer without a render for every move.
+    const pointer = useRef({ x: 0, y: 0 })
+    const popper = useRef<PopperInstance>(null)
+    const anchor = useMemo(() => ({
+        getBoundingClientRect: () => new DOMRect(pointer.current.x, pointer.current.y, 0, 0)
+    }), [])
+    const follow = useCallback((at: { x: number, y: number }) => {
+        pointer.current = at
+        void popper.current?.update()
+    }, [])
+    const open = useCallback(
+        (index: number, at: { left: number, top: number }) => setOpened({ index, at }),
+        []
+    )
+
+    const inArea = usePointedArea(group, acts, follow, open)
+    const pointed = onTag ?? inArea
+    const pointedAct = acts.find(act => act.index === pointed)
 
     const copyPath = edition && pathIn(edition, copy.id)
     const openedAct = opened && acts.find(act => act.index === opened.index)
 
     return (
-        <g className='modifications'>
+        <g className='modifications' ref={group}>
             {acts.map(act => (
                 <Act
                     key={act.index}
                     act={act}
+                    hand={hand}
                     pointed={pointed === act.index}
-                    onPoint={on => setPointed(current => on ? act.index : current === act.index ? undefined : current)}
-                    onOpen={at => setOpened({ index: act.index, at })}
+                    onPoint={at => {
+                        if (at) follow(at)
+                        setOnTag(current => at ? act.index : current === act.index ? undefined : current)
+                    }}
+                    onOpen={at => open(act.index, at)}
                 />
             ))}
+
+            <Popper
+                open={!!pointedAct && !openedAct}
+                anchorEl={anchor}
+                popperRef={popper}
+                placement='top-start'
+                modifiers={[{ name: 'offset', options: { offset: [0, 14] } }]}
+                sx={{ pointerEvents: 'none', zIndex: 'tooltip' }}
+            >
+                {pointedAct && (
+                    <MuiBox sx={cardSx}>
+                        <ActSummary modification={pointedAct.modification} label={pointedAct.label} />
+                    </MuiBox>
+                )}
+            </Popper>
 
             <Popover
                 open={!!openedAct}

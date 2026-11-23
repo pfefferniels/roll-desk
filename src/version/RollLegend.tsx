@@ -1,6 +1,8 @@
 import { ReactNode } from "react"
 import { LegendPopover, LegendRow } from "../stemma/Legend"
-import { laterHand } from "../facsimile/Modifications"
+
+/** A later hand's colour as it comes out on white; on a scan the desk picks one to stand out from the paper. */
+const laterHand = '#ee560c'
 
 const width = 60
 const height = 30
@@ -183,10 +185,12 @@ export const RollLegend = ({ shows }: { shows: OnTheDesk }) => (
                 description='Modification'
                 help={`
                     An act that changed this copy after it was punched. What
-                    it brought onto the copy is drawn in teal, outlined
-                    wherever it lies, and tagged with what it was done for.
-                    Pointed at, it says what it added, the texts it wrote, and
-                    who did it and when; a click opens the reasons for that.
+                    it brought onto the copy is outlined wherever it lies and
+                    tagged with what it was done for, in a colour picked to
+                    stand out from the paper of the scan, or from white where
+                    no scan is shown. Pointed at anywhere within its outline,
+                    it says what it added, the texts it wrote, and who did it
+                    and when; a click there opens the reasons for that.
                 `}
             />
 

@@ -10,8 +10,10 @@ import { useRollDrag } from "../canvas/useRollDrag.ts";
 import { EventDimension } from "../desk/RollDesk.tsx";
 import { Arguable } from "../accounts/Arguable.tsx";
 import { EditionContext } from "../edition/EditionContext.tsx";
-import { laterHand, Modifications } from "./Modifications.tsx";
-import { Facsimile } from "./Facsimile.tsx";
+import { Modifications } from "./Modifications.tsx";
+import { Facsimile, useImageService } from "./Facsimile.tsx";
+import { handOn, showingThrough, white } from "./laterHand.ts";
+import { usePaperColour } from "./usePaperColour.ts";
 import { FacsimileBlend, transcriptionTakesPointer } from "./facsimileBlend.ts";
 import { WrittenText } from "./WrittenText.tsx";
 
@@ -42,6 +44,15 @@ export const CopyFacsimile = ({
         [copy.modifications]
     )
 
+    // A later hand is drawn in the colour that stands out most from what
+    // lies under it: the paper as far as the scan shows, else the page.
+    const service = useImageService(copy.scan, blend.facsimile > 0)
+    const paper = usePaperColour(service)
+    const hand = useMemo(
+        () => handOn(paper ? showingThrough(paper, blend.facsimile) : white),
+        [paper, blend.facsimile]
+    )
+
     if (!edition) return null
 
     return (
@@ -70,7 +81,7 @@ export const CopyFacsimile = ({
                 </filter>
             </defs>
 
-            <Facsimile copy={copy} blend={blend} />
+            <Facsimile copy={copy} service={service} blend={blend} />
 
             {drag && <Cursor at={drag.to} />}
 
@@ -89,19 +100,20 @@ export const CopyFacsimile = ({
 
                 {featuresOf(copy).map(feature => {
                     const path = edition && pathIn(edition, feature.id)
-                    // What a later hand brought onto the copy is drawn in its colour.
+                    const later = madeLater.has(feature.id)
                     return (
                         <Feature
                             key={feature.id}
                             feature={feature}
                             conditionPath={path && [...path, 'condition']}
                             onClick={() => onClick(feature)}
-                            color={madeLater.has(feature.id) ? laterHand : color}
+                            color={later ? hand.colour : color}
+                            halo={later ? hand.halo : undefined}
                         />
                     )
                 })}
 
-                <Modifications copy={copy} />
+                <Modifications copy={copy} hand={hand} />
 
                 <KeyboardDivision />
             </g>
@@ -142,15 +154,17 @@ interface FeatureProps<FeatureType extends FeatureOrPatch = FeatureOrPatch> {
     conditionPath?: Path
     onClick: React.MouseEventHandler;
     color: string;
+    /** The edge set round what is written, where it must read on any ground. */
+    halo?: string;
 }
 
-const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
+const Feature = ({ feature, conditionPath, onClick, color, halo }: FeatureProps) => {
     const { x, y } = boxOf(feature, usePinchZoom());
 
     return (
         <g className="feature">
-            {(feature.type === 'Patch') && <PatchFeature feature={feature} color={color} onClick={onClick} />}
-            {feature.type === 'Writing' && <WritingFeature feature={feature} color={color} onClick={onClick} />}
+            {(feature.type === 'Patch') && <PatchFeature feature={feature} color={color} halo={halo} onClick={onClick} />}
+            {feature.type === 'Writing' && <WritingFeature feature={feature} color={color} halo={halo} onClick={onClick} />}
             {(feature.type === 'HoleChain') && <HoleChainFeature feature={feature} color={color} onClick={onClick} />}
             {(feature.type === 'Mark') && <MarkFeature feature={feature} color={color} onClick={onClick} />}
 
@@ -174,7 +188,7 @@ const Feature = ({ feature, conditionPath, onClick, color }: FeatureProps) => {
     );
 }
 
-const PatchFeature = ({ feature, color }: FeatureProps<Patch>) => {
+const PatchFeature = ({ feature, color, halo }: FeatureProps<Patch>) => {
     const { x, y, width, height } = boxOf(feature, usePinchZoom());
 
     return (
@@ -199,6 +213,7 @@ const PatchFeature = ({ feature, color }: FeatureProps<Patch>) => {
                     lines={borne.transcription.text.split('\n')}
                     angle={angleOf(borne)}
                     color={color}
+                    halo={halo}
                 />
             ))}
         </>
@@ -215,13 +230,14 @@ const PatchFeature = ({ feature, color }: FeatureProps<Patch>) => {
 const angleOf = (writing: Pick<Writing, 'rotation'>) =>
     90 + Number(writing.rotation?.value ?? 0)
 
-const WritingFeature = ({ feature, color }: FeatureProps<Writing>) => (
+const WritingFeature = ({ feature, color, halo }: FeatureProps<Writing>) => (
     <WrittenText
         id={feature.id}
         box={boxOf(feature, usePinchZoom())}
         lines={feature.transcription.text.split('\n')}
         angle={angleOf(feature)}
         color={color}
+        halo={halo}
     />
 );
 
@@ -233,11 +249,12 @@ const HoleChainFeature = ({ feature, onClick, color }: FeatureProps) => {
 
     if (isExpression) {
         return (
-            <rect x={x} y={y} width={width} height={height} fill={color} id={feature.id} onClick={onClick} />
+            <rect className='selectable' x={x} y={y} width={width} height={height} fill={color} id={feature.id} onClick={onClick} />
         )
     }
     return (
         <line
+            className='selectable'
             x1={x + height / 2}
             y1={y + height / 2}
             x2={x + width - height / 2}
@@ -259,6 +276,7 @@ const MarkFeature = ({ feature, onClick }: FeatureProps) => {
 
     return (
         <image
+            className='selectable'
             xlinkHref={feature.depiction.replace('default.jpg', 'gray.jpg')}
             x={x}
             y={y}

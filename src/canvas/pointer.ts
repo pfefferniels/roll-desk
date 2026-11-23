@@ -1,5 +1,6 @@
 import { Millimeters } from "linked-rolls"
 import { placeAt, Svg, svg, SvgPerMm } from "./units"
+import { Point } from "../geometry/drawing"
 
 export interface RollPoint {
     /** Along the roll. */
@@ -17,12 +18,21 @@ export interface RollPoint {
  */
 export const rollPointAt = (
     element: SVGGraphicsElement,
-    { clientX, clientY }: Pick<MouseEvent, 'clientX' | 'clientY'>,
+    event: Pick<MouseEvent, 'clientX' | 'clientY'>,
     zoom: SvgPerMm
 ): RollPoint | undefined => {
+    const point = drawnPointAt(element, event)
+    return point && { x: placeAt(point.x, zoom), y: point.y }
+}
+
+/** Where a pointer sits in the element's own drawing units, through its screen matrix as above. */
+export const drawnPointAt = (
+    element: SVGGraphicsElement,
+    { clientX, clientY }: Pick<MouseEvent, 'clientX' | 'clientY'>
+): Point | undefined => {
     const matrix = element.getScreenCTM()
     if (!matrix) return undefined
 
     const { x, y } = new DOMPoint(clientX, clientY).matrixTransform(matrix.inverse())
-    return { x: placeAt(svg(x), zoom), y: svg(y) }
+    return { x: svg(x), y: svg(y) }
 }

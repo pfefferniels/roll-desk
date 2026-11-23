@@ -50,7 +50,8 @@ const FacsimileTile = ({ tile, placement }: { tile: Tile, placement: TilePlaceme
     )
 }
 
-const useImageService = (scan: string | undefined, wanted: boolean) => {
+/** What the scan's image service says of itself, fetched once the scan is wanted. */
+export const useImageService = (scan: string | undefined, wanted: boolean) => {
     const [service, setService] = useState<ImageService>()
 
     useEffect(() => {
@@ -68,6 +69,8 @@ const useImageService = (scan: string | undefined, wanted: boolean) => {
 
 interface FacsimileProps {
     copy: RollCopy
+    /** The scan's image service, once it is known. */
+    service?: ImageService
     blend: FacsimileBlend
 }
 
@@ -79,9 +82,8 @@ interface FacsimileProps {
  * The strips only part once the blend asks for it. Until then they lie
  * on top of one another, each drawing its share of the whole scan.
  */
-export const Facsimile = ({ copy, blend }: FacsimileProps) => {
+export const Facsimile = ({ copy, service, blend }: FacsimileProps) => {
     const geometry = usePinchZoom()
-    const service = useImageService(copy.scan, blend.facsimile > 0)
     const calibration = drawableCalibrationOf(copy)
 
     if (!service || !calibration || blend.facsimile === 0) return null
